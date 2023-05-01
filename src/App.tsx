@@ -1,6 +1,14 @@
 import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
+  IonMenu,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonMenuToggle,
   IonIcon,
   IonLabel,
   IonRouterOutlet,
@@ -11,9 +19,9 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import BikeBusMember from './pages/BikeBusMember';
+import BikeBusLeader from './pages/BikeBusLeader';
+import CarDriver from './pages/CarDriver';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -33,44 +41,66 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import React from 'react';
 
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
-          </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
-          </Route>
-          <Route path="/tab3">
-            <Tab3 />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/tab1" />
-          </Route>
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
+      <React.Fragment>
+        <IonMenu side="start" content-id="main-content">
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Menu</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <IonList>
+              <IonMenuToggle auto-hide="false">
+                <IonItem button routerLink="/your-page-1" routerDirection="none">
+                  <IonLabel>Your Page 1</IonLabel>
+                </IonItem>
+                <IonItem button routerLink="/your-page-2" routerDirection="none">
+                  <IonLabel>Your Page 2</IonLabel>
+                </IonItem>
+              </IonMenuToggle>
+            </IonList>
+          </IonContent>
+        </IonMenu>
+        <IonTabs>
+          <IonRouterOutlet>
+            <Route exact path="/BikeBusMember">
+              <BikeBusMember />
+            </Route>
+            <Route exact path="/BikeBusLeader">
+              <BikeBusLeader />
+            </Route>
+            <Route path="/CarDriver">
+              <CarDriver />
+            </Route>
+            <Route exact path="/">
+              <Redirect to="/BikeBusMember" />
+            </Route>
+          </IonRouterOutlet>
+          <IonTabBar slot="bottom">
+            <IonTabButton tab="bikebusmember" href="/bikebusmember">
+              <IonIcon aria-hidden="true" icon={triangle} />
+              <IonLabel>BikeBus Member</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="bikebusleader" href="/bikebusleader">
+              <IonIcon aria-hidden="true" icon={ellipse} />
+              <IonLabel>BikeBus Leader</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="cardriver" href="/cardriver">
+              <IonIcon aria-hidden="true" icon={square} />
+              <IonLabel>Car Driver</IonLabel>
+            </IonTabButton>
+          </IonTabBar>
+        </IonTabs>
+      </React.Fragment>
     </IonReactRouter>
-  </IonApp>
+  </IonApp >
 );
 
 export default App;
