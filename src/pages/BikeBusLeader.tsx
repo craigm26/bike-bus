@@ -1,7 +1,8 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import ExploreContainer from '../components/ExploreContainer';
+import { IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar, IonButton, IonIcon } from '@ionic/react';
 import './BikeBusLeader.css';
 import useAuth from '../useAuth'; // Import useAuth hook
+import { logInOutline } from 'ionicons/icons';
+import Profile from '../components/Profile';
 
 const BikeBusLeader: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -23,7 +24,19 @@ const BikeBusLeader: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>BikeBus Leader</IonTitle>
+        <IonButtons slot="start">
+            <IonMenuButton></IonMenuButton>
+          </IonButtons>
+          <IonTitle class="centered-title">BikeBus</IonTitle>
+          <IonButtons slot="end">
+            {user ? (
+              <Profile /> // Show the profile picture when the user is logged in
+            ) : (
+              <IonButton routerLink="/login">
+                <IonIcon icon={logInOutline} />
+              </IonButton>
+            )}
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -33,7 +46,6 @@ const BikeBusLeader: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         {renderUserInfo()} {/* Render user info */}
-        <ExploreContainer name="BikeBus Leader page" />
       </IonContent>
     </IonPage>
   );
