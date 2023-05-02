@@ -1,15 +1,17 @@
 import { useContext } from 'react';
 import { AuthContext } from './AuthContext';
-import { auth } from './firebaseConfig';
+import app from './firebaseConfig';
+import { getAuth } from 'firebase/auth';
 
 const useAuth = () => {
   const { user, loadingAuthState } = useContext(AuthContext);
+  const auth = getAuth(app);
 
-  const signUpWithEmailAndPassword = async (email, password) => {
+  const signUpWithEmailAndPassword = async (email , password) => {
     await auth.createUserWithEmailAndPassword(email, password);
   };
 
-  const signInWithEmailAndPassword = async (email, password) => {
+  const signInWithEmailAndPassword = async (email , password) => {
     await auth.signInWithEmailAndPassword(email, password);
   };
 
