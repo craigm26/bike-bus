@@ -3,11 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "@capacitor/app": "4.1.1",
-    "@capacitor/core": "4.7.3",
-    "@capacitor/haptics": "4.1.0",
-    "@capacitor/keyboard": "4.1.1",
-    "@capacitor/status-bar": "4.1.1",
+    "@capacitor/app": "next",
+    "@capacitor/core": "next",
+    "@capacitor/haptics": "next",
+    "@capacitor/keyboard": "next",
+    "@capacitor/status-bar": "next",
     "@firebase/app": "^0.9.9",
     "@firebase/auth": "^0.23.1",
     "@ionic/react": "^7.0.0",
@@ -65,7 +65,7 @@
     "iOS >=14"
   ],
   "devDependencies": {
-    "@capacitor/cli": "4.7.3"
+    "@capacitor/cli": "next"
   },
   "description": "An Ionic project"
 }
