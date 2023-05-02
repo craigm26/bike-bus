@@ -132,33 +132,13 @@ To allow users to view the created route, you can store the route data in a data
 
 ### craig merry
 As a parent, i want to find a route where a bikebus leader has marked as a stop along a route and a known destination. Also give me the eta for when the user should leave
+
 To achieve this functionality, you can follow these steps:
 
-First, make sure to store route data created by the bikebus leader in a database such as Firebase Firestore, including the stops along the route, known destinations, and estimated departure times.
-
-Create a new page called "FindRoute":
-
-bash
-Copy code
-ionic generate page FindRoute
-In the find-route.page.html file, add a search input field and a button to trigger the search. Also, add a Google Map to display the found route and stops:
-html
-Copy code
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Find Route</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <ion-item>
-    <ion-label position="floating">Search for Destination</ion-label>
-    <ion-input [(ngModel)]="searchQuery"></ion-input>
-  </ion-item>
-  <ion-button expand="block" (click)="searchRoute()">Search</ion-button>
-  <google-map [options]="mapOptions" #map></google-map>
-</ion-content>
-In the find-route.page.ts file, add the necessary imports, initialize the map, and create the searchRoute() function that will fetch the route data from the database and display it on the map:
+ - First, make sure to store route data created by the bikebus leader in a database such as Firebase Firestore, including the stops along the route, known destinations, and estimated departure times.
+ - Create a new page called "FindRoute":
+ - In the find-route.page.html file, add a search input field and a button to trigger the search. Also, add a Google Map to display the found route and stops
+ - In the find-route.page.ts file, add the necessary imports, initialize the map, and create the searchRoute() function that will fetch the route data from the database and display it on the map
 typescript
 Copy code
 import { Component, ViewChild } from '@angular/core';
@@ -167,24 +147,6 @@ import { LatLngLiteral } from '@agm/core/services/google-maps-types';
 
 // Add your database service import here, e.g. Firebase
 
-@Component({
-  selector: 'app-find-route',
-  templateUrl: './find-route.page.html',
-  styleUrls: ['./find-route.page.scss'],
-})
-export class FindRoutePage {
-  @ViewChild(GoogleMap, { static: false }) map: GoogleMap;
-
-  mapOptions = {
-    center: { lat: 40.730610, lng: -73.935242 },
-    zoom: 12,
-  };
-
-  searchQuery: string;
-
-  constructor(
-    // Inject your database service here, e.g. Firebase
-  ) {}
 
   searchRoute(): void {
     // Search for the route in the database based on the searchQuery (destination)
@@ -196,10 +158,9 @@ export class FindRoutePage {
     // Calculate the ETA for the user by subtracting the current time from the departure time
   }
 }
-Update the app.component.ts and app-routing.module.ts files to include the new FindRoute page, as shown in previous steps.
-Now, you should have a new page where parents can search for a route based on the destination. The found route, stops, and ETA will be displayed on the map.
-
-Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the route data. Additionally, you may need to adjust the logic within the searchRoute() function to fit your specific data model and requirements.
+- Update the app.component.ts and app-routing.module.ts files to include the new FindRoute page, as shown in previous steps.
+- Now, you should have a new page where parents can search for a route based on the destination. The found route, stops, and ETA will be displayed on the map.
+- Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the route data. Additionally, you may need to adjust the logic within the searchRoute() function to fit your specific data model and requirements.
 
 
 
@@ -207,34 +168,15 @@ Make sure to replace the placeholders for the database service (e.g., Firebase) 
 ### craig merry
 As a car driver, i want use google maps within the app and be notified of any bikebus that are within 1000 feet and tell me from what direction
 
-2 / 2
+
 
 To create a feature for car drivers to use Google Maps within the app and get notified of any nearby bikebus within 1000 feet, follow these steps:
 
-Create a new page called "CarDriver":
-bash
-Copy code
-ionic generate page CarDriver
-In the car-driver.page.html file, add a Google Map and a notification area:
-html
-Copy code
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Car Driver</ion-title>
-  </ion-toolbar>
-</ion-header>
+- Create a new page called "CarDriver":
+- In the car-driver.page.html file, add a Google Map and a notification area:
+- In the car-driver.page.ts file, add the necessary imports, initialize the map, and create a function to periodically check for nearby bikebuses:
 
-<ion-content>
-  <google-map [options]="mapOptions" #map></google-map>
-  <ion-item *ngIf="notification">
-    <ion-label>
-      Bikebus nearby: {{ notification.distance }} feet, {{ notification.direction }}
-    </ion-label>
-  </ion-item>
-</ion-content>
-In the car-driver.page.ts file, add the necessary imports, initialize the map, and create a function to periodically check for nearby bikebuses:
-typescript
-Copy code
+```typescript
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { GoogleMap } from '@angular/google-maps';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
@@ -293,187 +235,25 @@ export class CarDriverPage implements OnInit {
     }
   }
 }
-Update the app.component.ts and app-routing.module.ts files to include the new CarDriver page, as shown in previous steps.
-Now, you should have a new page for car drivers that displays a Google Map and periodically checks for nearby bikebuses. If a bikebus is within 1000 feet, a notification with the distance and direction will be displayed.
-
-Make sure to replace the placeholders for the database service (e.g.,
-
-
+```
+ - Update the app.component.ts and app-routing.module.ts files to include the new CarDriver page, as shown in previous steps.
+ - Now, you should have a new page for car drivers that displays a Google Map and periodically checks for nearby bikebuses. If a bikebus is within 1000 feet, a notification with the distance and direction will be displayed.
 
 
 ### craig merry
-As a bikebus member, i want to save destinations as a listcand make it easy yo search for known bikebus with upcoming dates and times
+As a bikebus member, i want to save destinations as a listcand make it easy to search for known bikebus with upcoming dates and times
+
 To create a feature for bikebus members to save destinations, search for known bikebuses with upcoming dates and times, follow these steps:
 
-Create a new page called "BikebusMember":
-bash
-Copy code
-ionic generate page BikebusMember
-In the bikebus-member.page.html file, add a search input field, a button to trigger the search, and a list to display the saved destinations and upcoming bikebus events:
-html
-Copy code
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Bikebus Member</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <ion-item>
-    <ion-label position="floating">Search for Destination</ion-label>
-    <ion-input [(ngModel)]="searchQuery"></ion-input>
-  </ion-item>
-  <ion-button expand="block" (click)="searchUpcomingBikebuses()">Search</ion-button>
-
-  <ion-list>
-    <ion-list-header>
-      <ion-label>Saved Destinations</ion-label>
-    </ion-list-header>
-    <ion-item *ngFor="let destination of savedDestinations">
-      <ion-label>{{ destination.name }}</ion-label>
-    </ion-item>
-  </ion-list>
-
-  <ion-list>
-    <ion-list-header>
-      <ion-label>Upcoming Bikebuses</ion-label>
-    </ion-list-header>
-    <ion-item *ngFor="let bikebus of upcomingBikebuses">
-      <ion-label>
-        {{ bikebus.destination }} - {{ bikebus.date }} - {{ bikebus.time }}
-      </ion-label>
-    </ion-item>
-  </ion-list>
-</ion-content>
-In the bikebus-member.page.ts file, add the necessary imports, create variables to store saved destinations and upcoming bikebuses, and create a function to search for upcoming bikebuses based on the search query:
-typescript
-Copy code
-import { Component } from '@angular/core';
-
-// Add your database service import here, e.g. Firebase
-
-@Component({
-  selector: 'app-bikebus-member',
-  templateUrl: './bikebus-member.page.html',
-  styleUrls: ['./bikebus-member.page.scss'],
-})
-export class BikebusMemberPage {
-  searchQuery: string;
-  savedDestinations: any[] = []; // Replace with the actual data type for saved destinations
-  upcomingBikebuses: any[] = []; // Replace with the actual data type for upcoming bikebuses
-
-  constructor(
-    // Inject your database service here, e.g. Firebase
-  ) {
-    // Fetch saved destinations for the user from the database and store them in savedDestinations
-  }
-
-  searchUpcomingBikebuses(): void {
-    // Search for upcoming bikebuses in the database based on the searchQuery (destination)
-    // Fetch the bikebus data, including destination, date, and time
-
-    // Update the upcomingBikebuses array with the fetched data
-  }
-}
-Update the app.component.ts and app-routing.module.ts files to include the new BikebusMember page, as shown in previous steps.
-Now, you should have a new page for bikebus members that displays a search input field, a list of saved destinations, and a list of upcoming bikebuses based on the search query.
+ - Create a new page called "BikebusMember"
+ - In the bikebus-member.page.html file, add a search input field, a button to trigger the search, and a list to display the saved destinations and upcoming bikebus events
+ - In the bikebus-member.page.ts file, add the necessary imports, create variables to store saved destinations and upcoming bikebuses, and create a function to search for upcoming bikebuses based on the search query:
+ - Update the app.component.ts and app-routing.module.ts files to include the new BikebusMember page, as shown in previous steps.
+ 
+ Now, you should have a new page for bikebus members that displays a search input field, a list of saved destinations, and a list of upcoming bikebuses based on the search query.
 
 Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the saved destinations and upcoming bikebus data. Additionally, you may need to adjust the logic within the searchUpcomingBikebuses() function to fit your specific data model and requirements.
 
-
-
-
-### craig merry
-We’ll use firebase
-Great! Firebase is a good choice for real-time updates and easy integration with Ionic. To integrate Firebase into your Ionic project, follow these steps:
-
-Install Firebase and AngularFire packages:
-bash
-Copy code
-npm install firebase @angular/fire
-Create a Firebase project and enable the necessary services such as Firestore and Authentication. Follow the instructions in the Firebase documentation to create a project and get your configuration details.
-
-Add your Firebase configuration to your Ionic project. Open the src/environments/environment.ts file and add your Firebase configuration:
-
-typescript
-Copy code
-export const environment = {
-  production: false,
-  firebase: {
-    apiKey: '<YOUR_API_KEY>',
-    authDomain: '<YOUR_AUTH_DOMAIN>',
-    projectId: '<YOUR_PROJECT_ID>',
-    storageBucket: '<YOUR_STORAGE_BUCKET>',
-    messagingSenderId: '<YOUR_MESSAGING_SENDER_ID>',
-    appId: '<YOUR_APP_ID>',
-    measurementId: '<YOUR_MEASUREMENT_ID>'
-  }
-};
-Import and initialize AngularFire in your src/app/app.module.ts:
-typescript
-Copy code
-import { AngularFireModule } from '@angular/fire';
-import { AngularFirestoreModule } from '@angular/fire/firestore';
-import { environment } from '../environments/environment';
-
-@NgModule({
-  declarations: [AppComponent],
-  entryComponents: [],
-  imports: [
-    BrowserModule,
-    IonicModule.forRoot(),
-    AppRoutingModule,
-    AngularFireModule.initializeApp(environment.firebase),
-    AngularFirestoreModule
-  ],
-  providers: [
-    // ...
-  ],
-  bootstrap: [AppComponent],
-})
-export class AppModule {}
-Now you can use Firebase Firestore and Authentication in your project. Modify the code in your pages, such as BikebusMemberPage, to use Firestore to fetch and store data. Here's an example of how you can fetch saved destinations and upcoming bikebuses using Firestore:
-
-Import AngularFirestore and inject it into the constructor of BikebusMemberPage:
-typescript
-Copy code
-import { AngularFirestore } from '@angular/fire/firestore';
-
-constructor(private firestore: AngularFirestore) {}
-Update the BikebusMemberPage to fetch saved destinations and upcoming bikebuses from Firestore:
-typescript
-Copy code
-export class BikebusMemberPage implements OnInit {
-  // ...
-
-  ngOnInit() {
-    this.fetchSavedDestinations();
-  }
-
-  fetchSavedDestinations(): void {
-    // Replace 'userId' with the actual user ID from Firebase Authentication
-    this.firestore
-      .collection('savedDestinations', (ref) => ref.where('userId', '==', 'userId'))
-      .valueChanges()
-      .subscribe((destinations) => {
-        this.savedDestinations = destinations;
-      });
-  }
-
-  searchUpcomingBikebuses(): void {
-    this.firestore
-      .collection('bikebuses', (ref) =>
-        ref.where('destination', '==', this.searchQuery).where('date', '>=', new Date())
-      )
-      .valueChanges()
-      .subscribe((bikebuses) => {
-        this.upcomingBikebuses = bikebuses;
-      });
-  }
-}
-Remember to replace 'userId' with the actual user ID from Firebase Authentication and adjust the data model as necessary. This code assumes that you have collections named savedDestinations and bikebuses in your Firestore.
-
-You can now use Firebase to store and manage your data, and AngularFire to interact with Firebase within your Ionic app. Modify the other pages in your app accordingly to use Firebase for data storage and retrieval.
 
 
 
@@ -482,77 +262,9 @@ You can now use Firebase to store and manage your data, and AngularFire to inter
 Can you set up authentication for new users in a new page along with sign out
 Sure! To set up authentication for new users and handle sign out, you'll need to create a new page and use Firebase Authentication. Follow these steps:
 
-Create a new page called "Auth":
-bash
-Copy code
-ionic generate page Auth
-In the auth.page.html file, add the form elements for email and password input, as well as buttons for sign in, sign up, and sign out:
-html
-Copy code
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Authentication</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <ion-item>
-    <ion-label position="floating">Email</ion-label>
-    <ion-input type="email" [(ngModel)]="email"></ion-input>
-  </ion-item>
-  <ion-item>
-    <ion-label position="floating">Password</ion-label>
-    <ion-input type="password" [(ngModel)]="password"></ion-input>
-  </ion-item>
-
-  <ion-button expand="block" (click)="signIn()">Sign In</ion-button>
-  <ion-button expand="block" (click)="signUp()">Sign Up</ion-button>
-  <ion-button expand="block" (click)="signOut()">Sign Out</ion-button>
-</ion-content>
-In the auth.page.ts file, import AngularFireAuth and inject it into the constructor:
-typescript
-Copy code
-import { AngularFireAuth } from '@angular/fire/auth';
-
-constructor(private afAuth: AngularFireAuth) {}
-Add the methods for sign in, sign up, and sign out in the auth.page.ts file:
-typescript
-Copy code
-export class AuthPage {
-  email: string;
-  password: string;
-
-  constructor(private afAuth: AngularFireAuth) {}
-
-  async signIn() {
-    try {
-      const result = await this.afAuth.signInWithEmailAndPassword(this.email, this.password);
-      console.log('Sign in successful:', result);
-    } catch (error) {
-      console.error('Sign in failed:', error);
-    }
-  }
-
-  async signUp() {
-    try {
-      const result = await this.afAuth.createUserWithEmailAndPassword(this.email, this.password);
-      console.log('Sign up successful:', result);
-    } catch (error) {
-      console.error('Sign up failed:', error);
-    }
-  }
-
-  async signOut() {
-    try {
-      await this.afAuth.signOut();
-      console.log('Sign out successful');
-    } catch (error) {
-      console.error('Sign out failed:', error);
-    }
-  }
-}
-Update the app.component.ts and app-routing.module.ts files to include the new Auth page, as shown in previous steps.
-Now, you have a new authentication page that allows users to sign in, sign up, and sign out using Firebase Authentication. The email and password fields will be used to authenticate users, and the appropriate methods from AngularFireAuth will be called for each action. Keep in mind that you should handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console.
+ - Create a new page called "Auth"
+ - In the auth.page.html file, add the form elements for email and password input, as well as buttons for sign in, sign up, and sign out
+ - Now, you have a new authentication page that allows users to sign in, sign up, and sign out using Firebase Authentication. The email and password fields will be used to authenticate users, and the appropriate methods from AngularFireAuth will be called for each action. Keep in mind that you should handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console.
 
 
 
@@ -562,33 +274,9 @@ Is there a Google authentication option?
 Yes, you can use Google authentication with Firebase in your Ionic app. To implement Google authentication, follow these steps:
 
 Enable Google Sign-In in the Firebase console. Go to the Authentication section in your Firebase project, click on the "Sign-in method" tab, and enable the Google provider. Follow the instructions provided to set up a web client.
-
-Install the @angular/fire package, if you haven't already:
-
-bash
-Copy code
-npm install @angular/fire
 Import the necessary AngularFireAuth and GoogleAuthProvider classes in your auth.page.ts file:
-typescript
-Copy code
-import { AngularFireAuth } from '@angular/fire/auth';
-import firebase from 'firebase/app';
 Add a new method called signInWithGoogle() in the auth.page.ts file to handle Google authentication:
-typescript
-Copy code
-async signInWithGoogle() {
-  try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await this.afAuth.signInWithPopup(provider);
-    console.log('Google sign in successful:', result);
-  } catch (error) {
-    console.error('Google sign in failed:', error);
-  }
-}
 Add a new button to the auth.page.html file to trigger Google Sign-In:
-html
-Copy code
-<ion-button expand="block" (click)="signInWithGoogle()">Sign In with Google</ion-button>
 Now, users can sign in with their Google accounts. When they click the "Sign In with Google" button, a popup window will appear, allowing users to choose their Google account and grant the necessary permissions.
 
 Remember to handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console. Also, consider updating your app's logic to handle the user's state changes (e.g., signed in, signed out) and adapt the UI accordingly.
