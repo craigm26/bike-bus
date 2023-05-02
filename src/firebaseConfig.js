@@ -2,14 +2,17 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyB9KZ2IEQdvlBwfCocX-IxEJt3Q8fRNYz8",
+  authDomain: "bikebus-71dd5.firebaseapp.com",
+  databaseURL: "https://bikebus-71dd5-default-rtdb.firebaseio.com",
+  projectId: "bikebus-71dd5",
+  storageBucket: "bikebus-71dd5.appspot.com",
+  messagingSenderId: "787807444789",
+  appId: "1:787807444789:web:1dc26b53636081cc94b67c",
+  measurementId: "G-QZ8WQ7JVB7"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
 export default firebase;
