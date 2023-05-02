@@ -1,12 +1,40 @@
 # BikeBus
+## Safety in Numbers
+## What: 
+BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school. 
+## Why:
+We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets
 
 ## Domain tbd
 
-## Purpose of the app:
-
 ## How does this app make money?:
 
+Freemium model. Free features to help establish a base of users to help grow the app and then premium features to keep it running
 
+Free features:
+   - BikeBus Leaders can create a route, schedule it and invite users. 
+   - BikeBus Members and Parents can search for a scheduled route.
+   - BikeBus Members and Parents can become a leader by creating a new route.
+   - Car Drivers can see BikeBus and be alerted when one is near.
+
+Premium features (Monthly, cost TBD):
+   - Advanced route planning and customization for BikeBus leaders
+   - Real-time ETA predictions and notifications for BikeBus parents
+   - Enhanced safety features and alerts for car drivers when a BikeBus is nearby
+   - In-app messaging between BikeBus members and leaders (when a parent allows it)
+   - Deeper Integration with third-party services such as Google Maps for advanced navigation features
+
+Make a plan to create different user roles (free and premium) and ensure that only premium users have access to the premium features.
+
+Make it clear which features are part of the free and premium plans. This will help users understand the benefits of upgrading to a paid subscription. Use a dedicated pricing or subscription page within the app to showcase the benefits of upgrading.
+
+Continuously monitor and improve the app based on user feedback and analytics. Iterate on the premium features to ensure they provide significant value to your users and encourage upgrades.
+
+Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app. 
+
+## Tech Stack:
+
+Use Ionic as the framework and Firebase (Authentication, Hosting, Payments) as much as possible. Allow for Google Play Store and Apple Store to manage subscriptions as well.
 
 
 ### craig merry
