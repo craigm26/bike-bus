@@ -2,6 +2,9 @@
 ## Safety in Numbers
 ## What: 
 BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school. 
+
+No ads or selling of user data. Anonymous users and anonymized data wherever possible.  
+
 ## Why:
 We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets
 
