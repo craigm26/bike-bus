@@ -1,31 +1,43 @@
 # BikeBus
+
 ## Safety in Numbers
-## What: 
-BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school. 
+
+## What
+
+BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school.
 
 No ads or selling of user data. Anonymous users and anonymized data wherever possible.  
 
-## Why:
+## Why
+
 We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets
 
 ## Domain bikebus.app
 
-## How does this app make money?:
+## To develop
+
+npm install
+ionic build
+firebase deploy
+
+## How does this app make money?
 
 Freemium model. Free features to help establish a base of users to help grow the app and then premium features to keep it running
 
 Free features:
-   - BikeBus Leaders can create a route, schedule it and invite users. 
-   - BikeBus Members and Parents can search for a scheduled route.
-   - BikeBus Members and Parents can become a leader by creating a new route.
-   - Car Drivers can see BikeBus and be alerted when one is near.
+
+- BikeBus Leaders can create a route, schedule it and invite users.
+- BikeBus Members and Parents can search for a scheduled route.
+- BikeBus Members and Parents can become a leader by creating a new route.
+- Car Drivers can see BikeBus and be alerted when one is near.
 
 Premium features (Monthly, cost TBD):
-   - Advanced route planning and customization for BikeBus leaders
-   - Real-time ETA predictions and notifications for BikeBus parents
-   - Enhanced safety features and alerts for car drivers when a BikeBus is nearby
-   - In-app messaging between BikeBus members and leaders (when a parent allows it)
-   - Deeper Integration with third-party services such as Google Maps for advanced navigation features
+
+- Advanced route planning and customization for BikeBus leaders
+- Real-time ETA predictions and notifications for BikeBus parents
+- Enhanced safety features and alerts for car drivers when a BikeBus is nearby
+- In-app messaging between BikeBus members and leaders (when a parent allows it)
+- Deeper Integration with third-party services such as Google Maps for advanced navigation features
 
 Make a plan to create different user roles (free and premium) and ensure that only premium users have access to the premium features.
 
@@ -33,12 +45,11 @@ Make it clear which features are part of the free and premium plans. This will h
 
 Continuously monitor and improve the app based on user feedback and analytics. Iterate on the premium features to ensure they provide significant value to your users and encourage upgrades.
 
-Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app. 
+Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app.
 
-## Tech Stack:
+## Tech Stack
 
 Use Ionic as the framework and Firebase (Authentication, Hosting, Payments) as much as possible. Allow for Google Play Store and Apple Store to manage subscriptions as well.
-
 
 Google Maps JavaScript API: This API allows you to display maps, draw routes, and add markers on the map. You can use the DirectionsService to draw a cycling route between the starting point and the school. You can customize the route by adding waypoints and dragging the route.
 
@@ -62,8 +73,7 @@ Build the user interface for the group leader and riders, allowing them to creat
 
 Remember to follow Google's API usage policies and obtain the necessary API keys for your app.
 
-
-## Feature ideas 
+## Feature ideas
 
 Subscription model: Offer a subscription-based model with a free tier and paid tiers that provide additional features or benefits. This way, you can generate revenue without relying on ads or sharing user data. The paid tiers could include features like enhanced route planning, priority support, or extended historical ride data.
 
@@ -109,36 +119,38 @@ Privacy policy and GDPR compliance: Develop a comprehensive privacy policy that 
 
 Limit data retention: Store users' data only for the necessary duration and establish policies for the timely deletion of outdated or unused data.
 
-
 ### craig merry
+
 How do i add a page where a bikebus leader draws a route on a map and allows users to view it?
 To add a page where a bikebus leader can draw a route on a map and allow users to view it, follow these steps:
 
- - Generate a new page for the route creation (CreateRoute):
- - Install the necessary packages for Google Maps:
- - Enable the Google Maps JavaScript API and get an API key from the Google Cloud Platform. Add the API key to your index.html file:
- - <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+- Generate a new page for the route creation (CreateRoute):
+- Install the necessary packages for Google Maps:
+- Enable the Google Maps JavaScript API and get an API key from the Google Cloud Platform. Add the API key to your index.html file:
+- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+
 Replace YOUR_API_KEY with your actual API key.
- - Import the GoogleMapsModule into your create-route.module.ts file
- - In your create-route.page.html file, add the following code to display the Google Map
- - In your create-route.page.ts file, add the following code to handle map initialization, route drawing, and user interactions:
- - This code initializes the map with default options and listens for user clicks on the map to create a path.
- - Update the app.component.ts and app-routing.module.ts files to include the new CreateRoute page, as shown in previous steps.
+
+- Import the GoogleMapsModule into your create-route.module.ts file
+- In your create-route.page.html file, add the following code to display the Google Map
+- In your create-route.page.ts file, add the following code to handle map initialization, route drawing, and user interactions:
+- This code initializes the map with default options and listens for user clicks on the map to create a path.
+- Update the app.component.ts and app-routing.module.ts files to include the new CreateRoute page, as shown in previous steps.
 
 Now, you should have a new page where the bikebus leader can draw a route by clicking on the map. The route will be displayed as a series of connected points on the map.
 
 To allow users to view the created route, you can store the route data in a database like Firebase Firestore, and then create another page where users can view the stored route. You can follow similar steps to create a new page, fetch the route data from the database, and display it on the map using the google.maps.Polyline class.
 
-
 ### craig merry
+
 As a parent, i want to find a route where a bikebus leader has marked as a stop along a route and a known destination. Also give me the eta for when the user should leave
 
 To achieve this functionality, you can follow these steps:
 
- - First, make sure to store route data created by the bikebus leader in a database such as Firebase Firestore, including the stops along the route, known destinations, and estimated departure times.
- - Create a new page called "FindRoute":
- - In the find-route.page.html file, add a search input field and a button to trigger the search. Also, add a Google Map to display the found route and stops
- - In the find-route.page.ts file, add the necessary imports, initialize the map, and create the searchRoute() function that will fetch the route data from the database and display it on the map
+- First, make sure to store route data created by the bikebus leader in a database such as Firebase Firestore, including the stops along the route, known destinations, and estimated departure times.
+- Create a new page called "FindRoute":
+- In the find-route.page.html file, add a search input field and a button to trigger the search. Also, add a Google Map to display the found route and stops
+- In the find-route.page.ts file, add the necessary imports, initialize the map, and create the searchRoute() function that will fetch the route data from the database and display it on the map
 typescript
 Copy code
 import { Component, ViewChild } from '@angular/core';
@@ -146,7 +158,6 @@ import { GoogleMap } from '@angular/google-maps';
 import { LatLngLiteral } from '@agm/core/services/google-maps-types';
 
 // Add your database service import here, e.g. Firebase
-
 
   searchRoute(): void {
     // Search for the route in the database based on the searchQuery (destination)
@@ -158,17 +169,14 @@ import { LatLngLiteral } from '@agm/core/services/google-maps-types';
     // Calculate the ETA for the user by subtracting the current time from the departure time
   }
 }
+
 - Update the app.component.ts and app-routing.module.ts files to include the new FindRoute page, as shown in previous steps.
 - Now, you should have a new page where parents can search for a route based on the destination. The found route, stops, and ETA will be displayed on the map.
 - Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the route data. Additionally, you may need to adjust the logic within the searchRoute() function to fit your specific data model and requirements.
 
-
-
-
 ### craig merry
+
 As a car driver, i want use google maps within the app and be notified of any bikebus that are within 1000 feet and tell me from what direction
-
-
 
 To create a feature for car drivers to use Google Maps within the app and get notified of any nearby bikebus within 1000 feet, follow these steps:
 
@@ -236,40 +244,36 @@ export class CarDriverPage implements OnInit {
   }
 }
 ```
- - Update the app.component.ts and app-routing.module.ts files to include the new CarDriver page, as shown in previous steps.
- - Now, you should have a new page for car drivers that displays a Google Map and periodically checks for nearby bikebuses. If a bikebus is within 1000 feet, a notification with the distance and direction will be displayed.
 
+- Update the app.component.ts and app-routing.module.ts files to include the new CarDriver page, as shown in previous steps.
+- Now, you should have a new page for car drivers that displays a Google Map and periodically checks for nearby bikebuses. If a bikebus is within 1000 feet, a notification with the distance and direction will be displayed.
 
 ### craig merry
+
 As a bikebus member, i want to save destinations as a listcand make it easy to search for known bikebus with upcoming dates and times
 
 To create a feature for bikebus members to save destinations, search for known bikebuses with upcoming dates and times, follow these steps:
 
- - Create a new page called "BikebusMember"
- - In the bikebus-member.page.html file, add a search input field, a button to trigger the search, and a list to display the saved destinations and upcoming bikebus events
- - In the bikebus-member.page.ts file, add the necessary imports, create variables to store saved destinations and upcoming bikebuses, and create a function to search for upcoming bikebuses based on the search query:
- - Update the app.component.ts and app-routing.module.ts files to include the new BikebusMember page, as shown in previous steps.
- 
+- Create a new page called "BikebusMember"
+- In the bikebus-member.page.html file, add a search input field, a button to trigger the search, and a list to display the saved destinations and upcoming bikebus events
+- In the bikebus-member.page.ts file, add the necessary imports, create variables to store saved destinations and upcoming bikebuses, and create a function to search for upcoming bikebuses based on the search query:
+- Update the app.component.ts and app-routing.module.ts files to include the new BikebusMember page, as shown in previous steps.
+
  Now, you should have a new page for bikebus members that displays a search input field, a list of saved destinations, and a list of upcoming bikebuses based on the search query.
 
 Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the saved destinations and upcoming bikebus data. Additionally, you may need to adjust the logic within the searchUpcomingBikebuses() function to fit your specific data model and requirements.
 
-
-
-
-
 ### craig merry
+
 Can you set up authentication for new users in a new page along with sign out
 Sure! To set up authentication for new users and handle sign out, you'll need to create a new page and use Firebase Authentication. Follow these steps:
 
- - Create a new page called "Auth"
- - In the auth.page.html file, add the form elements for email and password input, as well as buttons for sign in, sign up, and sign out
- - Now, you have a new authentication page that allows users to sign in, sign up, and sign out using Firebase Authentication. The email and password fields will be used to authenticate users, and the appropriate methods from AngularFireAuth will be called for each action. Keep in mind that you should handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console.
-
-
-
+- Create a new page called "Auth"
+- In the auth.page.html file, add the form elements for email and password input, as well as buttons for sign in, sign up, and sign out
+- Now, you have a new authentication page that allows users to sign in, sign up, and sign out using Firebase Authentication. The email and password fields will be used to authenticate users, and the appropriate methods from AngularFireAuth will be called for each action. Keep in mind that you should handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console.
 
 ### craig merry
+
 Is there a Google authentication option?
 Yes, you can use Google authentication with Firebase in your Ionic app. To implement Google authentication, follow these steps:
 
@@ -281,10 +285,8 @@ Now, users can sign in with their Google accounts. When they click the "Sign In 
 
 Remember to handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console. Also, consider updating your app's logic to handle the user's state changes (e.g., signed in, signed out) and adapt the UI accordingly.
 
-
-
-
 ### craig merry
+
 What pages and other coding woukd you do first- based on all the requirements above?
 Based on the requirements discussed above, you should start by creating the following pages and components:
 
@@ -312,11 +314,9 @@ Route drawing and sharing: Implement the functionality for bikebus leaders to dr
 
 By following these steps and building the pages in the suggested order, you'll be able to create a functional app that meets the requirements discussed above.
 
-
-
-
 ### craig merry
-Bikebus leaders, members and car drivers should all ve able to get google maps directions 
+
+Bikebus leaders, members and car drivers should all ve able to get google maps directions
 To enable Bikebus leaders, members, and car drivers to get Google Maps directions, you can use the Google Maps JavaScript API along with the Directions Service. Here's how to add directions functionality to your app:
 
 Ensure that you have the Google Maps JavaScript API enabled in your Google Cloud Platform project, and make sure you have the API key.
@@ -406,10 +406,8 @@ Now, Bikebus leaders, members, and car drivers can get Google Maps directions in
 
 Adapt
 
-
-
-
 ### craig merry
+
 Tge tgree tabs of the app should match the experience for each role: bikebus leader, member and car driver
 To customize the app's tabs based on the user's role (bikebus leader, member, or car driver), you'll need to create separate pages for each role and dynamically display the appropriate tabs based on the user's role. Here's how to do that:
 
@@ -441,7 +439,7 @@ html
 Copy code
 <ion-tabs>
   <ion-tab-bar slot="bottom">
-    <ion-tab-button tab="bikebus-leader" *ngIf="(userRole$ | async) === 'leader'">
+<ion-tab-button tab="bikebus-leader"*ngIf="(userRole$ | async) === 'leader'">
       <ion-icon name="create"></ion-icon>
       <ion-label>Bikebus Leader</ion-label>
     </ion-tab-button>
@@ -495,10 +493,8 @@ async signIn() {
 }
 Now, the app's tabs will dynamically change based on the user's role. When a user logs in, their role will be set, and the appropriate tabs for their role will be displayed. Make sure to update the
 
-
-
-
 ### craig merry
+
 Each role tab should start with starting point lookup and destination lookup and then expected time to reach the destination. Then suggest routes and then upcoming bikebusses and the option to rsvp for those
 To implement the features you mentioned for each role tab, you can follow these steps:
 
@@ -553,8 +549,8 @@ Copy code
 Implement the rsvpBikebus() method in the corresponding TypeScript file for each role page. This method should allow users to RSVP for the selected bikebus. You can store RSVP data in Firebase, linking the user's ID to the bikebus ID.
 By following these steps, you can create a consistent starting experience for each role tab, providing users with the ability to search for starting points and destinations, get route suggestions, and view and RSVP for upcoming bikebusses. Adapt the UI and functionality for each role as needed.
 
-
 ### craig merry
+
 Parents will be sending their kids as bikebus members, allow the app view anonymous data from the bikebus yo deliver location
 To allow parents to view anonymous location data for the bikebus without revealing any sensitive information about the individual bikebus members, you can implement the following features:
 

@@ -1,25 +1,17 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
-import ReactDOM from 'react-dom';
 
 ReactDOM.render(
-  <AuthProvider>
-    <App />
-  </AuthProvider>,
-  document.getElementById('root')
-);
-
-
-const container = document.getElementById('root');
-const root = createRoot(container!);
-root.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
 );
 
 // If you want your app to work offline and load faster, you can change
