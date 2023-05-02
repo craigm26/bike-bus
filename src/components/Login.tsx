@@ -10,7 +10,7 @@ const Login = () => {
     signInAnonymously,
   } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(email, password);
@@ -19,6 +19,7 @@ const Login = () => {
       // Handle the error (e.g., display an error message)
     }
   };
+  
 
   return (
     <div>

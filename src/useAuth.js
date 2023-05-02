@@ -1,29 +1,29 @@
 import { useContext } from 'react';
 import { AuthContext } from './AuthContext';
-import firebase from './firebaseConfig';
+import { auth } from './firebaseConfig';
 
 const useAuth = () => {
   const { user, loadingAuthState } = useContext(AuthContext);
 
   const signUpWithEmailAndPassword = async (email, password) => {
-    await firebase.auth().createUserWithEmailAndPassword(email, password);
+    await {auth}.auth().createUserWithEmailAndPassword(email, password);
   };
 
   const signInWithEmailAndPassword = async (email, password) => {
-    await firebase.auth().signInWithEmailAndPassword(email, password);
+    await { auth }.auth().signInWithEmailAndPassword(email, password);
   };
 
   const signInWithGoogle = async () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    await firebase.auth().signInWithPopup(provider);
+    const provider = new { auth }.auth.GoogleAuthProvider();
+    await { auth }.auth().signInWithPopup(provider);
   };
 
   const signInAnonymously = async () => {
-    await firebase.auth().signInAnonymously();
+    await { auth }.auth().signInAnonymously();
   };
 
   const signOut = async () => {
-    await firebase.auth().signOut();
+    await { auth }.auth().signOut();
   };
 
   return {
