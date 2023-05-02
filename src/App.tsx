@@ -8,6 +8,7 @@ import {
   IonContent,
   IonList,
   IonItem,
+  IonPage,
   IonMenuToggle,
   IonIcon,
   IonLabel,
@@ -18,10 +19,12 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
+import { bicycleOutline, megaphoneOutline, peopleOutline } from 'ionicons/icons';
 import BikeBusMember from './pages/BikeBusMember';
 import BikeBusLeader from './pages/BikeBusLeader';
 import BikeBusParent from './pages/BikeBusParent';
+import Login from './pages/Login';
+import Profile from './components/Profile';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -58,18 +61,25 @@ const App: React.FC = () => (
           <IonContent>
             <IonList>
               <IonMenuToggle auto-hide="false">
-                <IonItem button routerLink="/your-page-1" routerDirection="none">
-                  <IonLabel>Your Page 1</IonLabel>
+                <IonItem button routerLink="/profile" routerDirection="none">
+                  <IonLabel>Profile</IonLabel>
                 </IonItem>
-                <IonItem button routerLink="/your-page-2" routerDirection="none">
-                  <IonLabel>Your Page 2</IonLabel>
+                <IonItem button routerLink="/help" routerDirection="none">
+                  <IonLabel>Help</IonLabel>
                 </IonItem>
               </IonMenuToggle>
             </IonList>
           </IonContent>
         </IonMenu>
+        <IonPage id="main-content">
         <IonTabs>
           <IonRouterOutlet>
+            <Route exact path="/Profile">
+              <Profile />
+            </Route>
+            <Route exact path="/Login">
+              <Login />
+            </Route>
             <Route exact path="/BikeBusMember">
               <BikeBusMember />
             </Route>
@@ -80,24 +90,25 @@ const App: React.FC = () => (
               <BikeBusParent />
             </Route>
             <Route exact path="/">
-              <Redirect to="/BikeBusMember" />
+              <Redirect to="/Login" />
             </Route>
           </IonRouterOutlet>
           <IonTabBar slot="bottom">
             <IonTabButton tab="bikebusmember" href="/bikebusmember">
-              <IonIcon aria-hidden="true" icon={triangle} />
-              <IonLabel>BikeBus Member</IonLabel>
+              <IonIcon aria-hidden="true" icon={bicycleOutline} />
+              <IonLabel>Member</IonLabel>
             </IonTabButton>
             <IonTabButton tab="bikebusleader" href="/bikebusleader">
-              <IonIcon aria-hidden="true" icon={ellipse} />
-              <IonLabel>BikeBus Leader</IonLabel>
+              <IonIcon aria-hidden="true" icon={megaphoneOutline} />
+              <IonLabel>Leader</IonLabel>
             </IonTabButton>
             <IonTabButton tab="bikebusparent" href="/bikebusparent">
-              <IonIcon aria-hidden="true" icon={square} />
-              <IonLabel>BikeBus Parent</IonLabel>
+              <IonIcon aria-hidden="true" icon={peopleOutline} />
+              <IonLabel>Parent</IonLabel>
             </IonTabButton>
           </IonTabBar>
         </IonTabs>
+        </IonPage>
       </React.Fragment>
     </IonReactRouter>
   </IonApp >
