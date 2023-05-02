@@ -21,7 +21,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { ellipse, square, triangle } from 'ionicons/icons';
 import BikeBusMember from './pages/BikeBusMember';
 import BikeBusLeader from './pages/BikeBusLeader';
-import CarDriver from './pages/CarDriver';
+import BikeBusParent from './pages/BikeBusParent';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -76,8 +76,8 @@ const App: React.FC = () => (
             <Route exact path="/BikeBusLeader">
               <BikeBusLeader />
             </Route>
-            <Route path="/CarDriver">
-              <CarDriver />
+            <Route path="/BikeBusParent">
+              <BikeBusParent />
             </Route>
             <Route exact path="/">
               <Redirect to="/BikeBusMember" />
@@ -92,9 +92,9 @@ const App: React.FC = () => (
               <IonIcon aria-hidden="true" icon={ellipse} />
               <IonLabel>BikeBus Leader</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="cardriver" href="/cardriver">
+            <IonTabButton tab="bikebusparent" href="/bikebusparent">
               <IonIcon aria-hidden="true" icon={square} />
-              <IonLabel>Car Driver</IonLabel>
+              <IonLabel>BikeBus Parent</IonLabel>
             </IonTabButton>
           </IonTabBar>
         </IonTabs>
