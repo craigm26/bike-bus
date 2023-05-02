@@ -1,5 +1,11 @@
 {
   "projects": {
     "default": "bikebus-71dd5"
+  },
+  "targets": {},
+  "etags": {
+    "bikebus-71dd5": {
+      "extensionInstances": {}
+    }
   }
 }
