@@ -8,7 +8,7 @@ No ads or selling of user data. Anonymous users and anonymized data wherever pos
 ## Why:
 We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets
 
-## Domain tbd
+## Domain bikebus.app
 
 ## How does this app make money?:
 
@@ -40,11 +40,6 @@ Promote app through marketing channels such as social media, content marketing, 
 Use Ionic as the framework and Firebase (Authentication, Hosting, Payments) as much as possible. Allow for Google Play Store and Apple Store to manage subscriptions as well.
 
 
-### craig merry
-A bikebus for this conversation is a leader who organizes a group of cyclists along a route to a destination . In this case a school. Is there a google api that allows a group leader to draw a route, invite riders and the. People can join and track the ride using the ionic app?
-
-Yes, you can build an Ionic app using Google Maps APIs to create and manage a bikebus for cyclists. Here's a high-level breakdown of the process:
-
 Google Maps JavaScript API: This API allows you to display maps, draw routes, and add markers on the map. You can use the DirectionsService to draw a cycling route between the starting point and the school. You can customize the route by adding waypoints and dragging the route.
 
 Google Places API: You can use this API to search for and display the locations of schools or other points of interest. The Places API also provides autocomplete suggestions when users are searching for a destination.
@@ -68,13 +63,7 @@ Build the user interface for the group leader and riders, allowing them to creat
 Remember to follow Google's API usage policies and obtain the necessary API keys for your app.
 
 
-
-
-### craig merry
-How would this app make money while protecting users’ privacy? Especially identifiable markers?
-
-
-To monetize the app while protecting users' privacy, you can consider the following strategies:
+## Feature ideas 
 
 Subscription model: Offer a subscription-based model with a free tier and paid tiers that provide additional features or benefits. This way, you can generate revenue without relying on ads or sharing user data. The paid tiers could include features like enhanced route planning, priority support, or extended historical ride data.
 
@@ -83,29 +72,6 @@ In-app purchases: Offer additional features, customization options, or premium c
 Partnerships and sponsorships: Partner with local businesses, cycling clubs, or schools to offer sponsored content, promotions, or discounts within the app. Ensure that any partner content or offers do not infringe on users' privacy.
 
 Donations: If your app is focused on promoting sustainable transportation and community engagement, you might consider accepting donations from users who wish to support your cause. This can help cover the costs of maintaining the app and its infrastructure.
-
-To protect users' privacy, you can take the following measures:
-
-Anonymize data: Use anonymization techniques to remove or obscure personally identifiable information (PII) from users' data. For example, instead of displaying a user's full name, show only their first name or initials on the map. Similarly, you can use generalized location markers to avoid showing exact locations.
-
-Privacy settings: Provide users with options to control their privacy settings, allowing them to choose what information they share and with whom. For example, users could choose to share their location only with the group leader or specific group members.
-
-Data encryption: Encrypt user data both at rest and in transit to protect it from unauthorized access.
-
-Privacy policy and GDPR compliance: Develop a comprehensive privacy policy that clearly outlines how you collect, use, and share user data. Ensure your app complies with privacy regulations such as the General Data Protection Regulation (GDPR) and other applicable laws.
-
-Limit data retention: Store users' data only for the necessary duration and establish policies for the timely deletion of outdated or unused data.
-
-By incorporating these monetization strategies and privacy protection measures, you can create a sustainable revenue model for your app while maintaining user trust and protecting their privacy.
-
-
-
-
-### craig merry
-What kind of premium features would be good here? I’d also like the have car drivers know when a bikebus is close by
-For premium features, you can consider the following options:
-
-Enhanced route planning: Offer advanced route customization options, such as the ability to avoid certain types of roads, find the most scenic routes, or automatically generate alternative routes based on user preferences.
 
 Priority support: Provide faster customer support to premium users, answering their queries or addressing technical issues more quickly.
 
@@ -129,231 +95,39 @@ Integration with navigation apps: Collaborate with popular navigation apps, like
 
 Driver-focused app: Create a standalone app or feature within your existing app specifically for drivers, providing them with real-time bikebus location data, notifications, and driving tips for sharing the road with cyclists.
 
-Remember to ensure privacy protection while implementing these features, such as anonymizing user data and providing opt-in options for sharing location information.
+Enhanced route planning: Offer advanced route customization options, such as the ability to avoid certain types of roads, find the most scenic routes, or automatically generate alternative routes based on user preferences.
 
+## Protect users' privacy
 
+Anonymize data: Use anonymization techniques to remove or obscure personally identifiable information (PII) from users' data. For example, instead of displaying a user's full name, show only their first name or initials on the map. Similarly, you can use generalized location markers to avoid showing exact locations.
 
+Privacy settings: Provide users with options to control their privacy settings, allowing them to choose what information they share and with whom. For example, users could choose to share their location only with the group leader or specific group members.
 
-### craig merry
-Is the tabs starter app a good starting point or is there a more suitable template?
-The Ionic tabs starter app can be a suitable starting point for your bikebus project. It provides a simple tab-based layout and navigation structure, which can be easily customized and extended to fit your app requirements.
+Data encryption: Encrypt user data both at rest and in transit to protect it from unauthorized access.
 
-To start with the tabs template, you can run the following command:
+Privacy policy and GDPR compliance: Develop a comprehensive privacy policy that clearly outlines how you collect, use, and share user data. Ensure your app complies with privacy regulations such as the General Data Protection Regulation (GDPR) and other applicable laws.
 
-sql
-Copy code
-ionic start myBikebusApp tabs
-This will create a new Ionic project with a pre-built tabs layout. The tabs starter app comes with three pages (tabs) by default. You can customize these pages or add additional pages as needed for your app's features, such as creating routes, inviting riders, and tracking the ride.
-
-However, if you feel that a different layout or navigation structure would better suit your app, you can explore other Ionic starter templates or create your own custom template. Some other popular starter templates include:
-
-Blank: A minimalistic starter template with a single, empty page. This allows you to build your app's layout and navigation from scratch.
-sql
-Copy code
-ionic start myBikebusApp blank
-Sidemenu: A template with a side menu (also known as a "hamburger menu") for navigation. This can be useful if you have a larger number of features or sections in your app.
-sql
-Copy code
-ionic start myBikebusApp sidemenu
-Whichever template you choose, remember that you can always modify the layout and navigation as needed to suit your app's specific requirements.
-
-
-
-
-### craig merry
-I started with the three tabs, how do I add a side menu and some pages?
-To add a side menu to your existing Ionic tabs app, follow these steps:
-
-In your app.component.html file, replace the existing content with the following code:
-html
-Copy code
-<ion-app>
-  <ion-split-pane contentId="main-content">
-    <ion-menu contentId="main-content" type="overlay">
-      <ion-content>
-        <ion-list>
-          <ion-menu-toggle auto-hide="false" *ngFor="let p of appPages">
-            <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
-              <ion-icon slot="start" [name]="p.icon"></ion-icon>
-              <ion-label>
-                {{ p.title }}
-              </ion-label>
-            </ion-item>
-          </ion-menu-toggle>
-        </ion-list>
-      </ion-content>
-    </ion-menu>
-    <ion-router-outlet id="main-content"></ion-router-outlet>
-  </ion-split-pane>
-</ion-app>
-This code sets up the side menu structure with an ion-menu element and uses an ion-split-pane to handle the layout.
-
-In your app.component.ts file, define an array called appPages that contains the information for your menu items, including the title, URL, and icon. For example:
-typescript
-Copy code
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss'],
-})
-export class AppComponent {
-  public appPages = [
-    { title: 'Tab 1', url: '/tabs/tab1', icon: 'home' },
-    { title: 'Tab 2', url: '/tabs/tab2', icon: 'list' },
-    { title: 'Tab 3', url: '/tabs/tab3', icon: 'person' },
-    // Add your new pages here
-  ];
-
-  constructor() {}
-}
-Open the app.component.scss file and add the following CSS to style the side menu:
-scss
-Copy code
-ion-menu {
-  --width: 60%;
-  --max-width: 300px;
-
-  ion-content {
-    --background: var(--ion-color-light-tint);
-  }
-}
-Now, you can add new pages to your app using the Ionic CLI. For example, to generate a new page called "Profile":
-bash
-Copy code
-ionic generate page Profile
-Add the new page to the appPages array in the app.component.ts file:
-typescript
-Copy code
-{
-  title: 'Profile',
-  url: '/profile',
-  icon: 'person-circle'
-}
-Finally, update your app-routing.module.ts file to include the new page in your routing configuration:
-typescript
-Copy code
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { ProfilePage } from './profile/profile.page';
-
-const routes: Routes = [
-  {
-    path: '',
-    loadChildren: () =>
-      import('./tabs/tabs.module').then((m) => m.TabsPageModule),
-  },
-  {
-    path: 'profile',
-    component: ProfilePage,
-  },
-  // Add more routes for your pages here
-];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],
-  exports: [RouterModule],
-})
-export class AppRoutingModule {}
-Now, you should have a side menu added to your Ionic tabs app, with your new pages accessible through the menu. You can add more pages by following steps 4-6 for each new page.
-
-
+Limit data retention: Store users' data only for the necessary duration and establish policies for the timely deletion of outdated or unused data.
 
 
 ### craig merry
 How do i add a page where a bikebus leader draws a route on a map and allows users to view it?
 To add a page where a bikebus leader can draw a route on a map and allow users to view it, follow these steps:
 
-Generate a new page for the route creation:
-bash
-Copy code
-ionic generate page CreateRoute
-Install the necessary packages for Google Maps:
-bash
-Copy code
-npm install @angular/google-maps
-Enable the Google Maps JavaScript API and get an API key from the Google Cloud Platform. Add the API key to your index.html file:
-html
-Copy code
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+ - Generate a new page for the route creation (CreateRoute):
+ - Install the necessary packages for Google Maps:
+ - Enable the Google Maps JavaScript API and get an API key from the Google Cloud Platform. Add the API key to your index.html file:
+ - <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
 Replace YOUR_API_KEY with your actual API key.
+ - Import the GoogleMapsModule into your create-route.module.ts file
+ - In your create-route.page.html file, add the following code to display the Google Map
+ - In your create-route.page.ts file, add the following code to handle map initialization, route drawing, and user interactions:
+ - This code initializes the map with default options and listens for user clicks on the map to create a path.
+ - Update the app.component.ts and app-routing.module.ts files to include the new CreateRoute page, as shown in previous steps.
 
-Import the GoogleMapsModule into your create-route.module.ts file:
-typescript
-Copy code
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { CreateRoutePage } from './create-route.page';
-import { GoogleMapsModule } from '@angular/google-maps';
-
-@NgModule({
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonicModule,
-    RouterModule.forChild([
-      {
-        path: '',
-        component: CreateRoutePage,
-      },
-    ]),
-    GoogleMapsModule,
-  ],
-  declarations: [CreateRoutePage],
-})
-export class CreateRoutePageModule {}
-In your create-route.page.html file, add the following code to display the Google Map:
-html
-Copy code
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Create Route</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <google-map [options]="mapOptions" (mapClick)="onMapClick($event)" #map></google-map>
-</ion-content>
-In your create-route.page.ts file, add the following code to handle map initialization, route drawing, and user interactions:
-typescript
-Copy code
-import { Component, ViewChild } from '@angular/core';
-import { GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
-import { MouseEvent } from '@agm/core';
-
-@Component({
-  selector: 'app-create-route',
-  templateUrl: './create-route.page.html',
-  styleUrls: ['./create-route.page.scss'],
-})
-export class CreateRoutePage {
-  @ViewChild(GoogleMap, { static: false }) map: GoogleMap;
-
-  mapOptions = {
-    center: { lat: 40.730610, lng: -73.935242 },
-    zoom: 12,
-  };
-
-  path: google.maps.LatLngLiteral[] = [];
-
-  constructor() {}
-
-  onMapClick(event: MouseEvent): void {
-    this.path.push(event.latLng.toJSON());
-  }
-}
-This code initializes the map with default options and listens for user clicks on the map to create a path.
-
-Update the app.component.ts and app-routing.module.ts files to include the new CreateRoute page, as shown in previous steps.
 Now, you should have a new page where the bikebus leader can draw a route by clicking on the map. The route will be displayed as a series of connected points on the map.
 
 To allow users to view the created route, you can store the route data in a database like Firebase Firestore, and then create another page where users can view the stored route. You can follow similar steps to create a new page, fetch the route data from the database, and display it on the map using the google.maps.Polyline class.
-
-
 
 
 ### craig merry
@@ -1092,8 +866,6 @@ Implement the rsvpBikebus() method in the corresponding TypeScript file for each
 By following these steps, you can create a consistent starting experience for each role tab, providing users with the ability to search for starting points and destinations, get route suggestions, and view and RSVP for upcoming bikebusses. Adapt the UI and functionality for each role as needed.
 
 
-
-
 ### craig merry
 Parents will be sending their kids as bikebus members, allow the app view anonymous data from the bikebus yo deliver location
 To allow parents to view anonymous location data for the bikebus without revealing any sensitive information about the individual bikebus members, you can implement the following features:
@@ -1107,66 +879,8 @@ In the parent's view, create a map using the Google Maps JavaScript API to displ
 Here's a simplified example of how to implement real-time location updates using Firestore and the Google Maps JavaScript API:
 
 a. In your Firestore database, create a collection for bikebusses and store the anonymized location data for each bikebus, including its latitude, longitude, and a unique identifier.
-
 b. In the TypeScript file for the parent's view, import the necessary dependencies and set up Firestore:
+c. In the subscribeToBikebusLocation() method, set up a subscription to the bikebus's location data in Firestore:
+d. In the updateBikebusMarker() method, update the bikebus marker's position on the map:
 
-typescript
-Copy code
-import { Component, OnInit } from '@angular/core';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, LatLng, Marker, Environment } from '@ionic-native/google-maps';
-
-@Component({
-  selector: 'app-parent-view',
-  templateUrl: './parent-view.page.html',
-  styleUrls: ['./parent-view.page.scss'],
-})
-export class ParentViewPage implements OnInit {
-  map: GoogleMap;
-  bikebusMarker: Marker;
-
-  constructor(private firestore: AngularFirestore) {}
-
-  async ngOnInit() {
-    await this.loadMap();
-    this.subscribeToBikebusLocation();
-  }
-
-  // ... (loadMap method implementation)
-}
-
-#### c. In the subscribeToBikebusLocation() method, set up a subscription to the bikebus's location data in Firestore:
-
-```typescript
-Copy code
-subscribeToBikebusLocation() {
-  const bikebusId = 'some-bikebus-id'; // Replace with the actual bikebus ID
-
-  this.firestore
-    .collection('bikebusses')
-    .doc(bikebusId)
-    .valueChanges()
-    .subscribe((bikebus: any) => {
-      this.updateBikebusMarker(bikebus.latitude, bikebus.longitude);
-    });
-}
-```
-#### d. In the updateBikebusMarker() method, update the bikebus marker's position on the map:
-
-```typescript
-updateBikebusMarker(latitude: number, longitude: number) {
-  const position = new LatLng(latitude, longitude);
-
-  if (this.bikebusMarker) {
-    this.bikebusMarker.setPosition(position);
-  } else {
-    this.bikebusMarker = this.map.addMarkerSync({
-      position: position,
-      icon: 'blue', // You can use a custom icon if you prefer
-      title: 'Bikebus'
-    });
-  }
-}
-
-```
 With these changes, the parent's view will display a map with a marker indicating the bikebus's current location in real-time. The individual members' locations will remain private, ensuring that sensitive information is not disclosed.
