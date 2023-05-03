@@ -1,24 +1,12 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel, IonText } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel, IonText, IonChip, IonAvatar, IonImg } from '@ionic/react';
 import './BikeBusMember.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
-import Profile from '../components/Profile';
+import useAvatar from '../components/useAvatar'; // Import useAvatar hook
 
 const BikeBusMember: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
-
-  const renderUserInfo = () => {
-    if (user) {
-      return (
-        <div>
-          <p>Welcome, {user.displayName || user.email}</p>
-          {user.isAnonymous && <p>(Anonymous user)!</p>}
-        </div>
-      );
-    } else {
-      return <p>Loading...</p>;
-    }
-  };
+  const avatarUrl = useAvatar(user?.uid); // Use the useAvatar hook 
 
   return (
     <IonPage>
@@ -27,15 +15,20 @@ const BikeBusMember: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-            <IonText color="primary" class="BikeBusFont">
-              <h1>BikeBus</h1>
-            </IonText>
-          <IonLabel slot="end">
-            {renderUserInfo()} {/* Render user info */}
-          </IonLabel>
+          <IonText color="primary" class="BikeBusFont">
+            <h1>BikeBus</h1>
+          </IonText>
+          <IonChip slot="end">
+            {avatarUrl && (
+              <IonAvatar>
+                <IonImg src={avatarUrl} alt="User avatar" />
+              </IonAvatar>
+            )}
+            <IonLabel>{user?.displayName || user?.email}</IonLabel>
+          </IonChip>
           <IonButtons slot="end">
             {user ? (
-              <Profile /> // Show the profile picture when the user is logged in
+              <></> // Remove Profile component from here
             ) : (
               <IonButton routerLink="/login">
                 <IonIcon icon={logInOutline} />
