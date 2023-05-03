@@ -10,26 +10,28 @@ import {
   IonLabel,
   IonInput,
   IonButton,
-  IonText,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 
-const Login: React.FC = () => {
+const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const {
-    signInWithEmailAndPassword,
-    signInWithGoogle,
-    signInAnonymously,
-  } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { signUpWithEmailAndPassword } = useAuth();
   const history = useHistory();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      // Display an error message if passwords do not match
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(email, password);
+      await signUpWithEmailAndPassword(email, password);
       // Redirect to the main app or show a success message
-      history.push('/BikeBusMember');
+      history.push('/dashboard');
     } catch (error) {
       // Handle the error (e.g., display an error message)
     }
@@ -39,7 +41,7 @@ const Login: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Login</IonTitle>
+          <IonTitle>Register</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -62,51 +64,22 @@ const Login: React.FC = () => {
               onIonChange={(e) => setPassword(e.detail.value!)}
             />
           </IonItem>
+          <IonItem>
+            <IonLabel>Confirm Password</IonLabel>
+            <IonInput
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onIonChange={(e) => setConfirmPassword(e.detail.value!)}
+            />
+          </IonItem>
           <IonButton expand="block" type="submit">
-            Login with Email
+            Register
           </IonButton>
         </form>
-        <IonButton
-          expand="block"
-          onClick={async () => {
-            try {
-              await signInWithGoogle();
-              history.push('/BikeBusMember');
-            } catch (error) {
-              // Handle the error (e.g., display an error message)
-            }
-          }}
-        >
-          Login with Google
-        </IonButton>
-        <IonButton
-          expand="block"
-          onClick={async () => {
-            try {
-              await signInAnonymously();
-              history.push('/BikeBusMember');
-            } catch (error) {
-              // Handle the error (e.g., display an error message)
-            }
-          }}
-        >
-          Login Anonymously
-        </IonButton>
-        <IonText>
-          <p>
-            Don't have an account?{' '}
-            <IonButton
-              fill="clear"
-              color="primary"
-              onClick={() => history.push('/register')}
-            >
-              Register
-            </IonButton>
-          </p>
-        </IonText>
       </IonContent>
     </IonPage>
   );
 };
 
-export default Login;
+export default Register;
