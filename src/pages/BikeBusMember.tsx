@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel, IonText } from '@ionic/react';
 import './BikeBusMember.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
@@ -27,9 +27,11 @@ const BikeBusMember: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-          <IonTitle class="centered-title">BikeBus</IonTitle>
+            <IonText color="primary" class="BikeBusFont">
+              <h1>BikeBus</h1>
+            </IonText>
           <IonLabel slot="end">
-          {renderUserInfo()} {/* Render user info */}
+            {renderUserInfo()} {/* Render user info */}
           </IonLabel>
           <IonButtons slot="end">
             {user ? (

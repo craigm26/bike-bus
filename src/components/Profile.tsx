@@ -1,5 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonMenuButton } from '@ionic/react';
-import ExploreContainer from './ExploreContainer';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonMenuButton, IonText, IonLabel } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 
@@ -23,19 +22,19 @@ const Profile: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-        <IonButtons slot="start">
+          <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-          <IonTitle>Profile</IonTitle>
+          <IonText color="primary" class="BikeBusFont">
+            <h1>BikeBus</h1>
+          </IonText>
+          <IonLabel slot="end">
+            {renderUserInfo()} {/* Render user info */}
+          </IonLabel>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Profile</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        {renderUserInfo()} {/* Render user info */}
+        <IonTitle size="large">Profile</IonTitle>
       </IonContent>
     </IonPage>
   );

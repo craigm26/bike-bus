@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import useAuth from '../useAuth';
 import {
   IonPage,
-  IonHeader,
-  IonToolbar,
   IonTitle,
   IonContent,
   IonItem,
@@ -11,8 +9,10 @@ import {
   IonInput,
   IonButton,
   IonText,
+  IonHeader,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
+import './Login.css';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -38,11 +38,12 @@ const Login: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Login</IonTitle>
-        </IonToolbar>
       </IonHeader>
       <IonContent>
+        <IonText color="primary" class="BikeBusFont">
+          <h1>BikeBus</h1>
+        </IonText>
+        <IonTitle>Login</IonTitle>
         <form onSubmit={handleSubmit}>
           <IonItem>
             <IonLabel>Email</IonLabel>

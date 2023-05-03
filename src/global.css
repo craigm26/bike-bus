@@ -1,0 +1,10 @@
+@font-face {
+    font-family: 'Indie-Flower';
+    src: url('./assets/fonts/IndieFlower-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+.BikeBusFont {
+  font-family: 'Indie-Flower', sans-serif;
+}

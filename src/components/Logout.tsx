@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel, IonText } from '@ionic/react';
 import './Logout.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
@@ -27,9 +27,10 @@ const Logout: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-          <IonTitle class="centered-title">BikeBus</IonTitle>
-          <IonLabel slot="end">
-          {renderUserInfo()} {/* Render user info */}
+          <IonText color="primary" class="BikeBusFont">
+            <h1>BikeBus</h1>
+          </IonText>          <IonLabel slot="end">
+            {renderUserInfo()} {/* Render user info */}
           </IonLabel>
           <IonButtons slot="end">
             {user ? (
