@@ -4,6 +4,8 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
+import './global.css';
+
 
 ReactDOM.render(
   <React.StrictMode>
