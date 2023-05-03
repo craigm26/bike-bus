@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonMenuButton } from '@ionic/react';
 import ExploreContainer from './ExploreContainer';
 import './Profile.css';
 import useAuth from '../useAuth'; // Import useAuth hook
@@ -10,7 +10,7 @@ const Profile: React.FC = () => {
     if (user) {
       return (
         <div>
-          <p>Welcome, {user.displayName || user.email}!</p>
+          <p>{user.displayName || user.email}</p>
           {user.isAnonymous && <p>(Anonymous user)</p>}
         </div>
       );
@@ -23,6 +23,9 @@ const Profile: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+        <IonButtons slot="start">
+            <IonMenuButton></IonMenuButton>
+          </IonButtons>
           <IonTitle>Profile</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -33,7 +36,6 @@ const Profile: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         {renderUserInfo()} {/* Render user info */}
-        <ExploreContainer name="Profile page" />
       </IonContent>
     </IonPage>
   );

@@ -1,18 +1,18 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonMenuButton, IonButton, IonIcon, IonLabel } from '@ionic/react';
-import './BikeBusParent.css';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel } from '@ionic/react';
+import './Logout.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
-import Profile from '../components/Profile';
+import Profile from './Profile';
 
-const BikeBusParent: React.FC = () => {
+const Logout: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
 
   const renderUserInfo = () => {
     if (user) {
       return (
         <div>
-          <p>Welcome, {user.displayName || user.email}</p>
-          {user.isAnonymous && <p>(Anonymous user)!</p>}
+          <p>Welcome, {user.displayName || user.email}!</p>
+          {user.isAnonymous && <p>(Anonymous user)</p>}
         </div>
       );
     } else {
@@ -45,12 +45,13 @@ const BikeBusParent: React.FC = () => {
       <IonContent fullscreen>
         <IonHeader collapse="condense">
           <IonToolbar>
-            <IonTitle size="large">BikeBus Parent</IonTitle>
+            <IonTitle size="large">Logout</IonTitle>
           </IonToolbar>
         </IonHeader>
+        {renderUserInfo()} {/* Render user info */}
       </IonContent>
     </IonPage>
   );
 };
 
-export default BikeBusParent;
+export default Logout;

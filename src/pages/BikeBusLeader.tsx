@@ -1,4 +1,4 @@
-import { IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar, IonButton, IonIcon } from '@ionic/react';
+import { IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar, IonButton, IonIcon, IonLabel } from '@ionic/react';
 import './BikeBusLeader.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
@@ -11,8 +11,8 @@ const BikeBusLeader: React.FC = () => {
     if (user) {
       return (
         <div>
-          <p>Welcome, {user.displayName || user.email}!</p>
-          {user.isAnonymous && <p>(Anonymous user)</p>}
+          <p>Welcome, {user.displayName || user.email}</p>
+          {user.isAnonymous && <p>(Anonymous user)!</p>}
         </div>
       );
     } else {
@@ -28,6 +28,9 @@ const BikeBusLeader: React.FC = () => {
             <IonMenuButton></IonMenuButton>
           </IonButtons>
           <IonTitle class="centered-title">BikeBus</IonTitle>
+          <IonLabel slot="end">
+          {renderUserInfo()} {/* Render user info */}
+          </IonLabel>
           <IonButtons slot="end">
             {user ? (
               <Profile /> // Show the profile picture when the user is logged in
@@ -45,7 +48,6 @@ const BikeBusLeader: React.FC = () => {
             <IonTitle size="large">BikeBus Leader</IonTitle>
           </IonToolbar>
         </IonHeader>
-        {renderUserInfo()} {/* Render user info */}
       </IonContent>
     </IonPage>
   );
