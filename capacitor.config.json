@@ -1,5 +1,5 @@
 {
-	"appId": "io.ionic.starter",
+	"appId": "io.ionic.BikeBus",
 	"appName": "BikeBus",
 	"webDir": "build",
 	"bundledWebRuntime": false
