@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import {
   IonContent,
   IonHeader,
@@ -18,26 +18,14 @@ import './Profile.css';
 import useAuth from '../useAuth';
 import 'firebase/compat/storage';
 import { storage } from '../firebaseConfig';
-import { ref, getDownloadURL, uploadBytesResumable, getStorage } from '@firebase/storage';
+import { ref, uploadBytesResumable } from '@firebase/storage';
+import useAvatar from './useAvatar';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const avatarUrl = useAvatar(user?.uid);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (user && user.uid) {
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-
-      getDownloadURL(storageRef)
-        .then((url) => {
-          setAvatarUrl(url);
-        })
-        .catch((error) => {
-          console.error('Error fetching avatar:', error);
-        });
-    }
-  }, [user]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (user && user.uid && event.target.files && event.target.files.length > 0) {
@@ -54,9 +42,7 @@ const Profile: React.FC = () => {
           console.error('Error uploading avatar:', error);
         },
         () => {
-          getDownloadURL(storageRef).then((url) => {
-            setAvatarUrl(url);
-          });
+          // No need to call setAvatarUrl, as useAvatar handles updating the avatar URL
         },
       );
     }
