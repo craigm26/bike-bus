@@ -18,10 +18,9 @@
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^12.6.3",
-    "@types/jest": "^26.0.20",
     "@types/node": "^12.19.15",
-    "@types/react": "^18.0.17",
-    "@types/react-dom": "^18.0.6",
+    "@types/react": "^18.2.5",
+    "@types/react-dom": "^18.2.3",
     "@types/react-router": "^5.1.11",
     "@types/react-router-dom": "^5.1.7",
     "firebase": "^9.21.0",
@@ -70,6 +69,7 @@
   ],
   "devDependencies": {
     "@capacitor/cli": "^5.0.0-rc.2",
+    "@types/jest": "^29.5.1",
     "env-cmd": "^10.1.0"
   },
   "description": "An Ionic project"

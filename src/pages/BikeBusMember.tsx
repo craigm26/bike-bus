@@ -1,13 +1,35 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, IonButtons, IonButton, IonIcon, IonLabel, IonText, IonChip, IonAvatar, IonImg } from '@ionic/react';
+// src/pages/BikeBusMember.tsx
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonToolbar,
+  IonMenuButton,
+  IonButtons,
+  IonButton,
+  IonLabel,
+  IonText,
+  IonChip,
+  IonAvatar,
+  IonPopover,
+} from '@ionic/react';
+import { useState } from 'react';
 import './BikeBusMember.css';
 import useAuth from '../useAuth'; // Import useAuth hook
-import { logInOutline } from 'ionicons/icons';
-import { AvatarHookReturn } from '../types';
-import useAvatar from '../components/useAvatar';
+import { useAvatar } from '../components/useAvatar';
+import Avatar from '../components/Avatar';
+import Profile from '../components/Profile'; // Import the Profile component
 
 const BikeBusMember: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
-  const [avatarUrl] = useAvatar(user?.uid) as AvatarHookReturn;
+  const { avatarUrl } = useAvatar(user?.uid);
+  const [showPopover, setShowPopover] = useState(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>(null);
+
+  const togglePopover = (e: any) => {
+    setPopoverEvent(e.nativeEvent);
+    setShowPopover((prevState) => !prevState);
+  };
 
   return (
     <IonPage>
@@ -19,30 +41,29 @@ const BikeBusMember: React.FC = () => {
           <IonText color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-          <IonChip slot="end">
-            {avatarUrl && (
-              <IonAvatar>
-                <IonImg src={avatarUrl} alt="User avatar" />
-              </IonAvatar>
-            )}
-            <IonLabel>{user?.displayName || user?.email}</IonLabel>
-          </IonChip>
-          <IonButtons slot="end">
-            {user ? (
-              <></> // Remove Profile component from here
-            ) : (
-              <IonButton routerLink="/login">
-                <IonIcon icon={logInOutline} />
-              </IonButton>
-            )}
-          </IonButtons>
+          <IonButton fill="clear" slot="end" onClick={togglePopover}>
+            <IonChip>
+              {avatarUrl && (
+                <IonAvatar>
+                  <Avatar uid={user?.uid} size="extrasmall" />
+                </IonAvatar>
+              )}
+              <IonLabel>{user?.displayName || user?.email}</IonLabel>
+            </IonChip>
+          </IonButton>
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+          >
+            {/* Add your Profile component or any other content you want to display in the popover */}
+            <Profile />
+          </IonPopover>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">BikeBus Member</IonTitle>
-          </IonToolbar>
+          <IonToolbar></IonToolbar>
         </IonHeader>
       </IonContent>
     </IonPage>
