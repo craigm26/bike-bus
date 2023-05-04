@@ -11,21 +11,21 @@ import {
   IonLabel,
   IonChip,
   IonAvatar,
-  IonImg,
   IonButton,
-  IonIcon,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
-import 'firebase/compat/storage';
-import { storage } from '../firebaseConfig';
+import { useAvatar } from './useAvatar';
 import { ref, uploadBytesResumable } from '@firebase/storage';
-import useAvatar from './useAvatar';
-import { AvatarHookReturn } from '../types';
+import { storage } from '../firebaseConfig';
+import Avatar from './Avatar';
+import Logout from './Logout';
+
+
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
-  const [avatarUrl, refreshAvatar] = useAvatar(user?.uid) as AvatarHookReturn;
+  const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,15 +36,15 @@ const Profile: React.FC = () => {
 
       uploadTask.on(
         'state_changed',
-        (snapshot) => {
+        (snapshot: any) => {
           console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
         },
-        (error) => {
+        (error: any) => {
           console.error('Error uploading avatar:', error);
         },
         () => {
           // Notify useAvatar to update the avatar URL
-          refreshAvatar();
+          refresh();
         },
       );
     }
@@ -61,11 +61,9 @@ const Profile: React.FC = () => {
             <h1>BikeBus</h1>
           </IonText>
           <IonChip slot="end">
-            {avatarUrl && (
-              <IonAvatar>
-                <IonImg src={avatarUrl} alt="User avatar" />
-              </IonAvatar>
-            )}
+            <IonAvatar>
+              <Avatar uid={user?.uid} size="extrasmall" />
+            </IonAvatar>
             <IonLabel>{user?.displayName || user?.email}</IonLabel>
           </IonChip>
         </IonToolbar>
@@ -73,15 +71,9 @@ const Profile: React.FC = () => {
       <IonContent fullscreen>
         <IonTitle size="large">Profile</IonTitle>
         <div className="avatar-container">
-          {avatarUrl ? (
-            <IonAvatar>
-              <IonImg src={avatarUrl} alt="User avatar" />
+        <IonAvatar>
+              <Avatar uid={user?.uid} size="medium" />
             </IonAvatar>
-          ) : (
-            <IonAvatar>
-              <IonIcon name="person-circle-outline" size="large"></IonIcon>
-            </IonAvatar>
-          )}
           <input
             type="file"
             accept="image/*"
@@ -89,10 +81,11 @@ const Profile: React.FC = () => {
             ref={fileInputRef}
             onChange={handleFileChange}
           />
-          <IonButton fill='clear' onClick={() => fileInputRef.current?.click()}>
+          <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
             {avatarUrl ? 'Change' : 'Add Avatar'}
           </IonButton>
         </div>
+        <Logout></Logout>
       </IonContent>
     </IonPage>
   );

@@ -25,6 +25,8 @@ import Login from './pages/Login';
 import Profile from './components/Profile';
 import Logout from './components/Logout';
 import Register from './pages/Register';
+import Help from './pages/Help';
+import About from './pages/About';
 
 
 /* Core CSS required for Ionic components to work properly */
@@ -68,12 +70,6 @@ const App: React.FC = () => (
                 <IonItem button routerLink="/Login" routerDirection="none">
                   <IonLabel>Login</IonLabel>
                 </IonItem>
-                <IonItem button routerLink="/register" routerDirection="none">
-                  <IonLabel>Register</IonLabel>
-                </IonItem>
-                <IonItem button routerLink="/logout" routerDirection="none">
-                  <IonLabel>Logout</IonLabel>
-                </IonItem>
                 <IonLabel>Map Mode</IonLabel>
                     <IonItem button routerLink="/BikeBusMember" routerDirection="none">
                       <IonTabButton tab="bikebusmember" href="/bikebusmember">
@@ -116,6 +112,12 @@ const App: React.FC = () => (
             </Route>
             <Route exact path="/Logout">
               <Logout />
+            </Route>
+            <Route exact path="/help">
+              <Help />
+            </Route>
+            <Route exact path="/about">
+              <About />
             </Route>
             <Route exact path="/BikeBusMember">
               <BikeBusMember />
