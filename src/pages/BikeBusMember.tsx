@@ -27,10 +27,13 @@ const BikeBusMember: React.FC = () => {
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
 
   const togglePopover = (e: any) => {
+    console.log('togglePopover called');
+    console.log('event:', e);
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
+    console.log('showPopover state:', showPopover);
   };
-
+  
   return (
     <IonPage>
       <IonHeader>
@@ -55,10 +58,12 @@ const BikeBusMember: React.FC = () => {
             isOpen={showPopover}
             event={popoverEvent}
             onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
           >
             {/* Add your Profile component or any other content you want to display in the popover */}
             <Profile />
           </IonPopover>
+
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

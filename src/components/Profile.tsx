@@ -4,12 +4,6 @@ import {
   IonHeader,
   IonPage,
   IonTitle,
-  IonToolbar,
-  IonButtons,
-  IonMenuButton,
-  IonText,
-  IonLabel,
-  IonChip,
   IonAvatar,
   IonButton,
 } from '@ionic/react';
@@ -24,6 +18,7 @@ import Logout from './Logout';
 
 
 const Profile: React.FC = () => {
+  console.log('Profile component loaded'); 
   const { user } = useAuth();
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,27 +48,13 @@ const Profile: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton></IonMenuButton>
-          </IonButtons>
-          <IonText color="primary" class="BikeBusFont">
-            <h1>BikeBus</h1>
-          </IonText>
-          <IonChip slot="end">
-            <IonAvatar>
-              <Avatar uid={user?.uid} size="extrasmall" />
-            </IonAvatar>
-            <IonLabel>{user?.displayName || user?.email}</IonLabel>
-          </IonChip>
-        </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonTitle size="large">Profile</IonTitle>
         <div className="avatar-container">
-        <IonAvatar>
-              <Avatar uid={user?.uid} size="medium" />
-            </IonAvatar>
+          <IonAvatar>
+            <Avatar uid={user?.uid} size="medium" />
+          </IonAvatar>
           <input
             type="file"
             accept="image/*"
