@@ -13,6 +13,7 @@ import {
   IonAvatar,
   IonImg,
   IonButton,
+  IonIcon,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -20,12 +21,12 @@ import 'firebase/compat/storage';
 import { storage } from '../firebaseConfig';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import useAvatar from './useAvatar';
+import { AvatarHookReturn } from '../types';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
-  const avatarUrl = useAvatar(user?.uid);
+  const [avatarUrl, refreshAvatar] = useAvatar(user?.uid) as AvatarHookReturn;
   const fileInputRef = useRef<HTMLInputElement>(null);
-
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (user && user.uid && event.target.files && event.target.files.length > 0) {
@@ -42,7 +43,8 @@ const Profile: React.FC = () => {
           console.error('Error uploading avatar:', error);
         },
         () => {
-          // No need to call setAvatarUrl, as useAvatar handles updating the avatar URL
+          // Notify useAvatar to update the avatar URL
+          refreshAvatar();
         },
       );
     }
@@ -77,7 +79,7 @@ const Profile: React.FC = () => {
             </IonAvatar>
           ) : (
             <IonAvatar>
-              <IonImg src="/assets/icon/empty-avatar.svg" alt="Empty avatar" />
+              <IonIcon name="person-circle-outline" size="large"></IonIcon>
             </IonAvatar>
           )}
           <input

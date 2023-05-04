@@ -1,25 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { storage } from '../firebaseConfig';
 import { ref, getDownloadURL } from '@firebase/storage';
+import { AvatarHookReturn } from '../types';
 
-const useAvatar = (userId: string | null) => {
+const useAvatar = (userId: string | undefined): AvatarHookReturn => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchAvatarUrl = useCallback(async () => {
     if (userId) {
-      const storageRef = ref(storage, `avatars/${userId}`);
-
-      getDownloadURL(storageRef)
-        .then((url) => {
-          setAvatarUrl(url);
-        })
-        .catch((error) => {
-          console.error('Error fetching avatar:', error);
-        });
+      try {
+        const storageRef = ref(storage, `avatars/${userId}`);
+        const url = await getDownloadURL(storageRef);
+        setAvatarUrl(url);
+      } catch (error) {
+        console.error('Error fetching avatar:', error);
+      }
     }
   }, [userId]);
 
-  return avatarUrl;
+  useEffect(() => {
+    fetchAvatarUrl();
+  }, [fetchAvatarUrl, userId]);
+
+  const refresh = () => {
+    fetchAvatarUrl();
+  };
+
+  return [avatarUrl, refresh];
 };
 
 export default useAvatar;
