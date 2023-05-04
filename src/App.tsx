@@ -64,12 +64,6 @@ const App: React.FC = () => (
           <IonContent>
             <IonList>
               <IonMenuToggle auto-hide="false">
-                <IonItem button routerLink="/profile" routerDirection="none">
-                  <IonLabel>Profile</IonLabel>
-                </IonItem>
-                <IonItem button routerLink="/Login" routerDirection="none">
-                  <IonLabel>Login</IonLabel>
-                </IonItem>
                 <IonLabel>Map Mode</IonLabel>
                     <IonItem button routerLink="/BikeBusMember" routerDirection="none">
                       <IonTabButton tab="bikebusmember" href="/bikebusmember">
