@@ -2,11 +2,12 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonMenuButton, Io
 import './BikeBusMember.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { logInOutline } from 'ionicons/icons';
-import useAvatar from '../components/useAvatar'; // Import useAvatar hook
+import { AvatarHookReturn } from '../types';
+import useAvatar from '../components/useAvatar';
 
 const BikeBusMember: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
-  const avatarUrl = useAvatar(user?.uid); // Use the useAvatar hook 
+  const [avatarUrl] = useAvatar(user?.uid) as AvatarHookReturn;
 
   return (
     <IonPage>

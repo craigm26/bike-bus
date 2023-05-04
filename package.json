@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@capacitor/app": "next",
-    "@capacitor/core": "next",
+    "@capacitor/core": "^5.0.0-rc.2",
     "@capacitor/haptics": "next",
     "@capacitor/keyboard": "next",
     "@capacitor/status-bar": "next",
@@ -67,7 +67,7 @@
     "iOS >=14"
   ],
   "devDependencies": {
-    "@capacitor/cli": "next"
+    "@capacitor/cli": "^5.0.0-rc.2"
   },
   "description": "An Ionic project"
 }
