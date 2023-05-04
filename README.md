@@ -252,27 +252,8 @@ export class CarDriverPage implements OnInit {
 
 As a bikebus member, i want to save destinations as a listcand make it easy to search for known bikebus with upcoming dates and times
 
-To create a feature for bikebus members to save destinations, search for known bikebuses with upcoming dates and times, follow these steps:
 
-- Create a new page called "BikebusMember"
-- In the bikebus-member.page.html file, add a search input field, a button to trigger the search, and a list to display the saved destinations and upcoming bikebus events
-- In the bikebus-member.page.ts file, add the necessary imports, create variables to store saved destinations and upcoming bikebuses, and create a function to search for upcoming bikebuses based on the search query:
-- Update the app.component.ts and app-routing.module.ts files to include the new BikebusMember page, as shown in previous steps.
 
- Now, you should have a new page for bikebus members that displays a search input field, a list of saved destinations, and a list of upcoming bikebuses based on the search query.
-
-Make sure to replace the placeholders for the database service (e.g., Firebase) with the actual implementation to fetch and display the saved destinations and upcoming bikebus data. Additionally, you may need to adjust the logic within the searchUpcomingBikebuses() function to fit your specific data model and requirements.
-
-### craig merry
-
-Can you set up authentication for new users in a new page along with sign out
-Sure! To set up authentication for new users and handle sign out, you'll need to create a new page and use Firebase Authentication. Follow these steps:
-
-- Create a new page called "Auth"
-- In the auth.page.html file, add the form elements for email and password input, as well as buttons for sign in, sign up, and sign out
-- Now, you have a new authentication page that allows users to sign in, sign up, and sign out using Firebase Authentication. The email and password fields will be used to authenticate users, and the appropriate methods from AngularFireAuth will be called for each action. Keep in mind that you should handle errors and provide feedback to the user in a more user-friendly manner than simply logging to the console.
-
-### craig merry
 
 Is there a Google authentication option?
 Yes, you can use Google authentication with Firebase in your Ionic app. To implement Google authentication, follow these steps:
@@ -288,19 +269,8 @@ Remember to handle errors and provide feedback to the user in a more user-friend
 ### craig merry
 
 What pages and other coding woukd you do first- based on all the requirements above?
-Based on the requirements discussed above, you should start by creating the following pages and components:
 
-Auth Page: This page will handle user authentication, including sign-in, sign-up, and Google Sign-In. This should be the first page you create since it's crucial for user management and ensuring only authenticated users can access certain features.
 
-BikebusMember Page: This page will allow users to search for upcoming bikebuses based on destination, view saved destinations, and save new destinations. Creating this page next will enable you to handle the main use case for bikebus members.
-
-BikebusLeader Page: This page will enable bikebus leaders to create new routes by drawing them on a map, set stops along the route, and share the route with other users. Create this page after the BikebusMember page to support the other primary use case.
-
-CarDriver Page: This page will allow car drivers to see nearby bikebuses and get notifications when a bikebus is within 1000 feet. Create this page after you've set up the BikebusLeader and BikebusMember pages, as it is an additional feature that depends on the bikebus data.
-
-Side Menu: After creating the main pages, implement the side menu component, which will allow users to navigate between the different pages.
-
-As you create these pages, follow the guidelines provided in previous responses to set up each page with the required components and features, including integrating Firebase for data storage and retrieval.
 
 Additionally, consider implementing the following:
 
@@ -312,103 +282,8 @@ Notifications: Implement notifications for car drivers when a bikebus is within 
 
 Route drawing and sharing: Implement the functionality for bikebus leaders to draw routes on a map and share them with other users. Use the Google Maps JavaScript API for this purpose, and store the route data in Firebase.
 
-By following these steps and building the pages in the suggested order, you'll be able to create a functional app that meets the requirements discussed above.
 
-### craig merry
 
-Bikebus leaders, members and car drivers should all ve able to get google maps directions
-To enable Bikebus leaders, members, and car drivers to get Google Maps directions, you can use the Google Maps JavaScript API along with the Directions Service. Here's how to add directions functionality to your app:
-
-Ensure that you have the Google Maps JavaScript API enabled in your Google Cloud Platform project, and make sure you have the API key.
-
-Install the necessary packages for using Google Maps in your Ionic project:
-
-bash
-Copy code
-npm install @ionic-native/core@beta @ionic-native/google-maps@beta
-In the pages where you want to show directions (BikebusLeaderPage, BikebusMemberPage, and CarDriverPage), follow these steps:
-a. Import the necessary dependencies at the top of the TypeScript file:
-
-typescript
-Copy code
-import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, LatLng, Marker, Environment } from '@ionic-native/google-maps';
-b. Create a map: GoogleMap property in the class:
-
-typescript
-Copy code
-export class BikebusLeaderPage {
-  map: GoogleMap;
-  // ...
-}
-c. Create a method for initializing the map:
-
-typescript
-Copy code
-async loadMap() {
-  Environment.setEnv({
-    API_KEY_FOR_BROWSER_RELEASE: '<YOUR_API_KEY>',
-    API_KEY_FOR_BROWSER_DEBUG: '<YOUR_API_KEY>'
-  });
-
-  const mapOptions: GoogleMapOptions = {
-    camera: {
-      target: new LatLng(YOUR_LATITUDE, YOUR_LONGITUDE),
-      zoom: 15
-    }
-  };
-
-  this.map = GoogleMaps.create('map_canvas', mapOptions);
-  await this.map.one(GoogleMapsEvent.MAP_READY);
-}
-Replace <YOUR_API_KEY> with your actual Google Maps API key, and YOUR_LATITUDE and YOUR_LONGITUDE with the initial coordinates for centering the map.
-
-d. Call the loadMap() method in the ngOnInit() lifecycle hook:
-
-typescript
-Copy code
-ngOnInit() {
-  this.loadMap();
-}
-e. Add a method to calculate and display the route:
-
-typescript
-Copy code
-displayRoute(startLatLng: LatLng, endLatLng: LatLng) {
-  const directionsService = new google.maps.DirectionsService();
-  const directionsRenderer = new google.maps.DirectionsRenderer();
-
-  directionsRenderer.setMap(this.map.getGoogleMap());
-
-  const request = {
-    origin: startLatLng,
-    destination: endLatLng,
-    travelMode: google.maps.TravelMode.DRIVING
-  };
-
-  directionsService.route(request, (result, status) => {
-    if (status === google.maps.DirectionsStatus.OK) {
-      directionsRenderer.setDirections(result);
-    } else {
-      console.error('Error fetching directions:', status);
-    }
-  });
-}
-Replace startLatLng and endLatLng with the appropriate start and end coordinates for the route you want to display.
-
-f. Call the displayRoute() method with the desired start and end coordinates when you want to show the route. You might call this method, for example, when a bikebus leader creates a new route, when a bikebus member selects a saved destination, or when a car driver wants to see the route to a nearby bikebus.
-
-g. Finally, add the following HTML markup in the corresponding page template file to display the map:
-
-html
-Copy code
-<div #map_canvas style="height: 100%;"></div>
-Now, Bikebus leaders, members, and car drivers can get Google Maps directions in your app. The example provided here uses driving directions, but you can change the travelMode to google.maps.TravelMode.BICYCLING or google.maps.TravelMode.WALKING if you want to display biking or walking directions, respectively.
-
-Adapt
-
-### craig merry
-
-Tge tgree tabs of the app should match the experience for each role: bikebus leader, member and car driver
 To customize the app's tabs based on the user's role (bikebus leader, member, or car driver), you'll need to create separate pages for each role and dynamically display the appropriate tabs based on the user's role. Here's how to do that:
 
 Create a service to store the user's role and manage role-related functionalities. Generate the service using the following command:
