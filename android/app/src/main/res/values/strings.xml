@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BikeBusApp</string>
+    <string name="title_activity_main">BikeBusApp</string>
+    <string name="package_name">app.bikebusapp</string>
+    <string name="custom_url_scheme">app.bikebusapp</string>
+</resources>
