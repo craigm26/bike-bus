@@ -50,7 +50,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "env-cmd -f .env.production react-scripts build",
     "test": "react-scripts test --transformIgnorePatterns 'node_modules/(?!(@ionic/react|@ionic/react-router|@ionic/core|@stencil/core|ionicons)/)'",
     "eject": "react-scripts eject"
   },
@@ -69,7 +69,8 @@
     "iOS >=14"
   ],
   "devDependencies": {
-    "@capacitor/cli": "^5.0.0-rc.2"
+    "@capacitor/cli": "^5.0.0-rc.2",
+    "env-cmd": "^10.1.0"
   },
   "description": "An Ionic project"
 }
