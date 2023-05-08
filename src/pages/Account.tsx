@@ -113,9 +113,9 @@ const Account: React.FC = () => {
                         <IonTitle size="large">Account</IonTitle>
                     </IonToolbar>
                 </IonHeader>
-                <IonButton>
-                    <IonLabel>Return to Map</IonLabel>
-                </IonButton>
+                <IonButton routerLink="/Map" routerDirection="none">
+                        <IonLabel>Return to Map</IonLabel>
+                    </IonButton>
                 <IonContent fullscreen>
                     <IonHeader collapse="condense">
                         <IonToolbar>
@@ -139,11 +139,39 @@ const Account: React.FC = () => {
                                 onIonChange={() => toggleAccountMode('Leader')}
                             />
                         </IonItem>
-                        {/* ... (add other account modes in the same way) */}
+                        <IonItem>
+                            <IonLabel>Parent</IonLabel>
+                            <IonCheckbox
+                                slot="end"
+                                checked={enabledAccountModes.includes('Parent')}
+                                onIonChange={() => toggleAccountMode('Parent')}
+                            />
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel>App Administrator</IonLabel>
+                            <IonCheckbox
+                                slot="end"
+                                checked={enabledAccountModes.includes('App Administrator')}
+                                onIonChange={() => toggleAccountMode('App Administrator')}
+                            />
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel>Car Driver</IonLabel>
+                            <IonCheckbox
+                                slot="end"
+                                checked={enabledAccountModes.includes('Car Driver')}
+                                onIonChange={() => toggleAccountMode('Car Driver')}
+                            />
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel>Kid</IonLabel>
+                            <IonCheckbox
+                                slot="end"
+                                checked={enabledAccountModes.includes('Kid')}
+                                onIonChange={() => toggleAccountMode('Kid')}
+                            />
+                        </IonItem>
                     </IonList>
-                    <IonItem button routerLink="/Map" routerDirection="none">
-                        <IonLabel>Return to Map</IonLabel>
-                    </IonItem>
                 </IonContent>
 
             </IonContent>
