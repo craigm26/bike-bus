@@ -12,6 +12,7 @@ import {
   IonChip,
   IonAvatar,
   IonPopover,
+  IonIcon,
 } from '@ionic/react';
 import { useState } from 'react';
 import './BikeBusMember.css';
@@ -19,6 +20,7 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
+import { personCircleOutline } from 'ionicons/icons';
 
 const BikeBusMember: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -34,6 +36,17 @@ const BikeBusMember: React.FC = () => {
     console.log('showPopover state:', showPopover);
   };
   
+  const avatarElement = avatarUrl ? (
+    <IonAvatar>
+      <Avatar uid={user?.uid} size="extrasmall" />
+    </IonAvatar>
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
+  
+  const label = user?.displayName ? user.displayName : "anonymous";
+  
+  
   return (
     <IonPage>
       <IonHeader>
@@ -46,12 +59,8 @@ const BikeBusMember: React.FC = () => {
           </IonText>
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
-              {avatarUrl && (
-                <IonAvatar>
-                  <Avatar uid={user?.uid} size="extrasmall" />
-                </IonAvatar>
-              )}
-              <IonLabel>{user?.displayName || user?.email}</IonLabel>
+              {avatarElement}
+              <IonLabel>{label}</IonLabel>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -60,7 +69,6 @@ const BikeBusMember: React.FC = () => {
             onDidDismiss={() => setShowPopover(false)}
             className="my-popover"
           >
-            {/* Add your Profile component or any other content you want to display in the popover */}
             <Profile />
           </IonPopover>
 
