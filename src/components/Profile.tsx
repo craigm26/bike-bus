@@ -52,6 +52,13 @@ const Profile: React.FC = () => {
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
           {user?.isAnonymous ? (
+          <div></div>
+          ) : (
+            <IonButton fill="clear" routerLink="/account">
+            Account
+          </IonButton>
+          )}
+          {user?.isAnonymous ? (
             <IonButton fill="clear" routerLink="/register">
               Register to Add Avatar
             </IonButton>

@@ -29,7 +29,7 @@ const Login: React.FC = () => {
     try {
       await signInWithEmailAndPassword(email, password);
       // Redirect to the main app or show a success message
-      history.push('/BikeBusMember');
+      history.push('/Map');
     } catch (error) {
       // Handle the error (e.g., display an error message)
     }
@@ -43,11 +43,16 @@ const Login: React.FC = () => {
         <IonText color="primary" class="BikeBusFont">
           <h1>BikeBus</h1>
         </IonText>
+        <IonText>
+          <p>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides</p>
+          <p>It is currently under development</p>
+          <p>We're testing while I'm trying to quickly build this app - drop a line on Twitter @BikeBusApp</p>
+        </IonText>
         <IonTitle>Login</IonTitle>
         <form onSubmit={handleSubmit}>
           <IonItem>
             <IonLabel>Email</IonLabel>
-            <IonInput
+            <IonInput aria-label = "email"
               type="email"
               placeholder="Email"
               value={email}
@@ -56,7 +61,7 @@ const Login: React.FC = () => {
           </IonItem>
           <IonItem>
             <IonLabel>Password</IonLabel>
-            <IonInput
+            <IonInput aria-label= "password"
               type="password"
               placeholder="Password"
               value={password}
@@ -72,7 +77,7 @@ const Login: React.FC = () => {
           onClick={async () => {
             try {
               await signInWithGoogle();
-              history.push('/BikeBusMember');
+              history.push('/Map');
             } catch (error) {
               // Handle the error (e.g., display an error message)
             }
@@ -85,7 +90,7 @@ const Login: React.FC = () => {
           onClick={async () => {
             try {
               await signInAnonymously();
-              history.push('/BikeBusMember');
+              history.push('/Map');
             } catch (error) {
               // Handle the error (e.g., display an error message)
             }

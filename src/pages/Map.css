@@ -1,6 +1,6 @@
 .my-popover {
-    --width: 80vw;
-    --height: 80vh;
+    --width: 15vw;
+    --height: 30vh;
     width: var(--width);
     height: var(--height);
     max-width: var(--width);
