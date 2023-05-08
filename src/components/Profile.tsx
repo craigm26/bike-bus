@@ -15,10 +15,7 @@ import { storage } from '../firebaseConfig';
 import Avatar from './Avatar';
 import Logout from './Logout';
 
-
-
 const Profile: React.FC = () => {
-  console.log('Profile component loaded'); 
   const { user } = useAuth();
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,26 +44,29 @@ const Profile: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-      </IonHeader>
+      <IonHeader />
       <IonContent fullscreen>
         <IonTitle size="large">Profile</IonTitle>
         <div className="avatar-container">
           <IonAvatar>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-          <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
-            {avatarUrl ? 'Change' : 'Add Avatar'}
-          </IonButton>
+          {user?.isAnonymous ? (
+            <IonButton fill="clear" routerLink="/register">
+              Register to Add Avatar
+            </IonButton>
+          ) : (
+            <div>
+              {!avatarUrl && (
+                <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                  Add Avatar
+                </IonButton>
+              )}
+              <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
+            </div>
+          )}
         </div>
-        <Logout></Logout>
+        <Logout />
       </IonContent>
     </IonPage>
   );

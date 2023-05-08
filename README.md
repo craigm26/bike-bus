@@ -16,9 +16,26 @@ We think technology could help make this a smoother, more fun experience while p
 
 ## To develop
 
+npm 18.20.0
+firebase 9+
+
 npm install
+ionic develop
+
+## To deploy to Firebase preview channel
+
 ionic build
-firebase deploy
+npx cap sync
+npx sync ios
+npx sync android
+firebase hosting:channel:deploy preview
+
+### will have to figure out how to deploy preview builds to ios and android
+
+## to deploy to Firebase production channel
+
+ionic build --prod
+firebase deploy --only hosting:production
 
 ## How does this app make money?
 
@@ -47,6 +64,32 @@ Continuously monitor and improve the app based on user feedback and analytics. I
 
 Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app.
 
+## User Stories
+
+As a bikebus leader, I should be able to create a route on a map and allows users to view it
+As a parent, i want to find a route where a bikebus leader has marked as a stop along a route and a known destination. Also give me the eta for when the user should leave
+As a car driver, i want use google maps within the app and be notified of any bikebus that are within 1000 feet and tell me from what direction
+As a bikebus member, i want to save destinations as a listcand make it easy to search for known bikebus with upcoming dates and times
+
+Location tracking: Use the Geolocation plugin from Ionic Native to track the location of bikebus members and car drivers. You can use this data to show nearby bikebuses to car drivers and calculate ETAs for bikebus members.
+
+Notifications: Implement notifications for car drivers when a bikebus is within 1000 feet. You can use the Local Notifications plugin from Ionic Native for this purpose.
+
+Route drawing and sharing: Implement the functionality for bikebus leaders to draw routes on a map and share them with other users. Use the Google Maps JavaScript API for this purpose, and store the route data in Firebase.
+
+To customize the app's tabs based on the user's role (bikebus leader, member, or car driver), you'll need to create separate pages for each role and dynamically display the appropriate tabs based on the user's role. Here's how to do that:
+
+Each role tab should start with starting point lookup and destination lookup and then expected time to reach the destination. Then suggest routes and then upcoming bikebusses and the option to rsvp for those
+
+Parents will be sending their kids as bikebus members, allow the app view anonymous data from the bikebus yo deliver location
+To allow parents to view anonymous location data for the bikebus without revealing any sensitive information about the individual bikebus members, you can implement the following features:
+
+When a user (parent) selects a bikebus to view, you can fetch the anonymized location data for that bikebus from Firebase. Store the anonymized location data separately, without any personally identifiable information (PII) attached to it.
+
+To update the bikebus location in real-time, use the Firebase Realtime Database or Firestore with real-time updates enabled. This will allow the app to receive live location updates for the bikebus as it moves along the route.
+
+In the parent's view, create a map using the Google Maps JavaScript API to display the bikebus's current location. Display the bikebus as a custom icon or marker on the map, without revealing any individual members' locations.
+
 ## Tech Stack
 
 Use Ionic as the framework and Firebase (Authentication, Hosting, Payments) as much as possible. Allow for Google Play Store and Apple Store to manage subscriptions as well.
@@ -61,7 +104,7 @@ Geolocation: To track the riders' locations, you can use the Geolocation API pro
 
 To build the app, you'll need to follow these steps:
 
-Set up a new Ionic project and install the required dependencies, such as the Google Maps JavaScript API and the appropriate Ionic Native plugins.
+install the Google Maps JavaScript API and the appropriate Ionic Native plugins.
 
 Implement the Google Maps and Places APIs in your app to display the map, search for schools, and create the route.
 
@@ -71,9 +114,7 @@ Implement the Geolocation functionality to track the riders' locations.
 
 Build the user interface for the group leader and riders, allowing them to create a bikebus, invite other riders, and track the ride in real-time.
 
-Remember to follow Google's API usage policies and obtain the necessary API keys for your app.
-
-## Feature ideas
+## Feature/Subscripotion ideas
 
 Subscription model: Offer a subscription-based model with a free tier and paid tiers that provide additional features or benefits. This way, you can generate revenue without relying on ads or sharing user data. The paid tiers could include features like enhanced route planning, priority support, or extended historical ride data.
 
@@ -95,9 +136,7 @@ Personalized insights and recommendations: Provide personalized insights and sug
 
 Offline maps: Allow premium users to download maps for offline use, enabling them to access route information without an internet connection.
 
-Ad-free experience: Offer an ad-free version of the app for premium users, enhancing their user experience.
-
-To notify car drivers when a bikebus is nearby, you can create a separate feature within the app or develop a complementary app specifically for drivers:
+Notify car drivers when a bikebus is nearby
 
 Real-time notifications: Develop a feature that allows drivers to receive real-time notifications when a bikebus is nearby. Drivers can opt-in to receive these alerts based on their location and route.
 
@@ -118,35 +157,3 @@ Data encryption: Encrypt user data both at rest and in transit to protect it fro
 Privacy policy and GDPR compliance: Develop a comprehensive privacy policy that clearly outlines how you collect, use, and share user data. Ensure your app complies with privacy regulations such as the General Data Protection Regulation (GDPR) and other applicable laws.
 
 Limit data retention: Store users' data only for the necessary duration and establish policies for the timely deletion of outdated or unused data.
-
-## User Stories
-
-As a bikebus leader, I should be able to create a route on a map and allows users to view it
-As a parent, i want to find a route where a bikebus leader has marked as a stop along a route and a known destination. Also give me the eta for when the user should leave
-As a car driver, i want use google maps within the app and be notified of any bikebus that are within 1000 feet and tell me from what direction
-As a bikebus member, i want to save destinations as a listcand make it easy to search for known bikebus with upcoming dates and times
-
-What pages and other coding woukd you do first- based on all the requirements above?
-
-Additionally, consider implementing the following:
-
-User state management: Create a service or use a state management library (e.g., NgRx or Akita) to handle the user's state changes (e.g., signed in, signed out) and adapt the UI accordingly.
-
-Location tracking: Use the Geolocation plugin from Ionic Native to track the location of bikebus members and car drivers. You can use this data to show nearby bikebuses to car drivers and calculate ETAs for bikebus members.
-
-Notifications: Implement notifications for car drivers when a bikebus is within 1000 feet. You can use the Local Notifications plugin from Ionic Native for this purpose.
-
-Route drawing and sharing: Implement the functionality for bikebus leaders to draw routes on a map and share them with other users. Use the Google Maps JavaScript API for this purpose, and store the route data in Firebase.
-
-To customize the app's tabs based on the user's role (bikebus leader, member, or car driver), you'll need to create separate pages for each role and dynamically display the appropriate tabs based on the user's role. Here's how to do that:
-
-Each role tab should start with starting point lookup and destination lookup and then expected time to reach the destination. Then suggest routes and then upcoming bikebusses and the option to rsvp for those
-
-Parents will be sending their kids as bikebus members, allow the app view anonymous data from the bikebus yo deliver location
-To allow parents to view anonymous location data for the bikebus without revealing any sensitive information about the individual bikebus members, you can implement the following features:
-
-When a user (parent) selects a bikebus to view, you can fetch the anonymized location data for that bikebus from Firebase. Store the anonymized location data separately, without any personally identifiable information (PII) attached to it.
-
-To update the bikebus location in real-time, use the Firebase Realtime Database or Firestore with real-time updates enabled. This will allow the app to receive live location updates for the bikebus as it moves along the route.
-
-In the parent's view, create a map using the Google Maps JavaScript API to display the bikebus's current location. Display the bikebus as a custom icon or marker on the map, without revealing any individual members' locations.
