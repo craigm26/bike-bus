@@ -48,8 +48,8 @@
     "workbox-streams": "^5.1.4"
   },
   "scripts": {
-    "start": "ionic start",
-    "build": "ionic build",
+    "start": "react-scripts start",
+    "build": "env-cmd -f .env.production react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint . --ignore-path .gitignore",
