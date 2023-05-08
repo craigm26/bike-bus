@@ -1,4 +1,4 @@
-// src/pages/About.tsx
+// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
@@ -12,7 +12,7 @@ import {
   IonChip,
   IonAvatar,
   IonPopover,
-  IonTitle
+  IonIcon,
 } from '@ionic/react';
 import { useState } from 'react';
 import './About.css';
@@ -20,6 +20,8 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
+import { personCircleOutline } from 'ionicons/icons';
+import AccountModeSelector from '../components/AccountModeSelector';
 
 const About: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -34,7 +36,21 @@ const About: React.FC = () => {
     setShowPopover((prevState) => !prevState);
     console.log('showPopover state:', showPopover);
   };
-  
+
+  const avatarElement = avatarUrl ? (
+    <IonAvatar>
+      <Avatar uid={user?.uid} size="extrasmall" />
+    </IonAvatar>
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
+
+  const label = user?.displayName ? user.displayName : "anonymous";
+
+  const [accountMode, setAccountMode] = useState<string>('Member');
+
+
+
   return (
     <IonPage>
       <IonHeader>
@@ -42,17 +58,18 @@ const About: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-          <IonText color="primary" class="BikeBusFont">
+          <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
+          <AccountModeSelector
+            value={accountMode}
+            onAccountModeChange={(value) => setAccountMode(value)}
+          />
+
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
-              {avatarUrl && (
-                <IonAvatar>
-                  <Avatar uid={user?.uid} size="extrasmall" />
-                </IonAvatar>
-              )}
-              <IonLabel>{user?.displayName || user?.email}</IonLabel>
+              {avatarElement}
+              <IonLabel>{label}</IonLabel>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -61,7 +78,6 @@ const About: React.FC = () => {
             onDidDismiss={() => setShowPopover(false)}
             className="my-popover"
           >
-            {/* Add your Profile component or any other content you want to display in the popover */}
             <Profile />
           </IonPopover>
 
@@ -69,9 +85,7 @@ const About: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
-          <IonToolbar>
-          <IonTitle size="large">About</IonTitle>
-          </IonToolbar>
+          <IonToolbar></IonToolbar>
         </IonHeader>
       </IonContent>
     </IonPage>
