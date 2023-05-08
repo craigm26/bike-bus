@@ -1,6 +1,6 @@
 {
   "name": "bike-bus",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@capacitor/android": "^5.0.0",
@@ -48,10 +48,20 @@
     "workbox-streams": "^5.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "env-cmd -f .env.production react-scripts build",
-    "test": "react-scripts test --transformIgnorePatterns 'node_modules/(?!(@ionic/react|@ionic/react-router|@ionic/core|@stencil/core|ionicons)/)'",
-    "eject": "react-scripts eject"
+    "start": "ionic start",
+    "build": "ionic build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ignore-path .gitignore",
+    "deploy": "firebase deploy --only hosting",
+    "shell": "firebase functions:shell",
+    "logs": "firebase functions:log",
+    "build:functions": "tsc --project functions",
+    "watch:functions": "tsc --watch --project functions",
+    "build:ui": "npm run build",
+    "watch:ui": "npm run start",
+    "build:all": "npm run build:functions && npm run build:ui",
+    "watch:all": "npm run watch:functions & npm run watch:ui"
   },
   "eslintConfig": {
     "extends": [
