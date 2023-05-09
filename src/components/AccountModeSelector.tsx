@@ -14,17 +14,17 @@ const AccountModeSelector: React.FC<AccountModeSelectorProps> = ({
     <IonSelect
       slot="end"
       value={value}
-      placeholder="Select Modes"
+      placeholder="Select Mode"
       onIonChange={(e) => onAccountModeChange(e.detail.value)}
       interface="popover"
       multiple={true}
     >
       <IonSelectOption value="Member">Member</IonSelectOption>
       <IonSelectOption value="Leader">Leader</IonSelectOption>
-      <IonSelectOption value="Kid">Kid</IonSelectOption>
       <IonSelectOption value="Parent">Parent</IonSelectOption>
       <IonSelectOption value="Car Driver">Car Driver</IonSelectOption>
-      <IonSelectOption value="Admin">Admin</IonSelectOption>
+      <IonSelectOption value="Org Admin">Org Admin</IonSelectOption>
+      <IonSelectOption value="App Admin">App Admin</IonSelectOption>
     </IonSelect>
   );
 };

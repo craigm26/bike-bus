@@ -1,4 +1,3 @@
-// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
@@ -14,28 +13,41 @@ import {
   IonPopover,
   IonIcon,
 } from '@ionic/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Map.css';
-import useAuth from '../useAuth'; // Import useAuth hook
+import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile'; // Import the Profile component
+import Profile from '../components/Profile';
 import { personCircleOutline } from 'ionicons/icons';
-import AccountModeSelector from '../components/AccountModeSelector';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const Map: React.FC = () => {
-  const { user } = useAuth(); // Use the useAuth hook to get the user object
+  const { user } = useAuth();
   const { avatarUrl } = useAvatar(user?.uid);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const [accountMode, setAccountMode] = useState('Member');
 
   const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
   };
+
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.defaultAccountMode) {
+            setAccountMode(userData.defaultAccountMode);
+          }
+        }
+      });
+    }
+  }, [user]);
 
   const avatarElement = avatarUrl ? (
     <IonAvatar>
@@ -45,11 +57,7 @@ const Map: React.FC = () => {
     <IonIcon icon={personCircleOutline} />
   );
 
-  const label = user?.displayName ? user.displayName : "anonymous";
-
-  const [accountMode, setAccountMode] = useState<string[]>([]);
-
-
+  const label = user?.displayName ? `${user.displayName} (${accountMode})` : `anonymous (${accountMode})`;
 
   return (
     <IonPage>
@@ -61,11 +69,6 @@ const Map: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-          <AccountModeSelector
-            value={accountMode}
-            onAccountModeChange={(value) => setAccountMode(value)}
-          />
-
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
@@ -80,7 +83,6 @@ const Map: React.FC = () => {
           >
             <Profile />
           </IonPopover>
-
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

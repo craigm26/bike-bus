@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   IonContent,
   IonHeader,
@@ -6,6 +6,7 @@ import {
   IonTitle,
   IonAvatar,
   IonButton,
+  IonText,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -14,6 +15,8 @@ import { ref, uploadBytesResumable } from '@firebase/storage';
 import { storage } from '../firebaseConfig';
 import Avatar from './Avatar';
 import Logout from './Logout';
+import AccountModeSelector from '../components/AccountModeSelector';
+
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -42,6 +45,9 @@ const Profile: React.FC = () => {
     }
   };
 
+  const [accountMode, setAccountMode] = useState<string[]>([]);
+
+
   return (
     <IonPage>
       <IonHeader />
@@ -52,22 +58,27 @@ const Profile: React.FC = () => {
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
           {user?.isAnonymous ? (
-          <div></div>
+            <div></div>
           ) : (
             <IonButton fill="clear" routerLink="/account">
-            Account
-          </IonButton>
+              Account
+            </IonButton>
           )}
           {user?.isAnonymous ? (
-            <IonButton fill="clear" routerLink="/register">
-              Register to Add Avatar
-            </IonButton>
+            <><>
+              <IonText>
+                <h4>Account Mode: Member{accountMode}</h4>
+              </IonText></><IonButton fill="clear" routerLink="/register">
+                Register to Add Avatar
+              </IonButton></>
           ) : (
             <div>
               {!avatarUrl && (
-                <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
-                  Add Avatar
-                </IonButton>
+                  <><AccountModeSelector
+                    value={accountMode}
+                    onAccountModeChange={(value) => setAccountMode(value)} /><IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                      Add Avatar
+                    </IonButton></>
               )}
               <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
             </div>
