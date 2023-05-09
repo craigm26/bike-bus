@@ -5,6 +5,7 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
 import './global.css';
+import * as functions from "firebase-functions";
 
 
 const rootElement = document.getElementById('root');
