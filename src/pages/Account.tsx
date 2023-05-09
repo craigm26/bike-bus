@@ -24,7 +24,7 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
 import { db } from '../firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 
 
@@ -36,19 +36,22 @@ const Account: React.FC = () => {
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
 
     const toggleAccountMode = async (mode: string) => {
-        if (enabledAccountModes.includes(mode)) {
-          setEnabledAccountModes(enabledAccountModes.filter((m) => m !== mode));
-        } else {
-          setEnabledAccountModes([...enabledAccountModes, mode]);
-        }
-      
         if (user) {
           const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { accountMode: mode });
+      
+          if (enabledAccountModes.includes(mode)) {
+            setEnabledAccountModes(enabledAccountModes.filter((m) => m !== mode));
+            await updateDoc(userRef, { enabledAccountModes: arrayRemove(mode) });
+          } else {
+            setEnabledAccountModes([...enabledAccountModes, mode]);
+            await updateDoc(userRef, { enabledAccountModes: arrayUnion(mode) });
+          }
         }
       };
       
-
+      
+      
+    
 
     const togglePopover = (e: any) => {
         console.log('togglePopover called');
@@ -72,7 +75,7 @@ const Account: React.FC = () => {
         }
     }, [user]);
 
-
+    
 
     useEffect(() => {
         if (user) {
