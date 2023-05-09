@@ -67,9 +67,8 @@ const Profile: React.FC = () => {
           {user?.isAnonymous ? (
             <><>
               <IonText>
-                <h4>Account Mode: Member{accountMode}</h4>
-              </IonText></><IonButton fill="clear" routerLink="/register">
-                Register to Add Avatar
+              </IonText></><IonButton fill="clear" routerLink="/SignUp">
+                SignUp to Add Avatar
               </IonButton></>
           ) : (
             <div>

@@ -35,13 +35,19 @@ const Account: React.FC = () => {
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
 
-    const toggleAccountMode = (mode: string) => {
+    const toggleAccountMode = async (mode: string) => {
         if (enabledAccountModes.includes(mode)) {
-            setEnabledAccountModes(enabledAccountModes.filter((m) => m !== mode));
+          setEnabledAccountModes(enabledAccountModes.filter((m) => m !== mode));
         } else {
-            setEnabledAccountModes([...enabledAccountModes, mode]);
+          setEnabledAccountModes([...enabledAccountModes, mode]);
         }
-    };
+      
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { accountMode: mode });
+        }
+      };
+      
 
 
     const togglePopover = (e: any) => {

@@ -25,7 +25,6 @@ import About from './pages/About';
 import Account from './pages/Account';
 import Welcome from './pages/Welcome';
 
-
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
 
@@ -45,6 +44,7 @@ import '@ionic/react/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 import React from 'react';
+import Settings from './pages/Settings';
 
 setupIonicReact();
 
@@ -69,6 +69,9 @@ const App: React.FC = () => (
                 </IonItem>
                 <IonItem button routerLink="/about" routerDirection="none">
                   <IonLabel>About</IonLabel>
+                </IonItem>
+                <IonItem button routerLink="/settings" routerDirection="none">
+                  <IonLabel>Settings</IonLabel>
                 </IonItem>
               </IonMenuToggle>
             </IonList>
@@ -99,6 +102,9 @@ const App: React.FC = () => (
             </Route>
             <Route exact path="/about">
               <About />
+            </Route>
+            <Route exact path="/settings">
+              <Settings />
             </Route>
             <Route exact path="/Welcome">
               <Welcome />
