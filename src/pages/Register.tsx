@@ -20,6 +20,7 @@ const Register: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const { signUpWithEmailAndPassword } = useAuth();
     const history = useHistory();
 
@@ -28,16 +29,23 @@ const Register: React.FC = () => {
 
         if (password !== confirmPassword) {
             // Display an error message if passwords do not match
+            setErrorMessage("Passwords do not match.");
             return;
         }
 
         try {
             await signUpWithEmailAndPassword(email, password);
             // Redirect to the main app or show a success message
-            history.push('/dashboard');
+            history.push('/Map');
         } catch (error) {
             // Handle the error (e.g., display an error message)
+            if (error instanceof Error) {
+                setErrorMessage("Error registering user: " + error.message);
+            } else {
+                setErrorMessage("Error registering user.");
+            }
         }
+        
     };
 
     return (
@@ -54,7 +62,6 @@ const Register: React.FC = () => {
             </IonHeader>
             <IonContent>
                 <IonTitle>Register</IonTitle>
-
                 <form onSubmit={handleSubmit}>
                     <IonItem>
                         <IonLabel>Email</IonLabel>
@@ -87,6 +94,7 @@ const Register: React.FC = () => {
                         Register
                     </IonButton>
                 </form>
+                {errorMessage && <IonText color="danger">{errorMessage}</IonText>}
             </IonContent>
         </IonPage>
     );
