@@ -19,10 +19,11 @@ import Map from './pages/Map';
 import Login from './pages/Login';
 import Profile from './components/Profile';
 import Logout from './components/Logout';
-import Register from './pages/Register';
+import SignUp from './pages/SignUp';
 import Help from './pages/Help';
 import About from './pages/About';
 import Account from './pages/Account';
+import Welcome from './pages/Welcome';
 
 
 /* Core CSS required for Ionic components to work properly */
@@ -60,6 +61,9 @@ const App: React.FC = () => (
           <IonContent>
             <IonList>
               <IonMenuToggle auto-hide="false">
+                <IonItem button routerLink="/Map" routerDirection="none">
+                  <IonLabel>Map</IonLabel>
+                </IonItem>
                 <IonItem button routerLink="/help" routerDirection="none">
                   <IonLabel>Help</IonLabel>
                 </IonItem>
@@ -84,8 +88,8 @@ const App: React.FC = () => (
             <Route exact path="/Login">
               <Login />
             </Route>
-            <Route exact path="/Register">
-              <Register />
+            <Route exact path="/SignUp">
+              <SignUp />
             </Route>
             <Route exact path="/Logout">
               <Logout />
@@ -96,8 +100,11 @@ const App: React.FC = () => (
             <Route exact path="/about">
               <About />
             </Route>
+            <Route exact path="/Welcome">
+              <Welcome />
+            </Route>
             <Route exact path="/">
-              <Redirect to="/Login" />
+              <Redirect to="/Welcome" />
             </Route>
           </IonRouterOutlet>
         </IonPage>

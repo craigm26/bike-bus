@@ -1,4 +1,5 @@
 .my-popover {
+    position: static;
     --width: 15vw;
     --height: 30vh;
     width: var(--width);
