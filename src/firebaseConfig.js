@@ -22,6 +22,10 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
+
+  // eslint-disable-next-line no-restricted-globals
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true

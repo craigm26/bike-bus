@@ -53,11 +53,6 @@ const Login: React.FC = () => {
         <IonText color="primary" class="BikeBusFont">
           <h1>BikeBus</h1>
         </IonText>
-        <IonText>
-          <p>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides</p>
-          <p>It is currently under development</p>
-          <p>We're testing while I'm trying to quickly build this app - drop a line on Twitter @BikeBusApp</p>
-        </IonText>
         <IonTitle>Login</IonTitle>
         <form onSubmit={handleSubmit}>
           <IonText color="danger">{errorMessage}</IonText>
@@ -115,9 +110,9 @@ const Login: React.FC = () => {
             <IonButton
               fill="clear"
               color="primary"
-              onClick={() => history.push('/register')}
+              onClick={() => history.push('/SignUp')}
             >
-              Register
+              Sign Up
             </IonButton>
           </p>
         </IonText>

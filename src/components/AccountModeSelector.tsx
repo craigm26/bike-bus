@@ -1,10 +1,9 @@
-// src/features/map/components/AccountModeSelector.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { IonSelect, IonSelectOption } from '@ionic/react';
 
 interface AccountModeSelectorProps {
-  value: string;
-  onAccountModeChange: (value: string) => void;
+  value: string[];
+  onAccountModeChange: (value: string[]) => void;
 }
 
 const AccountModeSelector: React.FC<AccountModeSelectorProps> = ({
@@ -15,9 +14,10 @@ const AccountModeSelector: React.FC<AccountModeSelectorProps> = ({
     <IonSelect
       slot="end"
       value={value}
-      placeholder="Select Mode"
+      placeholder="Select Modes"
       onIonChange={(e) => onAccountModeChange(e.detail.value)}
       interface="popover"
+      multiple={true}
     >
       <IonSelectOption value="Member">Member</IonSelectOption>
       <IonSelectOption value="Leader">Leader</IonSelectOption>

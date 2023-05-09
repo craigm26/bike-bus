@@ -47,7 +47,7 @@ const Map: React.FC = () => {
 
   const label = user?.displayName ? user.displayName : "anonymous";
 
-  const [accountMode, setAccountMode] = useState<string>('Member');
+  const [accountMode, setAccountMode] = useState<string[]>([]);
 
 
 

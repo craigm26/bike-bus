@@ -1,5 +1,18 @@
 {
   "extends": [
     "development"
-  ]
+  ],
+  "hints": {
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "contain",
+          "-webkit-tap-highlight-color",
+          "overscroll-behavior-y",
+          "text-size-adjust"
+        ]
+      }
+    ]
+  }
 }
