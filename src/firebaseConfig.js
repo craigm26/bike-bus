@@ -23,9 +23,11 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
 
+// Add this line before initializing App Check
+if (process.env.NODE_ENV === 'development') {
   // eslint-disable-next-line no-restricted-globals
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = '0d575bcc-5f6d-4dc4-bb25-c663b2d717fb';
+}
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true

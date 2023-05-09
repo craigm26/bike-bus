@@ -39,7 +39,6 @@ const Login: React.FC = () => {
             <IonButton routerLink='/Login'>Login</IonButton>
         </IonButton>
         <IonButton
-          expand="block"
           onClick={async () => {
             try {
               await signInAnonymously();
