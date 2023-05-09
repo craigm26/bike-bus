@@ -152,7 +152,7 @@ const Map: React.FC = () => {
             zoom={16}
           >
             <Marker position={mapCenter}>
-              <InfoWindow>
+              <InfoWindow position ={mapCenter}>
                 <div>
                   <h4>{user?.displayName || user?.email}</h4>
                   <p>Account Mode: {mapMode}</p>
