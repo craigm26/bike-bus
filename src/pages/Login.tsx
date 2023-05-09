@@ -13,6 +13,7 @@ import {
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import './Login.css';
+import PasswordReset from '../components/PasswordReset';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +25,9 @@ const Login: React.FC = () => {
   } = useAuth();
   const history = useHistory();
 
+  const [errorMessage, setErrorMessage] = useState('');
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -32,8 +36,14 @@ const Login: React.FC = () => {
       history.push('/Map');
     } catch (error) {
       // Handle the error (e.g., display an error message)
+      if (error instanceof Error) {
+        setErrorMessage("Error logging in: " + error.message);
+      } else {
+        setErrorMessage("Error logging in.");
+      }
     }
   };
+  
 
   return (
     <IonPage>
@@ -50,6 +60,7 @@ const Login: React.FC = () => {
         </IonText>
         <IonTitle>Login</IonTitle>
         <form onSubmit={handleSubmit}>
+          <IonText color="danger">{errorMessage}</IonText>
           <IonItem>
             <IonLabel>Email</IonLabel>
             <IonInput aria-label = "email"
@@ -110,6 +121,7 @@ const Login: React.FC = () => {
             </IonButton>
           </p>
         </IonText>
+        <PasswordReset />
       </IonContent>
     </IonPage>
   );

@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { AuthContext } from './AuthContext';
 import { auth } from './firebaseConfig';
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword, signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword, signInAnonymously as firebaseSignInAnonymously, signOut as firebaseSignOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword, signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword, signInAnonymously as firebaseSignInAnonymously, signOut as firebaseSignOut, sendPasswordResetEmail as firebaseSendPasswordResetEmail } from 'firebase/auth';
 
 const useAuth = () => {
   const { user, loadingAuthState } = useContext(AuthContext);
@@ -12,6 +12,10 @@ const useAuth = () => {
 
   const signInWithEmailAndPassword = async (email, password) => {
     await firebaseSignInWithEmailAndPassword(auth, email, password);
+  };
+
+  const sendResetEmail = async (email) => {
+    await firebaseSendPasswordResetEmail(auth, email);
   };
 
   const signInWithGoogle = async () => {
@@ -32,6 +36,7 @@ const useAuth = () => {
     loadingAuthState,
     signUpWithEmailAndPassword,
     signInWithEmailAndPassword,
+    sendResetEmail,
     signInWithGoogle,
     signInAnonymously,
     signOut,
