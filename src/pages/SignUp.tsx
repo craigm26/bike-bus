@@ -58,7 +58,7 @@ const Signup: React.FC = () => {
             const user = userCredential.user;
             const userRef = doc(db, 'users', user.uid);
             await setDoc(userRef, {
-                username,
+                username: username,
                 accountType: 'Member',
                 enabledAccountModes: ['Member'],
                 firstName: '',
