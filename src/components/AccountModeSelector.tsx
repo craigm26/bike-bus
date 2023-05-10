@@ -2,11 +2,13 @@ import React from 'react';
 import { IonSelect, IonSelectOption } from '@ionic/react';
 
 interface AccountModeSelectorProps {
+  enabledModes: string[];
   value: string[];
   onAccountModeChange: (value: string[]) => void;
 }
 
 const AccountModeSelector: React.FC<AccountModeSelectorProps> = ({
+  enabledModes,
   value,
   onAccountModeChange,
 }) => {
@@ -15,16 +17,15 @@ const AccountModeSelector: React.FC<AccountModeSelectorProps> = ({
       slot="end"
       value={value}
       placeholder="Select Mode"
-      onIonChange={(e) => onAccountModeChange(e.detail.value)}
+      onIonChange={(e) => onAccountModeChange(e.detail.value as string[])}
       interface="popover"
       multiple={true}
     >
-      <IonSelectOption value="Member">Member</IonSelectOption>
-      <IonSelectOption value="Leader">Leader</IonSelectOption>
-      <IonSelectOption value="Parent">Parent</IonSelectOption>
-      <IonSelectOption value="Car Driver">Car Driver</IonSelectOption>
-      <IonSelectOption value="Org Admin">Org Admin</IonSelectOption>
-      <IonSelectOption value="App Admin">App Admin</IonSelectOption>
+      {enabledModes.map((mode) => (
+        <IonSelectOption key={mode} value={mode}>
+          {mode}
+        </IonSelectOption>
+      ))}
     </IonSelect>
   );
 };

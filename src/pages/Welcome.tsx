@@ -1,5 +1,4 @@
 import React from 'react';
-import useAuth from '../useAuth';
 import {
   IonPage,
   IonContent,
@@ -7,17 +6,9 @@ import {
   IonText,
   IonHeader,
 } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
 import './Login.css';
 
 const Login: React.FC = () => {
-  const {
-    signInAnonymously,
-  } = useAuth();
-  const history = useHistory();
-
-
-  
 
   return (
     <IonPage>
@@ -37,18 +28,6 @@ const Login: React.FC = () => {
         </IonButton>
         <IonButton>
             <IonButton routerLink='/Login'>Login</IonButton>
-        </IonButton>
-        <IonButton
-          onClick={async () => {
-            try {
-              await signInAnonymously();
-              history.push('/Map');
-            } catch (error) {
-              // Handle the error (e.g., display an error message)
-            }
-          }}
-        >
-          Login Anonymously
         </IonButton>
       </IonContent>
     </IonPage>

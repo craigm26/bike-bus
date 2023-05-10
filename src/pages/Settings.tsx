@@ -37,20 +37,38 @@ import {
       console.log('showPopover state:', showPopover);
     };
   
-    const avatarElement = avatarUrl ? (
-      <IonAvatar>
-        <Avatar uid={user?.uid} size="extrasmall" />
-      </IonAvatar>
+    const avatarElement = user ? (
+      avatarUrl ? (
+        <IonAvatar>
+          <Avatar uid={user.uid} size="extrasmall" />
+        </IonAvatar>
+      ) : (
+        <IonIcon icon={personCircleOutline} />
+      )
     ) : (
       <IonIcon icon={personCircleOutline} />
     );
+    
   
     const label = user?.displayName ? user.displayName : "anonymous";
   
     const [accountMode, setAccountMode] = useState<string[]>([]);
   
-  
-  
+    const onAccountModeChange = (mode: string[]) => {
+      setAccountMode(mode);
+    };
+
+    const enabledModes = [
+      'Member',
+      'Leader',
+      'Parent',
+      'Kid',
+      'Car Driver',
+      'Org Admin',
+      'App Admin',
+    ];
+
+
     return (
       <IonPage>
         <IonHeader>
@@ -62,8 +80,9 @@ import {
               <h1>BikeBus</h1>
             </IonText>
             <AccountModeSelector
+              enabledModes={enabledModes}
               value={accountMode}
-              onAccountModeChange={(value) => setAccountMode(value)}
+              onAccountModeChange={onAccountModeChange}
             />
   
             <IonButton fill="clear" slot="end" onClick={togglePopover}>

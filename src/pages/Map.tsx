@@ -13,105 +13,103 @@ import {
   IonPopover,
   IonIcon,
 } from "@ionic/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { useAvatar } from "../components/useAvatar";
 import Avatar from "../components/Avatar";
 import Profile from "../components/Profile";
 import { personCircleOutline } from "ionicons/icons";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+import { ref, set } from "firebase/database";
+import { rtdb } from "../firebaseConfig";
 import {
   GoogleMap,
   useJsApiLoader,
-  Marker,
-  InfoWindow,
+  OverlayView
 } from "@react-google-maps/api";
+import AvatarMapMarker from "../components/AvatarMapMarker";
+import AccountModeSelector from "../components/AccountModeSelector";
 
 const Map: React.FC = () => {
   const { user } = useAuth();
-  const [mapMode, setMapMode] = useState<string | null>(null);
-  const { avatarUrl } = useAvatar(user?.uid);
   const [showPopover, setShowPopover] = useState(false);
-  const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const [accountMode, setAccountMode] = useState("Member");
+  const [accountMode, setAccountMode] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
   });
+  const [getLocationClicked, setGetLocationClicked] = useState(false);
+  const enabledModes = [
+    'Member',
+    'Leader',
+    'Parent',
+    'Kid',
+    'Car Driver',
+    'Org Admin',
+    'App Admin',
+  ];
 
-  const getCurrentLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setMapCenter({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      (error) => console.log(error),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-    );
-  };
-
-  useEffect(() => {
-    const fetchUserAccountMode = async () => {
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const docSnapshot = await getDoc(userRef);
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountMode) {
-            setMapMode(userData.accountMode);
-          }
-        }
-      }
-    };
-
-    fetchUserAccountMode();
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      const userRef = doc(db, "users", user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.defaultAccountMode) {
-            setAccountMode(userData.defaultAccountMode);
-          }
-        }
-      });
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      getCurrentLocation();
-    }
-  }, [user]);
-
-  const togglePopover = (e: any) => {
-    setPopoverEvent(e.nativeEvent);
+  const togglePopover = () => {
     setShowPopover((prevState) => !prevState);
   };
+
+  const onAccountModeChange = (mode: string[]) => {
+    setAccountMode(mode);
+    setShowPopover(false);
+  };
+
+  const getLocation = () => {
+    setGetLocationClicked(true);
+    setShowMap(true);
+  };
+
+  const watchLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (position) => {
+          const newMapCenter = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapCenter(newMapCenter);
+
+          // Save geolocation to the realtime database
+          if (user) {
+            const positionRef = ref(rtdb, `userLocations/${user.uid}`);
+            set(positionRef, newMapCenter);
+          }
+        },
+        (error) => console.log(error),
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      );
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && getLocationClicked) {
+      watchLocation();
+    }
+  }, [user, getLocationClicked, watchLocation]);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
   });
 
-  const avatarElement = avatarUrl ? (
+  let label = user?.displayName ? user.displayName : "anonymous";
+
+  if (!user) {
+    label = "anonymous";
+  }
+  
+  const avatarElement = label === "anonymous" ? (
+    <IonIcon icon={personCircleOutline} />
+  ) : (
     <IonAvatar>
       <Avatar uid={user?.uid} size="extrasmall" />
     </IonAvatar>
-  ) : (
-    <IonIcon icon={personCircleOutline} />
   );
-
-  const label = user?.displayName ? `${user.displayName} (${accountMode})`
-    : `anonymous (${accountMode})`;
-
+  
   return (
     <IonPage>
       <IonHeader>
@@ -122,6 +120,11 @@ const Map: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
+            <AccountModeSelector
+              enabledModes={enabledModes}
+              value={accountMode}
+              onAccountModeChange={onAccountModeChange}
+            />
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
@@ -130,7 +133,6 @@ const Map: React.FC = () => {
           </IonButton>
           <IonPopover
             isOpen={showPopover}
-            event={popoverEvent}
             onDidDismiss={() => setShowPopover(false)}
             className="my-popover"
           >
@@ -139,10 +141,11 @@ const Map: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar></IonToolbar>
-        </IonHeader>
-        {isLoaded && (
+        {!showMap && (
+          <div className="location-button-container">
+            <IonButton onClick={getLocation}>Get Current Location</IonButton>
+          </div>
+        )}        {isLoaded && showMap && (
           <GoogleMap
             mapContainerStyle={{
               width: "100%",
@@ -150,15 +153,15 @@ const Map: React.FC = () => {
             }}
             center={mapCenter}
             zoom={16}
+            options={{
+            }}
           >
-            <Marker position={mapCenter}>
-              <InfoWindow position ={mapCenter}>
-                <div>
-                  <h4>{user?.displayName || user?.email}</h4>
-                  <p>Account Mode: {mapMode}</p>
-                </div>
-              </InfoWindow>
-            </Marker>
+            <OverlayView
+              position={mapCenter}
+              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+            >
+              <AvatarMapMarker uid={user?.uid} />
+            </OverlayView>
           </GoogleMap>
 
         )}
@@ -168,3 +171,4 @@ const Map: React.FC = () => {
 };
 
 export default Map;
+
