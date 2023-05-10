@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { auth as firebaseAuth, db, auth } from './firebaseConfig';
+import { auth as firebaseAuth, auth } from './firebaseConfig';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -13,7 +13,6 @@ import {
   UserCredential,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 
 const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,14 +32,6 @@ const useAuth = () => {
     const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
     const user = userCredential.user;
     await updateProfile(user, { displayName: username });
-
-    // Save user data to Firestore
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-      username,
-      accountType: 'Member',
-      enabledAccountModes: ['Member'],
-    });
 
     return userCredential;
   };
