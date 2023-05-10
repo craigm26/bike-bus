@@ -1,4 +1,3 @@
-// src/pages/BikeBusMember.tsx
 import {
     IonContent,
     IonHeader,
@@ -23,7 +22,7 @@ import {
   import { personCircleOutline } from 'ionicons/icons';
   import AccountModeSelector from '../components/AccountModeSelector';
   
-  const About: React.FC = () => {
+  const Settings: React.FC = () => {
     const { user } = useAuth(); // Use the useAuth hook to get the user object
     const { avatarUrl } = useAvatar(user?.uid);
     const [showPopover, setShowPopover] = useState(false);
@@ -111,5 +110,5 @@ import {
     );
   };
   
-  export default About;
+  export default Settings;
   

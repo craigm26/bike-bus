@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonInput, IonItem, IonLabel, IonPage, IonRadioGroup } from '@ionic/react';
+import { IonButton, IonInput, IonItem, IonLabel, IonPage, IonText } from '@ionic/react';
 import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, query, where, getDocs, CollectionReference, DocumentData, QuerySnapshot, doc, setDoc } from 'firebase/firestore';
 import { getAdditionalUserInfo } from '@firebase/auth';
+
+interface UserData {
+    uid: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    accountType: string;
+    enabledAccountModes: string[];
+}
 
 const Signup: React.FC = () => {
     const { signUpWithEmailAndPassword, signInWithGoogle } = useAuth();
@@ -13,28 +23,48 @@ const Signup: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [accountMode, setAccountMode] = useState<string[]>([]);
+    const [isUsernameTaken, setIsUsernameTaken] = useState(false);
 
 
-    const handleSignup = async () => {
+    const createUserDocument = async (
+        usersCollectionRef: CollectionReference<DocumentData>,
+        newUserData: UserData
+    ) => {
+        const q = query(usersCollectionRef, where('uid', '==', newUserData.uid));
+        const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            await addDoc(usersCollectionRef, newUserData);
+        }
+    };
+
+    const checkUsername = async (username: string) => {
+        const usersCollectionRef = collection(db, 'users');
+        const q = query(usersCollectionRef, where('username', '==', username));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            setIsUsernameTaken(false);
+        } else {
+            setIsUsernameTaken(true);
+        }
+    };
+
+
+    const handleSignup = async (email: string, password: string, username: string) => {
         try {
             // Create the user in Firebase Authentication
             const userCredential = await signUpWithEmailAndPassword(email, password, username);
-    
-            // Create a new document in the "users" collection with the user's information
-            const usersCollectionRef = collection(db, 'users');
-            const newUserData = {
-                uid: userCredential.user.uid,
-                email: email,
-                username: username,
-                firstName: firstName,
-                lastName: lastName,
-                accountMode: accountMode,
-            };
-            await addDoc(usersCollectionRef, newUserData);
-    
+            const user = userCredential.user;
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                username,
+                accountType: 'Member',
+                enabledAccountModes: ['Member'],
+                firstName: '',
+                lastName: '',
+                email: user.email,
+            });
             // Redirect the user to the home page
             history.push('/Map');
         } catch (error) {
@@ -44,32 +74,31 @@ const Signup: React.FC = () => {
 
     const handleGoogleSignup = async () => {
         const userCredential = await signInWithGoogle();
-        
+
         if (userCredential) {
-          const additionalUserInfo = getAdditionalUserInfo(userCredential);
-          // Check if the user is new, then create a new document in the "users" collection with the user's information
-          if (additionalUserInfo?.isNewUser && userCredential.user) {
-            const usersCollectionRef = collection(db, 'users');
-            const newUserData = {
-              uid: userCredential.user.uid,
-              email: userCredential.user.email,
-              username: userCredential.user.displayName,
-              firstName: '',
-              lastName: '',
-              accountMode: accountMode,
-            };
-            await addDoc(usersCollectionRef, newUserData);
-      
-            // Redirect the user to the home page
-            history.push('/Map');
-          }
+            const additionalUserInfo = getAdditionalUserInfo(userCredential);
+            // Check if the user is new, then update the document in the "users" collection with the user's information
+            if (additionalUserInfo?.isNewUser && userCredential.user) {
+                const usersCollectionRef = collection(db, 'users');
+                const newUserData = {
+                    uid: userCredential.user.uid,
+                    email: userCredential.user.email as string,
+                    username: userCredential.user.displayName as string,
+                    firstName: userCredential.user.displayName as string,
+                    lastName: userCredential.user.displayName as string,
+                    accountType: 'Member',
+                    enabledAccountModes: ['Member'],
+                };
+                await createUserDocument(usersCollectionRef, newUserData);
+
+                // Redirect the user to the home page
+                history.push('/Map');
+            }
         } else {
-          console.error('Error signing in with Google');
+            console.error('Error signing in with Google');
         }
-      };
-      
-      
-    
+    };
+
 
     return (
         <IonPage>
@@ -96,64 +125,32 @@ const Signup: React.FC = () => {
                 <IonInput
                     type="text"
                     value={username}
-                    onIonChange={(event) => setUsername(event.detail.value!)}
+                    onIonChange={async (event) => {
+                        setUsername(event.detail.value!)
+                        await checkUsername(event.detail.value!);
+                    }}
                 />
             </IonItem>
 
-            <IonItem>
-                <IonLabel position="floating">First Name</IonLabel>
-                <IonInput
-                    type="text"
-                    value={firstName}
-                    onIonChange={(event) => setFirstName(event.detail.value!)}
-                />
-            </IonItem>
+            <IonButton
+                onClick={() => handleSignup(email, password, username)}
+                disabled={isUsernameTaken}
+            >
+                Sign Up
+            </IonButton>
 
-            <IonItem>
-                <IonLabel position="floating">Last Name</IonLabel>
-                <IonInput
-                    type="text"
-                    value={lastName}
-                    onIonChange={(event) => setLastName(event.detail.value!)}
-                />
-            </IonItem>
-
-            <IonItem>
-                <IonLabel position="floating">Default Account Mode</IonLabel>
-                <IonInput>
-                    <IonRadioGroup value={accountMode} onIonChange={e => setAccountMode(e.detail.value)}>
-                        <IonItem>
-                            <IonLabel>Member</IonLabel>
-                            <IonInput value="member" />
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>Leader</IonLabel>
-                            <IonInput value="leader" />
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>Car Driver</IonLabel>
-                            <IonInput value="car driver" />
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>Parent</IonLabel>
-                            <IonInput value="parent" />
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>Org Admin</IonLabel>
-                            <IonInput value="Org admin" />
-                            <IonLabel>Org Admin</IonLabel>
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>App Admin</IonLabel>
-                            <IonInput value="app admin" />
-                        </IonItem>
-                    </IonRadioGroup>
-                </IonInput>
-            </IonItem>
-
-            <IonButton onClick={handleSignup}>Sign Up</IonButton>
+            {isUsernameTaken && (
+                <IonText color="danger">
+                    <p>Username is already taken.</p>
+                </IonText>
+            )}
+            <IonText>
+                <h2>OR</h2>
+            </IonText>
             <IonButton onClick={handleGoogleSignup}>Sign Up with Google</IonButton>
-
+            <IonItem button routerLink="/SignUp" routerDirection="none">
+                <IonLabel>Create Organization for a School</IonLabel>
+            </IonItem>
         </IonPage>
     );
 };

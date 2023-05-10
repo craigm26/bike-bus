@@ -12,11 +12,11 @@ import {
     IonChip,
     IonAvatar,
     IonPopover,
-    IonCheckbox,
     IonItem,
     IonList,
     IonIcon,
     IonMenuToggle,
+    IonInput,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
@@ -38,6 +38,8 @@ const Account: React.FC = () => {
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
 
     const toggleAccountMode = async (mode: string) => {
         if (user) {
@@ -164,65 +166,47 @@ const Account: React.FC = () => {
                 <IonText>
                     <h2>Enabled Account Modes:</h2>
                 </IonText>
+                <IonItem>
+                <IonLabel position="floating">First Name</IonLabel>
+                <IonInput
+                    type="text"
+                    value={firstName}
+                    onIonChange={(event) => setFirstName(event.detail.value!)}
+                />
+            </IonItem>
+
+            <IonItem>
+                <IonLabel position="floating">Last Name</IonLabel>
+                <IonInput
+                    type="text"
+                    value={lastName}
+                    onIonChange={(event) => setLastName(event.detail.value!)}
+                />
+            </IonItem>
                 <IonList>
                     <IonItem>
                         <IonLabel slot="start">Member</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Member')}
-                            onIonChange={() => toggleAccountMode('Member')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Leader</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Leader')}
-                            onIonChange={() => toggleAccountMode('Leader')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Parent</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Parent')}
-                            onIonChange={() => toggleAccountMode('Parent')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Kid</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Kid')}
-                            onIonChange={() => toggleAccountMode('Kid')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Car Driver</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Car Driver')}
-                            onIonChange={() => toggleAccountMode('Car Driver')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Org Admin</IonLabel>
                         <IonLabel>Organization:</IonLabel>
                         <IonLabel>Organization Location:</IonLabel>
                         <IonLabel>Saved as BikeBus Destination type: School</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Org Admin')}
-                            onIonChange={() => toggleAccountMode('Org Admin')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">App Admin</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('App Admin')}
-                            onIonChange={() => toggleAccountMode('App Admin')}
-                        />
                     </IonItem>
                 </IonList>
                 <IonText>
@@ -231,62 +215,27 @@ const Account: React.FC = () => {
                 <IonMenuToggle>
                     <IonItem>
                         <IonLabel slot="start">Member</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Member')}
-                            onIonChange={() => toggleAccountMode('Member')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Leader</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Leader')}    
-                            onIonChange={() => toggleAccountMode('Leader')} 
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Parent</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Parent')}    
-                            onIonChange={() => toggleAccountMode('Parent')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Kid</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Kid')}
-                            onIonChange={() => toggleAccountMode('Kid')}    
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Car Driver</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Car Driver')}
-                            onIonChange={() => toggleAccountMode('Car Driver')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">Org Admin</IonLabel>
                         <IonLabel>Organization:</IonLabel>
                         <IonLabel>Organization Location:</IonLabel>
                         <IonLabel>Saved as BikeBus Destination type: School</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('Org Admin')}
-                            onIonChange={() => toggleAccountMode('Org Admin')}
-                        />
                     </IonItem>
                     <IonItem>
                         <IonLabel slot="start">App Admin</IonLabel>
-                        <IonCheckbox
-                            slot="start"
-                            checked={enabledAccountModes.includes('App Admin')}
-                            onIonChange={() => toggleAccountMode('App Admin')}
-                        />
                     </IonItem>
                 </IonMenuToggle>
             </IonContent>
