@@ -3,6 +3,7 @@ import { getAnalytics } from 'firebase/analytics';
 import { getAuth } from '@firebase/auth';
 import { getStorage } from '@firebase/storage';
 import { getFirestore } from '@firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const firebaseConfig = {
@@ -22,6 +23,7 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 
 // Add this line before initializing App Check
 if (process.env.NODE_ENV === 'development') {
@@ -33,4 +35,4 @@ const appCheck = initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 
-export { auth, storage, db, appCheck, analytics };
+export { auth, storage, db, appCheck, analytics, rtdb };

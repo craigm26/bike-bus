@@ -23,6 +23,16 @@ const Profile: React.FC = () => {
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const enabledModes = [
+    'Member',
+    'Leader',
+    'Parent',
+    'Kid',
+    'Car Driver',
+    'Org Admin',
+    'App Admin',
+  ];
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (user && user.uid && event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
@@ -46,6 +56,10 @@ const Profile: React.FC = () => {
   };
 
   const [accountMode, setAccountMode] = useState<string[]>([]);
+
+  const onAccountModeChange = (mode: string[]) => {
+    setAccountMode(mode);
+  };
 
 
   return (
@@ -74,8 +88,11 @@ const Profile: React.FC = () => {
             <div>
               {!avatarUrl && (
                   <><AccountModeSelector
-                    value={accountMode}
-                    onAccountModeChange={(value) => setAccountMode(value)} /><IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                  enabledModes={enabledModes}
+                  value={accountMode}
+                  onAccountModeChange={onAccountModeChange}
+                />
+                    <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
                       Add Avatar
                     </IonButton></>
               )}

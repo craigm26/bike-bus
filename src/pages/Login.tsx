@@ -54,6 +54,18 @@ const Login: React.FC = () => {
           <h1>BikeBus</h1>
         </IonText>
         <IonTitle>Login</IonTitle>
+        <IonText>
+          <p>
+            Don't have an account?{' '}
+            <IonButton
+              fill="solid"
+              color="primary"
+              onClick={() => history.push('/SignUp')}
+            >
+              Sign Up
+            </IonButton>
+          </p>
+        </IonText>
         <form onSubmit={handleSubmit}>
           <IonText color="danger">{errorMessage}</IonText>
           <IonItem>
@@ -74,12 +86,14 @@ const Login: React.FC = () => {
               onIonChange={(e) => setPassword(e.detail.value!)}
             />
           </IonItem>
-          <IonButton expand="block" type="submit">
+          <IonButton type="submit">
             Login with Email
           </IonButton>
         </form>
-        <IonButton
-          expand="block"
+        <PasswordReset email={email} />
+        <IonText>
+          <p>Or Use Google
+          <IonButton
           onClick={async () => {
             try {
               await signInWithGoogle();
@@ -91,8 +105,11 @@ const Login: React.FC = () => {
         >
           Login with Google
         </IonButton>
-        <IonButton
-          expand="block"
+          </p>
+        </IonText>
+        <IonText>
+          <p>Just Curious?
+          <IonButton
           onClick={async () => {
             try {
               await signInAnonymously();
@@ -104,19 +121,8 @@ const Login: React.FC = () => {
         >
           Login Anonymously
         </IonButton>
-        <IonText>
-          <p>
-            Don't have an account?{' '}
-            <IonButton
-              fill="clear"
-              color="primary"
-              onClick={() => history.push('/SignUp')}
-            >
-              Sign Up
-            </IonButton>
           </p>
         </IonText>
-        <PasswordReset />
       </IonContent>
     </IonPage>
   );

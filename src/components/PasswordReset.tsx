@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { IonButton, IonText } from '@ionic/react';
 import useAuth from '../useAuth';
 
-const PasswordReset: React.FC = () => {
-  const [email, setEmail] = useState('');
+interface PasswordResetProps {
+  email: string;
+}
+
+const PasswordReset: React.FC<PasswordResetProps> = ({ email }) => {
   const [message, setMessage] = useState('');
   const { sendResetEmail } = useAuth();
 
@@ -22,14 +25,8 @@ const PasswordReset: React.FC = () => {
 
   return (
     <>
-      <IonText color="primary">Forgot password? Enter your email:</IonText>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <IonButton expand="block" onClick={handlePasswordReset}>
+      <IonText>Forgot password?</IonText>
+      <IonButton onClick={handlePasswordReset}>
         Reset Password
       </IonButton>
       <IonText color={message.startsWith('Error') ? 'danger' : 'success'}>

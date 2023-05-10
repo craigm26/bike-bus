@@ -1,0 +1,4 @@
+.default-avatar-map-marker {
+    width: var(--width);
+    height: var(--height); 
+}
