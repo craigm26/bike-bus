@@ -81,8 +81,7 @@ const Account: React.FC = () => {
           });
         }
       }, [user]);
-      
-      
+
 
     useEffect(() => {
         if (user) {
@@ -123,11 +122,11 @@ const Account: React.FC = () => {
                     <IonText slot="start" color="primary" className="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
-                    <MapModeSelector enabledModes={MapModes} value={MapMode} onMapModeChange={onMapModeChange} />
-                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                        <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                             {avatarElement}
                             <IonLabel>{label}</IonLabel>
+                            <IonText>({accountType})</IonText>
                         </IonChip>
                     </IonButton>
                     <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)} className="my-popover">
