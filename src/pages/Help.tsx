@@ -21,13 +21,14 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
-import AccountModeSelector from '../components/AccountModeSelector';
+import MapModeSelector from '../components/MapModeSelector';
 
 const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const [MapMode, setMapMode] = useState<string[]>([]);
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -50,23 +51,17 @@ const Help: React.FC = () => {
   );
   
 
-  const label = user?.displayName ? user.displayName : "anonymous";
+  const label = user?.username ? user.username : "anonymous";
 
-  const [accountMode, setAccountMode] = useState<string[]>([]);
-
-  const onAccountModeChange = (mode: string[]) => {
-    setAccountMode(mode);
-  };
-
-  const enabledModes = [
-    'Member',
-    'Leader',
-    'Parent',
-    'Kid',
-    'Car Driver',
-    'Org Admin',
-    'App Admin',
+  const MapModes = [
+    'Bicyle',
+    'Car',
   ];
+
+  const onMapModeChange = (mode: string[]) => {
+    setMapMode(mode);
+    setShowPopover(false);
+  };
 
   return (
     <IonPage>
@@ -78,11 +73,11 @@ const Help: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-          <AccountModeSelector
-            enabledModes={enabledModes}
-            value={accountMode}
-            onAccountModeChange={onAccountModeChange}
-          />
+          <MapModeSelector
+              enabledModes={MapModes}
+              value={MapMode}
+              onMapModeChange={onMapModeChange}
+            />
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}

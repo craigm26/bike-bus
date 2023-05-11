@@ -49,7 +49,7 @@ import {
     );
     
   
-    const label = user?.displayName ? user.displayName : "anonymous";
+    const label = user?.username ? user.username : "anonymous";
   
     const [accountMode, setAccountMode] = useState<string[]>([]);
   
