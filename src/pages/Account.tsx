@@ -55,13 +55,16 @@ const Account: React.FC = () => {
           getDoc(userRef).then((docSnapshot) => {
             if (docSnapshot.exists()) {
               const userData = docSnapshot.data();
-              if (userData && userData.enabledAccountModes) {
-                setEnabledAccountModes(userData.enabledAccountModes);
-              } else {
-                setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+              if (userData) {
+                if (userData.enabledAccountModes) {
+                  setEnabledAccountModes(userData.enabledAccountModes);
+                } else {
+                  setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+                  updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+                }
+              
+                // Other user data checks
               }
-      
               if (userData && userData.firstName) {
                 setFirstName(userData.firstName);
               }
@@ -75,18 +78,13 @@ const Account: React.FC = () => {
               if (userData && userData.accountType) {
                 setaccountType(userData.accountType);
               }
+              if (userData && userData.enabledAccountModes) {
+                setEnabledAccountModes(userData.enabledAccountModes);
+              }
             }
           });
         }
       }, [user]);
-
-
-    useEffect(() => {
-        if (user) {
-            const userRef = doc(db, 'users', user.uid);
-            updateDoc(userRef, { enabledAccountModes });
-        }
-    }, [enabledAccountModes, user]);
 
     const avatarElement = user ? (
         avatarUrl ? (
@@ -157,9 +155,6 @@ const Account: React.FC = () => {
                     </IonCardContent>
                 </IonCard>
             </IonContent>
-            <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)}>
-                <Profile />
-            </IonPopover>
         </IonPage>
     );
 };
