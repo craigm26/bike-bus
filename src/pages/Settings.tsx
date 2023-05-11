@@ -20,20 +20,14 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
-import AccountModeSelector from '../components/AccountModeSelector';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-
-const DEFAULT_ACCOUNT_MODES = ['Member'];
-
 
 const Settings: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
   const [showPopover, setShowPopover] = useState(false);
   const [accountType, setaccountType] = useState<string>('');
-  const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
-  const [username, setusername] = useState<string>('');
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
 
   const togglePopover = (e: any) => {
@@ -62,15 +56,6 @@ const Settings: React.FC = () => {
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-          if (userData && userData.enabledAccountModes) {
-            setEnabledAccountModes(userData.enabledAccountModes);
-          } else {
-            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-          }
-          if (userData && userData.username) {
-            setusername(userData.username);
-          }
           if (userData && userData.accountType) {
             setaccountType(userData.accountType);
           }
@@ -80,12 +65,6 @@ const Settings: React.FC = () => {
   }, [user]);
 
   const label = user?.username ? user.username : "anonymous";
-
-  const [accountMode, setAccountMode] = useState<string[]>([]);
-
-  const onAccountModeChange = (mode: string[]) => {
-    setAccountMode(mode);
-  };
 
 
   return (

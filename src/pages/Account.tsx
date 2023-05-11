@@ -29,7 +29,7 @@ import Profile from '../components/Profile';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { personCircleOutline } from 'ionicons/icons';
-import MapModeSelector from '../components/MapModeSelector';
+
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -43,8 +43,6 @@ const Account: React.FC = () => {
     const [username, setusername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
-    const [MapMode, setMapMode] = useState<string[]>([]);
-
 
     const togglePopover = (e: any) => {
         setPopoverEvent(e.nativeEvent);
@@ -103,14 +101,6 @@ const Account: React.FC = () => {
     );
 
     const label = user?.username ? user.username : 'anonymous';
-
-
-    const onMapModeChange = (mode: string[]) => {
-        setMapMode(mode);
-        setShowPopover(false);
-    };
-
-    const MapModes = ['Bicycle', 'Car'];
 
     return (
         <IonPage>

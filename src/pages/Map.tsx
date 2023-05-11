@@ -28,7 +28,6 @@ import {
   OverlayView
 } from "@react-google-maps/api";
 import AvatarMapMarker from "../components/AvatarMapMarker";
-import MapModeSelector from "../components/MapModeSelector";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
