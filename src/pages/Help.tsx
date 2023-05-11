@@ -14,21 +14,27 @@ import {
   IonPopover,
   IonIcon,
 } from '@ionic/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
-import MapModeSelector from '../components/MapModeSelector';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+
+const DEFAULT_ACCOUNT_MODES = ['Member'];
+
 
 const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
+  const [accountType, setaccountType] = useState<string>('');
+  const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
+  const [username, setusername] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const [MapMode, setMapMode] = useState<string[]>([]);
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -50,18 +56,30 @@ const Help: React.FC = () => {
     <IonIcon icon={personCircleOutline} />
   );
   
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.enabledAccountModes) {
+            setEnabledAccountModes(userData.enabledAccountModes);
+          } else {
+            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+          }
+          if (userData && userData.username) {
+            setusername(userData.username);
+          }
+          if (userData && userData.accountType) {
+            setaccountType(userData.accountType);
+          }
+        }
+      });
+    }
+  }, [user]);
 
   const label = user?.username ? user.username : "anonymous";
-
-  const MapModes = [
-    'Bicyle',
-    'Car',
-  ];
-
-  const onMapModeChange = (mode: string[]) => {
-    setMapMode(mode);
-    setShowPopover(false);
-  };
 
   return (
     <IonPage>
@@ -73,15 +91,11 @@ const Help: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-          <MapModeSelector
-              enabledModes={MapModes}
-              value={MapMode}
-              onMapModeChange={onMapModeChange}
-            />
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
               <IonLabel>{label}</IonLabel>
+              <IonText>({accountType})</IonText>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -92,7 +106,6 @@ const Help: React.FC = () => {
           >
             <Profile />
           </IonPopover>
-
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

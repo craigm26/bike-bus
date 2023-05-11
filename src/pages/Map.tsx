@@ -12,6 +12,7 @@ import {
   IonAvatar,
   IonPopover,
   IonIcon,
+  IonTitle,
 } from "@ionic/react";
 import { useState, useEffect, useCallback } from "react";
 import "./Map.css";
@@ -20,7 +21,7 @@ import Avatar from "../components/Avatar";
 import Profile from "../components/Profile";
 import { personCircleOutline } from "ionicons/icons";
 import { ref, set } from "firebase/database";
-import { rtdb } from "../firebaseConfig";
+import { db, rtdb } from "../firebaseConfig";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -28,37 +29,62 @@ import {
 } from "@react-google-maps/api";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import MapModeSelector from "../components/MapModeSelector";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+
+const DEFAULT_ACCOUNT_MODES = ['Member'];
+
 
 const Map: React.FC = () => {
   const { user } = useAuth();
+  const [accountType, setaccountType] = useState<string>('');
+  const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
+  const [username, setusername] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
-  const [MapMode, setMapMode] = useState<string[]>([]);
   const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
   });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
-  const MapModes = [
-    'Bicycle',
-    'Car',
-  ];
 
-  
+  useEffect(() => {
+    if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        updateDoc(userRef, { enabledAccountModes });
+    }
+}, [enabledAccountModes, user]);  
 
   const togglePopover = () => {
     setShowPopover((prevState) => !prevState);
-  };
-
-  const onMapModeChange = (mode: string[]) => {
-    setMapMode(mode);
-    setShowPopover(false);
   };
 
   const getLocation = () => {
     setGetLocationClicked(true);
     setShowMap(true);
   };
+
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.enabledAccountModes) {
+            setEnabledAccountModes(userData.enabledAccountModes);
+          } else {
+            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+          }
+          if (userData && userData.username) {
+            setusername(userData.username);
+          }
+          if (userData && userData.accountType) {
+            setaccountType(userData.accountType);
+          }
+        }
+      });
+    }
+  }, [user]);
 
   const watchLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -117,15 +143,11 @@ const Map: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-            <MapModeSelector
-              enabledModes={MapModes}
-              value={MapMode}
-              onMapModeChange={onMapModeChange}
-            />
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
               <IonLabel>{label}</IonLabel>
+              <IonText>({accountType})</IonText>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -139,9 +161,11 @@ const Map: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         {!showMap && (
-          <div className="location-button-container">
-            <IonButton onClick={getLocation}>Get Current Location</IonButton>
-          </div>
+          <><div>
+            <IonTitle>Welcome{username}</IonTitle>
+          </div><div className="location-button-container">
+              <IonButton onClick={getLocation}>Get Current Location</IonButton>
+            </div></>
         )}        {isLoaded && showMap && (
           <GoogleMap
             mapContainerStyle={{
