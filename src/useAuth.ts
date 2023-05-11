@@ -13,7 +13,7 @@ import {
   UserCredential,
   updateProfile
 } from 'firebase/auth';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 
 interface UserData {
   uid: string;
@@ -21,66 +21,77 @@ interface UserData {
   username: string;
   firstName: string;
   lastName: string;
-  accountType: "Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "OrgAdmin" | "AppAdmin";
-  enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'OrgAdmin' | 'AppAdmin'>;
+  accountType: "Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin";
+  enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'Org Admin' | 'App Admin'>;
   // Add other properties specific to user data
 }
+
+const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] => {
+  switch (accountType) {
+    case 'Anonymous':
+      return ['Member', 'Anonymous'];
+    case 'Member':
+      return ['Member'];
+    case 'Leader':
+      return ['Member', 'Leader'];
+    case 'Parent':
+      return ['Member', 'Leader', 'Parent'];
+    case 'Kid':
+      return ['Member', 'Kid'];
+    case 'Org Admin':
+      return ['Member', 'Org Admin'];
+    case 'App Admin':
+      return ['Member', 'Leader', 'Parent', 'Kid', 'Org Admin', 'App Admin'];
+    default:
+      return [];
+  }
+};
+
+const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
+  let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] = [];
+
+  // Fetch additional user data from the database or other sources
+  const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
+  const userData = userSnapshot.data();
+
+  if (userData && userData.accountType) {
+    enabledAccountModes = getEnabledAccountModes(userData.accountType);
+  }
+
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    username: firebaseUser.displayName || '',
+    firstName: '',
+    lastName: '',
+    accountType: userData?.accountType || '',
+    enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[],
+    // Add other properties specific to user data
+  };
+});
 
 const useAuth = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [error, setError] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userData = await mapFirebaseUserToUserData(firebaseUser);
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (fUser) => {
+      if (fUser) {
+        const userData = await mapFirebaseUserToUserData(fUser);
         setUser(userData);
+        setFirebaseUser(fUser);
       } else {
         setUser(null);
+        setFirebaseUser(null);
       }
     });
-
+  
     return () => {
       unsubscribe();
     };
   }, []);
-
-  const mapFirebaseUserToUserData = async (firebaseUser: User): Promise<UserData> => {
-    let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "OrgAdmin" | "AppAdmin")[] = [];
-  
-    // Fetch additional user data from the database or other sources
-    const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
-    const userData = userSnapshot.data();
-  
-    if (userData && userData.accountType) {
-      if (userData.accountType === 'Member') {
-        enabledAccountModes = ['Member'];
-      } else if (userData.accountType === 'Leader') {
-        enabledAccountModes = ['Member', 'Leader'];
-      } else if (userData.accountType === 'Parent') {
-        enabledAccountModes = ['Member', 'Leader', 'Parent'];
-      } else if (userData.accountType === 'Kid') {
-        enabledAccountModes = ['Member', 'Kid'];
-      } else if (userData.accountType === 'OrgAdmin') {
-        enabledAccountModes = ['Member', 'OrgAdmin'];
-      } else if (userData.accountType === 'AppAdmin') {
-        enabledAccountModes = ['Member', 'Leader', 'Parent', 'Kid', 'OrgAdmin', 'AppAdmin'];
-      }
-    }
-  
-    return {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email || '',
-      username: firebaseUser.displayName || '',
-      firstName: '',
-      lastName: '',
-      accountType: userData?.accountType || '',
-      enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "OrgAdmin" | "AppAdmin")[],
-      // Add other properties specific to user data
-    };
-  };
-  
-  
   
 
   const signUpWithEmailAndPassword = async (email: string, password: string, username: string): Promise<UserCredential> => {
@@ -138,8 +149,28 @@ const useAuth = () => {
     }
   };
 
+  const checkAndUpdateAccountModes = async (user: User) => {
+    try {
+      const userRef = doc(collection(db, 'users'), user.uid);
+      const userDoc = await getDoc(userRef);
+  
+      if (userDoc.exists()) {
+        // Update the document as needed
+        await updateDoc(userRef, { /* your update data */ });
+      } else {
+        // Create the document with the necessary data
+        await setDoc(userRef, { /* your initial data */ });
+      }
+    } catch (error) {
+      console.error('Error checking and updating account modes:', error);
+    }
+  };
+  
+  
+
   return {
     user,
+    firebaseUser,
     signUpWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendResetEmail,
@@ -148,6 +179,7 @@ const useAuth = () => {
     signOut,
     error,
     setError,
+    checkAndUpdateAccountModes,
   };
 };
 

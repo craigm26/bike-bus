@@ -19,23 +19,29 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const {
+    firebaseUser,
     signInWithEmailAndPassword,
     signInWithGoogle,
     signInAnonymously,
+    checkAndUpdateAccountModes,
   } = useAuth();
   const history = useHistory();
 
   const [errorMessage, setErrorMessage] = useState('');
-
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(email, password);
-      // Redirect to the main app or show a success message
-      history.push('/Map');
+      if (firebaseUser) {
+        await checkAndUpdateAccountModes(firebaseUser);
+      }
+      setSuccessMessage('Successfully logged in!');
+      setTimeout(() => {
+        history.push('/Map');
+      }, 2000);
     } catch (error) {
-      // Handle the error (e.g., display an error message)
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
       } else {
@@ -68,9 +74,10 @@ const Login: React.FC = () => {
         </IonText>
         <form onSubmit={handleSubmit}>
           <IonText color="danger">{errorMessage}</IonText>
+          <IonText color="success">{successMessage}</IonText>
           <IonItem>
             <IonLabel>Email</IonLabel>
-            <IonInput aria-label = "email"
+            <IonInput aria-label="email"
               type="email"
               placeholder="Email"
               value={email}
@@ -79,7 +86,7 @@ const Login: React.FC = () => {
           </IonItem>
           <IonItem>
             <IonLabel>Password</IonLabel>
-            <IonInput aria-label= "password"
+            <IonInput aria-label="password"
               type="password"
               placeholder="Password"
               value={password}
@@ -93,34 +100,34 @@ const Login: React.FC = () => {
         <PasswordReset email={email} />
         <IonText>
           <p>Or Use Google
-          <IonButton
-          onClick={async () => {
-            try {
-              await signInWithGoogle();
-              history.push('/Map');
-            } catch (error) {
-              // Handle the error (e.g., display an error message)
-            }
-          }}
-        >
-          Login with Google
-        </IonButton>
+            <IonButton
+              onClick={async () => {
+                try {
+                  await signInWithGoogle();
+                  history.push('/Map');
+                } catch (error) {
+                  // Handle the error (e.g., display an error message)
+                }
+              }}
+            >
+              Login with Google
+            </IonButton>
           </p>
         </IonText>
         <IonText>
           <p>Just Curious?
-          <IonButton
-          onClick={async () => {
-            try {
-              await signInAnonymously();
-              history.push('/Map');
-            } catch (error) {
-              // Handle the error (e.g., display an error message)
-            }
-          }}
-        >
-          Login Anonymously
-        </IonButton>
+            <IonButton
+              onClick={async () => {
+                try {
+                  await signInAnonymously();
+                  history.push('/Map');
+                } catch (error) {
+                  // Handle the error (e.g., display an error message)
+                }
+              }}
+            >
+              Login Anonymously
+            </IonButton>
           </p>
         </IonText>
       </IonContent>

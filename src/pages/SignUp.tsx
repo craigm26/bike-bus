@@ -72,33 +72,6 @@ const Signup: React.FC = () => {
         }
     };
 
-    const handleGoogleSignup = async () => {
-        const userCredential = await signInWithGoogle();
-
-        if (userCredential) {
-            const additionalUserInfo = getAdditionalUserInfo(userCredential);
-            // Check if the user is new, then update the document in the "users" collection with the user's information
-            if (additionalUserInfo?.isNewUser && userCredential.user) {
-                const usersCollectionRef = collection(db, 'users');
-                const newUserData = {
-                    uid: userCredential.user.uid,
-                    email: userCredential.user.email as string,
-                    username: userCredential.user.displayName as string,
-                    firstName: userCredential.user.displayName as string,
-                    lastName: userCredential.user.displayName as string,
-                    accountType: 'Member',
-                    enabledAccountModes: ['Member'],
-                };
-                await createUserDocument(usersCollectionRef, newUserData);
-
-                // Redirect the user to the home page
-                history.push('/Map');
-            }
-        } else {
-            console.error('Error signing in with Google');
-        }
-    };
-
 
     return (
         <IonPage>
@@ -147,7 +120,6 @@ const Signup: React.FC = () => {
             <IonText>
                 <h2>OR</h2>
             </IonText>
-            <IonButton onClick={handleGoogleSignup}>Sign Up with Google</IonButton>
             <IonItem button routerLink="/SignUp" routerDirection="none">
                 <IonLabel>Create Organization for a School</IonLabel>
             </IonItem>
