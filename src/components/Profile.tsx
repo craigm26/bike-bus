@@ -17,18 +17,17 @@ import Avatar from './Avatar';
 import Logout from './Logout';
 import AccountModeSelector from '../components/AccountModeSelector';
 
-
 const Profile: React.FC = () => {
   const { user } = useAuth();
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const enabledModes = [
+  const enabledAccountModes = [
     'Member',
+    'Anonymous',
     'Leader',
     'Parent',
     'Kid',
-    'Car Driver',
     'Org Admin',
     'App Admin',
   ];
@@ -61,40 +60,43 @@ const Profile: React.FC = () => {
     setAccountMode(mode);
   };
 
-
   return (
     <IonPage>
-      <IonHeader />
+      <IonHeader>
+        <IonTitle>Profile</IonTitle>
+      </IonHeader>
       <IonContent fullscreen>
-        <IonTitle size="large">Profile</IonTitle>
         <div className="avatar-container">
           <IonAvatar>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
-          {user?.isAnonymous ? (
+          {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
             <IonButton fill="clear" routerLink="/account">
               Account
             </IonButton>
           )}
-          {user?.isAnonymous ? (
-            <><>
-              <IonText>
-              </IonText></><IonButton fill="clear" routerLink="/SignUp">
+          {user?.accountType === 'Anonymous' ? (
+            <>
+              <IonText></IonText>
+              <IonButton fill="clear" routerLink="/SignUp">
                 SignUp to Add Avatar
-              </IonButton></>
+              </IonButton>
+            </>
           ) : (
             <div>
               {!avatarUrl && (
-                  <><AccountModeSelector
-                  enabledModes={enabledModes}
-                  value={accountMode}
-                  onAccountModeChange={onAccountModeChange}
-                />
-                    <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
-                      Add Avatar
-                    </IonButton></>
+                <>
+                  <AccountModeSelector
+                    enabledModes={enabledAccountModes}
+                    value={accountMode}
+                    onAccountModeChange={onAccountModeChange}
+                  />
+                  <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                    Add Avatar
+                  </IonButton>
+                </>
               )}
               <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
             </div>

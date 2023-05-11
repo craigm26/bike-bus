@@ -1,4 +1,3 @@
-// src/pages/Account.tsx
 import {
     IonContent,
     IonHeader,
@@ -15,70 +14,75 @@ import {
     IonItem,
     IonList,
     IonIcon,
-    IonMenuToggle,
-    IonInput,
+    IonCard,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
+    IonTitle,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
-import useAuth from '../useAuth'; // Import useAuth hook
+import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile'; // Import the Profile component
+import Profile from '../components/Profile';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { personCircleOutline } from 'ionicons/icons';
-import AccountModeSelector from '../components/AccountModeSelector';
+import MapModeSelector from '../components/MapModeSelector';
 
-const DEFAULT_ACCOUNT_MODES = ['Member']; // Define the default account modes
-
+const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
-    const { user } = useAuth(); // Use the useAuth hook to get the user object
+    const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
+    const [firstName, setFirstName] = useState<string>('');
+    const [lastName, setLastName] = useState<string>('');
+    const [username, setusername] = useState<string>('');
+    const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const [MapMode, setMapMode] = useState<string[]>([]);
 
-    const toggleAccountMode = async (mode: string) => {
-        if (user) {
-            const userRef = doc(db, 'users', user.uid);
-
-            if (enabledAccountModes.includes(mode)) {
-                setEnabledAccountModes(enabledAccountModes.filter((m) => m !== mode));
-                await updateDoc(userRef, { enabledAccountModes: arrayRemove(mode) });
-            } else {
-                setEnabledAccountModes([...enabledAccountModes, mode]);
-                await updateDoc(userRef, { enabledAccountModes: arrayUnion(mode) });
-            }
-        }
-    };
 
     const togglePopover = (e: any) => {
-        console.log('togglePopover called');
-        console.log('event:', e);
         setPopoverEvent(e.nativeEvent);
         setShowPopover((prevState) => !prevState);
-        console.log('showPopover state:', showPopover);
     };
 
     useEffect(() => {
         if (user) {
-            const userRef = doc(db, 'users', user.uid);
-            getDoc(userRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const userData = docSnapshot.data();
-                    if (userData && userData.enabledAccountModes) {
-                        setEnabledAccountModes(userData.enabledAccountModes);
-                    } else {
-                        setEnabledAccountModes(DEFAULT_ACCOUNT_MODES); // Set the default account modes
-                        updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES }); // Update the database with the default account modes
-                    }
-                }
-            });
+          const userRef = doc(db, 'users', user.uid);
+          getDoc(userRef).then((docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const userData = docSnapshot.data();
+              if (userData && userData.enabledAccountModes) {
+                setEnabledAccountModes(userData.enabledAccountModes);
+              } else {
+                setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+                updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+              }
+      
+              if (userData && userData.firstName) {
+                setFirstName(userData.firstName);
+              }
+      
+              if (userData && userData.lastName) {
+                setLastName(userData.lastName);
+              }
+              if (userData && userData.username) {
+                setusername(userData.username);
+              }
+              if (userData && userData.accountType) {
+                setaccountType(userData.accountType);
+              }
+            }
+          });
         }
-    }, [user]);
+      }, [user]);
+      
+      
 
     useEffect(() => {
         if (user) {
@@ -99,23 +103,15 @@ const Account: React.FC = () => {
         <IonIcon icon={personCircleOutline} />
     );
 
-    const label = user?.displayName ? user.displayName : "anonymous";
+    const label = user?.username ? user.username : 'anonymous';
 
-    const [accountMode, setAccountMode] = useState<string[]>([]);
 
-    const onAccountModeChange = (mode: string[]) => {
-        setAccountMode(mode);
+    const onMapModeChange = (mode: string[]) => {
+        setMapMode(mode);
+        setShowPopover(false);
     };
 
-    const enabledModes = [
-        'Member',
-        'Leader',
-        'Parent',
-        'Kid',
-        'Car Driver',
-        'Org Admin',
-        'App Admin',
-    ];
+    const MapModes = ['Bicycle', 'Car'];
 
     return (
         <IonPage>
@@ -124,126 +120,55 @@ const Account: React.FC = () => {
                     <IonButtons slot="start">
                         <IonMenuButton></IonMenuButton>
                     </IonButtons>
-                    <IonText slot="start" color="primary" class="BikeBusFont">
+                    <IonText slot="start" color="primary" className="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
-                    <AccountModeSelector
-                        enabledModes={enabledModes}
-                        value={accountMode}
-                        onAccountModeChange={onAccountModeChange}
-                    />
+                    <MapModeSelector enabledModes={MapModes} value={MapMode} onMapModeChange={onMapModeChange} />
                     <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                             {avatarElement}
                             <IonLabel>{label}</IonLabel>
                         </IonChip>
                     </IonButton>
-                    <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                    >
+                    <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)} className="my-popover">
                         <Profile />
                     </IonPopover>
-
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <IonText>
-                    <h1>Account</h1>
-                    <IonLabel>UserName: value for username:""</IonLabel>
-                    <IonLabel>Account ID: value for users document id</IonLabel>
-                    <IonLabel>Account Type:</IonLabel>
-                    <IonLabel>UserID: value for uid</IonLabel>
-                    <IonLabel>Google Account User ID:</IonLabel>
-                    <IonLabel>Email Account User ID:</IonLabel>
-                    <IonLabel>:</IonLabel>
-                </IonText>
-                <IonText>
-                    <h2>Default Map Mode: Member</h2>
-                </IonText>
-                <IonText>
-                    <h2>Enabled Account Modes:</h2>
-                </IonText>
-                <IonItem>
-                <IonLabel position="floating">First Name</IonLabel>
-                <IonInput
-                    type="text"
-                    value={firstName}
-                    onIonChange={(event) => setFirstName(event.detail.value!)}
-                />
-            </IonItem>
-
-            <IonItem>
-                <IonLabel position="floating">Last Name</IonLabel>
-                <IonInput
-                    type="text"
-                    value={lastName}
-                    onIonChange={(event) => setLastName(event.detail.value!)}
-                />
-            </IonItem>
-                <IonList>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonTitle>{user?.username}</IonTitle>
+                        <IonCardTitle>Account</IonCardTitle>
+                    </IonCardHeader>
+                    <Avatar uid={user?.uid} size="large" />
                     <IonItem>
-                        <IonLabel slot="start">Member</IonLabel>
+                        <IonLabel>Account Type</IonLabel>
+                        <IonText>{accountType}</IonText>
                     </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Leader</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Parent</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Kid</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Car Driver</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Org Admin</IonLabel>
-                        <IonLabel>Organization:</IonLabel>
-                        <IonLabel>Organization Location:</IonLabel>
-                        <IonLabel>Saved as BikeBus Destination type: School</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">App Admin</IonLabel>
-                    </IonItem>
-                </IonList>
-                <IonText>
-                    <h2>Available Map Modes:</h2>
-                </IonText>
-                <IonMenuToggle>
-                    <IonItem>
-                        <IonLabel slot="start">Member</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Leader</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Parent</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Kid</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Car Driver</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">Org Admin</IonLabel>
-                        <IonLabel>Organization:</IonLabel>
-                        <IonLabel>Organization Location:</IonLabel>
-                        <IonLabel>Saved as BikeBus Destination type: School</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel slot="start">App Admin</IonLabel>
-                    </IonItem>
-                </IonMenuToggle>
+                    <IonCardContent>
+                        <IonList>
+                            <IonItem>
+                                <IonLabel>First Name</IonLabel>
+                                <IonText>{firstName}</IonText>
+                            </IonItem>
+                            <IonItem>
+                                <IonLabel>Last Name</IonLabel>
+                                <IonText>{lastName}</IonText>
+                            </IonItem>
+                            <IonItem>
+                                <IonLabel>User Name</IonLabel>
+                                <IonText>{username}</IonText>
+                            </IonItem>
+                            <IonItem>
+                                <IonLabel>Account Modes</IonLabel>
+                                <IonText>{enabledAccountModes.join(', ')}</IonText>
+                            </IonItem>
+                        </IonList>
+                    </IonCardContent>
+                </IonCard>
             </IonContent>
-            <IonPopover
-                isOpen={showPopover}
-                event={popoverEvent}
-                onDidDismiss={() => setShowPopover(false)}
-            >
+            <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)}>
                 <Profile />
             </IonPopover>
         </IonPage>
@@ -251,4 +176,3 @@ const Account: React.FC = () => {
 };
 
 export default Account;
-

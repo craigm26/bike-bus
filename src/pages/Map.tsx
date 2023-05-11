@@ -27,34 +27,31 @@ import {
   OverlayView
 } from "@react-google-maps/api";
 import AvatarMapMarker from "../components/AvatarMapMarker";
-import AccountModeSelector from "../components/AccountModeSelector";
+import MapModeSelector from "../components/MapModeSelector";
 
 const Map: React.FC = () => {
   const { user } = useAuth();
   const [showPopover, setShowPopover] = useState(false);
-  const [accountMode, setAccountMode] = useState<string[]>([]);
+  const [MapMode, setMapMode] = useState<string[]>([]);
   const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
   });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
-  const enabledModes = [
-    'Member',
-    'Leader',
-    'Parent',
-    'Kid',
-    'Car Driver',
-    'Org Admin',
-    'App Admin',
+  const MapModes = [
+    'Bicycle',
+    'Car',
   ];
+
+  
 
   const togglePopover = () => {
     setShowPopover((prevState) => !prevState);
   };
 
-  const onAccountModeChange = (mode: string[]) => {
-    setAccountMode(mode);
+  const onMapModeChange = (mode: string[]) => {
+    setMapMode(mode);
     setShowPopover(false);
   };
 
@@ -96,7 +93,7 @@ const Map: React.FC = () => {
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
   });
 
-  let label = user?.displayName ? user.displayName : "anonymous";
+  let label = user?.username ? user.username : "anonymous";
 
   if (!user) {
     label = "anonymous";
@@ -120,10 +117,10 @@ const Map: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
-            <AccountModeSelector
-              enabledModes={enabledModes}
-              value={accountMode}
-              onAccountModeChange={onAccountModeChange}
+            <MapModeSelector
+              enabledModes={MapModes}
+              value={MapMode}
+              onMapModeChange={onMapModeChange}
             />
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
