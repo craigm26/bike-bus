@@ -53,6 +53,8 @@ const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData>
   // Fetch additional user data from the database or other sources
   const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
   const userData = userSnapshot.data();
+  
+  
 
   if (userData && userData.accountType) {
     enabledAccountModes = getEnabledAccountModes(userData.accountType);
@@ -94,7 +96,7 @@ const useAuth = () => {
   }, []);
   
 
-  const signUpWithEmailAndPassword = async (email: string, password: string, username: string): Promise<UserCredential> => {
+  const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName:string): Promise<UserCredential> => {
     const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
     const user = userCredential.user;
     await updateProfile(user, { displayName: username });
