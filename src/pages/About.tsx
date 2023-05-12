@@ -118,7 +118,7 @@ const About: React.FC = () => {
           </IonCardHeader>
           <IonCardContent>
             <h2>Anonymous</h2>
-            <p>Users without an account can still access the same features as Member account types, allowing them to find and join routes without providing any personal information.</p>
+            <p>Users without an account can still access the same features as Member account types, allowing them to find and join routes without saving any personal information.</p>
 
             <h2>Member</h2>
             <p>Members can find and join routes, create bikebus groups, and communicate with other members.</p>
@@ -130,14 +130,16 @@ const About: React.FC = () => {
             <p>Parents have access to Member and Leader features, with the unique ability to add kids to their account, assign them to routes, and manage premium subscription for their family.</p>
 
             <h2>Kid</h2>
-            <p>Kid accounts are created and managed by Parent accounts. They can participate in assigned routes and communicate within their bikebus group.</p>
+            <p>Kid accounts are created and managed by Parent accounts. They can participate in assigned routes by receiving an invite from the Parent and only gives a "Start/Stop" button</p>
 
             <h2>Org Admin</h2>
-            <p>Org Admins manage routes based on the route destination or start of school type. They can create, edit, and delete routes as needed.</p>
+            <p>Org Admins manage routes based on the route destination or start of school type. They can create, edit, and delete routes as needed. There are school, school district and city types of orgs.</p>
 
             <h2>App Admin</h2>
             <p>App Admins have complete access to all app features, can manage all routes, and oversee user accounts and activities.</p>
           </IonCardContent>
+          </IonCard>
+          <IonCard>
           <IonCardHeader>
             <IonCardTitle>Map Modes</IonCardTitle>
           </IonCardHeader>
@@ -147,6 +149,35 @@ const About: React.FC = () => {
 
             <h2>Car</h2>
             <p>Displays roads and highways.</p>
+          </IonCardContent>
+          </IonCard>
+          <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Map Layers</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <h2>Map</h2>
+            <p>Displays the map.</p>
+
+            <h2>Routes</h2>
+            <p>Displays the routes.</p>
+
+            <h2>Stops</h2>
+            <p>Displays the stops.</p>
+
+            <h2>Destinations</h2>
+            <p>Displays the destination.</p>
+
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Privacy</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p>Display the privacy policy.</p>
+            <p>At this point, the plan is to anonymize data before any exports for potential use for city planning of bike routes</p>
+            <p>We are also trying to limit the social interaction on the app so that only BikeBus participants in a specific route can chat with each other</p>
           </IonCardContent>
         </IonCard>
     </IonContent>

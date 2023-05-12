@@ -25,10 +25,11 @@ import { db, rtdb } from "../firebaseConfig";
 import {
   GoogleMap,
   useJsApiLoader,
-  OverlayView
 } from "@react-google-maps/api";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { useAvatar } from '../components/useAvatar';
+
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -36,6 +37,7 @@ const DEFAULT_ACCOUNT_MODES = ['Member'];
 const Map: React.FC = () => {
   const { user } = useAuth();
   const [accountType, setaccountType] = useState<string>('');
+  const { avatarUrl } = useAvatar(user?.uid);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setusername] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
@@ -45,13 +47,6 @@ const Map: React.FC = () => {
     lng: 0,
   });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        updateDoc(userRef, { enabledAccountModes });
-    }
-}, [enabledAccountModes, user]);  
 
   const togglePopover = () => {
     setShowPopover((prevState) => !prevState);
@@ -85,8 +80,23 @@ const Map: React.FC = () => {
     }
   }, [user]);
 
+  
   const watchLocation = useCallback(() => {
     if (navigator.geolocation) {
+      // Get initial location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newMapCenter = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapCenter(newMapCenter);
+        },
+        (error) => console.log(error),
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      );
+
+      // Watch location for changes
       navigator.geolocation.watchPosition(
         (position) => {
           const newMapCenter = {
@@ -123,15 +133,19 @@ const Map: React.FC = () => {
   if (!user) {
     label = "anonymous";
   }
-  
-  const avatarElement = label === "anonymous" ? (
-    <IonIcon icon={personCircleOutline} />
+
+  const avatarElement = user ? (
+    avatarUrl ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
+    ) : (
+      <IonIcon icon={personCircleOutline} />
+    )
   ) : (
-    <IonAvatar>
-      <Avatar uid={user?.uid} size="extrasmall" />
-    </IonAvatar>
+    <IonIcon icon={personCircleOutline} />
   );
-  
+
   return (
     <IonPage>
       <IonHeader>
@@ -165,7 +179,8 @@ const Map: React.FC = () => {
           </div><div className="location-button-container">
               <IonButton onClick={getLocation}>Get Current Location</IonButton>
             </div></>
-        )}        {isLoaded && showMap && (
+        )}
+        {isLoaded && showMap && (
           <GoogleMap
             mapContainerStyle={{
               width: "100%",
@@ -176,12 +191,7 @@ const Map: React.FC = () => {
             options={{
             }}
           >
-            <OverlayView
-              position={mapCenter}
-              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-            >
-              <AvatarMapMarker uid={user?.uid} />
-            </OverlayView>
+            {user && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
           </GoogleMap>
 
         )}

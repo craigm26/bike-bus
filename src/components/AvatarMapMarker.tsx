@@ -1,14 +1,28 @@
 import React from "react";
-import ReactDOMServer from "react-dom/server";
 import Avatar from "../components/Avatar";
+import { OverlayView } from "@react-google-maps/api";
 
-const AvatarMapMarker: React.FC<{ uid: string | undefined }> = ({ uid }) => {
-  const content = (
-    <div className="default-avatar-map-marker">
-      <Avatar uid={uid} size="extrasmall" />
-    </div>
+interface Position {
+  lat: number;
+  lng: number;
+}
+
+interface Props {
+  uid: string | undefined;
+  position: Position;
+}
+
+const AvatarMapMarker: React.FC<Props> = ({ uid, position }) => {
+  return (
+    <OverlayView
+      position={position}
+      mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+    >
+      <div className="default-avatar-map-marker">
+        <Avatar uid={uid} size="extrasmall" />
+      </div>
+    </OverlayView>
   );
-  return <div dangerouslySetInnerHTML={{ __html: ReactDOMServer.renderToString(content) }} />;
 };
 
 export default AvatarMapMarker;

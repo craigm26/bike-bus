@@ -13,7 +13,7 @@ import {
   UserCredential,
   updateProfile
 } from 'firebase/auth';
-import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc, collection } from 'firebase/firestore';
 
 interface UserData {
   uid: string;
@@ -107,13 +107,15 @@ const useAuth = () => {
     return userCredential;
   };
 
-  const signInWithEmailAndPassword = async (email: string, password: string) => {
+  const signInWithEmailAndPassword = async (email: string, password: string): Promise<UserCredential> => {
     try {
-      await firebaseSignInWithEmailAndPassword(firebaseAuth, email, password);
+      const userCredential = await firebaseSignInWithEmailAndPassword(firebaseAuth, email, password);
+      return userCredential;
     } catch (error) {
       console.error('Error signing in:', error);
+      throw error;
     }
-  };
+};
 
   const sendResetEmail = async (email: string) => {
     try {
@@ -134,13 +136,16 @@ const useAuth = () => {
     }
   };
 
-  const signInAnonymously = async () => {
+  const signInAnonymously = async (): Promise<UserCredential> => {
     try {
-      await firebaseSignInAnonymously(firebaseAuth);
+      const userCredential = await firebaseSignInAnonymously(firebaseAuth);
+      return userCredential;
     } catch (error) {
       console.error('Error signing in anonymously:', error);
+      throw error;
     }
-  };
+};
+
 
   const signOut = async () => {
     try {
@@ -151,28 +156,35 @@ const useAuth = () => {
     }
   };
 
-  const checkAndUpdateAccountModes = async (user: User) => {
+  const checkAndUpdateAccountModes = async (uid: string) => {
     try {
-      const userRef = doc(collection(db, 'users'), user.uid);
+      const userRef = doc(collection(db, 'users'), uid);
       const userDoc = await getDoc(userRef);
   
       if (userDoc.exists()) {
-        // Update the document as needed
-        await updateDoc(userRef, { /* your update data */ });
-      } else {
-        // Create the document with the necessary data
-        await setDoc(userRef, { /* your initial data */ });
+        const userData = userDoc.data();
+        if (userData && userData.accountType) {
+          // Only update if enabledAccountModes does not exist or is empty
+          if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
+            const enabledAccountModes = getEnabledAccountModes(userData.accountType);
+            await updateDoc(userRef, { enabledAccountModes });
+          }
+        }
       }
     } catch (error) {
       console.error('Error checking and updating account modes:', error);
     }
   };
   
+
+
+  
   
 
   return {
     user,
     firebaseUser,
+    checkAndUpdateAccountModes,
     signUpWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendResetEmail,
@@ -181,7 +193,6 @@ const useAuth = () => {
     signOut,
     error,
     setError,
-    checkAndUpdateAccountModes,
   };
 };
 

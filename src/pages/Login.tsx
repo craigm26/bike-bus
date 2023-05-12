@@ -19,7 +19,6 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const {
-    firebaseUser,
     signInWithEmailAndPassword,
     signInWithGoogle,
     signInAnonymously,
@@ -33,9 +32,10 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(email, password);
-      if (firebaseUser) {
-        await checkAndUpdateAccountModes(firebaseUser);
+      const userCredential = await signInWithEmailAndPassword(email, password);
+      const user = userCredential?.user;
+      if (user && user.uid) {
+        await checkAndUpdateAccountModes(user.uid);
       }
       setSuccessMessage('Successfully logged in!');
       setTimeout(() => {
@@ -103,7 +103,11 @@ const Login: React.FC = () => {
             <IonButton
               onClick={async () => {
                 try {
-                  await signInWithGoogle();
+                  const userCredential = await signInWithGoogle();
+                  const user = userCredential?.user;
+                  if (user && user.uid) {
+                    await checkAndUpdateAccountModes(user.uid);
+                  }
                   history.push('/Map');
                 } catch (error) {
                   // Handle the error (e.g., display an error message)
@@ -115,11 +119,15 @@ const Login: React.FC = () => {
           </p>
         </IonText>
         <IonText>
-          <p>Just Curious?
+          <p>Or Use Anonymously
             <IonButton
               onClick={async () => {
                 try {
-                  await signInAnonymously();
+                  const userCredential = await signInAnonymously();
+                  const user = userCredential?.user;
+                  if (user && user.uid) {
+                    await checkAndUpdateAccountModes(user.uid);
+                  }
                   history.push('/Map');
                 } catch (error) {
                   // Handle the error (e.g., display an error message)
@@ -136,3 +144,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+         
