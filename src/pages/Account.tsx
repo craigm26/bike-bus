@@ -19,6 +19,7 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonTitle,
+    IonInput,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
@@ -51,41 +52,41 @@ const Account: React.FC = () => {
 
     useEffect(() => {
         if (user) {
-          checkAndUpdateAccountModes(user.uid);
-          const userRef = doc(db, 'users', user.uid);
-          getDoc(userRef).then((docSnapshot) => {
-            if (docSnapshot.exists()) {
-              const userData = docSnapshot.data();
-              if (userData) {
-                if (userData.enabledAccountModes) {
-                  setEnabledAccountModes(userData.enabledAccountModes);
-                } else {
-                  setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                  updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+            checkAndUpdateAccountModes(user.uid);
+            const userRef = doc(db, 'users', user.uid);
+            getDoc(userRef).then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const userData = docSnapshot.data();
+                    if (userData) {
+                        if (userData.enabledAccountModes) {
+                            setEnabledAccountModes(userData.enabledAccountModes);
+                        } else {
+                            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+                            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+                        }
+
+                        // Other user data checks
+                    }
+                    if (userData && userData.firstName) {
+                        setFirstName(userData.firstName);
+                    }
+
+                    if (userData && userData.lastName) {
+                        setLastName(userData.lastName);
+                    }
+                    if (userData && userData.username) {
+                        setusername(userData.username);
+                    }
+                    if (userData && userData.accountType) {
+                        setaccountType(userData.accountType);
+                    }
+                    if (userData && userData.enabledAccountModes) {
+                        setEnabledAccountModes(userData.enabledAccountModes);
+                    }
                 }
-              
-                // Other user data checks
-              }
-              if (userData && userData.firstName) {
-                setFirstName(userData.firstName);
-              }
-      
-              if (userData && userData.lastName) {
-                setLastName(userData.lastName);
-              }
-              if (userData && userData.username) {
-                setusername(userData.username);
-              }
-              if (userData && userData.accountType) {
-                setaccountType(userData.accountType);
-              }
-              if (userData && userData.enabledAccountModes) {
-                setEnabledAccountModes(userData.enabledAccountModes);
-              }
-            }
-          });
+            });
         }
-      }, [user, checkAndUpdateAccountModes]);
+    }, [user, checkAndUpdateAccountModes]);
 
     const avatarElement = user ? (
         avatarUrl ? (
@@ -101,6 +102,14 @@ const Account: React.FC = () => {
 
     const label = user?.username ? user.username : 'anonymous';
 
+    const saveUsername = async () => {
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { username: username });
+        }
+      };
+      
+
     return (
         <IonPage>
             <IonHeader>
@@ -111,7 +120,7 @@ const Account: React.FC = () => {
                     <IonText slot="start" color="primary" className="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
-                        <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                             {avatarElement}
                             <IonLabel>{label}</IonLabel>
@@ -145,14 +154,54 @@ const Account: React.FC = () => {
                                 <IonText>{lastName}</IonText>
                             </IonItem>
                             <IonItem>
-                                <IonLabel>User Name</IonLabel>
-                                <IonText>{username}</IonText>
+                                <IonLabel position="stacked">User Name</IonLabel>
+                                <IonInput
+                                    value={username}
+                                    placeholder="Enter Username"
+                                    onIonChange={e => setusername(e.detail.value!)}
+                                />
                             </IonItem>
+                            <IonButton onClick={saveUsername}>Save Username</IonButton>
+
                             <IonItem>
                                 <IonLabel>Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
                             </IonItem>
                         </IonList>
+                    </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>BikeBus You Belong To</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                        <IonText>Display Name of Routes (BikeBusGroups) the Account is associated with</IonText>
+                        <IonText>Link to the BikeBusGroup (Route, group message, group members, group leaders) Page</IonText>
+                    </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>Notification Settings</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                    </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>Favorite Destinations</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                    </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>Parent</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                        <IonText>Add a Kid Account here</IonText>
+                        <IonText>When a Kid is added, a table shows with the ability to associate a known route and schedule along with the phone device phone number to send invite</IonText>
+                        <IonText>When a Kid attempts to login, a PIN code set by the parent is entered along with the account email address. This same PIN is used for the kid to login</IonText>
+                        <IonText>When a Kid logs in, there's only a few visual indicators they're in the app. All they can do is "Start" and "Stop". Parents receive notifications about the ride.</IonText>
                     </IonCardContent>
                 </IonCard>
             </IonContent>
