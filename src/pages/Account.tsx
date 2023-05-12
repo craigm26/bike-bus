@@ -34,7 +34,7 @@ import { personCircleOutline } from 'ionicons/icons';
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
-    const { user } = useAuth();
+    const { user, checkAndUpdateAccountModes } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -51,6 +51,7 @@ const Account: React.FC = () => {
 
     useEffect(() => {
         if (user) {
+          checkAndUpdateAccountModes(user.uid);
           const userRef = doc(db, 'users', user.uid);
           getDoc(userRef).then((docSnapshot) => {
             if (docSnapshot.exists()) {
@@ -84,7 +85,7 @@ const Account: React.FC = () => {
             }
           });
         }
-      }, [user]);
+      }, [user, checkAndUpdateAccountModes]);
 
     const avatarElement = user ? (
         avatarUrl ? (
