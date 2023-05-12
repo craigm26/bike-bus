@@ -113,12 +113,6 @@ const Signup: React.FC = () => {
                     <p>Username is already taken.</p>
                 </IonText>
             )}
-            <IonText>
-                <h2>OR</h2>
-            </IonText>
-            <IonItem button routerLink="/SignUp" routerDirection="none">
-                <IonLabel>Create Organization for a School</IonLabel>
-            </IonItem>
         </IonPage>
     );
 };
