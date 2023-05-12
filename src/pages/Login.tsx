@@ -14,6 +14,9 @@ import {
 import { useHistory } from 'react-router-dom';
 import './Login.css';
 import PasswordReset from '../components/PasswordReset';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -49,7 +52,7 @@ const Login: React.FC = () => {
       }
     }
   };
-  
+
 
   return (
     <IonPage>
@@ -106,9 +109,16 @@ const Login: React.FC = () => {
                   const userCredential = await signInWithGoogle();
                   const user = userCredential?.user;
                   if (user && user.uid) {
-                    await checkAndUpdateAccountModes(user.uid);
+                    const userRef = doc(db, 'users', user.uid);
+                    const docSnap = await getDoc(userRef);
+                    if (!docSnap.exists()) {
+                      // User does not exist in Firestore, redirect to set username page
+                      history.push('/set-username');
+                    } else {
+                      await checkAndUpdateAccountModes(user.uid);
+                      history.push('/Map');
+                    }
                   }
-                  history.push('/Map');
                 } catch (error) {
                   // Handle the error (e.g., display an error message)
                 }
@@ -116,6 +126,7 @@ const Login: React.FC = () => {
             >
               Login with Google
             </IonButton>
+
           </p>
         </IonText>
         <IonText>
@@ -144,4 +155,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-         
+

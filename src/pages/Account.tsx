@@ -19,7 +19,6 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonTitle,
-    IonInput,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
@@ -101,13 +100,6 @@ const Account: React.FC = () => {
     );
 
     const label = user?.username ? user.username : 'anonymous';
-
-    const saveUsername = async () => {
-        if (user) {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { username: username });
-        }
-      };
       
 
     return (
@@ -146,23 +138,17 @@ const Account: React.FC = () => {
                     <IonCardContent>
                         <IonList>
                             <IonItem>
-                                <IonLabel>First Name</IonLabel>
+                                <IonLabel position="stacked">First Name</IonLabel>
                                 <IonText>{firstName}</IonText>
                             </IonItem>
                             <IonItem>
-                                <IonLabel>Last Name</IonLabel>
+                                <IonLabel position="stacked">Last Name</IonLabel>
                                 <IonText>{lastName}</IonText>
                             </IonItem>
                             <IonItem>
                                 <IonLabel position="stacked">User Name</IonLabel>
-                                <IonInput
-                                    value={username}
-                                    placeholder="Enter Username"
-                                    onIonChange={e => setusername(e.detail.value!)}
-                                />
+                                <IonText>{username}</IonText>
                             </IonItem>
-                            <IonButton onClick={saveUsername}>Save Username</IonButton>
-
                             <IonItem>
                                 <IonLabel>Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
