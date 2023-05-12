@@ -94,27 +94,8 @@ In the parent's view, create a map using the Google Maps JavaScript API to displ
 
 Use Ionic as the framework and Firebase (Authentication, Hosting, Payments) as much as possible. Allow for Google Play Store and Apple Store to manage subscriptions as well.
 
-Google Maps JavaScript API: This API allows you to display maps, draw routes, and add markers on the map. You can use the DirectionsService to draw a cycling route between the starting point and the school. You can customize the route by adding waypoints and dragging the route.
 
-Google Places API: You can use this API to search for and display the locations of schools or other points of interest. The Places API also provides autocomplete suggestions when users are searching for a destination.
-
-Firebase Realtime Database or Firestore: To invite riders and track the ride, you can use Firebase Realtime Database or Firestore to store and sync data in real-time. This enables you to store users' information, send invites, and track their location updates.
-
-Geolocation: To track the riders' locations, you can use the Geolocation API provided by the browser or the Ionic Native Geolocation plugin. This allows you to get the users' current position and update their location on the map in real-time.
-
-To build the app, you'll need to follow these steps:
-
-install the Google Maps JavaScript API and the appropriate Ionic Native plugins.
-
-Implement the Google Maps and Places APIs in your app to display the map, search for schools, and create the route.
-
-Set up Firebase Realtime Database or Firestore to store and manage users, invites, and real-time location updates.
-
-Implement the Geolocation functionality to track the riders' locations.
-
-Build the user interface for the group leader and riders, allowing them to create a bikebus, invite other riders, and track the ride in real-time.
-
-## Feature/Subscripotion ideas
+## Feature/Subscription ideas
 
 Subscription model: Offer a subscription-based model with a free tier and paid tiers that provide additional features or benefits. This way, you can generate revenue without relying on ads or sharing user data. The paid tiers could include features like enhanced route planning, priority support, or extended historical ride data.
 
