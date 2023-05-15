@@ -1,4 +1,5 @@
-import { IonAvatar } from '@ionic/react';
+import { IonAvatar, IonIcon } from '@ionic/react';
+import { personCircleOutline } from 'ionicons/icons';
 import { useAvatar } from './useAvatar';
 
 interface AvatarProps {
@@ -14,7 +15,7 @@ const Avatar: React.FC<AvatarProps> = ({ uid, size = 'small' }) => {
       {avatarUrl ? (
         <img src={avatarUrl} alt="Avatar" />
       ) : (
-        <div className="default-avatar"></div>
+        <IonIcon icon={personCircleOutline} />
       )}
     </IonAvatar>
   );

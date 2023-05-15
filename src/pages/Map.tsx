@@ -29,13 +29,14 @@ import {
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAvatar } from '../components/useAvatar';
+import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 
 const Map: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAnonymous } = useAuth();
   const [accountType, setaccountType] = useState<string>('');
   const { avatarUrl } = useAvatar(user?.uid);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
@@ -80,7 +81,7 @@ const Map: React.FC = () => {
     }
   }, [user]);
 
-  
+
   const watchLocation = useCallback(() => {
     if (navigator.geolocation) {
       // Get initial location
@@ -175,7 +176,7 @@ const Map: React.FC = () => {
       <IonContent fullscreen>
         {!showMap && (
           <><div>
-            <IonTitle>Welcome{username}</IonTitle>
+            <IonTitle>Welcome {username}</IonTitle>
           </div><div className="location-button-container">
               <IonButton onClick={getLocation}>Get Current Location</IonButton>
             </div></>
@@ -191,7 +192,10 @@ const Map: React.FC = () => {
             options={{
             }}
           >
-            {user && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
+            {user && isAnonymous && <AnonymousAvatarMapMarker position={mapCenter} uid={user.uid} />}
+            {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
+
+
           </GoogleMap>
 
         )}
