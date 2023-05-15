@@ -24,6 +24,7 @@ import Help from './pages/Help';
 import About from './pages/About';
 import Account from './pages/Account';
 import Welcome from './pages/Welcome';
+import BikeBusGroupPage from './pages/BikeBusGroupPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -79,6 +80,8 @@ const App: React.FC = () => (
         </IonMenu>
         <IonPage id="main-content">
           <IonRouterOutlet>
+            <Route path="/bikebusgrouppage/:groupId" component={BikeBusGroupPage} />
+            <BikeBusGroupPage />
             <Route exact path="/Profile">
               <Profile />
             </Route>
