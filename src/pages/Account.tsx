@@ -27,9 +27,15 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { personCircleOutline } from 'ionicons/icons';
+import { Link } from 'react-router-dom';
 
+interface Group {
+    id: string;
+    BikeBusName: string;
+    BikeBusMembers: string[];
+}
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -43,6 +49,7 @@ const Account: React.FC = () => {
     const [username, setusername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
+    const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
 
     const togglePopover = (e: any) => {
         setPopoverEvent(e.nativeEvent);
@@ -55,6 +62,19 @@ const Account: React.FC = () => {
             const userRef = doc(db, 'users', user.uid);
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
+                    // Get the BikeBusGroups
+                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', `${user.uid}`));
+
+                    getDocs(q).then((querySnapshot) => {
+                        const groups = querySnapshot.docs.map((doc) => ({
+                            id: doc.id,
+                            BikeBusName: doc.data().BikeBusName,  // assuming the document has a field named 'BikeBusName'
+                            BikeBusMembers: doc.data().BikeBusMembers, // assuming the document has a field named 'BikeBusMembers'
+                        }));
+                        setBikeBusGroups(groups);
+                    });
+
+
                     const userData = docSnapshot.data();
                     if (userData) {
                         if (userData.enabledAccountModes) {
@@ -100,7 +120,7 @@ const Account: React.FC = () => {
     );
 
     const label = user?.username ? user.username : 'anonymous';
-      
+
 
     return (
         <IonPage>
@@ -150,7 +170,7 @@ const Account: React.FC = () => {
                                 <IonText>{username}</IonText>
                             </IonItem>
                             <IonItem>
-                                <IonLabel>Account Modes</IonLabel>
+                                <IonLabel position="stacked">Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
                             </IonItem>
                         </IonList>
@@ -161,9 +181,25 @@ const Account: React.FC = () => {
                         <IonCardTitle>BikeBus You Belong To</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
-                        <IonText>Display Name of Routes (BikeBusGroups) the Account is associated with</IonText>
-                        <IonText>Link to the BikeBusGroup (Route, group message, group members, group leaders) Page</IonText>
+                        <Link to="/createbikebusgroup">Create a BikeBus Group</Link>
+                        {BikeBusGroups.map((group, index) => (
+                            <div key={group.id}>
+                            <Link to={`/bikebusgrouppage/${group.id}`}>
+                                {group.BikeBusName}
+                            </Link>
+                            </div>
+                        ))}
                     </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>BikeBus Routes you created, have ridden or liked</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                    </IonCardContent>
+                    <Link to="/createroute">Create a Route</Link>
+                    <br />
+                    <Link to="/routes">View Routes</Link>
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
