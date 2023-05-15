@@ -13,7 +13,7 @@ import {
   UserCredential,
   updateProfile
 } from 'firebase/auth';
-import { getDoc, doc, updateDoc, collection } from 'firebase/firestore';
+import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 
 interface UserData {
   uid: string;
@@ -94,6 +94,8 @@ const useAuth = () => {
       unsubscribe();
     };
   }, []);
+
+  const isAnonymous = firebaseUser?.isAnonymous || false;
   
 
   const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName:string): Promise<UserCredential> => {
@@ -139,12 +141,28 @@ const useAuth = () => {
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
       const userCredential = await firebaseSignInAnonymously(firebaseAuth);
+      const user = userCredential.user;
+  
+      if(user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userData = {
+          accountType: "Anonymous",
+          enabledAccountModes: ["Anonymous"]
+        };
+  
+        await setDoc(userRef, userData, { merge: true });
+  
+        const mappedUser = await mapFirebaseUserToUserData(user);
+        setUser(mappedUser);
+      }
+  
       return userCredential;
     } catch (error) {
       console.error('Error signing in anonymously:', error);
       throw error;
     }
-};
+  };
+  
 
 
   const signOut = async () => {
@@ -193,6 +211,7 @@ const useAuth = () => {
     signOut,
     error,
     setError,
+    isAnonymous,
   };
 };
 
