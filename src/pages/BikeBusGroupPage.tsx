@@ -1,3 +1,4 @@
+// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
@@ -16,25 +17,27 @@ import {
 import { useEffect, useState } from 'react';
 import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
+import useBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { useParams } from 'react-router-dom';
 
-const BikeBusGroupPage: React.FC = () => {
+const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
-  const { groupId } = useParams<{ groupId: string }>();
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const [BikeBusName, setBikeBusName] = useState<string>('');
-  const [routes, setRoutes] = useState<string>('');
-  const [BikeBusLeaders, setBikeBusLeaders] = useState<string>('');
-  const [groupData, setGroupData] = useState<any>({});
+  const { fetchedGroups, loading, error } = useBikeBusGroup();
+  const [groups, setGroups] = useState<any[]>([]);
+
+  async function getUserData(userRef: any) {
+    const docSnap = await getDoc(userRef);
+    return docSnap.data();
+  }
 
 
   const togglePopover = (e: any) => {
@@ -58,36 +61,52 @@ const BikeBusGroupPage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (user && groupId) {
+    if (user) {
       const userRef = doc(db, 'users', user.uid);
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-
-          // Get the BikeBusGroup document directly using its ID
-          const groupRef = doc(db, 'bikebusgroups', groupId);
-          getDoc(groupRef).then((groupDoc) => {
-            if (groupDoc.exists()) {
-              const groupData = groupDoc.data();
-              console.log(groupData);
-              setGroupData(groupData); // Store the data in your state
-              setBikeBusName(groupData?.BikeBusName);
-              setBikeBusLeaders(groupData?.BikeBusLeaders);
-            }
-          });
-
           if (userData && userData.accountType) {
             setaccountType(userData.accountType);
           }
         }
       });
     }
-  }, [groupId, user]);
+  }, [user]);
+
+  useEffect(() => {
+    if (fetchedGroups.length > 0) {
+      fetchedGroups.forEach(async (group: any) => {
+        const membersPromises = group.BikeBusMembers.map((memberRef: any) => getUserData(memberRef));
+        const leadersPromises = group.BikeBusLeaders.map((leaderRef: any) => getUserData(leaderRef));
+
+        const membersData = await Promise.all(membersPromises);
+        const leadersData = await Promise.all(leadersPromises);
+
+        group.BikeBusMembers = membersData;
+        group.BikeBusLeaders = leadersData;
+
+        setGroups([...fetchedGroups]); // This will trigger a re-render
+      });
+    }
+  }, [fetchedGroups]);
 
 
-  if (!groupId) {
-    return <div>Loading...</div>;
+  let groupsElement;
+  if (loading) {
+    groupsElement = <p>Loading groups...</p>;
+  } else if (error) {
+    groupsElement = <p>Error loading groups: {error.message}</p>;
+  } else {
+    groupsElement = fetchedGroups.map((group) => (
+      <div key={group.id}>
+        <h2>{group.BikeBusName}</h2>
+        <p>Members: {group.BikeBusMembers.length}</p>
+        <p>Leaders: {group.BikeBusLeaders.length}</p>
+      </div>
+    ));
   }
+
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -120,21 +139,30 @@ const BikeBusGroupPage: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
-          <IonToolbar>
-          </IonToolbar>
+          <IonToolbar></IonToolbar>
         </IonHeader>
-        <div>
-          {groupData?.BikeBusName && groupData?.BikeBusLeaders && (
-            <div>
-              <h1>{groupData.BikeBusName}</h1>
-              <p>Leaders: {groupData.BikeBusLeaders}</p>
-            </div>
-          )}
-        </div>
-
+        {fetchedGroups.map((group) => (
+          <div key={group.id}>
+            <h2>{group.BikeBusName}</h2>
+            <h3>Members</h3>
+            <IonChip>
+              {avatarElement}
+              {group.BikeBusMembers.map((member: any) => (
+                <p key={member.uid}>{member.username}</p>
+              ))}
+            </IonChip>
+            <h3>Leaders</h3>
+            <IonChip>
+              {avatarElement}
+              {group.BikeBusLeaders.map((leader: any) => (
+                <p key={leader.uid}>{leader.username}</p>
+              ))}
+            </IonChip>
+          </div>
+        ))}
       </IonContent>
     </IonPage>
   );
 };
 
-export default BikeBusGroupPage;
+export default Help;

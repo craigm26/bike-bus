@@ -23,6 +23,7 @@ import {
 import { useEffect, useState } from 'react';
 import './Account.css';
 import useAuth from '../useAuth';
+import useBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile';
@@ -50,6 +51,8 @@ const Account: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
+    const { fetchedGroups, loading, error } = useBikeBusGroup(); // Use the hook
+
 
     const togglePopover = (e: any) => {
         setPopoverEvent(e.nativeEvent);
@@ -63,7 +66,7 @@ const Account: React.FC = () => {
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
                     // Get the BikeBusGroups
-                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', `${user.uid}`));
+                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user.uid}`)));
 
                     getDocs(q).then((querySnapshot) => {
                         const groups = querySnapshot.docs.map((doc) => ({
