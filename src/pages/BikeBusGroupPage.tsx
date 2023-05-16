@@ -12,7 +12,6 @@ import {
   IonAvatar,
   IonPopover,
   IonIcon,
-  IonTitle,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -28,18 +27,14 @@ import { useParams } from 'react-router-dom';
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { groupId } = useParams<{ groupId: string }>();
-  console.log(groupId);  // Check the value of groupId
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
   const [BikeBusName, setBikeBusName] = useState<string>('');
-  const [BikeBusLeader, setBikeBusLeader] = useState<string>(''); // Adjust the type as per your data structure
-  const [Route, setRoute] = useState<string>(''); // Adjust the type as per your data structure
-  const [ScheduledFor, setScheduledFor] = useState<string>(''); // Adjust the type as per your data structure
-  const [GroupMessages, setGroupMessages] = useState<string>(''); // Update the state variable name to GroupMessages
-  const [BikeBusMembers, setBikeBusMembers] = useState<string[]>([]); // Update initial state to an empty array
-
+  const [routes, setRoutes] = useState<string>('');
+  const [BikeBusLeaders, setBikeBusLeaders] = useState<string>('');
+  const [groupData, setGroupData] = useState<any>([]);
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -68,24 +63,15 @@ const BikeBusGroupPage: React.FC = () => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
 
-          // Get the BikeBusGroups
-          const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', `${user.uid}`));
-
-          getDocs(q).then((querySnapshot) => {
-            const groups = querySnapshot.docs.map((doc) => ({
-              id: doc.id,
-              BikeBusName: doc.data().BikeBusName,
-              BikeBusMembers: doc.data().BikeBusMembers,
-              BikeBusLeader: doc.data().BikeBusLeader, // Assuming 'BikeBusLeader' exists in the document
-              Route: doc.data().Route, // Assuming 'Route' exists in the document
-              ScheduledFor: doc.data().ScheduledFor, // Assuming 'ScheduledFor' exists in the document
-              GroupMessages: doc.data().GroupMessages, // Assuming 'GroupMessages' exists in the document
-            }));
-            setBikeBusName(groups[0].BikeBusName);
-            setBikeBusMembers(groups[0].BikeBusMembers);
-            setBikeBusLeader(groups[0].BikeBusLeader);
-            setRoute(groups[0].Route);
-            setScheduledFor(groups[0].ScheduledFor);
+          // Get the BikeBusGroup document directly using its ID
+          const groupRef = doc(db, 'bikebusgroups', groupId);
+          getDoc(groupRef).then((groupDoc) => {
+            if (groupDoc.exists()) {
+              const groupData = groupDoc.data();
+              console.log(groupData);
+              setBikeBusName(groupData?.BikeBusName);
+              setBikeBusLeaders(groupData?.BikeBusLeaders);
+            }
           });
 
           if (userData && userData.accountType) {
@@ -96,23 +82,10 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }, [groupId, user]);
 
+
   if (!groupId) {
     return <div>Loading...</div>;
   }
-
-  const BikeBusLeaderElement = BikeBusLeader ? (
-    <IonChip>
-      <IonAvatar>
-        <Avatar uid={BikeBusLeader} size="medium" />
-      </IonAvatar>
-    </IonChip>
-  ) : (
-    <IonChip>
-      <IonAvatar>
-        <Avatar uid={BikeBusLeader} size="medium" />
-      </IonAvatar>
-    </IonChip>
-  );
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -148,34 +121,13 @@ const BikeBusGroupPage: React.FC = () => {
           <IonToolbar>
           </IonToolbar>
         </IonHeader>
-        <IonTitle>{BikeBusName}</IonTitle>
         <div>
-          <h2>BikeBus Members:</h2>
-          <IonChip>
-            <IonAvatar>
-              <ul>
-                {BikeBusMembers.map((member) => (
-                  <li key={member}>
-                    <IonLabel>{JSON.stringify(member)}</IonLabel>
-                  </li>
-                ))}
-              </ul>
-            </IonAvatar>
-          </IonChip>
-          <h2>BikeBus Leader:</h2>
-          {BikeBusLeaderElement}
-          <IonChip>
-            <IonAvatar>
-              <Avatar uid={BikeBusLeader} size="medium" />
-            </IonAvatar>
-          </IonChip>
-
-          <h2>Route</h2>
-          {Route}
-          <h2>Scheduled For:</h2>
-          {ScheduledFor}
-          <h2>Group Messages</h2>
-          {GroupMessages}
+          {groupData && (
+            <div>
+              <h1>{groupData.BikeBusName}</h1>
+              <p>Leaders: {groupData.BikeBusLeaders}</p>
+            </div>
+          )}
         </div>
       </IonContent>
     </IonPage>
