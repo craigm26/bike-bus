@@ -69,6 +69,7 @@ const BikeBusGroupPage: React.FC = () => {
             if (groupDoc.exists()) {
               const groupData = groupDoc.data();
               console.log(groupData);
+              setGroupData(groupData); // Store the data in your state
               setBikeBusName(groupData?.BikeBusName);
               setBikeBusLeaders(groupData?.BikeBusLeaders);
             }
