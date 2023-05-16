@@ -6,11 +6,11 @@
 
 BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school.
 
-No ads or selling of user data. Anonymous users and anonymized data wherever possible.  
+No ads or selling of user data with PII. Anonymous users and anonymized data wherever possible.  
 
 ## Why
 
-We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets
+We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets by enhanced awareness and data for pooicy makers on street design.
 
 ## Domain bikebus.app
 
@@ -35,6 +35,9 @@ firebase hosting:channel:deploy preview
 ## to deploy to Firebase production channel
 
 ionic build --prod
+npx cap sync
+npx sync ios
+npx sync android
 firebase deploy --only hosting:production
 
 ## How does this app make money?
