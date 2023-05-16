@@ -34,7 +34,8 @@ const BikeBusGroupPage: React.FC = () => {
   const [BikeBusName, setBikeBusName] = useState<string>('');
   const [routes, setRoutes] = useState<string>('');
   const [BikeBusLeaders, setBikeBusLeaders] = useState<string>('');
-  const [groupData, setGroupData] = useState<any>([]);
+  const [groupData, setGroupData] = useState<any>({});
+
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -123,13 +124,14 @@ const BikeBusGroupPage: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <div>
-          {groupData && (
+          {groupData?.BikeBusName && groupData?.BikeBusLeaders && (
             <div>
               <h1>{groupData.BikeBusName}</h1>
               <p>Leaders: {groupData.BikeBusLeaders}</p>
             </div>
           )}
         </div>
+
       </IonContent>
     </IonPage>
   );
