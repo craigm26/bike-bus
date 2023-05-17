@@ -16,6 +16,9 @@ import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
 import useBikeBusGroup from './components/useBikeBusGroup';
+import UseRoutes from './components/useRoutes';
+import ViewRoute from './pages/ViewRoute';
+import SearchForRoute from './pages/SearchForRoute';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -33,21 +36,24 @@ import React from 'react';
 
 setupIonicReact();
 
+
 const App: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
-  
+  const routeId = "your-route-id"; // replace with the actual routeId
+  const { fetchedRoutes } = UseRoutes({ routeId });
 
   console.log('loadingGroups:', loadingGroups);
   console.log('fetchGroups:', fetchedGroups);
+  console.log('fetchedRoutes:', fetchedRoutes);
 
   useEffect(() => {
     if (user !== undefined && !loadingGroups) {
       setLoading(false);
     }
   }, [user, loadingGroups, error]);
-  
+
 
   if (loading) {
     return <p>Loading...</p>; // Replace with a loading spinner if available
@@ -69,13 +75,21 @@ const App: React.FC = () => {
             <IonContent>
               <IonList>
                 <IonMenuToggle auto-hide="false">
-                  {fetchedGroups.map((group) => (
+                  {fetchedGroups ? fetchedGroups.map((group: any) => (
                     <IonItem key={group.id} button routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
                       <IonLabel>{group.BikeBusName}</IonLabel>
                     </IonItem>
-                  ))}
+                  )) : <p>Loading groups...</p>}
+                  { fetchedRoutes ? fetchedRoutes.map((route: any) => (
+                    <IonItem key={route.id} button routerLink={`/viewroute/${route.id}`} routerDirection="none">
+                      <IonLabel>{route.name}</IonLabel>
+                    </IonItem>
+                  )) : <p>Loading routes...</p>}
                   <IonItem button routerLink="/Map" routerDirection="none">
                     <IonLabel>Map</IonLabel>
+                  </IonItem>
+                  <IonItem button routerLink='/SearchForRoute' routerDirection="none">
+                    <IonLabel>Search for Route</IonLabel>
                   </IonItem>
                   <IonItem button routerLink="/help" routerDirection="none">
                     <IonLabel>Help</IonLabel>
@@ -96,6 +110,9 @@ const App: React.FC = () => {
                 <Route path="/bikebusgrouppage/:groupId" exact>
                   <BikeBusGroupPage />
                 </Route>
+                <Route path="/viewroute/:routeId" exact>
+                  <ViewRoute />
+                </Route>
                 <Route exact path="/Profile">
                   <Profile />
                 </Route>
@@ -104,6 +121,9 @@ const App: React.FC = () => {
                 </Route>
                 <Route exact path="/Map">
                   <Map />
+                </Route>
+                <Route exact path="/SearchForRoute">
+                  <SearchForRoute />
                 </Route>
                 <Route exact path="/Login">
                   <Login />
