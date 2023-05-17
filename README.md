@@ -1,5 +1,18 @@
 # BikeBus
 
+# MVP goals
+
+- prove there's people willing to pay for premium services
+- prove there's network effects with this app
+- focus on providing value to bikebus members and leaders while giving a glimpse of what other roles could do to help make streets safer (data for policy makers)
+- basic features: 
+--create a route, make it a scheduled route and call that a bikebus group. invite other or new users to join. 
+--map search then allow options to get directions, llok for routes
+--parents can check in a kid when the group starts
+--org admins can claim a destination and make multiple routes and assign/invite leaders to them. 
+--group page has group messages
+--account page allows users to see their details
+
 ## Safety in Numbers
 
 ## What
