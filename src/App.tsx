@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { db } from './firebaseConfig';
 import useAuth from './useAuth';
 
 import Map from './pages/Map';
@@ -38,6 +37,7 @@ const App: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
+  
 
   console.log('loadingGroups:', loadingGroups);
   console.log('fetchGroups:', fetchedGroups);
