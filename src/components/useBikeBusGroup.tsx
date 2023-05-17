@@ -2,7 +2,6 @@ import { useState, useEffect, SetStateAction } from 'react';
 import { collection, doc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
-import UseRoutes from './useRoutes';
 
 const useBikeBusGroup = () => {
   const { user } = useAuth();
