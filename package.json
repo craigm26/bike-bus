@@ -29,6 +29,7 @@
     "history": "^4.9.0",
     "ionic": "^5.4.16",
     "ionicons": "^7.0.0",
+    "leaflet": "^1.9.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router": "^5.2.0",
@@ -82,6 +83,7 @@
   "devDependencies": {
     "@capacitor/cli": "^5.0.0-rc.2",
     "@types/jest": "^29.5.1",
+    "@types/leaflet": "^1.9.3",
     "env-cmd": "^10.1.0"
   },
   "description": "An Ionic project"
