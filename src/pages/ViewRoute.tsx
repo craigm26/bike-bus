@@ -24,8 +24,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import ViewRouteMap from '../components/viewRouteMap';
 import { useParams } from 'react-router-dom';
-import useRoutes from '../components/useRoutes';
 import { GeoPoint } from 'firebase/firestore';
+import { LatLng } from '@react-google-maps/api';
 
 interface RouteParams {
     id: string;
@@ -46,6 +46,22 @@ interface RouteData {
     startGeo: string;
 }
 
+interface RouteLatLng {
+    id: string;
+    destination: string; 
+    bikebusgroup: string; 
+    bikebusstations: string[]; 
+    description: string;
+    distance: number;
+    endGeo: string; 
+    path: GeoPoint[];
+    routecreator: string;
+    routeleader: string; 
+    routename: string;
+    startGeo: string;
+}
+
+
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
@@ -54,8 +70,8 @@ const ViewRoute: React.FC = () => {
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const { id } = useParams<RouteParams>();
     const { routeId } = useParams<{ routeId: string }>();
-    const [route, setRoute] = useState<RouteData | null>(null);
-    const { fetchedRoutes } = useRoutes({ routeId });
+    const [route, setRoute] = useState<RouteLatLng | null>(null);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -66,8 +82,8 @@ const ViewRoute: React.FC = () => {
                 // Convert path data to LatLng format
                 const convertedPath = routeData.path.map(point => ({ lat: point.latitude, lng: point.longitude }));
                 // Replace the path in route data
-                routeData.path = convertedPath;
-                setRoute(routeData as unknown as Route);
+                const routeWithConvertedPath = { ...routeData, path: convertedPath };
+                setRoute(routeWithConvertedPath as RouteLatLng);
             } else {
                 console.log("No such document!");
             }
