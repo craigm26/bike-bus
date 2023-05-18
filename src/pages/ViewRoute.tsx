@@ -14,7 +14,6 @@ import {
     IonIcon,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
-import './Help.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -22,45 +21,33 @@ import Profile from '../components/Profile';
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import ViewRouteMap from '../components/viewRouteMap';
+import ViewRouteMap from '../components/ViewRouteMap';
 import { useParams } from 'react-router-dom';
 import { GeoPoint } from 'firebase/firestore';
-import { LatLng } from '@react-google-maps/api';
 
 interface RouteParams {
     id: string;
 }
 
+interface Station {
+    id: string;
+    location: GeoPoint;
+}
+
 interface RouteData {
     id: string;
-    destination: string; 
-    bikebusgroup: string; 
-    bikebusstations: string[]; 
+    destination: string;
+    bikebusgroup: string;
+    bikebusstations: string[];
     description: string;
     distance: number;
-    endGeo: string; 
+    endGeo: GeoPoint;
     path: GeoPoint[];
     routecreator: string;
-    routeleader: string; 
+    routeleader: string;
     routename: string;
-    startGeo: string;
+    startGeo: GeoPoint;
 }
-
-interface RouteLatLng {
-    id: string;
-    destination: string; 
-    bikebusgroup: string; 
-    bikebusstations: string[]; 
-    description: string;
-    distance: number;
-    endGeo: string; 
-    path: GeoPoint[];
-    routecreator: string;
-    routeleader: string; 
-    routename: string;
-    startGeo: string;
-}
-
 
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
@@ -69,35 +56,46 @@ const ViewRoute: React.FC = () => {
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const { id } = useParams<RouteParams>();
-    const { routeId } = useParams<{ routeId: string }>();
-    const [route, setRoute] = useState<RouteLatLng | null>(null);
+    const [route, setRoute] = useState<RouteData | null>(null);
+    const [stations, setStations] = useState<Station[]>([]);
 
+    // const { path } = useParams<RouteParams>(); the route data may already be declared in app.tsx, but we'll have to see console data to be sure
+    // const [path, setPath] = useState<GeoPoint[]>([]); // this is the path data from the route data
 
     useEffect(() => {
         const fetchData = async () => {
-            const docRef = doc(db, 'routes', routeId);
+            const docRef = doc(db, 'routes', id);
             const docSnapshot = await getDoc(docRef);
             if (docSnapshot.exists()) {
                 const routeData = docSnapshot.data() as RouteData;
-                // Convert path data to LatLng format
-                const convertedPath = routeData.path.map(point => ({ lat: point.latitude, lng: point.longitude }));
-                // Replace the path in route data
-                const routeWithConvertedPath = { ...routeData, path: convertedPath };
-                setRoute(routeWithConvertedPath as RouteLatLng);
+                setRoute(routeData);
+
+                // Fetch stations
+                const stationPromises = routeData.bikebusstations.map(async (stationId: string) => {
+                    const stationDocRef = doc(db, 'bikebusstations', stationId);
+                    const stationDocSnapshot = await getDoc(stationDocRef);
+                    const stationData = stationDocSnapshot.data();
+                    if (stationData && stationData.location) {
+                        return {
+                            id: stationId,
+                            location: stationData.location,
+                        };
+                    }
+                    return null;
+                });
+                const fetchedStations = await Promise.all(stationPromises);
+                setStations(fetchedStations.filter(station => station !== null) as Station[]);
             } else {
                 console.log("No such document!");
             }
         };
         fetchData();
-    }, [id, routeId]);
-    
+    }, [id]);
+
 
     const togglePopover = (e: any) => {
-        console.log('togglePopover called');
-        console.log('event:', e);
         setPopoverEvent(e.nativeEvent);
         setShowPopover((prevState) => !prevState);
-        console.log('showPopover state:', showPopover);
     };
 
     const avatarElement = user ? (
@@ -155,11 +153,14 @@ const ViewRoute: React.FC = () => {
                     </IonPopover>
                 </IonToolbar>
             </IonHeader>
-            <IonContent fullscreen>
-                <IonHeader collapse="condense">
-                    <IonToolbar></IonToolbar>
-                </IonHeader>
-                {route && <ViewRouteMap route={route} />}
+            <IonContent>
+                {route && (
+                    <div>
+                        <h1>{route.routename}</h1>
+                        <p>{route.description}</p>
+                        <ViewRouteMap path={route.path} startGeo={route.startGeo} endGeo={route.endGeo} stations={stations} />
+                    </div>
+                )}
             </IonContent>
         </IonPage>
     );

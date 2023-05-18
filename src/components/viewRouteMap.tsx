@@ -1,28 +1,20 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-import useAuth from '../useAuth';
 import React from 'react';
 import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
-
-interface LatLng {
-    lat: number;
-    lng: number;
-}
+import { getDocs, collection, GeoPoint } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+import { LatLng } from 'use-places-autocomplete';
 
 interface Station {
-    station: LatLng;
-    // other fields...
-}
-
-interface Route {
-    path: LatLng[];
-    bikebusstations: string[];
-    // other fields...
+    id: string;
+    location: GeoPoint;
 }
 
 interface ViewRouteMapProps {
-    route: Route;
+    path: GeoPoint[];
+    startGeo: GeoPoint;
+    endGeo: GeoPoint;
+    stations: Station[];
 }
 
 const containerStyle = {
@@ -30,54 +22,53 @@ const containerStyle = {
     height: '100%',
 };
 
-const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ route }) => {
-    const [mapCenter] = useState(route.path[0]);
-    const { user } = useAuth();
-    const [stations, setStations] = useState<Station[]>([]);
+const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ path, startGeo, endGeo, stations }) => {
+    const [stationsIDs, setStationsIDs] = useState<Station[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (user && user.uid && user.accountType !== 'Anonymous') {
-                    const fetchedStations: Station[] = [];
-                    for (let stationId of route.bikebusstations) {
-                        const docRef = doc(db, 'bikebusstations', stationId);
-                        const docSnapshot = await getDoc(docRef);
-                        if (docSnapshot.exists()) {
-                            fetchedStations.push(docSnapshot.data() as Station);
-                        } else {
-                            console.log("No such document!");
-                        }
+                const querySnapshot = await getDocs(collection(db, 'bikebusstations'));
+                const fetchedStations: Station[] = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.location) {
+                        fetchedStations.push({
+                            id: doc.id,
+                            location: data.location,
+                        });
                     }
-                    setStations(fetchedStations);
-                }
+                });
+                setStationsIDs(fetchedStations);
             } catch (error) {
-                console.error("Error fetching data: ", error as Error);
-                setError(error as Error);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
-    }, [user, route]);
+    }, []);
 
-    if (loading) {
-        return <div>Loading...</div>;
-    }
+    const geoPointToLatLng = (geo: GeoPoint): LatLng => {
+        return {
+          lat: geo.latitude,
+          lng: geo.longitude,
+        };
+    };
 
-    if (error) {
-        return <div>Error: {error.message}</div>;
-    }
+    const latLngPath = path.map(geoPoint => geoPointToLatLng(geoPoint));
+    const latLngStartGeo = geoPointToLatLng(startGeo);
+    const latLngEndGeo = geoPointToLatLng(endGeo);
 
     return (
-        <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={10}>
-            <Polyline path={route.path} />
+        <GoogleMap mapContainerStyle={containerStyle} center={latLngStartGeo} zoom={10}>
+            <Polyline path={latLngPath} />
+
+            <Marker position={latLngStartGeo} />
+            <Marker position={latLngEndGeo} />
 
             {stations.map((station, i) => (
-                <Marker key={i} position={station.station} />
+                <Marker key={i} position={geoPointToLatLng(station.location)} />
             ))}
         </GoogleMap>
     );
