@@ -23,16 +23,16 @@ import { personCircleOutline } from "ionicons/icons";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import {
-  GoogleMap,
   useJsApiLoader,
 } from "@react-google-maps/api";
-import AvatarMapMarker from "../components/AvatarMapMarker";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAvatar } from '../components/useAvatar';
-import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
+import { useHistory } from 'react-router-dom';
+import LoadMap from "../components/Mapping/LoadMap";
 
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
+
 
 
 const Map: React.FC = () => {
@@ -58,6 +58,11 @@ const Map: React.FC = () => {
     setShowMap(true);
   };
 
+  const history = useHistory();
+  const navigate = (path: string) => {
+    history.push(path);
+  };
+
   useEffect(() => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
@@ -79,7 +84,7 @@ const Map: React.FC = () => {
         }
       });
     }
-  }, [user]);
+  }, [setEnabledAccountModes, user]);
 
 
   const watchLocation = useCallback(() => {
@@ -127,6 +132,7 @@ const Map: React.FC = () => {
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries: ["places"],
   });
 
   let label = user?.username ? user.username : "anonymous";
@@ -182,23 +188,14 @@ const Map: React.FC = () => {
             </div></>
         )}
         {isLoaded && showMap && (
-          <GoogleMap
-            mapContainerStyle={{
-              width: "100%",
-              height: "100%",
-            }}
-            center={mapCenter}
-            zoom={16}
-            options={{
-            }}
-          >
-            {user && isAnonymous && <AnonymousAvatarMapMarker position={mapCenter} uid={user.uid} />}
-            {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
-
-
-          </GoogleMap>
-
+          <LoadMap
+            mapCenter={mapCenter}
+            isAnonymous={isAnonymous}
+            user={user}
+            navigate={navigate}
+          />
         )}
+
       </IonContent>
     </IonPage>
   );

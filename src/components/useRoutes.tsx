@@ -18,7 +18,6 @@ const UseRoutes = ({ routeId }: UseRoutesProps) => {
         const fetchData = async () => {
             try {
                 if (user && user.uid && user.accountType !== 'Anonymous') {
-                    // Using the groupId passed as prop in the query
                     const q = query(collection(db, 'routes'));
                     const querySnapshot = await getDocs(q);
                     const newRoutes = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));

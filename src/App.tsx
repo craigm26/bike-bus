@@ -41,12 +41,9 @@ const App: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
-  const routeId = "your-route-id"; // replace with the actual routeId
-  const { fetchedRoutes } = UseRoutes({ routeId });
 
   console.log('loadingGroups:', loadingGroups);
   console.log('fetchGroups:', fetchedGroups);
-  console.log('fetchedRoutes:', fetchedRoutes);
 
   useEffect(() => {
     if (user !== undefined && !loadingGroups) {
@@ -80,11 +77,6 @@ const App: React.FC = () => {
                       <IonLabel>{group.BikeBusName}</IonLabel>
                     </IonItem>
                   )) : <p>Loading groups...</p>}
-                  { fetchedRoutes ? fetchedRoutes.map((route: any) => (
-                    <IonItem key={route.id} button routerLink={`/viewroute/${route.id}`} routerDirection="none">
-                      <IonLabel>{route.name}</IonLabel>
-                    </IonItem>
-                  )) : <p>Loading routes...</p>}
                   <IonItem button routerLink="/Map" routerDirection="none">
                     <IonLabel>Map</IonLabel>
                   </IonItem>
