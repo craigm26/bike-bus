@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonTabBar, IonTabButton, IonText, IonFooter, IonFabButton, IonFab, IonChip, IonPopover, IonCard } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 
@@ -16,7 +16,6 @@ import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
 import useBikeBusGroup from './components/useBikeBusGroup';
-import UseRoutes from './components/useRoutes';
 import ViewRoute from './pages/ViewRoute';
 import SearchForRoute from './pages/SearchForRoute';
 import SetUsername from './components/set-username';
@@ -37,7 +36,7 @@ import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
 import React from 'react';
-import { mapOutline, bicycleOutline } from 'ionicons/icons';
+import { mapOutline } from 'ionicons/icons';
 
 setupIonicReact();
 
@@ -93,42 +92,79 @@ const App: React.FC = () => {
                   </IonCard>
                   <IonCard>
                     <IonLabel>Basic User Functions</IonLabel>
-                    <IonItem button routerLink='/SearchForRoute' routerDirection="none">
-                      <IonLabel>Search for Route by geolocation</IonLabel>
+                    <IonItem button routerLink='/ViewRoute' routerDirection="none">
+                    <IonLabel>View Routes</IonLabel>
                     </IonItem>
-                    <IonText>Search for a route by name</IonText>
-                    <IonText>Start a Ride</IonText>
-                    <IonText>Get Directions</IonText>
-                    <IonText>View Route</IonText>
-                    <IonText>View BikeBusGroup</IonText>
-                    <IonText>View BikeBusStation</IonText>
-                    <IonText>Create Route</IonText>
-                    <IonText>Create BikeBusGroup</IonText>
+                    <IonItem button routerLink='/ViewBikeBusGroup' routerDirection="none">
+                    <IonLabel>View BikeBusGroups</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
+                    <IonLabel>View BikeBusStations</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/Create Route' routerDirection="none">
+                    <IonLabel>Create Route</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
+                    <IonLabel>Create BikeBusStation</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/CreateBikeBusGroup' routerDirection="none">
+                    <IonLabel>Create BikeBusGroup</IonLabel>
+                    </IonItem>
                   </IonCard>
                   <IonCard>
                     <IonLabel>Premium User Functions</IonLabel>
-                    <IonText>Add a Kid -as a premium user and converts to parent account type</IonText>
-                    <IonText>Check In a Kid to a BikeBus</IonText>
+                    <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
+                    <IonLabel>Convert to Parent Account Type - Sign up for Premium</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/AddAKid' routerDirection="none">
+                    <IonLabel>Add a Kid -as a premium user and converts to parent account type</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/CheckInKid' routerDirection="none">
+                    <IonLabel>Check In a Kid to a BikeBus</IonLabel>
+                    </IonItem>
                   </IonCard>
                   <IonCard>
                     <IonLabel>BikeBus Leader Functions</IonLabel>
-                    <IonText>Check In a Kid to a BikeBus</IonText>
-                    <IonText>Finish a BikeBusGroup ride - end ride for all</IonText>
+                    <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
+                    <IonLabel>Check In a Kid to a BikeBus</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/EndBikeBusGroupRide' routerDirection="none">
+                    <IonLabel>Finish a BikeBusGroup ride - end ride for all</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
+                    <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
+                    </IonItem>
                   </IonCard>
                   <IonCard>
                     <IonLabel>Org Admin Functions</IonLabel>
+                    <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
+                    <IonLabel>Update Organization</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink='/DataAnalytics' routerDirection="none">
+                    <IonLabel>Data Analytics</IonLabel>
+                    </IonItem>
                   </IonCard>
                   <IonCard>
                     <IonLabel>App Admin Functions</IonLabel>
                     <IonItem button routerLink="/CreateOrganization" routerDirection="none">
                       <IonLabel>Create Organization</IonLabel>
                     </IonItem>
-                    <IonText>Update Users' Data</IonText>
-                    <IonText>Update Organizational Data</IonText>
-                    <IonText>Update BikeBusGroup Data</IonText>
-                    <IonText>Update Route Data</IonText>
-                    <IonText>Update BikeBusStation Data</IonText>
-                    <IonText></IonText>
+                    <IonItem button routerLink="/UpdateUsers" routerDirection="none">
+                    <IonLabel>Update Users' Data</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink="/UpdateOrganizationalData" routerDirection="none">
+                    <IonLabel>Update Organizational Data</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink="/UpdateBikeBusGroupData" routerDirection="none">
+                    <IonLabel>Update BikeBusGroup Data</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink="/UpdateRouteData" routerDirection="none">
+                    <IonLabel>Update Route Data</IonLabel>
+                    </IonItem>
+                    <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
+                    <IonLabel>Update BikeBusStation Data</IonLabel>
+                    </IonItem>
+                    <IonLabel></IonLabel>
                   </IonCard>
                   <IonItem button routerLink="/about" routerDirection="none">
                     <IonLabel>About</IonLabel>

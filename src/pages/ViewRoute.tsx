@@ -21,7 +21,7 @@ import Profile from '../components/Profile';
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import ViewRouteMap from '../components/ViewRouteMap';
+import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import { useParams } from 'react-router-dom';
 import { GeoPoint } from 'firebase/firestore';
 
