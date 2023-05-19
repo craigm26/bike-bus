@@ -27,7 +27,7 @@ import {
   import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
     
   
-  const Template: React.FC = () => {
+  const CreateBikeBusGroup: React.FC = () => {
     const { user } = useAuth(); // Use the useAuth hook to get the user object
     const { avatarUrl } = useAvatar(user?.uid);
     const [accountType, setaccountType] = useState<string>('');
@@ -126,5 +126,5 @@ import {
     );
   };
   
-  export default Template;
+  export default CreateBikeBusGroup;
   

@@ -33,6 +33,8 @@ import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'fireb
 import { personCircleOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
 import SetUsername from "../components/set-username";
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+
 
 
 interface Group {
@@ -50,7 +52,7 @@ const Account: React.FC = () => {
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
-    
+
     const [username, setUsername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
@@ -137,23 +139,46 @@ const Account: React.FC = () => {
                     <IonButtons slot="start">
                         <IonMenuButton></IonMenuButton>
                     </IonButtons>
-                    <IonText slot="start" color="primary" className="BikeBusFont">
+                    <IonText slot="start" color="primary" class="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
+                    <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                    >
+                        <Profile />
+                    </IonPopover>
                     <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                             {avatarElement}
                             <IonLabel>{label}</IonLabel>
-                            <IonText>({accountType})</IonText>
                         </IonChip>
                     </IonButton>
-                    <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)} className="my-popover">
+                    <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                    >
                         <Profile />
                     </IonPopover>
+                    <IonButtons slot="primary">
+                        <IonButton routerLink='/help'>
+                            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton routerLink='/settings'>
+                            <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton routerLink='/notifications'>
+                            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+                        </IonButton>
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <IonCard>
+                <IonCard className="ion-justify-content-center">
                     <IonCardHeader>
                         <IonTitle>{user?.username}</IonTitle>
                         <IonCardTitle>Account</IonCardTitle>
@@ -190,18 +215,9 @@ const Account: React.FC = () => {
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>BikeBus App Admin Tasks</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                        <Link to="/set-username">Set UserName</Link>
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardHeader>
                         <IonCardTitle>BikeBus You Belong To</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
-                        <Link to="/createbikebusgroup">Create a BikeBus Group</Link>
                         {BikeBusGroups.map((group, index) => (
                             <div key={group.id}>
                                 <Link to={`/bikebusgrouppage/${group.id}`}>

@@ -7,6 +7,8 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile';
+import useBikeBusGroup from '../components/useBikeBusGroup';
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 
 
 type Location = {
@@ -60,6 +62,8 @@ const SearchForRoute: React.FC = () => {
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [routes, setRoutes] = useState<Route[]>([]); // Add state to hold routes
+    const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
+
 
     const togglePopover = (e: any) => {
         setShowPopover(!showPopover);
@@ -106,7 +110,7 @@ const SearchForRoute: React.FC = () => {
             });
         }
     }, [user]); // Closing useEffect here
-                    
+
     const label = user?.username ? user.username : "anonymous";
 
     return (
@@ -119,11 +123,25 @@ const SearchForRoute: React.FC = () => {
                     <IonText slot="start" color="primary" class="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
+
+                    {fetchedGroups ? fetchedGroups.map((group: any) => (
+                        <IonButton fill="outline" slot='start' key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                            <IonText>{group.BikeBusName}</IonText>
+                        </IonButton>
+                    )) : <p>Loading groups...</p>}
+
+                    <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                    >
+                        <Profile />
+                    </IonPopover>
                     <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                             {avatarElement}
                             <IonLabel>{label}</IonLabel>
-                            <IonText>({accountType})</IonText>
                         </IonChip>
                     </IonButton>
                     <IonPopover
@@ -134,6 +152,17 @@ const SearchForRoute: React.FC = () => {
                     >
                         <Profile />
                     </IonPopover>
+                    <IonButtons slot="primary">
+                        <IonButton routerLink='/help'>
+                            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton routerLink='/settings'>
+                            <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton routerLink='/notifications'>
+                            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+                        </IonButton>
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
@@ -144,7 +173,7 @@ const SearchForRoute: React.FC = () => {
                 {/* Add a section to display routes */}
                 {routes.map((route) => (
                     <div key={route.id}>
-                        <h2>{route.routename}</h2> 
+                        <h2>{route.routename}</h2>
                         <p>{route.description}</p>
                     </div>
                 ))}
