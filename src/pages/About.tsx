@@ -27,6 +27,9 @@ import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import useBikeBusGroup from '../components/useBikeBusGroup';
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+
 
 const About: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -34,6 +37,7 @@ const About: React.FC = () => {
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -68,7 +72,7 @@ const About: React.FC = () => {
       });
     }
   }, [user]);
-  
+
   const label = user?.username ? user.username : "anonymous";
 
 
@@ -82,11 +86,20 @@ const About: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
+
+
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
+          >
+            <Profile />
+          </IonPopover>
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
               <IonLabel>{label}</IonLabel>
-              <IonText>({accountType})</IonText>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -97,6 +110,17 @@ const About: React.FC = () => {
           >
             <Profile />
           </IonPopover>
+          <IonButtons slot="primary">
+            <IonButton routerLink='/help'>
+              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/settings'>
+              <IonIcon slot="end" icon={cogOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/notifications'>
+              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -138,8 +162,8 @@ const About: React.FC = () => {
             <h2>App Admin</h2>
             <p>App Admins have complete access to all app features, can manage all routes, and oversee user accounts and activities.</p>
           </IonCardContent>
-          </IonCard>
-          <IonCard>
+        </IonCard>
+        <IonCard>
           <IonCardHeader>
             <IonCardTitle>Map Modes</IonCardTitle>
           </IonCardHeader>
@@ -150,8 +174,8 @@ const About: React.FC = () => {
             <h2>Car</h2>
             <p>Displays roads and highways.</p>
           </IonCardContent>
-          </IonCard>
-          <IonCard>
+        </IonCard>
+        <IonCard>
           <IonCardHeader>
             <IonCardTitle>Map Layers</IonCardTitle>
           </IonCardHeader>
@@ -180,7 +204,7 @@ const About: React.FC = () => {
             <p>We are also trying to limit the social interaction on the app so that only BikeBus participants in a specific route can chat with each other</p>
           </IonCardContent>
         </IonCard>
-    </IonContent>
+      </IonContent>
     </IonPage >
   );
 };

@@ -9,6 +9,7 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile';
 import BikeBusGroup from '../components/BikeBusGroup';
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();
@@ -43,23 +44,33 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }, [user]);
 
+  const label = user?.username ? user.username : "anonymous";
+
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonMenuButton />
+            <IonMenuButton></IonMenuButton>
           </IonButtons>
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
+
+
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
+          >
+            <Profile />
+          </IonPopover>
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
-              <IonAvatar>
-                {avatarElement}
-              </IonAvatar>
-              <IonLabel>{user?.username || "anonymous"}</IonLabel>
-              <IonText>({accountType})</IonText>
+              {avatarElement}
+              <IonLabel>{label}</IonLabel>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -70,6 +81,17 @@ const BikeBusGroupPage: React.FC = () => {
           >
             <Profile />
           </IonPopover>
+          <IonButtons slot="primary">
+          <IonButton routerLink='/help'>
+            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+          </IonButton>
+          <IonButton routerLink='/settings'>
+            <IonIcon slot="end" icon={cogOutline}></IonIcon>
+          </IonButton>
+          <IonButton routerLink='/notifications'>
+            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+          </IonButton>
+        </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

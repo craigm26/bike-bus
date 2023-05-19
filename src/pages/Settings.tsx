@@ -22,6 +22,9 @@ import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import useBikeBusGroup from '../components/useBikeBusGroup';
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+
 
 const Settings: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -29,6 +32,7 @@ const Settings: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
   const [accountType, setaccountType] = useState<string>('');
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -77,11 +81,20 @@ const Settings: React.FC = () => {
           <IonText slot="start" color="primary" class="BikeBusFont">
             <h1>BikeBus</h1>
           </IonText>
+
+
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
+          >
+            <Profile />
+          </IonPopover>
           <IonButton fill="clear" slot="end" onClick={togglePopover}>
             <IonChip>
               {avatarElement}
               <IonLabel>{label}</IonLabel>
-              <IonText>({accountType})</IonText>
             </IonChip>
           </IonButton>
           <IonPopover
@@ -92,7 +105,17 @@ const Settings: React.FC = () => {
           >
             <Profile />
           </IonPopover>
-
+          <IonButtons slot="primary">
+            <IonButton routerLink='/help'>
+              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/settings'>
+              <IonIcon slot="end" icon={cogOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/notifications'>
+              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

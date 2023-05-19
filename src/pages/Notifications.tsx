@@ -13,6 +13,8 @@ import {
     IonAvatar,
     IonPopover,
     IonIcon,
+    IonMenuToggle,
+    IonItem,
   } from '@ionic/react';
   import { useEffect, useState } from 'react';
   import './Help.css';
@@ -20,21 +22,19 @@ import {
   import { useAvatar } from '../components/useAvatar';
   import Avatar from '../components/Avatar';
   import Profile from '../components/Profile'; // Import the Profile component
-  import { personCircleOutline } from 'ionicons/icons';
+  import { alertCircleOutline, cogOutline, helpCircle, helpCircleOutline, personCircleOutline } from 'ionicons/icons';
   import { doc, getDoc } from 'firebase/firestore';
   import { db } from '../firebaseConfig';
   import useBikeBusGroup from '../components/useBikeBusGroup';
-  import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
-    
   
-  const Template: React.FC = () => {
+  const Notifications: React.FC = () => {
     const { user } = useAuth(); // Use the useAuth hook to get the user object
     const { avatarUrl } = useAvatar(user?.uid);
     const [accountType, setaccountType] = useState<string>('');
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
-
+  
   
     const togglePopover = (e: any) => {
       console.log('togglePopover called');
@@ -55,7 +55,7 @@ import {
     ) : (
       <IonIcon icon={personCircleOutline} />
     );
-    
+  
     useEffect(() => {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
@@ -74,49 +74,56 @@ import {
   
     return (
       <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton></IonMenuButton>
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonMenuButton></IonMenuButton>
+            </IonButtons>
+            <IonText slot="start" color="primary" class="BikeBusFont">
+              <h1>BikeBus</h1>
+            </IonText>
+  
+            {fetchedGroups ? fetchedGroups.map((group: any) => (
+              <IonButton fill="outline" slot='start' key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                <IonText>{group.BikeBusName}</IonText>
+              </IonButton>
+            )) : <p>Loading groups...</p>}
+  
+            <IonPopover
+              isOpen={showPopover}
+              event={popoverEvent}
+              onDidDismiss={() => setShowPopover(false)}
+              className="my-popover"
+            >
+              <Profile />
+            </IonPopover>
+            <IonButton fill="clear" slot="end" onClick={togglePopover}>
+              <IonChip>
+                {avatarElement}
+                <IonLabel>{label}</IonLabel>
+              </IonChip>
+            </IonButton>
+            <IonPopover
+              isOpen={showPopover}
+              event={popoverEvent}
+              onDidDismiss={() => setShowPopover(false)}
+              className="my-popover"
+            >
+              <Profile />
+            </IonPopover>
+            <IonButtons slot="primary">
+            <IonButton routerLink='/help'>
+              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/settings'>
+              <IonIcon slot="end" icon={cogOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/notifications'>
+              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+            </IonButton>
           </IonButtons>
-          <IonText slot="start" color="primary" class="BikeBusFont">
-            <h1>BikeBus</h1>
-          </IonText>
-          <IonPopover
-            isOpen={showPopover}
-            event={popoverEvent}
-            onDidDismiss={() => setShowPopover(false)}
-            className="my-popover"
-          >
-            <Profile />
-          </IonPopover>
-          <IonButton fill="clear" slot="end" onClick={togglePopover}>
-            <IonChip>
-              {avatarElement}
-              <IonLabel>{label}</IonLabel>
-            </IonChip>
-          </IonButton>
-          <IonPopover
-            isOpen={showPopover}
-            event={popoverEvent}
-            onDidDismiss={() => setShowPopover(false)}
-            className="my-popover"
-          >
-            <Profile />
-          </IonPopover>
-          <IonButtons slot="primary">
-          <IonButton routerLink='/help'>
-            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-          </IonButton>
-          <IonButton routerLink='/settings'>
-            <IonIcon slot="end" icon={cogOutline}></IonIcon>
-          </IonButton>
-          <IonButton routerLink='/notifications'>
-            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-          </IonButton>
-        </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+          </IonToolbar>
+        </IonHeader>
         <IonContent fullscreen>
           <IonHeader collapse="condense">
             <IonToolbar></IonToolbar>
@@ -126,5 +133,5 @@ import {
     );
   };
   
-  export default Template;
+  export default Notifications;
   
