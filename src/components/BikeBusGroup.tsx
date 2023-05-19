@@ -37,6 +37,13 @@ const BikeBusGroup: React.FC<GroupData> = ({ BikeBusLeaders, BikeBusMembers, Bik
             routeId,
             schedule,
         });
+        // Fetch route name
+
+        // Fetch BikeBus Stations
+
+        // Fetch schedule
+
+        // Fetch ViewRouteMap.tsx so that it can be displayed in the BikeBusGroup.tsx
 
         // Fetch leader names
         const fetchLeaderNames = async () => {
@@ -84,11 +91,14 @@ const BikeBusGroup: React.FC<GroupData> = ({ BikeBusLeaders, BikeBusMembers, Bik
                 {memberNames.map((name, index) => (
                     <IonCardSubtitle key={index}>{name}</IonCardSubtitle>
                 ))}
-                <IonCardSubtitle>Route ID</IonCardSubtitle>
+                <IonCardSubtitle>Route Name</IonCardSubtitle>
                 {fetchedRoutes.map((route) => (
                     <IonCardSubtitle key={route.id}>{route.routename}</IonCardSubtitle>
                 ))}
-                <IonCardSubtitle>Schedule</IonCardSubtitle>
+                <IonCardSubtitle>Route Stations</IonCardSubtitle>
+                <IonCardSubtitle>Route Schedule</IonCardSubtitle>
+                <IonCardSubtitle>Route Map</IonCardSubtitle>
+                <IonCardSubtitle>Group Messages</IonCardSubtitle>
             </IonCardContent>
         </IonCard>
     );

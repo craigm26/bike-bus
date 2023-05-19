@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import React from 'react';
 import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
 import { getDocs, collection, GeoPoint } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db } from '../../firebaseConfig';
 import { LatLng } from 'use-places-autocomplete';
 
 interface Station {
