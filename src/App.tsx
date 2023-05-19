@@ -19,6 +19,7 @@ import useBikeBusGroup from './components/useBikeBusGroup';
 import UseRoutes from './components/useRoutes';
 import ViewRoute from './pages/ViewRoute';
 import SearchForRoute from './pages/SearchForRoute';
+import SetUsername from './components/set-username';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -110,6 +111,9 @@ const App: React.FC = () => {
                 </Route>
                 <Route exact path="/Account">
                   <Account />
+                </Route>
+                <Route exact path="/SetUsername">
+                  <SetUsername />
                 </Route>
                 <Route exact path="/Map">
                   <Map />

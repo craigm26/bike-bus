@@ -19,6 +19,7 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonTitle,
+    IonInput,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
@@ -31,6 +32,8 @@ import { db } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { personCircleOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
+import SetUsername from "../components/set-username";
+
 
 interface Group {
     id: string;
@@ -47,11 +50,13 @@ const Account: React.FC = () => {
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
-    const [username, setusername] = useState<string>('');
+    
+    const [username, setUsername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
     const { fetchedGroups, loading, error } = useBikeBusGroup(); // Use the hook
+
 
 
     const togglePopover = (e: any) => {
@@ -97,7 +102,7 @@ const Account: React.FC = () => {
                         setLastName(userData.lastName);
                     }
                     if (userData && userData.username) {
-                        setusername(userData.username);
+                        setUsername(userData.username);
                     }
                     if (userData && userData.accountType) {
                         setaccountType(userData.accountType);
@@ -173,10 +178,22 @@ const Account: React.FC = () => {
                                 <IonText>{username}</IonText>
                             </IonItem>
                             <IonItem>
+                                <IonLabel position="stacked">Email</IonLabel>
+                                <IonText>{user?.email}</IonText>
+                            </IonItem>
+                            <IonItem>
                                 <IonLabel position="stacked">Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
                             </IonItem>
                         </IonList>
+                    </IonCardContent>
+                </IonCard>
+                <IonCard>
+                    <IonCardHeader>
+                        <IonCardTitle>BikeBus App Admin Tasks</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                        <Link to="/set-username">Set UserName</Link>
                     </IonCardContent>
                 </IonCard>
                 <IonCard>
@@ -187,9 +204,9 @@ const Account: React.FC = () => {
                         <Link to="/createbikebusgroup">Create a BikeBus Group</Link>
                         {BikeBusGroups.map((group, index) => (
                             <div key={group.id}>
-                            <Link to={`/bikebusgrouppage/${group.id}`}>
-                                {group.BikeBusName}
-                            </Link>
+                                <Link to={`/bikebusgrouppage/${group.id}`}>
+                                    {group.BikeBusName}
+                                </Link>
                             </div>
                         ))}
                     </IonCardContent>

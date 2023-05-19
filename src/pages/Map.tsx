@@ -22,14 +22,10 @@ import Profile from "../components/Profile";
 import { personCircleOutline } from "ionicons/icons";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import {
-  useJsApiLoader,
-} from "@react-google-maps/api";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAvatar } from '../components/useAvatar';
 import { useHistory } from 'react-router-dom';
 import LoadMap from "../components/Mapping/LoadMap";
-
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -129,12 +125,6 @@ const Map: React.FC = () => {
     }
   }, [user, getLocationClicked, watchLocation]);
 
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-    libraries: ["places"],
-  });
-
   let label = user?.username ? user.username : "anonymous";
 
   if (!user) {
@@ -187,7 +177,7 @@ const Map: React.FC = () => {
               <IonButton onClick={getLocation}>Get Current Location</IonButton>
             </div></>
         )}
-        {isLoaded && showMap && (
+        {showMap && (
           <LoadMap
             mapCenter={mapCenter}
             isAnonymous={isAnonymous}

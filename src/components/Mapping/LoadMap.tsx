@@ -6,6 +6,7 @@ import AvatarMapMarker from "../../components/AvatarMapMarker";
 import AnonymousAvatarMapMarker from "../../components/AnonymousAvatarMapMarker";
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
+import { IonToolbar } from "@ionic/react";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -25,7 +26,7 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigat
     });
 
     return isLoaded ? (
-        <>
+        <div className="map-base">
             <GoogleMap
                 mapContainerStyle={{
                     width: "100%",
@@ -35,13 +36,14 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigat
                 zoom={16}
                 options={{}}
             >
+                <div className="search-bar">
+                    <SearchDestination currentLocation={mapCenter} navigate={navigate} />
+                </div>
                 {user && isAnonymous && <AnonymousAvatarMapMarker position={mapCenter} uid={user.uid} />}
                 {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
             </GoogleMap>
-            <div className="search-bar">
-                <SearchDestination currentLocation={mapCenter} navigate={navigate} />
-            </div>
-        </>
+
+        </div>
     ) : null;
 };
 
