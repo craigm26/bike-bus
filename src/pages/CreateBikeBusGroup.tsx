@@ -33,8 +33,6 @@ import {
     const [accountType, setaccountType] = useState<string>('');
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
-    const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
-
   
     const togglePopover = (e: any) => {
       console.log('togglePopover called');

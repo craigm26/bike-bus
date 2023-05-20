@@ -124,35 +124,9 @@ const ViewRoute: React.FC = () => {
         }
     }, [user]);
 
-    const label = user?.username ? user.username : "anonymous";
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonMenuButton></IonMenuButton>
-                    </IonButtons>
-                    <IonText slot="start" color="primary" class="BikeBusFont">
-                        <h1>BikeBus</h1>
-                    </IonText>
-                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                        <IonChip>
-                            {avatarElement}
-                            <IonLabel>{label}</IonLabel>
-                            <IonText>({accountType})</IonText>
-                        </IonChip>
-                    </IonButton>
-                    <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                    >
-                        <Profile />
-                    </IonPopover>
-                </IonToolbar>
-            </IonHeader>
             <IonContent>
                 {route && (
                     <div>
