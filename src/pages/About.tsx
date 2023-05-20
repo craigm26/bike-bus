@@ -78,51 +78,6 @@ const About: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton></IonMenuButton>
-          </IonButtons>
-          <IonText slot="start" color="primary" class="BikeBusFont">
-            <h1>BikeBus</h1>
-          </IonText>
-
-
-          <IonPopover
-            isOpen={showPopover}
-            event={popoverEvent}
-            onDidDismiss={() => setShowPopover(false)}
-            className="my-popover"
-          >
-            <Profile />
-          </IonPopover>
-          <IonButton fill="clear" slot="end" onClick={togglePopover}>
-            <IonChip>
-              {avatarElement}
-              <IonLabel>{label}</IonLabel>
-            </IonChip>
-          </IonButton>
-          <IonPopover
-            isOpen={showPopover}
-            event={popoverEvent}
-            onDidDismiss={() => setShowPopover(false)}
-            className="my-popover"
-          >
-            <Profile />
-          </IonPopover>
-          <IonButtons slot="primary">
-            <IonButton routerLink='/help'>
-              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-            </IonButton>
-            <IonButton routerLink='/settings'>
-              <IonIcon slot="end" icon={cogOutline}></IonIcon>
-            </IonButton>
-            <IonButton routerLink='/notifications'>
-              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
           <IonToolbar></IonToolbar>

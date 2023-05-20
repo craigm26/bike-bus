@@ -74,56 +74,6 @@ import {
   
     return (
       <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start">
-              <IonMenuButton></IonMenuButton>
-            </IonButtons>
-            <IonText slot="start" color="primary" class="BikeBusFont">
-              <h1>BikeBus</h1>
-            </IonText>
-  
-            {fetchedGroups ? fetchedGroups.map((group: any) => (
-              <IonButton fill="outline" slot='start' key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                <IonText>{group.BikeBusName}</IonText>
-              </IonButton>
-            )) : <p>Loading groups...</p>}
-  
-            <IonPopover
-              isOpen={showPopover}
-              event={popoverEvent}
-              onDidDismiss={() => setShowPopover(false)}
-              className="my-popover"
-            >
-              <Profile />
-            </IonPopover>
-            <IonButton fill="clear" slot="end" onClick={togglePopover}>
-              <IonChip>
-                {avatarElement}
-                <IonLabel>{label}</IonLabel>
-              </IonChip>
-            </IonButton>
-            <IonPopover
-              isOpen={showPopover}
-              event={popoverEvent}
-              onDidDismiss={() => setShowPopover(false)}
-              className="my-popover"
-            >
-              <Profile />
-            </IonPopover>
-            <IonButtons slot="primary">
-            <IonButton routerLink='/help'>
-              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-            </IonButton>
-            <IonButton routerLink='/settings'>
-              <IonIcon slot="end" icon={cogOutline}></IonIcon>
-            </IonButton>
-            <IonButton routerLink='/notifications'>
-              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-            </IonButton>
-          </IonButtons>
-          </IonToolbar>
-        </IonHeader>
         <IonContent fullscreen>
           <IonHeader collapse="condense">
             <IonToolbar></IonToolbar>

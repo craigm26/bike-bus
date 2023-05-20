@@ -48,8 +48,6 @@ const DEFAULT_ACCOUNT_MODES = ['Member'];
 const Account: React.FC = () => {
     const { user, checkAndUpdateAccountModes } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
-    const [showPopover, setShowPopover] = useState(false);
-    const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
 
@@ -57,14 +55,7 @@ const Account: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
-    const { fetchedGroups, loading, error } = useBikeBusGroup(); // Use the hook
 
-
-
-    const togglePopover = (e: any) => {
-        setPopoverEvent(e.nativeEvent);
-        setShowPopover((prevState) => !prevState);
-    };
 
     useEffect(() => {
         if (user) {
@@ -117,66 +108,10 @@ const Account: React.FC = () => {
         }
     }, [user, checkAndUpdateAccountModes]);
 
-    const avatarElement = user ? (
-        avatarUrl ? (
-            <IonAvatar>
-                <Avatar uid={user.uid} size="extrasmall" />
-            </IonAvatar>
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        )
-    ) : (
-        <IonIcon icon={personCircleOutline} />
-    );
-
-    const label = user?.username ? user.username : 'anonymous';
 
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonMenuButton></IonMenuButton>
-                    </IonButtons>
-                    <IonText slot="start" color="primary" class="BikeBusFont">
-                        <h1>BikeBus</h1>
-                    </IonText>
-                    <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                    >
-                        <Profile />
-                    </IonPopover>
-                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                        <IonChip>
-                            {avatarElement}
-                            <IonLabel>{label}</IonLabel>
-                        </IonChip>
-                    </IonButton>
-                    <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                    >
-                        <Profile />
-                    </IonPopover>
-                    <IonButtons slot="primary">
-                        <IonButton routerLink='/help'>
-                            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-                        </IonButton>
-                        <IonButton routerLink='/settings'>
-                            <IonIcon slot="end" icon={cogOutline}></IonIcon>
-                        </IonButton>
-                        <IonButton routerLink='/notifications'>
-                            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
             <IonContent fullscreen>
                 <IonCard className="ion-justify-content-center">
                     <IonCardHeader>
