@@ -14,7 +14,7 @@ import {
   IonIcon,
   IonTitle,
 } from "@ionic/react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import Avatar from "../components/Avatar";
@@ -26,6 +26,7 @@ import { useAvatar } from '../components/useAvatar';
 import { useHistory } from 'react-router-dom';
 import LoadMap from "../components/Mapping/LoadMap";
 import useBikeBusGroup from "../components/useBikeBusGroup";
+import { HeaderContext } from "../components/HeaderContext";
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -44,6 +45,13 @@ const Map: React.FC = () => {
     lng: 0,
   });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
+  const headerContext = useContext(HeaderContext);
+
+  useEffect(() => {
+    if (headerContext) {
+      headerContext.setShowHeader(true); // show header
+    }
+  }, [headerContext]);
 
   const getLocation = () => {
     setGetLocationClicked(true);
@@ -130,6 +138,12 @@ const Map: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
+      {headerContext?.showHeader && (
+        <IonHeader>
+          <IonToolbar>
+            </IonToolbar>
+        </IonHeader>
+      )}
         {!showMap && (
           <><div>
             <IonTitle>Welcome {username}</IonTitle>

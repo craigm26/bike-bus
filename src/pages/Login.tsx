@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useAuth from '../useAuth';
 import {
   IonPage,
@@ -16,7 +16,7 @@ import './Login.css';
 import PasswordReset from '../components/PasswordReset';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-
+import { HeaderContext } from '../components/HeaderContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -28,6 +28,15 @@ const Login: React.FC = () => {
     checkAndUpdateAccountModes,
   } = useAuth();
   const history = useHistory();
+  const headerContext = useContext(HeaderContext);
+
+
+
+  useEffect(() => {
+    if (headerContext) {
+      headerContext.setShowHeader(false);
+    }
+  }, [headerContext]);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
