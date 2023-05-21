@@ -145,6 +145,12 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-light-contrast-rgb: 255,255,255;
     --ion-color-light-shade: #1e2023;
     --ion-color-light-tint: #383a3e;
+
+    --ion-toolbar-color: #000000;
+    
+    .toolbar-background {
+      --background: #ffd800;
+    }
   }
 
   /*
@@ -260,3 +266,4 @@ http://ionicframework.com/docs/theming/ */
   width: 150px;
   height: 150px;
 }
+
