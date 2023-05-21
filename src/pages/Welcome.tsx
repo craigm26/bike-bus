@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useContext } from 'react';
 import {
   IonPage,
   IonContent,
@@ -6,9 +6,17 @@ import {
   IonText,
   IonHeader,
 } from '@ionic/react';
-import './Login.css';
+import './Welcome.css';
+import { HeaderContext } from '../components/HeaderContext'; // make sure to use the correct relative path
 
-const Login: React.FC = () => {
+const Welcome: React.FC = () => {
+  const headerContext = useContext(HeaderContext);
+
+  useEffect(() => {
+    if (headerContext) {
+      headerContext.setShowHeader(false);
+    }
+  }, [headerContext]);
 
   return (
     <IonPage>
@@ -23,15 +31,11 @@ const Login: React.FC = () => {
           <p>It is currently under development</p>
           <p>We're testing while I'm trying to quickly build this app - drop a line on Twitter @BikeBusApp</p>
         </IonText>
-        <IonButton>
-            <IonButton routerLink='/Signup'>Signup</IonButton>
-        </IonButton>
-        <IonButton>
-            <IonButton routerLink='/Login'>Login</IonButton>
-        </IonButton>
+        <IonButton routerLink='/Signup'>Signup</IonButton>
+        <IonButton routerLink='/Login'>Login</IonButton>
       </IonContent>
     </IonPage>
   );
 };
 
-export default Login;
+export default Welcome;
