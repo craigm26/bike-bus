@@ -209,11 +209,11 @@ const App: React.FC = () => {
             <IonPage id="main-content">
               {showHeader && (
                 <IonHeader>
-                  <IonToolbar>
-                    <IonButtons slot="start">
+                  <IonToolbar color="primary">
+                    <IonButtons color= "secondary" slot="start">
                       <IonMenuButton></IonMenuButton>
                     </IonButtons>
-                    <IonText slot="start" color="primary" class="BikeBusFont">
+                    <IonText slot="start" color="secondary" class="BikeBusFont">
                       <h1>BikeBus</h1>
                     </IonText>
 
