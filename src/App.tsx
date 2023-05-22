@@ -26,6 +26,8 @@ import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
 import CreateBikeBusStation from './pages/CreateBikeBusStations';
 import CreateRoute from './pages/CreateRoute';
 import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
+import { RouteProvider } from './components/RouteContext';
+
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -40,7 +42,7 @@ import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
 import React from 'react';
-import { alertCircleOutline, cogOutline, compassOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, compassOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 
@@ -108,6 +110,7 @@ const App: React.FC = () => {
     <IonApp>
       <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
         <IonReactRouter>
+        <RouteProvider>
           <React.Fragment>
             <IonMenu side="start" content-id="main-content">
               <IonHeader>
@@ -364,6 +367,7 @@ const App: React.FC = () => {
               </IonFabButton>
             </IonFab>
           </React.Fragment>
+        </RouteProvider>
         </IonReactRouter>
       </HeaderContext.Provider>
     </IonApp >
