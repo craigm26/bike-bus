@@ -22,7 +22,7 @@ const Welcome: React.FC = () => {
     <IonPage>
       <IonHeader>
       </IonHeader>
-      <IonContent>
+      <IonContent className="welcome-container">
         <IonText color="primary" class="BikeBusFont">
           <h1>BikeBus</h1>
         </IonText>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonFooter } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { HeaderContext } from './components/HeaderContext';
@@ -23,6 +23,9 @@ import SetUsername from './components/set-username';
 import Notifications from './pages/Notifications';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
+import CreateBikeBusStation from './pages/CreateBikeBusStations';
+import CreateRoute from './pages/CreateRoute';
+import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -37,7 +40,7 @@ import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
 import React from 'react';
-import { alertCircleOutline, cogOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, cogOutline, compassOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 
@@ -206,111 +209,125 @@ const App: React.FC = () => {
                 </IonList>
               </IonContent>
             </IonMenu>
-            <IonPage id="main-content">
-              {showHeader && (
-                <IonHeader>
-                  <IonToolbar color="primary">
-                    <IonButtons color= "secondary" slot="start">
-                      <IonMenuButton></IonMenuButton>
-                    </IonButtons>
-                    <IonText slot="start" color="secondary" class="BikeBusFont">
-                      <h1>BikeBus</h1>
-                    </IonText>
+            <IonPage id="main-content" >
+              <IonContent fullscreen>
+                {showHeader && (
+                  <IonHeader>
+                    <IonToolbar color="primary" >
+                      <IonButtons color="secondary" slot="start">
+                        <IonMenuButton></IonMenuButton>
+                      </IonButtons>
+                      <IonText slot="start" color="secondary" class="BikeBusFont">
+                        <h1>BikeBus</h1>
+                      </IonText>
 
-                    <IonPopover
-                      isOpen={showPopover}
-                      event={popoverEvent}
-                      onDidDismiss={() => setShowPopover(false)}
-                      className="my-popover"
-                    >
+                      <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                      >
+                        <Profile />
+                      </IonPopover>
+                      <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                        <IonChip>
+                          {avatarElement}
+                          <IonLabel>{label}</IonLabel>
+                        </IonChip>
+                      </IonButton>
+                      <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                      >
+                        <Profile />
+                      </IonPopover>
+                      <IonButtons slot="primary">
+                        <IonButton routerLink='/help'>
+                          <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton routerLink='/notifications'>
+                          <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+                        </IonButton>
+                      </IonButtons>
+                    </IonToolbar>
+                  </IonHeader>
+                )}
+                <IonRouterOutlet>
+                  <React.Fragment>
+                    <Route path="/bikebusgrouppage/:groupId" exact>
+                      <BikeBusGroupPage />
+                    </Route>
+                    <Route path="/viewroute/:routeId" exact>
+                      <ViewRoute />
+                    </Route>
+                    <Route exact path="/Profile">
                       <Profile />
-                    </IonPopover>
-                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                      <IonChip>
-                        {avatarElement}
-                        <IonLabel>{label}</IonLabel>
-                      </IonChip>
-                    </IonButton>
-                    <IonPopover
-                      isOpen={showPopover}
-                      event={popoverEvent}
-                      onDidDismiss={() => setShowPopover(false)}
-                      className="my-popover"
-                    >
-                      <Profile />
-                    </IonPopover>
-                    <IonButtons slot="primary">
-                      <IonButton routerLink='/help'>
-                        <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-                      </IonButton>
-                      <IonButton routerLink='/settings'>
-                        <IonIcon slot="end" icon={cogOutline}></IonIcon>
-                      </IonButton>
-                      <IonButton routerLink='/notifications'>
-                        <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-                      </IonButton>
-                    </IonButtons>
-                  </IonToolbar>
-                </IonHeader>
-              )}
-              <IonRouterOutlet>
-                <React.Fragment>
-                  <Route path="/bikebusgrouppage/:groupId" exact>
-                    <BikeBusGroupPage />
-                  </Route>
-                  <Route path="/viewroute/:routeId" exact>
-                    <ViewRoute />
-                  </Route>
-                  <Route exact path="/Profile">
-                    <Profile />
-                  </Route>
-                  <Route exact path="/Account">
-                    <Account />
-                  </Route>
-                  <Route exact path="/SetUsername">
-                    <SetUsername />
-                  </Route>
-                  <Route exact path="/Map">
-                    <Map />
-                  </Route>
-                  <Route exact path="/SearchForRoute">
-                    <SearchForRoute />
-                  </Route>
-                  <Route exact path="/CreateOrganization">
-                    <CreateOrganization />
-                  </Route>
-                  <Route exact path="/CreateBikeBusGroup">
-                    <CreateBikeBusGroup />
-                  </Route>
-                  <Route exact path="/Login">
-                    <Login />
-                  </Route>
-                  <Route exact path="/SignUp">
-                    <SignUp />
-                  </Route>
-                  <Route exact path="/Logout">
-                    <Logout />
-                  </Route>
-                  <Route exact path="/help">
-                    <Help />
-                  </Route>
-                  <Route exact path="/about">
-                    <About />
-                  </Route>
-                  <Route exact path="/settings">
-                    <Settings />
-                  </Route>
-                  <Route exact path="/notifications">
-                    <Notifications />
-                  </Route>
-                  <Route exact path="/Welcome">
-                    <Welcome />
-                  </Route>
-                  <Route exact path="/">
-                    <Redirect to="/Welcome" />
-                  </Route>
-                </React.Fragment>
-              </IonRouterOutlet>
+                    </Route>
+                    <Route exact path="/Account">
+                      <Account />
+                    </Route>
+                    <Route exact path="/SetUsername">
+                      <SetUsername />
+                    </Route>
+                    <Route exact path="/Map">
+                      <Map />
+                    </Route>
+                    <Route exact path="/ViewBikeBusGroup">
+                      <BikeBusGroupPage />
+                    </Route>
+                    <Route exact path="/ViewRoute">
+                      <ViewRoute />
+                    </Route>
+                    <Route exact path="/SearchForRoute">
+                      <SearchForRoute />
+                    </Route>
+                    <Route exact path="/CreateOrganization">
+                      <CreateOrganization />
+                    </Route>
+                    <Route exact path="/CreateRoute">
+                      <CreateRoute routeId={''} />
+                    </Route>
+                    <Route exact path="/CreateBikeBusGroup">
+                      <CreateBikeBusGroup />
+                    </Route>
+                    <Route exact path="/CreateBikeBusStation">
+                      <CreateBikeBusStation />
+                    </Route>
+                    <Route exact path="/UpgradeAccountToPremium">
+                      <UpgradeAccountToPremium />
+                    </Route>
+                    <Route exact path="/Login">
+                      <Login />
+                    </Route>
+                    <Route exact path="/SignUp">
+                      <SignUp />
+                    </Route>
+                    <Route exact path="/Logout">
+                      <Logout />
+                    </Route>
+                    <Route exact path="/help">
+                      <Help />
+                    </Route>
+                    <Route exact path="/about">
+                      <About />
+                    </Route>
+                    <Route exact path="/settings">
+                      <Settings />
+                    </Route>
+                    <Route exact path="/notifications">
+                      <Notifications />
+                    </Route>
+                    <Route exact path="/Welcome">
+                      <Welcome />
+                    </Route>
+                    <Route exact path="/">
+                      <Redirect to="/Welcome" />
+                    </Route>
+                  </React.Fragment>
+                </IonRouterOutlet>
+              </IonContent>
             </IonPage>
             <IonFab vertical="bottom" horizontal="start" slot="fixed">
               <IonFabButton routerLink="/Map" routerDirection="none">
@@ -319,12 +336,16 @@ const App: React.FC = () => {
             </IonFab>
             <div className='bikebusname-button-container'>
               {fetchedGroups ? fetchedGroups.map((group: any) => (
-                <IonButton shape="round" key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                <IonButton shape="round" size="large" key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
                   <IonText class="BikeBusFont">{group.BikeBusName}</IonText>
                 </IonButton>
               )) : <p>Loading groups...</p>}
             </div>
-
+            <IonFab vertical="bottom" horizontal="end" slot="fixed">
+              <IonFabButton routerLink="/GetDirections" routerDirection="none">
+                <IonIcon icon={compassOutline} />
+              </IonFabButton>
+            </IonFab>
           </React.Fragment>
         </IonReactRouter>
       </HeaderContext.Provider>

@@ -1,17 +1,43 @@
-import { useState, useEffect } from 'react';
-import { collection, doc, getDocs, query, where } from 'firebase/firestore';
+import { useState, useEffect, useContext } from 'react';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
+import { IonPage, IonContent, IonHeader } from '@ionic/react';
+import { HeaderContext } from '../components/HeaderContext';
 
 interface UseRoutesProps {
     routeId: string;
 }
 
 const CreateRoute = ({ routeId }: UseRoutesProps) => {
-    const { user } = useAuth();
-    const [fetchedRoutes, setFetchedRoutes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { user } = useAuth(); // Use the useAuth hook to get the user object
+    const [accountType, setaccountType] = useState<string>('');
+    const headerContext = useContext(HeaderContext);
     const [error, setError] = useState<Error | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [fetchedRoutes, setFetchedRoutes] = useState<any[]>([]);
+  
+    useEffect(() => {
+      if (headerContext) {
+        headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+      }
+    }, [headerContext]);
+  
+  
+  
+    useEffect(() => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        getDoc(userRef).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const userData = docSnapshot.data();
+            if (userData && userData.accountType) {
+              setaccountType(userData.accountType);
+            }
+          }
+        });
+      }
+    }, [user]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -36,7 +62,18 @@ const CreateRoute = ({ routeId }: UseRoutesProps) => {
         fetchData();
     }, [user, routeId]);
 
-    return { fetchedRoutes, loading, error };
+    return (
+        <IonPage>
+          <IonContent fullscreen>
+          {headerContext?.showHeader && (
+            <IonHeader>
+            </IonHeader>
+          )}
+          </IonContent>
+        </IonPage>
+      );
 };
 
 export default CreateRoute;
+
+

@@ -3,29 +3,17 @@ import {
   IonHeader,
   IonPage,
   IonToolbar,
-  IonMenuButton,
-  IonButtons,
   IonButton,
-  IonLabel,
-  IonText,
-  IonChip,
-  IonAvatar,
-  IonPopover,
-  IonIcon,
   IonTitle,
 } from "@ionic/react";
 import { useState, useEffect, useCallback, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import Avatar from "../components/Avatar";
-import { personCircleOutline } from "ionicons/icons";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { useAvatar } from '../components/useAvatar';
 import { useHistory } from 'react-router-dom';
 import LoadMap from "../components/Mapping/LoadMap";
-import useBikeBusGroup from "../components/useBikeBusGroup";
 import { HeaderContext } from "../components/HeaderContext";
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
@@ -35,10 +23,8 @@ const DEFAULT_ACCOUNT_MODES = ['Member'];
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
   const [accountType, setaccountType] = useState<string>('');
-  const { avatarUrl } = useAvatar(user?.uid);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setusername] = useState<string>('');
-  const [showPopover, setShowPopover] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
@@ -145,10 +131,10 @@ const Map: React.FC = () => {
         </IonHeader>
       )}
         {!showMap && (
-          <><div>
+          <><div className="map-welcome-container">
             <IonTitle>Welcome {username}</IonTitle>
           </div><div className="location-button-container">
-              <IonButton onClick={getLocation}>Get Current Location</IonButton>
+              <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
             </div></>
         )}
         {showMap && (
