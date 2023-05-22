@@ -8,6 +8,7 @@ import {
   IonButton,
   IonText,
   IonLabel,
+  IonIcon,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -18,6 +19,7 @@ import Avatar from './Avatar';
 import Logout from './Logout';
 import AccountModeSelector from '../components/AccountModeSelector';
 import { doc, getDoc } from 'firebase/firestore';
+import { cogOutline } from 'ionicons/icons';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -84,17 +86,17 @@ const Profile: React.FC = () => {
       <IonContent fullscreen>
         <div className="avatar-container">
           <IonTitle>Profile</IonTitle>
-          <IonAvatar>
+          <IonAvatar className='img-center'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
             <><><IonButton fill="clear" routerLink="/account">
-                Account
-              </IonButton><IonLabel>
-                  <h2>UserName: {user?.username}</h2>
-                </IonLabel></><IonText>Account Type: {accountType}</IonText></>
+              Account
+            </IonButton><IonLabel>
+                <h2>UserName: {user?.username}</h2>
+              </IonLabel></><IonText>Account Type: {accountType}</IonText></>
 
           )}
           {user?.accountType === 'Anonymous' ? (
@@ -102,7 +104,7 @@ const Profile: React.FC = () => {
               <IonText></IonText>
               <IonButton fill="clear" routerLink="/SignUp">
                 SignUp to Add Avatar
-              </IonButton>     
+              </IonButton>
               <IonText>Account Type: {accountType}</IonText>
             </>
           ) : (
@@ -124,6 +126,9 @@ const Profile: React.FC = () => {
           )}
         </div>
         <Logout />
+        <IonButton routerLink='/settings'>
+          <IonIcon slot="end" icon={cogOutline}></IonIcon>
+        </IonButton>
       </IonContent>
     </IonPage>
   );

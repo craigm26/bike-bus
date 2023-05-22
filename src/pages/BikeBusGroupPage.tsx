@@ -1,21 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { IonContent, IonHeader, IonPage, IonToolbar, IonMenuButton, IonButtons, IonButton, IonLabel, IonText, IonChip, IonAvatar, IonPopover, IonIcon } from '@ionic/react';
-import { personCircleOutline } from 'ionicons/icons';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import UseBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
-import Avatar from '../components/Avatar';
-import Profile from '../components/Profile';
 import BikeBusGroup from '../components/BikeBusGroup';
-import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+import { HeaderContext } from '../components/HeaderContext';
 
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setAccountType] = useState<string>('');
   const { fetchedGroups } = UseBikeBusGroup();
+    const headerContext = useContext(HeaderContext);
 
   useEffect(() => {
     if (user) {
@@ -35,9 +33,12 @@ const BikeBusGroupPage: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar />
+      {headerContext?.showHeader && (
+        <IonHeader>
+          <IonToolbar>
+            </IonToolbar>
         </IonHeader>
+      )}
         {fetchedGroups.map((group, index) => (
           <BikeBusGroup
             key={index}
