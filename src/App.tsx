@@ -299,7 +299,12 @@ const App: React.FC = () => {
                       <CreateOrganization />
                     </Route>
                     <Route exact path="/CreateRoute">
-                      <CreateRoute routeId={''} />
+                      <CreateRoute routeId={''} mapCenter={{
+                        lat: 0,
+                        lng: 0
+                      }} isAnonymous={false} user={null} navigate={function (path: string): void {
+                        throw new Error('Function not implemented.');
+                      } } />
                     </Route>
                     <Route exact path="/CreateBikeBusGroup">
                       <CreateBikeBusGroup />
