@@ -7,6 +7,9 @@ import AnonymousAvatarMapMarker from "../../components/AnonymousAvatarMapMarker"
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
 import { IonButton } from "@ionic/react";
+import { useContext } from "react";
+import { RouteContext } from "../RouteContext";
+
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 

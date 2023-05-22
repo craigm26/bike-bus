@@ -5,6 +5,11 @@ import useAuth from '../useAuth';
 import { IonPage, IonContent, IonHeader, IonTitle, IonToolbar, IonCard, IonInput, IonButton, IonItem, IonList, IonSelect, IonSelectOption } from '@ionic/react';
 import { HeaderContext } from '../components/HeaderContext';
 import { GoogleMap, useJsApiLoader, DirectionsService, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
+import { RouteContext } from '../components/RouteContext';
+import { useHistory } from 'react-router-dom';
+
+
+
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -23,17 +28,18 @@ interface AutocompleteInputProps {
 
 const CreateRoute = ({ routeId, mapCenter }: LoadMapProps) => {
   const { user } = useAuth();
+  const history = useHistory();
   const [routeName, setRouteName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [routeType, setRouteType] = useState<string>('');
   const [accountType, setaccountType] = useState<string>('');
   const headerContext = useContext(HeaderContext);
   const [startPoint, setStartPoint] = useState<string>('');
-  const [endPoint, setEndPoint] = useState<string>('');
   const [travelMode, setTravelMode] = useState('');
   const [directionResponse, setDirectionResponse] = useState<google.maps.DirectionsResult | null>(null);
   const [generateMap, setGenerateMap] = useState<boolean>(false);
-
+  const { autoCompleteValue, setAutoCompleteValue } = useContext(RouteContext);
+  const [endPoint, setEndPoint] = useState<string>(autoCompleteValue);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -66,6 +72,11 @@ const CreateRoute = ({ routeId, mapCenter }: LoadMapProps) => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    setStartPoint(autoCompleteValue);
+}, [autoCompleteValue]);
+
 
   if (loadError) {
     return <div>Error loading maps: {loadError.message}</div>
@@ -103,11 +114,23 @@ const CreateRoute = ({ routeId, mapCenter }: LoadMapProps) => {
         travelMode,
         createdBy: user?.uid,
       });
+  
       setGenerateMap(false);  // Reset after creating route
+  
+      // Ask the user if they want to create a schedule
+      const shouldCreateSchedule = window.confirm('Would you like to set a schedule for the bikebus so that it can become a bikebus group?');
+  
+      if (shouldCreateSchedule) {
+        // Navigate to the Create a BikeBus Group page
+        history.push('/createabikebusgroup');
+      }
+  
     } catch (error) {
       console.log("Error: ", error);
     }
   };
+  
+  
 
 
   return (
