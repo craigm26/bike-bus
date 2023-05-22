@@ -1,41 +1,28 @@
 import {
     IonContent,
-    IonHeader,
     IonPage,
-    IonToolbar,
-    IonMenuButton,
-    IonButtons,
     IonButton,
     IonLabel,
     IonText,
-    IonChip,
-    IonAvatar,
-    IonPopover,
     IonItem,
     IonList,
-    IonIcon,
     IonCard,
     IonCardContent,
     IonCardHeader,
     IonCardTitle,
     IonTitle,
-    IonInput,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
 import useAuth from '../useAuth';
-import useBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile';
-import { db } from '../firebaseConfig';
+import { db, storage } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import { personCircleOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
-import SetUsername from "../components/set-username";
-import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
-
-
+import React from 'react';
+import { ref, uploadBytesResumable } from '@firebase/storage';
+import { refresh } from 'ionicons/icons';
 
 interface Group {
     id: string;
@@ -50,11 +37,14 @@ const Account: React.FC = () => {
     const { avatarUrl } = useAvatar(user?.uid);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
-
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [passwordConfirm, setPasswordConfirm] = useState<string>('');
     const [username, setUsername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
+
 
 
     useEffect(() => {
@@ -109,6 +99,35 @@ const Account: React.FC = () => {
     }, [user, checkAndUpdateAccountModes]);
 
 
+    const refresh = () => {
+        // Refresh the avatar
+    };
+    // Update the user's avatar
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const storageRef = ref(storage, `avatars/${user.uid}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot: any) => {
+                    console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                },
+                (error: any) => {
+                    console.error('Error uploading avatar:', error);
+                },
+                () => {
+                    // Notify useAvatar to update the avatar URL
+                    refresh();
+                },
+            );
+        }
+    };
+
+
 
     return (
         <IonPage>
@@ -119,6 +138,9 @@ const Account: React.FC = () => {
                         <IonCardTitle>Account</IonCardTitle>
                     </IonCardHeader>
                     <Avatar uid={user?.uid} size="large" />
+                    <IonButton fill="clear" onClick={(_handleFileInputChange) => fileInputRef.current?.click()}>
+                        Update Avatar
+                    </IonButton>
                     <IonItem>
                         <IonLabel>Account Type</IonLabel>
                         <IonText>{accountType}</IonText>
@@ -164,7 +186,7 @@ const Account: React.FC = () => {
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>BikeBus Routes you created, have ridden or liked</IonCardTitle>
+                        <IonCardTitle>BikeBus Routes you created</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
                     </IonCardContent>
@@ -192,8 +214,6 @@ const Account: React.FC = () => {
                     </IonCardHeader>
                     <IonCardContent>
                         <IonText>Add a Kid Account here</IonText>
-                        <IonText>When a Kid is added, a table shows with the ability to associate a known route and schedule along with the phone device phone number to send invite</IonText>
-                        <IonText>When a Kid attempts to login, a PIN code set by the parent is entered along with the account email address. This same PIN is used for the kid to login</IonText>
                         <IonText>When a Kid logs in, there's only a few visual indicators they're in the app. All they can do is "Start" and "Stop". Parents receive notifications about the ride.</IonText>
                     </IonCardContent>
                 </IonCard>
