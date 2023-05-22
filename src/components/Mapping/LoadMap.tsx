@@ -23,6 +23,7 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigat
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
+    
 
     let directionsService: google.maps.DirectionsService | null = null;
     let directionsRenderer: google.maps.DirectionsRenderer | null = null;

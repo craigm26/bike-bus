@@ -86,7 +86,6 @@ const Profile: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         <div className="avatar-container">
-          <IonTitle>Profile</IonTitle>
           <IonAvatar className='img-center'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
