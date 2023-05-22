@@ -137,7 +137,7 @@ const App: React.FC = () => {
                       <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
                         <IonLabel>View BikeBusStations</IonLabel>
                       </IonItem>
-                      <IonItem button routerLink='/Create Route' routerDirection="none">
+                      <IonItem button routerLink='/CreateRoute' routerDirection="none">
                         <IonLabel>Create Route</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
@@ -146,11 +146,14 @@ const App: React.FC = () => {
                       <IonItem button routerLink='/CreateBikeBusGroup' routerDirection="none">
                         <IonLabel>Create BikeBusGroup</IonLabel>
                       </IonItem>
+                      <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
+                        <IonLabel>Upgrade Account to Premium</IonLabel>
+                      </IonItem>
                     </IonCard>
                     <IonCard>
                       <IonLabel>Premium User Functions</IonLabel>
-                      <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
-                        <IonLabel>Convert to Parent Account Type - Sign up for Premium</IonLabel>
+                      <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
+                        <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/AddAKid' routerDirection="none">
                         <IonLabel>Add a Kid -as a premium user and converts to parent account type</IonLabel>
@@ -173,6 +176,15 @@ const App: React.FC = () => {
                     </IonCard>
                     <IonCard>
                       <IonLabel>Org Admin Functions</IonLabel>
+                      <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
+                        <IonLabel>Update BikeBusGroups</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink='/UpdateBikeBusStations' routerDirection="none">
+                        <IonLabel>Update BikeBusStations</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink='/UpdateRoutes' routerDirection="none">
+                        <IonLabel>Update Associated Routes</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
                         <IonLabel>Update Organization</IonLabel>
                       </IonItem>

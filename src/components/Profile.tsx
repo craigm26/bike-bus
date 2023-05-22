@@ -9,6 +9,7 @@ import {
   IonText,
   IonLabel,
   IonIcon,
+  IonToolbar,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -126,9 +127,15 @@ const Profile: React.FC = () => {
           )}
         </div>
         <Logout />
+        <IonToolbar>
         <IonButton routerLink='/settings'>
+          Settings
           <IonIcon slot="end" icon={cogOutline}></IonIcon>
         </IonButton>
+        </IonToolbar>
+        <IonLabel>
+          <IonText>Privacy Policy</IonText>
+        </IonLabel>
       </IonContent>
     </IonPage>
   );
