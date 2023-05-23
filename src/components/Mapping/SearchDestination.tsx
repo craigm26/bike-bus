@@ -1,8 +1,9 @@
 // SearchDestination.tsx
 
-import React, { useState } from "react";
-import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
-
+import { IonButton } from "@ionic/react";
+import React, { useState, useContext } from "react";
+import usePlacesAutocomplete, { getGeocode, getLatLng, getDetails } from "use-places-autocomplete";
+import { RouteContext } from "../RouteContext";
 
 interface LatLng {
     lat: number;
@@ -11,12 +12,15 @@ interface LatLng {
 
 interface SearchDestinationProps {
   currentLocation: LatLng;
-  navigate: (path: string) => void;  // assuming navigate is a function that takes a path and navigates to that path
+  navigate: (path: string) => void;
 }
 
 const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, navigate }) => {
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [, setDestination] = useState<LatLng | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const { setEndPoint } = useContext(RouteContext);
+
 
   const {
       ready,
@@ -36,13 +40,20 @@ const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, 
       clearSuggestions();
 
       try {
-          const results = await getGeocode({ address: description });
-          const { lat, lng } = await getLatLng(results[0]);
-          setDestination({ lat, lng });
-          setShowCreateRouteButton(true);
+        const results = await getGeocode({ address: description });
+        const { lat, lng } = await getLatLng(results[0]);
+        setEndPoint({ lat, lng });
+        const details = await getDetails({ placeId: results[0].place_id });
+        setDestination({ lat, lng });
+        if (typeof details !== 'string' && details.place_id !== undefined) {
+          setSelectedPlaceId(details.place_id);
+        }
+        setShowCreateRouteButton(true);
       } catch (error) {
-          console.log('Error: ', error);
+        console.log('Error: ', error);
       }
+      
+      
   };
 
   return (
@@ -53,9 +64,13 @@ const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, 
                   {suggestion.description}
               </div>
           ))}
-          {showCreateRouteButton && <button onClick={() => navigate('/createRoute')}>Create Route</button>}
+          <div>
+          {showCreateRouteButton && <IonButton onClick={() => navigate('/getDirections')}>Get Directions</IonButton>}
+          {showCreateRouteButton && <IonButton onClick={() => navigate('/createRoute')}>Create Route</IonButton>}
+          {showCreateRouteButton && <IonButton onClick={() => navigate('/findRoute')}>Find Route</IonButton>}
+          </div>
       </div>
   );
-};
+}
 
 export default SearchDestination;

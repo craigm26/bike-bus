@@ -1,0 +1,51 @@
+[debug] [2023-05-23T23:14:29.681Z] ----------------------------------------------------------------------
+[debug] [2023-05-23T23:14:29.682Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2023-05-23T23:14:29.682Z] CLI Version:   12.1.0
+[debug] [2023-05-23T23:14:29.682Z] Platform:      win32
+[debug] [2023-05-23T23:14:29.683Z] Node Version:  v18.16.0
+[debug] [2023-05-23T23:14:29.683Z] Time:          Tue May 23 2023 16:14:29 GMT-0700 (Pacific Daylight Time)
+[debug] [2023-05-23T23:14:29.683Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-05-23T23:14:29.737Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-05-23T23:14:29.737Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2023-05-23T23:14:29.737Z] [iam] checking project bikebus-71dd5 for permissions ["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]
+[debug] [2023-05-23T23:14:29.738Z] > refreshing access token with scopes: []
+[debug] [2023-05-23T23:14:29.740Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2023-05-23T23:14:29.740Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-05-23T23:14:29.901Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2023-05-23T23:14:29.901Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-05-23T23:14:29.909Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions [none]
+[debug] [2023-05-23T23:14:29.909Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-05-23T23:14:29.909Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]}
+[debug] [2023-05-23T23:14:30.046Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions 200
+[debug] [2023-05-23T23:14:30.046Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[debug] [2023-05-23T23:14:30.046Z] [iam] error while checking permissions, command may fail: FirebaseError: Authorization failed. This account is missing the following required permissions on project bikebus-71dd5:
+
+  
+[debug] [2023-05-23T23:14:30.046Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2023-05-23T23:14:30.047Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2023-05-23T23:14:30.201Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2023-05-23T23:14:30.202Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2023-05-23T23:14:30.202Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-05-23T23:14:30.405Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-05-23T23:14:30.405Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_e12c4191-3347-47ca-922a-c643af73fe38"}
+[debug] [2023-05-23T23:14:30.405Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-05-23T23:14:30.581Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-05-23T23:14:30.581Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_e12c4191-3347-47ca-922a-c643af73fe38"}
+[info] 
+[info] === Deploying to 'bikebus-71dd5'...
+[info] 
+[info] i  deploying database, storage, firestore, functions, hosting, remoteconfig, extensions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run lint
+[info] Running command: npm --prefix "$RESOURCE_DIR" run build
+[info] +  functions: Finished running predeploy script. 
+[info] Running command: npm run build
+[info] +  hosting: Finished running predeploy script. 
+[info] i  database: checking rules syntax... 
+[debug] [2023-05-23T23:15:04.012Z] >>> [apiv2][query] GET https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb [none]
+[debug] [2023-05-23T23:15:14.027Z] Timeout reached making request to https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb
+[debug] [2023-05-23T23:15:14.106Z] FirebaseError: Timeout reached making request to https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:238:35)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to get instance details for instance: bikebus-71dd5-default-rtdb. See firebase-debug.log for more details.

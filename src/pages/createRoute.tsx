@@ -1,11 +1,13 @@
 import { useState, useContext, useEffect } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonCard, IonInput, IonButton, IonText, IonGrid, IonRow, IonCol, IonTitle, IonItem, IonSelect, IonSelectOption } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonCard, IonInput, IonButton, IonText, IonGrid, IonRow, IonCol, IonTitle, IonItem, IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { HeaderContext } from '../components/HeaderContext';
-import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { useJsApiLoader } from '@react-google-maps/api';
+import { RouteContext } from '../components/RouteContext';
+import { CurrentLocationContext } from '../components/CurrentLocationContext';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -14,12 +16,13 @@ const CreateRoute: React.FC = () => {
   const history = useHistory();
   const [routeName, setRouteName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [routeType, setRouteType] = useState<string>('');
   const [accountType, setAccountType] = useState<string>('');
   const [startPoint, setStartPoint] = useState<string>('');
-  const [endPoint, setEndPoint] = useState<string>('');
-  const [travelMode, setTravelMode] = useState('');
+  const [travelMode, setTravelMode] = useState<string>('');
+  const [routeType, setRouteType] = useState<string>('');
   const headerContext = useContext(HeaderContext);
+  const { endPoint } = useContext(RouteContext) as { endPoint: { lat: number; lng: number } };
+  const currentLocation = useContext(CurrentLocationContext);
 
   useEffect(() => {
     if (headerContext) {
@@ -41,19 +44,14 @@ const CreateRoute: React.FC = () => {
     }
   }, [user]);
 
+  console.log(endPoint);
+  console.log(currentLocation);
+
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
     libraries,
   });
-
-  const handlePlaceChangedStart = (place: google.maps.places.PlaceResult) => {
-    setStartPoint(place.formatted_address || '');
-  };
-
-  const handlePlaceChangedEnd = (place: google.maps.places.PlaceResult) => {
-    setEndPoint(place.formatted_address || '');
-  };
 
   const handleSubmit = async () => {
     try {
@@ -65,8 +63,8 @@ const CreateRoute: React.FC = () => {
         routeType,
         accountType,
         travelMode,
-        routeCreator: user?.uid,
-        routeLeader: user?.uid,
+        routeCreator: "/users/" + user?.uid,
+        routeLeader: "/users/" + user?.uid,
       });
 
       if (window.confirm('Would you like to set a schedule for the bikebus so that it can become a bikebus group?')) {
@@ -101,29 +99,32 @@ const CreateRoute: React.FC = () => {
                 <IonInput value={description} onIonChange={e => setDescription(e.detail.value!)} />
                 <IonText>Travel Mode</IonText>
                 <IonItem>
-                  <IonSelect value={travelMode} placeholder="Select Travel Mode" onIonChange={e => setTravelMode(e.detail.value)} >
-                    <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
-                    <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
-                    <IonSelectOption value="DRIVING">Driving</IonSelectOption>
-                    <IonSelectOption value="WALKING">Walking</IonSelectOption>
-                  </IonSelect>
+                <IonSegment value={travelMode} onIonChange={(e: CustomEvent) => setTravelMode(e.detail.value as string)}>
+                    <IonSegmentButton value="BICYCLING">
+                      <IonLabel>Bicycling</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="DRIVING">
+                      <IonLabel>Driving</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="WALKING">
+                      <IonLabel>Walking</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
                 </IonItem>
                 <IonText>Route Type</IonText>
                 <IonItem>
-                  <IonSelect value={routeType} placeholder="Select Route Type" onIonChange={e => setRouteType(e.detail.value)}>
-                    <IonSelectOption value="school">School</IonSelectOption>
-                    <IonSelectOption value="work">Work</IonSelectOption>
-                    <IonSelectOption value="club">Club</IonSelectOption>
-                  </IonSelect>
+                <IonSegment value={routeType} onIonChange={(e: CustomEvent) => setRouteType(e.detail.value as string)}>
+                    <IonSegmentButton value="school">
+                      <IonLabel>School</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="work">
+                      <IonLabel>Work</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="club">
+                      <IonLabel>Club</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
                 </IonItem>
-                <IonText>Start Location</IonText>
-                <Autocomplete onLoad={autocomplete => (autocomplete && setStartPoint(autocomplete.getPlace()?.formatted_address || ''))} onPlaceChanged={() => handlePlaceChangedStart}>
-                  <IonInput value={startPoint} placeholder="Enter start location" />
-                </Autocomplete>
-                <IonText>End Location</IonText>
-                <Autocomplete onLoad={autocomplete => (autocomplete && setEndPoint(autocomplete.getPlace()?.formatted_address || ''))} onPlaceChanged={() => handlePlaceChangedEnd}>
-                  <IonInput value={endPoint} placeholder="Enter end location" />
-                </Autocomplete>
                 <IonButton shape="round" onClick={handleSubmit}>Create New Route</IonButton>
                 <IonButton shape="round" onClick={() => history.push('/Map')}>Cancel</IonButton>
               </IonCol>
