@@ -18,3 +18,93 @@
   justify-content: center;
   padding: 10px; /* optional: for some space from the bottom */
 }
+
+
+.avatar {
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+}
+
+.avatar.extrasmall {
+  width: 26px;
+  height: 26px;
+}
+
+.avatar.small {
+  width: 50px;
+  height: 50px;
+}
+
+.avatar.medium {
+  width: 50px;
+  height: 50px;
+}
+
+.avatar.large {
+  width: 150px;
+  height: 150px;
+}
+
+.bikebus-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 0 15px; /* Adjust padding as needed */
+}
+
+.footer-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.button {
+  padding: 0;
+  margin: 0;
+  border: none;  /* If you don't want button to have border */
+  background: none;  /* If you don't want button to have background */
+}
+
+
+.map-button-container {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.bikebus-action-sheet {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.bikebus-start-button {
+  display: flex;
+  align-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+
+.welcome-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+}
+
+.img-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
