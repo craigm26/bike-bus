@@ -3,7 +3,7 @@ import {
     useJsApiLoader,
 } from "@react-google-maps/api";
 import AvatarMapMarker from "../../components/AvatarMapMarker";
-import AnonymousAvatarMapMarker from "../../components/AnonymousAvatarMapMarker";
+import AnonymousAvatarMapMarker from "../AnonymousAvatarMapMarker";
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
 import { IonButton } from "@ionic/react";

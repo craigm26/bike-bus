@@ -132,7 +132,6 @@ const Map: React.FC = () => {
       )}
         {!showMap && (
           <><div className="map-welcome-container">
-            <IonTitle>Welcome {username}</IonTitle>
           </div><div className="location-button-container">
               <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
             </div></>
