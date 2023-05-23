@@ -1,23 +1,13 @@
 import {
     IonContent,
-    IonHeader,
     IonPage,
-    IonToolbar,
-    IonMenuButton,
-    IonButtons,
-    IonButton,
-    IonLabel,
-    IonText,
-    IonChip,
     IonAvatar,
-    IonPopover,
     IonIcon,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile';
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -58,6 +48,11 @@ const ViewRoute: React.FC = () => {
     const { id } = useParams<RouteParams>();
     const [route, setRoute] = useState<RouteData | null>(null);
     const [stations, setStations] = useState<Station[]>([]);
+    const [BikeBusStations, setBikeBusStations] = useState<google.maps.DirectionsWaypoint[] | undefined>(undefined);
+    const [BikeBusStationsMarkers, setBikeBusStationsMarkers] = useState<google.maps.Marker[] | undefined>(undefined);
+    const [path, setPath] = useState<google.maps.LatLngLiteral[] | null>(null);
+    const [distance, setDistance] = useState<number | null>(null);
+    const [publicRoute, setPublicRoute] = useState<boolean>(false);
 
     // const { path } = useParams<RouteParams>(); the route data may already be declared in app.tsx, but we'll have to see console data to be sure
     // const [path, setPath] = useState<GeoPoint[]>([]); // this is the path data from the route data
