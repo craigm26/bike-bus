@@ -3,6 +3,8 @@ import {
     IonPage,
     IonAvatar,
     IonIcon,
+    IonCol,
+    IonRow,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import useAuth from '../useAuth';
@@ -14,6 +16,7 @@ import { db } from '../firebaseConfig';
 import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import { useParams } from 'react-router-dom';
 import { GeoPoint } from 'firebase/firestore';
+import { GoogleMap, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
 
 interface RouteParams {
     id: string;
@@ -123,13 +126,6 @@ const ViewRoute: React.FC = () => {
     return (
         <IonPage>
             <IonContent>
-                {route && (
-                    <div>
-                        <h1>{route.routename}</h1>
-                        <p>{route.description}</p>
-                        <ViewRouteMap path={route.path} startGeo={route.startGeo} endGeo={route.endGeo} stations={stations} />
-                    </div>
-                )}
             </IonContent>
         </IonPage>
     );

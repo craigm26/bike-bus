@@ -99,10 +99,6 @@ const App: React.FC = () => {
     console.log('showPopover state:', showPopover);
   };
 
-  const handleButtonClick = () => {
-    setShowActionSheet(true);
-  }
-
 
   if (loading) {
     return <p>Loading...</p>; // Replace with a loading spinner if available
@@ -307,12 +303,7 @@ const App: React.FC = () => {
                         <CreateOrganization />
                       </Route>
                       <Route exact path="/CreateRoute">
-                        <CreateRoute routeId={''} mapCenter={{
-                          lat: 0,
-                          lng: 0
-                        }} isAnonymous={false} user={null} navigate={function (path: string): void {
-                          throw new Error('Function not implemented.');
-                        }} />
+                        <CreateRoute />
                       </Route>
                       <Route exact path="/CreateBikeBusGroup">
                         <CreateBikeBusGroup />
@@ -373,7 +364,7 @@ const App: React.FC = () => {
                   <>
                   <IonFab vertical="bottom" horizontal="end" slot="fixed">
                     <IonButton className='bikebus-start-button' color="success" shape="round" size="large" id="open-action-sheet">
-                      <IonIcon icon={playOutline} />
+                      <IonIcon size="large" icon={playOutline} />
                     </IonButton>
                   </IonFab>
                     <IonActionSheet
