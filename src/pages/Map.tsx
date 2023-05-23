@@ -18,8 +18,6 @@ import { HeaderContext } from "../components/HeaderContext";
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
-
-
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
   const [accountType, setaccountType] = useState<string>('');
