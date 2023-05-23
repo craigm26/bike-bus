@@ -24,9 +24,14 @@ import Notifications from './pages/Notifications';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
 import CreateBikeBusStation from './pages/CreateBikeBusStations';
-import CreateRoute from './pages/CreateRoute';
 import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
+import { CurrentLocationProvider } from './components/CurrentLocationContext';
+import CreateRoute from './pages/createRoute';
+import React from 'react';
+import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline, playOutline } from 'ionicons/icons';
+import Avatar from './components/Avatar';
+import { useAvatar } from './components/useAvatar';
 
 
 import '@ionic/react/css/core.css';
@@ -41,11 +46,6 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
-import React from 'react';
-import { addOutline, alertCircleOutline, compassOutline, helpCircleOutline, mapOutline, personCircleOutline, playOutline } from 'ionicons/icons';
-import Avatar from './components/Avatar';
-import { useAvatar } from './components/useAvatar';
-
 
 setupIonicReact();
 
@@ -53,6 +53,8 @@ type Group = {
   id: number;
   BikeBusName: string;
 }
+
+
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -64,10 +66,10 @@ const App: React.FC = () => {
   const { avatarUrl } = useAvatar(user?.uid);
   const [showHeader, setShowHeader] = useState(true);
   const [showActionSheet, setShowActionSheet] = useState(false);
-
-
-
-
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number }>({
+    lat: 0,
+    lng: 0,
+  });
 
   console.log('fetchGroups:', fetchedGroups);
 
@@ -140,9 +142,6 @@ const App: React.FC = () => {
                         </IonItem>
                         <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
                           <IonLabel>View BikeBusStations</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/CreateRoute' routerDirection="none">
-                          <IonLabel>Create Route</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
                           <IonLabel>Create BikeBusStation</IonLabel>
@@ -288,7 +287,12 @@ const App: React.FC = () => {
                         <SetUsername />
                       </Route>
                       <Route exact path="/Map">
-                        <Map />
+                        <CurrentLocationProvider
+                          startPoint={currentLocation}
+                          setStartPoint={setCurrentLocation}
+                        >
+                          <Map />
+                        </CurrentLocationProvider>
                       </Route>
                       <Route exact path="/ViewBikeBusGroup">
                         <BikeBusGroupPage />
@@ -362,11 +366,11 @@ const App: React.FC = () => {
                 </div>
                 <div className='bikebus-action-sheet footer-content'>
                   <>
-                  <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                    <IonButton className='bikebus-start-button' color="success" shape="round" size="large" id="open-action-sheet">
-                      <IonIcon size="large" icon={playOutline} />
-                    </IonButton>
-                  </IonFab>
+                    <IonFab vertical="bottom" horizontal="end" slot="fixed">
+                      <IonButton className='bikebus-start-button' color="success" shape="round" size="large" id="open-action-sheet">
+                        <IonIcon size="large" icon={playOutline} />
+                      </IonButton>
+                    </IonFab>
                     <IonActionSheet
                       isOpen={showActionSheet}
                       onDidDismiss={() => setShowActionSheet(false)}

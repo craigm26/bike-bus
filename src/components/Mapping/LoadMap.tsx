@@ -6,21 +6,27 @@ import AvatarMapMarker from "../../components/AvatarMapMarker";
 import AnonymousAvatarMapMarker from "../AnonymousAvatarMapMarker";
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
-import { IonButton } from "@ionic/react";
-import { useContext } from "react";
-import { RouteContext } from "../RouteContext";
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
-interface LoadMapProps {
-    mapCenter: { lat: number; lng: number };
-    isAnonymous: boolean;
-    user: { uid: string } | null;
-    navigate: (path: string) => void;
-}
+interface UserData {
+    // Define the properties of the user data
+    // Example properties:
+    uid: string;
+    username: string;
+    // ...
+  }
 
-const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigate }) => {
+  interface LoadMapProps {
+    mapCenter: { lat: number; lng: number };
+    setStartPoint: React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>;
+    isAnonymous: boolean;
+    user: UserData | null;
+    navigate: (path: string) => void;
+  }
+
+const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, setStartPoint, isAnonymous, user, navigate }) => {
     const { isLoaded } = useJsApiLoader({
         id: "google-map-script",
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
@@ -30,10 +36,6 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigat
 
     let directionsService: google.maps.DirectionsService | null = null;
     let directionsRenderer: google.maps.DirectionsRenderer | null = null;
-
-    const getDirections = () => { /* ... */ };
-    const createARoute = () => { /* ... */ };
-    const findRoute = () => { /* ... */ };
 
     if (isLoaded) {
         directionsService = new window.google.maps.DirectionsService();
@@ -62,11 +64,6 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, isAnonymous, user, navigat
             >
                 <div className="search-bar">
                     <SearchDestination currentLocation={mapCenter} navigate={navigate} />
-                    <div className="button-container">
-                        <IonButton color="primary" onClick={getDirections}>Get Directions</IonButton>
-                        <IonButton color="primary" onClick={createARoute}>Create Route</IonButton>
-                        <IonButton color="primary" onClick={findRoute}>Find Route</IonButton>
-                    </div>
                 </div>
                 {user && isAnonymous && <AnonymousAvatarMapMarker position={mapCenter} uid={user.uid} />}
                 {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={mapCenter} />}

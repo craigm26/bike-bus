@@ -1,0 +1,44 @@
+import React, { createContext, useContext, useState } from 'react';
+
+type LocationContextProps = {
+  startPoint: {
+    lat: number;
+    lng: number;
+  };
+  setStartPoint: React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>;
+};
+
+export const CurrentLocationContext = createContext<LocationContextProps | undefined>(undefined);
+
+export const CurrentLocationProvider: React.FC<CurrentLocationProviderProps> = ({
+    children,
+  }) => {
+    const [startPoint, setStartPoint] = useState<{ lat: number; lng: number }>({
+      lat: 0,
+      lng: 0,
+    });
+  
+    return (
+      <CurrentLocationContext.Provider value={{ startPoint, setStartPoint }}>
+        {children}
+      </CurrentLocationContext.Provider>
+    );
+  };
+  
+
+interface CurrentLocationProviderProps {
+  startPoint: {
+    lat: number;
+    lng: number;
+  };
+  setStartPoint: React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>;
+  children: React.ReactNode;
+}
+
+export const useCurrentLocation = () => {
+  const context = useContext(CurrentLocationContext);
+  if (context === undefined) {
+    throw new Error('useCurrentLocation must be used within a CurrentLocationProvider');
+  }
+  return context;
+};

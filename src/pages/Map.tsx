@@ -4,7 +4,6 @@ import {
   IonPage,
   IonToolbar,
   IonButton,
-  IonTitle,
 } from "@ionic/react";
 import { useState, useEffect, useCallback, useContext } from "react";
 import "./Map.css";
@@ -15,6 +14,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from 'react-router-dom';
 import LoadMap from "../components/Mapping/LoadMap";
 import { HeaderContext } from "../components/HeaderContext";
+import { useCurrentLocation } from "../components/CurrentLocationContext";
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
@@ -30,6 +30,7 @@ const Map: React.FC = () => {
   });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const headerContext = useContext(HeaderContext);
+  const { setStartPoint } = useCurrentLocation();
 
   useEffect(() => {
     if (headerContext) {
@@ -81,6 +82,7 @@ const Map: React.FC = () => {
             lng: position.coords.longitude,
           };
           setMapCenter(newMapCenter);
+          setStartPoint(newMapCenter);
         },
         (error) => console.log(error),
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
@@ -94,7 +96,10 @@ const Map: React.FC = () => {
             lng: position.coords.longitude,
           };
           setMapCenter(newMapCenter);
-
+          setStartPoint(newMapCenter);
+          console.log("newMapCenter", newMapCenter);
+          console.log("setStartPoint", setStartPoint);
+      
           // Save geolocation to the realtime database
           if (user) {
             const positionRef = ref(rtdb, `userLocations/${user.uid}`);
@@ -103,9 +108,9 @@ const Map: React.FC = () => {
         },
         (error) => console.log(error),
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );
+      );      
     }
-  }, [user]);
+  }, [setStartPoint, user]);
 
   useEffect(() => {
     if (user && getLocationClicked) {
@@ -137,6 +142,7 @@ const Map: React.FC = () => {
         {showMap && (
           <LoadMap
             mapCenter={mapCenter}
+            setStartPoint={setStartPoint}
             isAnonymous={isAnonymous}
             user={user}
             navigate={navigate}
