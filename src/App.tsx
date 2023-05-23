@@ -164,10 +164,10 @@ const App: React.FC = () => {
                           <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/AddAKid' routerDirection="none">
-                          <IonLabel>Add a Kid -as a premium user and converts to parent account type</IonLabel>
+                          <IonLabel>Add a Kid -Converts to Parent Account</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/CheckInKid' routerDirection="none">
-                          <IonLabel>Check In a Kid to a BikeBus</IonLabel>
+                          <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
                         </IonItem>
                       </IonCard>
                       <IonCard>
