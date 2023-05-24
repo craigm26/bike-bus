@@ -26,20 +26,26 @@ interface UserData {
 
 interface LoadMapProps {
     mapCenter: LatLng;
-    selectedLocation: LatLng | null; // add this line
+    selectedLocation: LatLng | null;
     isAnonymous: boolean;
     user: UserData | null;
     navigate: (path: string) => void;
 }
 
 const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, selectedLocation, isAnonymous, user, navigate }) => {
-    const { isLoaded } = useJsApiLoader({
+    const { isLoaded, loadError } = useJsApiLoader({
         id: "google-map-script",
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
+    
+    useEffect(() => {
+        console.log("Google Maps script loaded: ", isLoaded);
+        console.log("Google Maps load error: ", loadError);
+    }, [isLoaded, loadError]);
+    
+   
 
-    // Your component must always return something
     return isLoaded ? (
         <div className="map-base">
             <GoogleMap
