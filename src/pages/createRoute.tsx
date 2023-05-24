@@ -21,7 +21,7 @@ const CreateRoute: React.FC = () => {
   const [travelMode, setTravelMode] = useState<string>('');
   const [routeType, setRouteType] = useState<string>('');
   const headerContext = useContext(HeaderContext);
-  const { endPoint } = useContext(RouteContext) as { endPoint: { lat: number; lng: number } };
+  const endPoint = useContext(CurrentLocationContext);
   const currentLocation = useContext(CurrentLocationContext);
 
   useEffect(() => {

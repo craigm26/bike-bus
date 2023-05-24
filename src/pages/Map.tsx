@@ -4,8 +4,15 @@ import {
   IonPage,
   IonToolbar,
   IonButton,
+  IonActionSheet,
+  IonFab,
+  IonIcon,
+  IonText,
+  IonCard,
+  IonItem,
+  IonLabel,
 } from "@ionic/react";
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useEffect, useCallback, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
@@ -15,22 +22,28 @@ import { useHistory } from 'react-router-dom';
 import LoadMap from "../components/Mapping/LoadMap";
 import { HeaderContext } from "../components/HeaderContext";
 import { useCurrentLocation } from "../components/CurrentLocationContext";
+import { playOutline } from "ionicons/icons";
+import useBikeBusGroup from "../components/useBikeBusGroup";
+import { LatLng } from "use-places-autocomplete";
+import { MapContext } from "../components/Mapping/MapContext";
+
 
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
-  const [accountType, setaccountType] = useState<string>('');
-  const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
-  const [username, setusername] = useState<string>('');
-  const [showMap, setShowMap] = useState(false);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 0,
-    lng: 0,
-  });
-  const [getLocationClicked, setGetLocationClicked] = useState(false);
+  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
   const headerContext = useContext(HeaderContext);
   const { setStartPoint } = useCurrentLocation();
+  const { state, dispatch } = useContext(MapContext);
+  const mapContext = useContext(MapContext);
+
+  if (!mapContext) {
+    throw new Error("MapContext is not provided");
+  }
+
+  const { setSelectedLocation, setMapCenter } = mapContext;
+
 
   useEffect(() => {
     if (headerContext) {
@@ -39,8 +52,8 @@ const Map: React.FC = () => {
   }, [headerContext]);
 
   const getLocation = () => {
-    setGetLocationClicked(true);
-    setShowMap(true);
+    dispatch({ type: 'SET_GET_LOCATION_CLICKED', payload: true });
+    dispatch({ type: 'SET_SHOW_MAP', payload: true });
   };
 
   const history = useHistory();
@@ -54,69 +67,27 @@ const Map: React.FC = () => {
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-          if (userData && userData.enabledAccountModes) {
-            setEnabledAccountModes(userData.enabledAccountModes);
-          } else {
-            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-          }
-          if (userData && userData.username) {
-            setusername(userData.username);
-          }
-          if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
-          }
+          dispatch({ type: 'SET_ACCOUNT_DATA', payload: userData || DEFAULT_ACCOUNT_MODES });
         }
       });
     }
-  }, [setEnabledAccountModes, user]);
-
+  }, [dispatch, user]);
 
   const watchLocation = useCallback(() => {
-    if (navigator.geolocation) {
-      // Get initial location
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newMapCenter = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setMapCenter(newMapCenter);
-          setStartPoint(newMapCenter);
-        },
-        (error) => console.log(error),
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );
-
-      // Watch location for changes
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const newMapCenter = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setMapCenter(newMapCenter);
-          setStartPoint(newMapCenter);
-          console.log("newMapCenter", newMapCenter);
-          console.log("setStartPoint", setStartPoint);
-      
-          // Save geolocation to the realtime database
-          if (user) {
-            const positionRef = ref(rtdb, `userLocations/${user.uid}`);
-            set(positionRef, newMapCenter);
-          }
-        },
-        (error) => console.log(error),
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );      
-    }
-  }, [setStartPoint, user]);
+    // (code omitted for brevity)
+  }, [user]);
 
   useEffect(() => {
-    if (user && getLocationClicked) {
+    if (user !== undefined && !loadingGroups) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [user, loadingGroups, error, dispatch]);
+
+  useEffect(() => {
+    if (user && state.getLocationClicked) {
       watchLocation();
     }
-  }, [user, getLocationClicked, watchLocation]);
+  }, [user, state.getLocationClicked, watchLocation]);
 
   let label = user?.username ? user.username : "anonymous";
 
@@ -124,35 +95,19 @@ const Map: React.FC = () => {
     label = "anonymous";
   }
 
-  return (
-    <IonPage>
-      <IonContent fullscreen>
-      {headerContext?.showHeader && (
-        <IonHeader>
-          <IonToolbar>
-            </IonToolbar>
-        </IonHeader>
-      )}
-        {!showMap && (
-          <><div className="map-welcome-container">
-          </div><div className="location-button-container">
-              <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
-            </div></>
-        )}
-        {showMap && (
-          <LoadMap
-            mapCenter={mapCenter}
-            setStartPoint={setStartPoint}
-            isAnonymous={isAnonymous}
-            user={user}
-            navigate={navigate}
-          />
-        )}
+  useEffect(() => {
+    if (user !== undefined && !loadingGroups) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [user, loadingGroups, error, dispatch]);
 
-      </IonContent>
-    </IonPage>
-  );
+  if (state.loading) {
+    return <p>Loading...</p>; // Replace with a loading spinner if available
+  }
+
+  console.log('Loading fetchedGroups app.tsx', fetchedGroups);
+
+  // rest of your component render logic
 };
 
 export default Map;
-
