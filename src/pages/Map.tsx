@@ -51,6 +51,13 @@ const Map: React.FC = () => {
     libraries,
   });
 
+  // when the user consent to share location, the map will be shown
+  useEffect(() => {
+    if (getLocationClicked) {
+      setShowMap(true);
+    }
+  }, [getLocationClicked]);
+
 
   const watchLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -85,6 +92,13 @@ const Map: React.FC = () => {
     }
   }, [user]);
 
+    // when the user consents to share location, the map will be shown
+    useEffect(() => {
+      if (getLocationClicked) {
+        setShowMap(true);
+      }
+    }, [getLocationClicked]);
+
   useEffect(() => {
     if (user) {
       const userRef = doc(db, "users", user.uid);
@@ -114,6 +128,12 @@ const Map: React.FC = () => {
     console.log("MapCenter Location: ", mapCenter);
     console.log("Selected Location: ", selectedLocation);
   }, [mapCenter, selectedLocation]);
+
+  useEffect(() => {
+    if (user && getLocationClicked) {
+      watchLocation();
+    }
+  }, [user, getLocationClicked, watchLocation]);
 
   const navigate = useCallback((path: string) => {
     history.push(path);
