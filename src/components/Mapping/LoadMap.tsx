@@ -1,14 +1,20 @@
 import {
     GoogleMap,
     useJsApiLoader,
+    Marker,
 } from "@react-google-maps/api";
+import { useEffect, useState } from 'react';
 import AvatarMapMarker from "../../components/AvatarMapMarker";
 import AnonymousAvatarMapMarker from "../AnonymousAvatarMapMarker";
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
 
-
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+
+interface LatLng {
+  lat: number;
+  lng: number;
+}
 
 interface UserData {
     // Define the properties of the user data
@@ -16,33 +22,22 @@ interface UserData {
     uid: string;
     username: string;
     // ...
-  }
+}
 
-  interface LoadMapProps {
-    mapCenter: { lat: number; lng: number };
-    setStartPoint: React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>;
+interface LoadMapProps {
+    mapCenter: LatLng;
+    selectedLocation: LatLng | null; // add this line
     isAnonymous: boolean;
     user: UserData | null;
     navigate: (path: string) => void;
-  }
+}
 
-const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, setStartPoint, isAnonymous, user, navigate }) => {
+const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, selectedLocation, isAnonymous, user, navigate }) => {
     const { isLoaded } = useJsApiLoader({
         id: "google-map-script",
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    
-
-    let directionsService: google.maps.DirectionsService | null = null;
-    let directionsRenderer: google.maps.DirectionsRenderer | null = null;
-
-    if (isLoaded) {
-        directionsService = new window.google.maps.DirectionsService();
-        directionsRenderer = new window.google.maps.DirectionsRenderer();
-
-        // Call your functions here, after defining them...
-    }
 
     // Your component must always return something
     return isLoaded ? (
@@ -63,10 +58,14 @@ const LoadMap: React.FC<LoadMapProps> = ({ mapCenter, setStartPoint, isAnonymous
                 }}
             >
                 <div className="search-bar">
-                    <SearchDestination currentLocation={mapCenter} navigate={navigate} />
+                    <SearchDestination
+                        currentLocation={mapCenter}
+                        navigate={navigate}
+                    />
                 </div>
                 {user && isAnonymous && <AnonymousAvatarMapMarker position={mapCenter} uid={user.uid} />}
                 {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={mapCenter} />}
+                {selectedLocation && <Marker position={selectedLocation} />} {/* Add this line */}
             </GoogleMap>
         </div>
     ) : null;

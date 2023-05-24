@@ -4,6 +4,8 @@ import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, 
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { HeaderContext } from './components/HeaderContext';
+import { MapProvider } from './components/Mapping/MapContext';
+
 
 import Map from './pages/Map';
 import Login from './pages/Login';
@@ -65,7 +67,6 @@ const App: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
   const [showHeader, setShowHeader] = useState(true);
-  const [showActionSheet, setShowActionSheet] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
@@ -287,12 +288,10 @@ const App: React.FC = () => {
                         <SetUsername />
                       </Route>
                       <Route exact path="/Map">
-                        <CurrentLocationProvider
-                          startPoint={currentLocation}
-                          setStartPoint={setCurrentLocation}
+                        <MapProvider 
                         >
                           <Map />
-                        </CurrentLocationProvider>
+                        </MapProvider>
                       </Route>
                       <Route exact path="/ViewBikeBusGroup">
                         <BikeBusGroupPage />
@@ -356,57 +355,6 @@ const App: React.FC = () => {
                       <IonIcon icon={mapOutline} />
                     </IonFabButton>
                   </IonFab>
-                </div>
-                <div className='bikebusname-button-container footer-content'>
-                  {fetchedGroups ? fetchedGroups.map((group: any) => (
-                    <IonButton shape="round" size="large" key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                      <IonText class="BikeBusFont">{group.BikeBusName}</IonText>
-                    </IonButton>
-                  )) : <p>Loading groups...</p>}
-                </div>
-                <div className='bikebus-action-sheet footer-content'>
-                  <>
-                    <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                      <IonButton className='bikebus-start-button' color="success" shape="round" size="large" id="open-action-sheet">
-                        <IonIcon size="large" icon={playOutline} />
-                      </IonButton>
-                    </IonFab>
-                    <IonActionSheet
-                      isOpen={showActionSheet}
-                      onDidDismiss={() => setShowActionSheet(false)}
-                      trigger="open-action-sheet"
-                      header="Start Actions:"
-                      buttons={[
-                        {
-                          text: 'Start a Ride',
-                          role: 'destructive',
-                          data: {
-                            action: 'startRide',
-                          },
-                        },
-                        {
-                          text: 'Start a BikeBus Ride',
-                          data: {
-                            action: 'startBikeBusRide',
-                          },
-                        },
-                        {
-                          text: 'Get Directions',
-                          data: {
-                            action: 'getDirections',
-
-                          },
-                        },
-                        {
-                          text: 'Cancel',
-                          role: 'cancel',
-                          data: {
-                            action: 'cancel',
-                          },
-                        },
-                      ]}
-                    ></IonActionSheet>
-                  </>
                 </div>
               </div>
             </React.Fragment>

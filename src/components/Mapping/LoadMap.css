@@ -1,13 +1,1 @@
-.search-bar {
-  position: absolute;
-  top: 10px;
-  left: 47%;
-  z-index: 1000;
-  background-color: white;
-}
 
-.map-base {
-  position: relative;
-  height: 100%;
-  width: 100%;
-}
