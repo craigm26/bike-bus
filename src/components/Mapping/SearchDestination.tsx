@@ -1,5 +1,3 @@
-// SearchDestination.tsx
-
 import { IonButton } from "@ionic/react";
 import React, { useState, useContext } from "react";
 import usePlacesAutocomplete, { getGeocode, getLatLng, getDetails } from "use-places-autocomplete";
@@ -22,17 +20,8 @@ const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const { setEndPoint } = useContext(RouteContext);
 
-  // SearchDestination.tsx
   const mapContext = useContext(MapContext);
-
-  if (!mapContext) {
-    throw new Error("MapContext is not provided");
-  }
-
-  if (mapContext === null) {
-    throw new Error("MapContext is not provided");
-  }
-
+  
   const {
     ready,
     value,
@@ -48,6 +37,11 @@ const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, 
     },
   });
 
+  if (!mapContext) {
+    return null; // or return some kind of a loading state
+  }
+  
+  const { setSelectedLocation, setMapCenter } = mapContext;
 
   const handleSelect = async (description: string) => {
     setValue(description, false);
@@ -68,8 +62,6 @@ const SearchDestination: React.FC<SearchDestinationProps> = ({ currentLocation, 
     } catch (error) {
       console.log('Error: ', error);
     }
-
-
   };
 
   return (

@@ -63,20 +63,28 @@ const initialState: State = {
 
 function mapReducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'setSelectedLocation':
+    case 'SET_SHOW_MAP':
+      return {
+        ...state,
+        showMap: action.payload?.showMap || state.showMap,
+      };
+    case 'SET_SELECTED_LOCATION': // Update the action type
       return {
         ...state,
         selectedLocation: action.payload?.selectedLocation || null,
       };
-    case 'setMapCenter':
+    case 'SET_MAP_CENTER': // Update the action type
       return {
         ...state,
         mapCenter: action.payload?.mapCenter || state.mapCenter,
       };
+    // Handle other action types here
     default:
       return state;
   }
 }
+
+
 
 export interface MapProviderProps {
   children: React.ReactNode;

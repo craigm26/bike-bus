@@ -28,7 +28,6 @@ import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
 import CreateBikeBusStation from './pages/CreateBikeBusStations';
 import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
-import { CurrentLocationProvider } from './components/CurrentLocationContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
 import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline, playOutline } from 'ionicons/icons';
