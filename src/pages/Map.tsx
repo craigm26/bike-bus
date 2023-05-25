@@ -17,13 +17,20 @@ import {
   IonChip,
   IonSegment,
   IonSegmentButton,
+  IonButtons,
+  IonItem,
+  IonModal,
+  IonTitle,
+  IonDatetime,
+  IonSelect,
+  IonSelectOption,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { ref, set } from "firebase/database";
+import { query, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { Query, doc, getDoc, getDocs, updateDoc, where } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { locationOutline, personCircleOutline, playOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
@@ -35,6 +42,8 @@ import { StandaloneSearchBox } from "@react-google-maps/api";
 import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
+import { addDoc, collection } from 'firebase/firestore';
+
 
 
 
@@ -74,8 +83,37 @@ const Map: React.FC = () => {
   const [arrivalTime, setArrivalTime] = useState<string>('');
   const [startTrip, setStartTrip] = useState<boolean>(false);
   const [endTrip, setEndTrip] = useState<boolean>(false);
+  const [routeName, setRouteName] = useState<string>('');
+  const [routeDescription, setRouteDescription] = useState<string>('');
+  const [routeDistance, setRouteDistance] = useState<string>('');
+  const [routeDuration, setRouteDuration] = useState<string>('');
+  const [routeStartLocation, setRouteStartLocation] = useState<string>('');
+  const [routeTypeSelector, setRouteTypeSelector] = useState<string>('');
+  const [showModal, setShowModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [routeType, setRouteType] = useState('');
+  const [scheduleName, setScheduleName] = useState<string>('');
+  const [scheduleDescription, setScheduleDescription] = useState<string>('');
+  const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
+  const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
+  const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
+  const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
+  const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
+  const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
+  const [routeId, setRouteId] = useState<string | null>(null);
 
 
+
+
+
+  type Schedule = {
+    scheduleStartTime: string;
+    scheduleEndTime: string;
+    frequency: string;
+    [key: string]: string;
+};
 
 
 
@@ -208,10 +246,6 @@ const Map: React.FC = () => {
     console.log("Google Maps load error: ", loadError);
   }, [isLoaded, loadError]);
 
-  const navigate = useCallback((path: string) => {
-    history.push(path);
-  }, [history]);
-
   const onLoad = (ref: google.maps.places.SearchBox) => {
     setAutocomplete(ref);
   };
@@ -234,7 +268,7 @@ const Map: React.FC = () => {
     }
   };
 
-  
+
 
   const getDirections = () => {
     if (userLocation && selectedLocation) {
@@ -288,6 +322,143 @@ const Map: React.FC = () => {
       );
     }
   };
+
+  const createRoute = () => {
+    if (userLocation && selectedLocation) {
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(mapRef.current);
+      directionsService.route(
+        {
+          origin: userLocation,
+          destination: selectedLocation,
+          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
+        },
+        (response, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(response);
+            const route = response?.routes[0];
+            const routeData = {
+              distance: route?.legs[0]?.distance?.value,
+              duration: route?.legs[0]?.duration?.value,
+              arrivalTime: new Date(),
+              travelMode: travelModeSelector,
+              origin: {
+                lat: route?.legs[0]?.start_location?.lat(),
+                lng: route?.legs[0]?.start_location?.lng()
+              },
+              destination: {
+                lat: route?.legs[0]?.end_location?.lat(),
+                lng: route?.legs[0]?.end_location?.lng()
+              }
+            };
+            console.log("Route Data: ", routeData);
+            handleCreateRouteSubmit();
+          } else {
+            console.error("Directions request failed due to " + status);
+          }
+        }
+      );
+    }
+  };
+
+
+  const handleScheduleChange = (index: number, field: string, value: string) => {
+    const newSchedules = [...schedules];
+    newSchedules[index][field] = value;
+    setSchedules(newSchedules);
+}
+
+  const addSchedule = () => {
+    setSchedules([...schedules, { scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
+  }
+
+
+  const handleCreateRouteSubmit = async () => {
+    try {
+      // Store the DocumentReference returned by addDoc in a variable
+      const routeDocRef = await addDoc(collection(db, 'routes'), {
+        routeName: routeName,
+        description: routeDescription,
+        startPoint: userLocation,
+        endPoint: selectedLocation,
+        routeType: routeType,
+        accountType: accountType,
+        travelMode: travelModeSelector,
+        routeCreator: "/users/" + user?.uid,
+        routeLeader: "/users/" + user?.uid,
+      });
+  
+      // Use routeDocRef.id to get the id of the newly created document
+      const newRouteId = routeDocRef.id;
+  
+      if (window.confirm('Would you like to set a schedule for the bikebus so that it can become a bikebus group?')) {
+        <><IonButton expand="full" onClick={() => setShowScheduleModal(true)}>Create Schedule</IonButton><IonModal isOpen={showScheduleModal} onDidDismiss={() => setShowScheduleModal(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Create Schedule</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowScheduleModal(false)}>Close</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonItem>
+            <IonLabel position="floating">Schedule Name</IonLabel>
+            <IonInput value={scheduleName} onIonChange={e => setScheduleName(e.detail.value || '')}></IonInput>
+          </IonItem>
+          <IonItem>
+            <IonLabel position="floating">Schedule Description</IonLabel>
+            <IonInput value={scheduleDescription} onIonChange={e => setScheduleDescription(e.detail.value || '')}></IonInput>
+          </IonItem>
+          <IonItem>
+            <IonLabel position="floating">Schedule Start Date</IonLabel>
+            <IonDatetime value={scheduleStartDate} onIonChange={e => setScheduleStartDate(e.detail.value as string)}></IonDatetime>
+          </IonItem>
+          <div>
+            {schedules.map((schedule, index) => (
+              <div key={index}>
+                <IonItem>
+                  <IonLabel position="floating">Schedule Start Time</IonLabel>
+                  <IonDatetime value={schedule.scheduleStartTime} onIonChange={e => handleScheduleChange(index, 'scheduleStartTime', e.detail.value as string)}></IonDatetime>
+                </IonItem>
+                <IonItem>
+                  <IonLabel position="floating">Schedule End Time</IonLabel>
+                  <IonDatetime value={schedule.scheduleEndTime} onIonChange={e => handleScheduleChange(index, 'scheduleEndTime', e.detail.value as string)}></IonDatetime>
+                </IonItem>
+                <IonItem>
+                  <IonLabel position="floating">Frequency</IonLabel>
+                  <IonInput value={schedule.frequency} onIonChange={e => handleScheduleChange(index, 'frequency', e.detail.value as string)} />
+                </IonItem>
+              </div>
+            ))}
+            <IonButton expand="full" onClick={addSchedule}>Add Schedule</IonButton>
+          </div>
+        </IonContent>
+      </IonModal></>
+        // Then you can use newRouteId when creating the schedule
+        await addDoc(collection(db, 'schedules'), {
+          scheduleName: scheduleName,
+          description: scheduleDescription,
+          route: "/routes/" + newRouteId,
+          scheduleCreator: "/users/" + user?.uid,
+          scheduleLeader: "/users/" + user?.uid,
+        });
+      } else {
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.log("Error: ", error);
+    }
+  };
+  
+  
+  
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
 
   return (
     <IonPage>
@@ -410,20 +581,69 @@ const Map: React.FC = () => {
                       </IonSegment>
                     </IonCol>
                     <IonCol className="Destination-box">
-                    <IonLabel>Destination:</IonLabel>
-                    <StandaloneSearchBox
-                      onLoad={onLoad}
-                      onPlacesChanged={onPlaceChanged}
-                    >
-                      <input
-                        type="text"
-                        placeholder="Enter a Destination"
-                        style={{
-                        }}
-                      />
-                    </StandaloneSearchBox>
-                    {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
-                    {showCreateRouteButton && <IonButton onClick={() => navigate('/createRoute')}>Create Route</IonButton>}
+                      <IonLabel>Destination:</IonLabel>
+                      <StandaloneSearchBox
+                        onLoad={onLoad}
+                        onPlacesChanged={onPlaceChanged}
+                      >
+                        <input
+                          type="text"
+                          placeholder="Enter a Destination"
+                          style={{
+                          }}
+                        />
+                      </StandaloneSearchBox>
+                      {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
+                      <IonButton onClick={() => setShowModal(true)}>Create Route</IonButton>
+                      <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                        <IonHeader>
+                          <IonToolbar>
+                            <IonTitle>Create Route</IonTitle>
+                            <IonButtons slot="end">
+                              <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
+                            </IonButtons>
+                          </IonToolbar>
+                        </IonHeader>
+                        <IonContent>
+                          <IonItem>
+                            <IonLabel position="floating">Route Name</IonLabel>
+                            <IonInput value={routeName} onIonChange={e => setRouteName(e.detail.value || '')}></IonInput>
+                          </IonItem>
+                          <IonItem>
+                            <IonLabel position="floating">Route Description</IonLabel>
+                            <IonInput value={routeDescription} onIonChange={e => setRouteDescription(e.detail.value || '')}></IonInput>
+                          </IonItem>
+                          <IonText>Travel Mode</IonText>
+                          <IonItem>
+                            <IonSegment value={travelMode} onIonChange={(e: CustomEvent) => setTravelMode(e.detail.value || '')}>
+                              <IonSegmentButton value="BICYCLING">
+                                <IonLabel>Bicycling</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton value="DRIVING">
+                                <IonLabel>Driving</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton value="WALKING">
+                                <IonLabel>Walking</IonLabel>
+                              </IonSegmentButton>
+                            </IonSegment>
+                          </IonItem>
+                          <IonText>Route Type</IonText>
+                          <IonItem>
+                            <IonSegment value={routeType} onIonChange={(e: CustomEvent) => setRouteType(e.detail.value || '')}>
+                              <IonSegmentButton value="school">
+                                <IonLabel>School</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton value="work">
+                                <IonLabel>Work</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton value="club">
+                                <IonLabel>Club</IonLabel>
+                              </IonSegmentButton>
+                            </IonSegment>
+                          </IonItem>
+                          <IonButton expand="full" onClick={handleCreateRouteSubmit}>Submit</IonButton>
+                        </IonContent>
+                      </IonModal>
                     </IonCol>
                     <IonCol>
                       <IonRow>
