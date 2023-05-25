@@ -127,8 +127,6 @@ const Account: React.FC = () => {
         }
     };
 
-
-
     return (
         <IonPage>
             <IonContent fullscreen>
