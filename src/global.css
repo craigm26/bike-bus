@@ -90,17 +90,23 @@
 }
 
 
-.welcome-container {
+.welcome-to-bikebus {
+  justify-content: center;
+  text-align: center;
+  color: #ffd800;
+  font-size: 3rem;
+  font-family: 'Indie-Flower', sans-serif;
+}
+
+.welcome-to-bikebus-about {
   display: flex;
   justify-content: center;
+}
+
+.welcome-to-bikebus-buttons {
+  justify-content: center;
   align-items: center;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
-  z-index: 10;
+  display:inline;
 }
 
 .img-center {
@@ -127,44 +133,39 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 80%;
   background-color: rgba(255, 255, 255, 0.8);
   z-index: 10;
 }
 
-.map-welcome-container {
-  display: flex;
-  align-items: center;
+.search-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
-  z-index: 10;
-}
-
-.search-bar {
-  position: absolute;
-  display: flex;
-  top: 80px;
   width: max-content;
   z-index: 1000;
   background-color: white;
   border: 1px solid transparent;
-  width: 240px;
-  height: 240px;
-  padding: 0 12px;
+  width: 420px;
+  height: 340px;
+  padding: 2px 12px;
   outline: none;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.destination-box {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 50%;
 }
 
 @media screen and (max-width: 600px) {
-  .search-bar {
+  .search-container {
     top: 10vh; 
     width: 80%; 
   }

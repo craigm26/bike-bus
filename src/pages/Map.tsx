@@ -9,6 +9,14 @@ import {
   IonText,
   IonInput,
   IonLabel,
+  IonRow,
+  IonGrid,
+  IonCol,
+  IonToolbar,
+  IonAvatar,
+  IonChip,
+  IonSegment,
+  IonSegmentButton,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -17,7 +25,7 @@ import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
-import { locationOutline, playOutline } from "ionicons/icons";
+import { locationOutline, personCircleOutline, playOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
 import { GoogleMap, Marker, useJsApiLoader, DistanceMatrixService } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
@@ -25,6 +33,8 @@ import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
 import { StandaloneSearchBox } from "@react-google-maps/api";
 import React from "react";
+import Avatar from "../components/Avatar";
+import { useAvatar } from "../components/useAvatar";
 
 
 
@@ -45,9 +55,9 @@ const Map: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
+  const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.SearchBox | null>(null);
-  const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
@@ -56,6 +66,16 @@ const Map: React.FC = () => {
   const [newMapCenter, setNewMapCenter] = useState({ lat: 38, lng: -121 });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
+  const { avatarUrl } = useAvatar(user?.uid);
+  const [travelMode, setTravelMode] = useState<string>('');
+  const [travelModeSelector, setTravelModeSelector] = useState<string>('');
+  const [distance, setDistance] = useState<string>('');
+  const [duration, setDuration] = useState<string>('');
+  const [arrivalTime, setArrivalTime] = useState<string>('');
+  const [startTrip, setStartTrip] = useState<boolean>(false);
+  const [endTrip, setEndTrip] = useState<boolean>(false);
+
+
 
 
 
@@ -161,6 +181,7 @@ const Map: React.FC = () => {
         lat: (userLocation.lat + selectedLocation.lat) / 2,
         lng: (userLocation.lng + selectedLocation.lng) / 2,
       });
+      setMapZoom(15);
     } else if (userLocation) {
       setMapCenter(userLocation);
     } else if (selectedLocation) {
@@ -168,67 +189,18 @@ const Map: React.FC = () => {
     }
   }, [userLocation, selectedLocation]);
 
-  useEffect(() => {
-    if (userLocation && selectedLocation) {
-      const service = new google.maps.DistanceMatrixService();
-      service.getDistanceMatrix(
-        {
-          origins: [userLocation],
-          destinations: [selectedLocation],
-          travelMode: google.maps.TravelMode.BICYCLING,
-        },
-        (response, status) => {
-          if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
-            const distance = response?.rows[0]?.elements[0]?.distance?.value;
-            if (distance !== undefined) {
-              if (distance < 100) {
-                setMapZoom(15);
-              } else if (distance < 500) {
-                setMapZoom(14);
-              } else if (distance < 1000) {
-                setMapZoom(13);
-              } else if (distance < 2000) {
-                setMapZoom(12);
-              } else if (distance < 5000) {
-                setMapZoom(11);
-              } else if (distance < 10000) {
-                setMapZoom(10);
-              } else if (distance < 20000) {
-                setMapZoom(9);
-              } else if (distance < 50000) {
-                setMapZoom(8);
-              } else if (distance < 100000) {
-                setMapZoom(7);
-              } else if (distance < 200000) {
-                setMapZoom(6);
-              } else if (distance < 500000) {
-                setMapZoom(5);
-              } else if (distance < 1000000) {
-                setMapZoom(4);
-              } else if (distance < 2000000) {
-                setMapZoom(3);
-              } else if (distance < 5000000) {
-                setMapZoom(2);
-              } else if (distance < 10000000) {
-                setMapZoom(1);
-              } else {
-                setMapZoom(0);
-              }
-            }
-            console.log("Distance Matrix Response: ", response);
-          } else {
-            console.error("Error calculating distance:", status);
-          }
-        }
-      );
-    } else if (userLocation) {
-      setMapZoom(15);
-    } else if (selectedLocation) {
-      setMapZoom(15);
-    }
-  }, [userLocation, selectedLocation]);
 
-
+  const avatarElement = user ? (
+    avatarUrl ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
+    ) : (
+      <IonIcon icon={personCircleOutline} />
+    )
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
 
 
   useEffect(() => {
@@ -262,7 +234,8 @@ const Map: React.FC = () => {
     }
   };
 
-  // when someone clicks on the setShowGetDirectionsButton, the Google Directions Service should use hthe user's current location and the selected location to get directions and display them on the map
+  
+
   const getDirections = () => {
     if (userLocation && selectedLocation) {
       const directionsService = new google.maps.DirectionsService();
@@ -272,7 +245,7 @@ const Map: React.FC = () => {
         {
           origin: userLocation,
           destination: selectedLocation,
-          travelMode: google.maps.TravelMode.BICYCLING,
+          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
           if (status === "OK") {
@@ -282,128 +255,256 @@ const Map: React.FC = () => {
           }
         }
       );
+      const service = new google.maps.DistanceMatrixService();
+      service.getDistanceMatrix(
+        {
+          origins: [userLocation],
+          destinations: [selectedLocation],
+          //there's a user selected segment where they can choose the travelmodeSelector. This is where we will set the travel mode.
+          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
+        },
+        (response, status) => {
+          if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+            const distance = response?.rows[0]?.elements[0]?.distance?.value;
+            const duration = response?.rows[0]?.elements[0]?.duration?.value;
+            console.log("Distance Matrix Response: ", response);
+            // make the distance value a string with 2 decimal places in miles (convert from meters), then display it on the screen
+            setDistance(
+              (Math.round((distance * 0.000621371192) * 100) / 100).toString()
+            );
+            // make the duration value a string with 2 decimal places in minutes (convert from seconds), then display it on the screen
+            setDuration(
+              (Math.round((duration * 0.0166667) * 100) / 100).toString()
+            );
+            // calculate the estimated arrival time by adding the duration to the current time
+            const arrivalTime = new Date();
+            const durationInMinutes = duration / 60;
+            arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
+            setArrivalTime(arrivalTime.toLocaleTimeString());
+          } else {
+            console.error("Error calculating distance:", status);
+          }
+        }
+      );
     }
   };
 
   return (
     <IonPage>
-      {headerContext?.showHeader && <IonHeader></IonHeader>}
+      <IonHeader>
+        <IonToolbar>
+          {headerContext?.showHeader && <IonHeader></IonHeader>}
+        </IonToolbar>
+      </IonHeader>
       <IonContent>
         {!showMap && (
           <>
-            <div className="map-welcome-container"></div>
-            <div className="location-button-container">
-              <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
-            </div>
+            <IonGrid>
+              <IonRow>
+                <IonCol>
+                  <div className="location-button-container">
+                    <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
+                  </div>
+                </IonCol>
+              </IonRow>
+              <IonRow>
+                <div className="bikebus-action-sheet footer-content">
+                  <div className="bikebusname-button-container">
+                    {fetchedGroups ? (
+                      fetchedGroups.map((group: any) => (
+                        <IonButton
+                          shape="round"
+                          size="large"
+                          key={group.id}
+                          routerLink={`/bikebusgrouppage/${group.id}`}
+                          routerDirection="none"
+                        >
+                          <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
+                        </IonButton>
+                      ))
+                    ) : (
+                      <p>Loading groups...</p>
+                    )}
+                  </div>
+                  <IonFab vertical="bottom" horizontal="end" slot="fixed">
+                    <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">
+                      <IonIcon size="large" icon={playOutline} />
+                    </IonButton>
+                  </IonFab>
+                  <IonActionSheet
+                    isOpen={showActionSheet}
+                    onDidDismiss={() => setShowActionSheet(false)}
+                    trigger="open-action-sheet"
+                    header="Start Actions:"
+                    buttons={[
+                      {
+                        text: "Start a Ride",
+                        role: "destructive",
+                        data: {
+                          action: "startRide",
+                        },
+                      },
+                      {
+                        text: "Start a BikeBus Ride",
+                        data: {
+                          action: "startBikeBusRide",
+                        },
+                      },
+                      {
+                        text: "Cancel",
+                        role: "cancel",
+                        data: {
+                          action: "cancel",
+                        },
+                      },
+                    ]}
+                  ></IonActionSheet>
+                </div>
+              </IonRow>
+            </IonGrid>
+
           </>
         )}
         {showMap && (
-          <GoogleMap
-            onLoad={(map) => {
-              mapRef.current = map;
-            }}
-            mapContainerStyle={{
-              width: "100%",
-              height: "100%",
-            }}
-            center={mapCenter}
-            zoom={16}
-            options={{
-              disableDefaultUI: true,
-              zoomControl: false,
-              mapTypeControl: false,
-              disableDoubleClickZoom: true,
-              maxZoom: 18,
-            }}
-          >
-            <div>
-              {user && isAnonymous && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-              {user && !isAnonymous && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-            </div>
-            <div>
-              {selectedLocation && <Marker position={selectedLocation} />}
-            </div>
-            <IonInput>
-                  <IonIcon icon={locationOutline} />
-                  <IonLabel>Current Location:</IonLabel>
-                  <IonText>{userLocation ? `${userLocation.lat}, ${userLocation.lng}` : "No location found"}</IonText>
-                </IonInput>
-            <div className="search-bar">
-              <StandaloneSearchBox
-                onLoad={onLoad}
-                onPlacesChanged={onPlaceChanged}
+          <IonGrid fixed={false}>
+            <IonRow className="map-base">
+              <GoogleMap
+                onLoad={(map) => {
+                  mapRef.current = map;
+                }}
+                mapContainerStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                center={mapCenter}
+                zoom={18}
+                options={{
+                  disableDefaultUI: true,
+                  zoomControl: false,
+                  mapTypeControl: false,
+                  disableDoubleClickZoom: true,
+                  maxZoom: 18,
+                }}
               >
-                <input
-                  type="text"
-                  placeholder="Enter a location"
-                  style={{
-                  }}
-                />
-              </StandaloneSearchBox>
-              <div className="location-action">
-                <IonInput>
-                  <IonIcon icon={locationOutline} />
-                  <IonLabel>Current Location:</IonLabel>
-                  <IonText>{userLocation ? `${userLocation.lat}, ${userLocation.lng}` : "No location found"}</IonText>
-                </IonInput>
-                {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
-                {showCreateRouteButton && <IonButton onClick={() => navigate('/createRoute')}>Create Route</IonButton>}
-              </div>
-            </div>
-          </GoogleMap>
+                <IonGrid className="search-container">
+                  <IonRow className="current-location">
+                    <IonCol>
+                      <IonLabel>Current Location:{avatarElement}</IonLabel>
+                      <IonLabel>Travel Mode:</IonLabel>
+                      <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                        setTravelMode(e.detail.value);
+                        setTravelModeSelector(e.detail.value);
+                      }}>
+                        <IonSegmentButton value="WALKING">
+                          <IonLabel>Walking</IonLabel>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="BICYCLING">
+                          <IonLabel>Bicycling</IonLabel>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="DRIVING">
+                          <IonLabel>Driving</IonLabel>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="TRANSIT">
+                          <IonLabel>Transit</IonLabel>
+                        </IonSegmentButton>
+                      </IonSegment>
+                    </IonCol>
+                    <IonCol className="Destination-box">
+                    <IonLabel>Destination:</IonLabel>
+                    <StandaloneSearchBox
+                      onLoad={onLoad}
+                      onPlacesChanged={onPlaceChanged}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Enter a Destination"
+                        style={{
+                        }}
+                      />
+                    </StandaloneSearchBox>
+                    {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
+                    {showCreateRouteButton && <IonButton onClick={() => navigate('/createRoute')}>Create Route</IonButton>}
+                    </IonCol>
+                    <IonCol>
+                      <IonRow>
+                        <IonLabel>Distance: {distance} miles </IonLabel>
+                        <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                        <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                        <IonRow className="map-directions-after-get">
+                          <IonCol>
+                            <IonLabel>Directions:</IonLabel>
+                          </IonCol>
+                        </IonRow>
+                      </IonRow>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+                <div>
+                  {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                </div>
+                <div>
+                  {selectedLocation && <Marker position={selectedLocation} />}
+                </div>
+              </GoogleMap>
+            </IonRow>
+          </IonGrid>
         )}
-        <div className="bikebus-action-sheet footer-content">
-          <div className="bikebusname-button-container">
-            {fetchedGroups ? (
-              fetchedGroups.map((group: any) => (
-                <IonButton
-                  shape="round"
-                  size="large"
-                  key={group.id}
-                  routerLink={`/bikebusgrouppage/${group.id}`}
-                  routerDirection="none"
-                >
-                  <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
-                </IonButton>
-              ))
-            ) : (
-              <p>Loading groups...</p>
-            )}
+        <IonRow>
+          <div className="bikebus-action-sheet footer-content">
+            <div className="bikebusname-button-container">
+              {fetchedGroups ? (
+                fetchedGroups.map((group: any) => (
+                  <IonButton
+                    shape="round"
+                    size="large"
+                    key={group.id}
+                    routerLink={`/bikebusgrouppage/${group.id}`}
+                    routerDirection="none"
+                  >
+                    <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
+                  </IonButton>
+                ))
+              ) : (
+                <p>Loading groups...</p>
+              )}
+            </div>
+            <IonFab vertical="bottom" horizontal="end" slot="fixed">
+              <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">
+                <IonIcon size="large" icon={playOutline} />
+              </IonButton>
+            </IonFab>
+            <IonActionSheet
+              isOpen={showActionSheet}
+              onDidDismiss={() => setShowActionSheet(false)}
+              trigger="open-action-sheet"
+              header="Start Actions:"
+              buttons={[
+                {
+                  text: "Start a Ride",
+                  role: "destructive",
+                  data: {
+                    action: "startRide",
+                  },
+                },
+                {
+                  text: "Start a BikeBus Ride",
+                  data: {
+                    action: "startBikeBusRide",
+                  },
+                },
+                {
+                  text: "Cancel",
+                  role: "cancel",
+                  data: {
+                    action: "cancel",
+                  },
+                },
+              ]}
+            ></IonActionSheet>
           </div>
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">
-              <IonIcon size="large" icon={playOutline} />
-            </IonButton>
-          </IonFab>
-          <IonActionSheet
-            isOpen={showActionSheet}
-            onDidDismiss={() => setShowActionSheet(false)}
-            trigger="open-action-sheet"
-            header="Start Actions:"
-            buttons={[
-              {
-                text: "Start a Ride",
-                role: "destructive",
-                data: {
-                  action: "startRide",
-                },
-              },
-              {
-                text: "Start a BikeBus Ride",
-                data: {
-                  action: "startBikeBusRide",
-                },
-              },
-              {
-                text: "Cancel",
-                role: "cancel",
-                data: {
-                  action: "cancel",
-                },
-              },
-            ]}
-          ></IonActionSheet>
-        </div>
+        </IonRow>
+
       </IonContent>
     </IonPage>
   );
