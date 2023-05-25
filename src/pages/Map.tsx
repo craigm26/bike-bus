@@ -363,17 +363,6 @@ const Map: React.FC = () => {
   };
 
 
-  const handleScheduleChange = (index: number, field: string, value: string) => {
-    const newSchedules = [...schedules];
-    newSchedules[index][field] = value;
-    setSchedules(newSchedules);
-}
-
-  const addSchedule = () => {
-    setSchedules([...schedules, { scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
-  }
-
-
   const handleCreateRouteSubmit = async () => {
     try {
       // Store the DocumentReference returned by addDoc in a variable
@@ -389,64 +378,8 @@ const Map: React.FC = () => {
         routeLeader: "/users/" + user?.uid,
       });
   
-      // Use routeDocRef.id to get the id of the newly created document
-      const newRouteId = routeDocRef.id;
-  
-      if (window.confirm('Would you like to set a schedule for the bikebus so that it can become a bikebus group?')) {
-        <><IonButton expand="full" onClick={() => setShowScheduleModal(true)}>Create Schedule</IonButton><IonModal isOpen={showScheduleModal} onDidDismiss={() => setShowScheduleModal(false)}>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Create Schedule</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setShowScheduleModal(false)}>Close</IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <IonItem>
-            <IonLabel position="floating">Schedule Name</IonLabel>
-            <IonInput value={scheduleName} onIonChange={e => setScheduleName(e.detail.value || '')}></IonInput>
-          </IonItem>
-          <IonItem>
-            <IonLabel position="floating">Schedule Description</IonLabel>
-            <IonInput value={scheduleDescription} onIonChange={e => setScheduleDescription(e.detail.value || '')}></IonInput>
-          </IonItem>
-          <IonItem>
-            <IonLabel position="floating">Schedule Start Date</IonLabel>
-            <IonDatetime value={scheduleStartDate} onIonChange={e => setScheduleStartDate(e.detail.value as string)}></IonDatetime>
-          </IonItem>
-          <div>
-            {schedules.map((schedule, index) => (
-              <div key={index}>
-                <IonItem>
-                  <IonLabel position="floating">Schedule Start Time</IonLabel>
-                  <IonDatetime value={schedule.scheduleStartTime} onIonChange={e => handleScheduleChange(index, 'scheduleStartTime', e.detail.value as string)}></IonDatetime>
-                </IonItem>
-                <IonItem>
-                  <IonLabel position="floating">Schedule End Time</IonLabel>
-                  <IonDatetime value={schedule.scheduleEndTime} onIonChange={e => handleScheduleChange(index, 'scheduleEndTime', e.detail.value as string)}></IonDatetime>
-                </IonItem>
-                <IonItem>
-                  <IonLabel position="floating">Frequency</IonLabel>
-                  <IonInput value={schedule.frequency} onIonChange={e => handleScheduleChange(index, 'frequency', e.detail.value as string)} />
-                </IonItem>
-              </div>
-            ))}
-            <IonButton expand="full" onClick={addSchedule}>Add Schedule</IonButton>
-          </div>
-        </IonContent>
-      </IonModal></>
-        // Then you can use newRouteId when creating the schedule
-        await addDoc(collection(db, 'schedules'), {
-          scheduleName: scheduleName,
-          description: scheduleDescription,
-          route: "/routes/" + newRouteId,
-          scheduleCreator: "/users/" + user?.uid,
-          scheduleLeader: "/users/" + user?.uid,
-        });
-      } else {
-        setShowModal(false);
-      }
+      // go to the /view route page
+      history.push(`/view-route/${routeDocRef.id}`);
     } catch (error) {
       console.log("Error: ", error);
     }
