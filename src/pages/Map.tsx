@@ -195,7 +195,7 @@ const Map: React.FC = () => {
         lat: (userLocation.lat + selectedLocation.lat) / 2,
         lng: (userLocation.lng + selectedLocation.lng) / 2,
       });
-      setMapZoom(15);
+      setMapZoom(10);
     } else if (userLocation) {
       setMapCenter(userLocation);
     } else if (selectedLocation) {
@@ -366,15 +366,11 @@ const Map: React.FC = () => {
       });
 
       // go to the /view route page
-      history.push(`/view-route/${routeDocRef.id}`);
+      history.push(`/editroute/${routeDocRef.id}`);
     } catch (error) {
       console.log("Error: ", error);
     }
   };
-
-
-
-
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -463,56 +459,7 @@ const Map: React.FC = () => {
                         />
                       </StandaloneSearchBox>
                       {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
-                      <IonButton onClick={() => setShowModal(true)}>Create Route</IonButton>
-                      <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                        <IonHeader>
-                          <IonToolbar>
-                            <IonTitle>Create Route</IonTitle>
-                            <IonButtons slot="end">
-                              <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-                            </IonButtons>
-                          </IonToolbar>
-                        </IonHeader>
-                        <IonContent>
-                          <IonItem>
-                            <IonLabel position="floating">Route Name</IonLabel>
-                            <IonInput value={routeName} onIonChange={e => setRouteName(e.detail.value || '')}></IonInput>
-                          </IonItem>
-                          <IonItem>
-                            <IonLabel position="floating">Route Description</IonLabel>
-                            <IonInput value={routeDescription} onIonChange={e => setRouteDescription(e.detail.value || '')}></IonInput>
-                          </IonItem>
-                          <IonText>Travel Mode</IonText>
-                          <IonItem>
-                            <IonSegment value={travelMode} onIonChange={(e: CustomEvent) => setTravelMode(e.detail.value || '')}>
-                              <IonSegmentButton value="BICYCLING">
-                                <IonLabel>Bicycling</IonLabel>
-                              </IonSegmentButton>
-                              <IonSegmentButton value="DRIVING">
-                                <IonLabel>Driving</IonLabel>
-                              </IonSegmentButton>
-                              <IonSegmentButton value="WALKING">
-                                <IonLabel>Walking</IonLabel>
-                              </IonSegmentButton>
-                            </IonSegment>
-                          </IonItem>
-                          <IonText>Route Type</IonText>
-                          <IonItem>
-                            <IonSegment value={routeType} onIonChange={(e: CustomEvent) => setRouteType(e.detail.value || '')}>
-                              <IonSegmentButton value="school">
-                                <IonLabel>School</IonLabel>
-                              </IonSegmentButton>
-                              <IonSegmentButton value="work">
-                                <IonLabel>Work</IonLabel>
-                              </IonSegmentButton>
-                              <IonSegmentButton value="club">
-                                <IonLabel>Club</IonLabel>
-                              </IonSegmentButton>
-                            </IonSegment>
-                          </IonItem>
-                          <IonButton expand="full" onClick={handleCreateRouteSubmit}>Submit</IonButton>
-                        </IonContent>
-                      </IonModal>
+                      {showGetDirectionsButton && <IonButton onClick={createRoute}>Create Route</IonButton>}
                     </IonCol>
                     <IonCol>
                       <IonRow>

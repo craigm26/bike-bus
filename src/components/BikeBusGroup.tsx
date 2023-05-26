@@ -25,7 +25,7 @@ const BikeBusGroup: React.FC<GroupData> = ({ BikeBusLeaders, BikeBusMembers, Bik
     const [groupData, setGroupData] = useState<GroupData | null>(null);
     const [leaderNames, setLeaderNames] = useState<string[]>([]);
     const [memberNames, setMemberNames] = useState<string[]>([]);
-    const { fetchedRoutes, loading, error } = UseRoutes({ routeId });
+    const { fetchedRoutes, loading, error } = UseRoutes();
 
     useEffect(() => {
         setGroupData({
