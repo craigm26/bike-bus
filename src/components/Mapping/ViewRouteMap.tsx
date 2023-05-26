@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { Polyline, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { getDocs, collection, GeoPoint } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { LatLng } from 'use-places-autocomplete';
 import { IonCol, IonContent, IonRow } from '@ionic/react';
-import { GoogleMap, useJsApiLoader, DirectionsService, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -15,47 +13,32 @@ interface Station {
     location: GeoPoint;
 }
 
-interface LoadMapProps {
-    mapCenter: { lat: number; lng: number };
-    isAnonymous: boolean;
-    user: { uid: string } | null;
-    navigate: (path: string) => void;
-    routeId: string;
-}
-
-interface AutocompleteInputProps {
-    value: string;
-    setValue: (value: string) => void;
-    setAutocompleteObject: (value: google.maps.places.Autocomplete | null) => void;
-}
-
 interface ViewRouteMapProps {
-    path: GeoPoint[];
     startGeo: GeoPoint;
     endGeo: GeoPoint;
     stations: Station[];
+    path: GeoPoint[];  
 }
+
 
 const containerStyle = {
     width: '100%',
-    height: '100%',
+    height: '400px',
 };
 
-const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations }) => {
+const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations, path }) => {
+    const { isLoaded, loadError } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+        libraries,
+    });
+    const [routeType, setRouteType] = useState("SCHOOL"); 
     const [stationsIDs, setStationsIDs] = useState<Station[]>([]);
+    const [pathCoordinates, setPathCoordinates] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [generateMap, setGenerateMap] = useState<boolean>(false);
-    const [startPoint, setStartPoint] = useState<string>('');
-    const [travelMode, setTravelMode] = useState('');
-
-    const [endPoint, setEndPoint] = useState<string>();
-    const [path, setPath] = useState<google.maps.LatLngLiteral[] | null>(null);
-    const [BikeBusStations, setBikeBusStations] = useState<google.maps.DirectionsWaypoint[] | undefined>(undefined);
-    const [startPointAutoComplete, setStartPointAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
-    const [endPointAutoComplete, setEndPointAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-        lat: 0,
-        lng: 0,
+        lat: startGeo.latitude,
+        lng: startGeo.longitude,
     });
 
     useEffect(() => {
@@ -81,30 +64,48 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations 
         fetchData();
     }, []);
 
-    const geoPointToLatLng = (geo: GeoPoint): LatLng => {
-        return {
-            lat: geo.latitude,
-            lng: geo.longitude,
-        };
-    };
+    if (loadError) {
+        return <div>Error loading maps</div>;
+    }
 
-    return (
+    return isLoaded ? (
         <IonContent>
-            {generateMap && (
-                <IonRow>
-                    <IonCol>
-                        <GoogleMap
-                            mapContainerStyle={{ width: "100%", height: "400px" }}
-                            center={mapCenter}
-                            zoom={15}
-                        >
-
-                        </GoogleMap>
-                    </IonCol>
-                </IonRow>
-            )}
+            <IonRow>
+                <IonCol>
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={mapCenter}
+                        zoom={10}
+                    >
+                        <Marker
+                            position={{ lat: startGeo.latitude, lng: startGeo.longitude }}
+                            title="Start"
+                        />
+                        <Marker
+                            position={{ lat: endGeo.latitude, lng: endGeo.longitude }}
+                            title="End"
+                        />
+                        {stations.map(station => (
+                            <Marker
+                                key={station.id}
+                                position={{ lat: station.location.latitude, lng: station.location.longitude }}
+                                title={`Station ${station.id}`}
+                            />
+                        ))}
+                        <Polyline
+                            path={pathCoordinates}
+                            options={{
+                                strokeColor: "#FF0000",
+                                strokeOpacity: 1.0,
+                                strokeWeight: 2,
+                                geodesic: true,
+                            }}
+                        />
+                    </GoogleMap>
+                </IonCol>
+            </IonRow>
         </IonContent>
-    );
+    ) : <div>Loading...</div>;
 };
 
 export default ViewRouteMap;

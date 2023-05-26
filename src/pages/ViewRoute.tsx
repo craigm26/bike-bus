@@ -1,112 +1,148 @@
 import {
     IonContent,
     IonPage,
-    IonAvatar,
-    IonIcon,
-    IonCol,
-    IonRow,
+    IonItem,
+    IonList,
+    IonInput,
+    IonLabel,
+    IonButton,
+    IonHeader,
+    IonToolbar,
+    IonPopover,
+    IonText,
 } from '@ionic/react';
-import { useEffect, useState } from 'react';
-import useAuth from '../useAuth';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
-import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { HeaderContext } from "../components/HeaderContext";
+import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import ViewRouteMap from '../components/Mapping/ViewRouteMap';
-import { useParams } from 'react-router-dom';
+import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import { GoogleMap, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
 
-interface RouteParams {
-    id: string;
+
+
+interface Coordinate {
+    lat: number;
+    lng: number;
 }
 
-interface Station {
+interface Route {
     id: string;
-    location: GeoPoint;
-}
-
-interface RouteData {
-    id: string;
-    destination: string;
-    bikebusgroup: string;
-    bikebusstations: string[];
+    accountType: string;
     description: string;
-    distance: number;
-    endGeo: GeoPoint;
-    path: GeoPoint[];
-    routecreator: string;
-    routeleader: string;
-    routename: string;
-    startGeo: GeoPoint;
+    endPoint: Coordinate;
+    routeCreator: string;
+    routeLeader: string;
+    routeName: string;
+    routeType: string;
+    startPoint: Coordinate;
+    travelMode: string;
 }
 
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
+    const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
-    const [showPopover, setShowPopover] = useState(false);
-    const [popoverEvent, setPopoverEvent] = useState<any>(null);
-    const { id } = useParams<RouteParams>();
-    const [route, setRoute] = useState<RouteData | null>(null);
-    const [stations, setStations] = useState<Station[]>([]);
-    const [BikeBusStations, setBikeBusStations] = useState<google.maps.DirectionsWaypoint[] | undefined>(undefined);
-    const [BikeBusStationsMarkers, setBikeBusStationsMarkers] = useState<google.maps.Marker[] | undefined>(undefined);
-    const [path, setPath] = useState<google.maps.LatLngLiteral[] | null>(null);
-    const [distance, setDistance] = useState<number | null>(null);
-    const [publicRoute, setPublicRoute] = useState<boolean>(false);
-
-    // const { path } = useParams<RouteParams>(); the route data may already be declared in app.tsx, but we'll have to see console data to be sure
-    // const [path, setPath] = useState<GeoPoint[]>([]); // this is the path data from the route data
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const docRef = doc(db, 'routes', id);
-            const docSnapshot = await getDoc(docRef);
-            if (docSnapshot.exists()) {
-                const routeData = docSnapshot.data() as RouteData;
-                setRoute(routeData);
-
-                // Fetch stations
-                const stationPromises = routeData.bikebusstations.map(async (stationId: string) => {
-                    const stationDocRef = doc(db, 'bikebusstations', stationId);
-                    const stationDocSnapshot = await getDoc(stationDocRef);
-                    const stationData = stationDocSnapshot.data();
-                    if (stationData && stationData.location) {
-                        return {
-                            id: stationId,
-                            location: stationData.location,
-                        };
-                    }
-                    return null;
-                });
-                const fetchedStations = await Promise.all(stationPromises);
-                setStations(fetchedStations.filter(station => station !== null) as Station[]);
-            } else {
-                console.log("No such document!");
-            }
-        };
-        fetchData();
-    }, [id]);
+    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+    const [routes, setRoutes] = useState<Route[]>([]);
+    const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
+    const [editableRoute, setEditableRoute] = useState<Route | null>(null);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [routeType, setRouteType] = useState('');
+    const [scheduleName, setScheduleName] = useState<string>('');
+    const [scheduleDescription, setScheduleDescription] = useState<string>('');
+    const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
+    const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
+    const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
+    const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
+    const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
+    const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
 
 
-    const togglePopover = (e: any) => {
-        setPopoverEvent(e.nativeEvent);
-        setShowPopover((prevState) => !prevState);
+    let geoPoint;
+
+    if (editableRoute) {
+        geoPoint = new GeoPoint(editableRoute.startPoint.lat, editableRoute.startPoint.lng);
+    }
+
+    type Schedule = {
+        scheduleStartTime: string;
+        scheduleEndTime: string;
+        frequency: string;
+        [key: string]: string;
     };
 
-    const avatarElement = user ? (
-        avatarUrl ? (
-            <IonAvatar>
-                <Avatar uid={user.uid} size="extrasmall" />
-            </IonAvatar>
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        )
-    ) : (
-        <IonIcon icon={personCircleOutline} />
-    );
+    const openPopover = (e: Event, route: Route) => {
+        setPopoverState({ open: true, event: e });
+        setEditableRoute(route);
+    };
+
+    const closePopover = () => {
+        setPopoverState({ open: false, event: null });
+        setEditableRoute(null);
+    };
+
+    const saveRouteChanges = async () => {
+        if (editableRoute) {
+            try {
+                const routeRef = doc(db, "routes", editableRoute.id);
+                await updateDoc(routeRef, { ...editableRoute }); // changed
+                closePopover();
+            } catch (error) {
+                console.log("Error updating route: ", error);
+            }
+        }
+    };
+    const fetchRoutes = useCallback(async () => {
+        // Assuming that your uid is stored in the user.uid
+        const uid = user?.uid;
+
+        if (!uid) {
+            // If there's no user, we cannot fetch routes
+            return;
+        }
+
+        // Create a reference to the 'routes' collection
+        const routesCollection = collection(db, 'routes');
+
+        // Create a query against the collection.
+        // This will fetch all documents where the routeCreator equals the user's uid
+        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
+
+        const querySnapshot = await getDocs(q);
+        const routesData: Route[] = querySnapshot.docs.map(doc => ({
+            ...doc.data() as Route,
+            id: doc.id,
+        }));
+        setRoutes(routesData);
+    }, [user]); // here user is a dependency
+
+
+
+    useEffect(() => {
+        fetchRoutes();
+    }, [fetchRoutes]);
+
+
+
+    const handleRouteChange = (field: keyof Route, value: any) => {
+        if (editableRoute) {
+            setEditableRoute({
+                ...editableRoute,
+                [field]: value,
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (headerContext) {
+            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+        }
+    }, [headerContext]);
 
     useEffect(() => {
         if (user) {
@@ -122,10 +158,90 @@ const ViewRoute: React.FC = () => {
         }
     }, [user]);
 
+    const editRoute = () => {
+        if (editableRoute) {
+            setSelectedRoute(editableRoute);
+            closePopover();
+        }
+    };
+
+
 
     return (
         <IonPage>
+            <IonHeader>
+                <IonToolbar>
+                    {headerContext?.showHeader && <IonHeader></IonHeader>}
+                </IonToolbar>
+            </IonHeader>
             <IonContent>
+                <IonText>Select a Route you created below</IonText>
+                <IonList>
+                    {routes.map((route) => (
+                        <IonItem key={route.id} onClick={(e) => openPopover(e.nativeEvent, route)}>
+                            <IonLabel>{route.routeName}</IonLabel>
+                            <IonLabel>{route.description}</IonLabel>
+                            <IonLabel>{route.routeType}</IonLabel>
+                            <IonLabel>{route.travelMode}</IonLabel>
+                        </IonItem>
+                    ))}
+                </IonList>
+                {selectedRoute && (
+                    <IonList>
+                        <IonItem>
+                            <IonLabel position="floating">Route Name</IonLabel>
+                            <IonInput
+                                value={selectedRoute.routeName}
+                                onIonChange={e => handleRouteChange('routeName', e.detail.value)}
+                            ></IonInput>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="floating">Description</IonLabel>
+                            <IonInput
+                                value={selectedRoute.description}
+                                onIonChange={e => handleRouteChange('description', e.detail.value)}
+                            ></IonInput>
+                        </IonItem>
+                        {/* Include other route properties here */}
+                    </IonList>
+                )}
+                <IonPopover
+                    isOpen={popoverState.open}
+                    event={popoverState.event}
+                    onDidDismiss={closePopover}
+                >
+                    {editableRoute && (
+                        <>
+                            <IonList>
+                                <IonItem>
+                                    <IonLabel>Route Name: {editableRoute.routeName}</IonLabel>
+                                </IonItem>
+                                <IonItem>
+                                    <IonLabel>Description: {editableRoute.description}</IonLabel>
+                                </IonItem>
+                                <IonItem>
+                                    <IonLabel>Route Type: {editableRoute.routeType}</IonLabel>
+                                </IonItem>
+                                <IonItem>
+                                    <IonLabel>Travel Mode: {editableRoute.travelMode}</IonLabel>
+                                </IonItem>
+                                <IonItem>Starting Point: Lat - {editableRoute.startPoint.lat}, Lng - {editableRoute.startPoint.lng}</IonItem>
+                                <IonItem>End Point: Lat - {editableRoute.endPoint.lat}, Lng - {editableRoute.endPoint.lng}</IonItem>
+                                <IonItem>
+                                </IonItem>
+                            </IonList>
+                            <ViewRouteMap
+                                        path={[]}
+                                        startGeo={new GeoPoint(editableRoute.startPoint.lat, editableRoute.startPoint.lng)}
+                                        endGeo={new GeoPoint(editableRoute.endPoint.lat, editableRoute.endPoint.lng)}
+                                        stations={[]}
+                                    />
+                            <IonButton onClick={editRoute}>Edit Route</IonButton>
+                            <IonButton onClick={saveRouteChanges}>Save Route Changes</IonButton>
+                            <IonButton onClick={closePopover}>Close</IonButton>
+                        </>
+                    )}
+                </IonPopover>
             </IonContent>
         </IonPage>
     );
