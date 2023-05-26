@@ -3,7 +3,8 @@ import React from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { getDocs, collection, GeoPoint } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { IonCol, IonContent, IonRow } from '@ionic/react';
+import { IonCol, IonContent, IonIcon, IonRow } from '@ionic/react';
+import { pin } from 'ionicons/icons';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -63,14 +64,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
         };
         fetchData();
     }, []);
-
-    console.log(path);
-
-    if (path.length > 0) {
-        console.log(path[0] instanceof GeoPoint);
-    }
     
-
     if (loadError) {
         return <div>Error loading maps</div>;
     }
@@ -82,23 +76,22 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                     <GoogleMap
                         mapContainerStyle={containerStyle}
                         center={mapCenter}
-                        zoom={10}
+                        zoom={12}
                     >
                         <Marker
                             position={{ lat: startGeo.latitude, lng: startGeo.longitude }}
                             title="Start"
+                            icon={{
+                                url: "/path/to/your/svg/pin-icon.svg",
+                                scaledSize: new window.google.maps.Size(25, 25),                            }}
                         />
                         <Marker
                             position={{ lat: endGeo.latitude, lng: endGeo.longitude }}
                             title="End"
+                            icon={{
+                                url: "/path/to/your/svg/pin-icon.svg",
+                                scaledSize: new window.google.maps.Size(25, 25),                            }}
                         />
-                        {stations.map(station => (
-                            <Marker
-                                key={station.id}
-                                position={{ lat: station.location.latitude, lng: station.location.longitude }}
-                                title={`Station ${station.id}`}
-                            />
-                        ))}
                         <Polyline
                             path={path.map(geoPoint => ({ lat: geoPoint.latitude, lng: geoPoint.longitude }))}
                             options={{
@@ -108,7 +101,6 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                                 geodesic: true,
                             }}
                         />
-
                     </GoogleMap>
                 </IonCol>
             </IonRow>

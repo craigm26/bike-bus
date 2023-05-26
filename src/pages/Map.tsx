@@ -7,7 +7,6 @@ import {
   IonFab,
   IonIcon,
   IonText,
-  IonInput,
   IonLabel,
   IonRow,
   IonGrid,
@@ -16,10 +15,6 @@ import {
   IonAvatar,
   IonSegment,
   IonSegmentButton,
-  IonButtons,
-  IonItem,
-  IonModal,
-  IonTitle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -30,7 +25,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { personCircleOutline, playOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
-import { GoogleMap, Marker, useJsApiLoader, DirectionsService } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -482,6 +477,15 @@ const Map: React.FC = () => {
                 <div>
                   {selectedLocation && <Marker position={selectedLocation} />}
                 </div>
+                <Polyline
+                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    geodesic: true,
+                  }}
+                />
               </GoogleMap>
             </IonRow>
           </IonGrid>
