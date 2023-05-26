@@ -14,27 +14,23 @@ import {
   IonCol,
   IonToolbar,
   IonAvatar,
-  IonChip,
   IonSegment,
   IonSegmentButton,
   IonButtons,
   IonItem,
   IonModal,
   IonTitle,
-  IonDatetime,
-  IonSelect,
-  IonSelectOption,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { query, ref, set } from "firebase/database";
+import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { Query, doc, getDoc, getDocs, updateDoc, where } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
-import { locationOutline, personCircleOutline, playOutline } from "ionicons/icons";
+import { personCircleOutline, playOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
-import { GoogleMap, Marker, useJsApiLoader, DistanceMatrixService } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader, DirectionsService } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -90,30 +86,10 @@ const Map: React.FC = () => {
   const [routeStartLocation, setRouteStartLocation] = useState<string>('');
   const [routeTypeSelector, setRouteTypeSelector] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [routeType, setRouteType] = useState('');
-  const [scheduleName, setScheduleName] = useState<string>('');
-  const [scheduleDescription, setScheduleDescription] = useState<string>('');
-  const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
-  const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
-  const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
-  const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
-  const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
-  const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
-  const [showGroupModal, setShowGroupModal] = useState(false);
-  const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
   const [routeId, setRouteId] = useState<string | null>(null);
+  const [routeType, setRouteType] = useState("SCHOOL");
+  const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
 
-
-
-
-
-  type Schedule = {
-    scheduleStartTime: string;
-    scheduleEndTime: string;
-    frequency: string;
-    [key: string]: string;
-};
 
 
 
@@ -269,12 +245,12 @@ const Map: React.FC = () => {
   };
 
 
-
   const getDirections = () => {
     if (userLocation && selectedLocation) {
       const directionsService = new google.maps.DirectionsService();
       const directionsRenderer = new google.maps.DirectionsRenderer();
       directionsRenderer.setMap(mapRef.current);
+
       directionsService.route(
         {
           origin: userLocation,
@@ -282,19 +258,29 @@ const Map: React.FC = () => {
           travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
-          if (status === "OK") {
+          if (status === "OK" && response) { // add response null check here
             directionsRenderer.setDirections(response);
+
+            // Extract the path points from the result and set them in state
+            const pathPoints = response.routes[0].overview_path.map(latLng => ({
+              latitude: latLng.lat(),
+              longitude: latLng.lng(),
+            }));
+            setPathCoordinates(pathPoints);
           } else {
             console.error("Directions request failed due to " + status);
           }
         }
       );
+
+
+
+
       const service = new google.maps.DistanceMatrixService();
       service.getDistanceMatrix(
         {
           origins: [userLocation],
           destinations: [selectedLocation],
-          //there's a user selected segment where they can choose the travelmodeSelector. This is where we will set the travel mode.
           travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
@@ -302,15 +288,15 @@ const Map: React.FC = () => {
             const distance = response?.rows[0]?.elements[0]?.distance?.value;
             const duration = response?.rows[0]?.elements[0]?.duration?.value;
             console.log("Distance Matrix Response: ", response);
-            // make the distance value a string with 2 decimal places in miles (convert from meters), then display it on the screen
+
             setDistance(
               (Math.round((distance * 0.000621371192) * 100) / 100).toString()
             );
-            // make the duration value a string with 2 decimal places in minutes (convert from seconds), then display it on the screen
+
             setDuration(
               (Math.round((duration * 0.0166667) * 100) / 100).toString()
             );
-            // calculate the estimated arrival time by adding the duration to the current time
+
             const arrivalTime = new Date();
             const durationInMinutes = duration / 60;
             arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
@@ -322,6 +308,7 @@ const Map: React.FC = () => {
       );
     }
   };
+
 
   const createRoute = () => {
     if (userLocation && selectedLocation) {
@@ -362,7 +349,6 @@ const Map: React.FC = () => {
     }
   };
 
-
   const handleCreateRouteSubmit = async () => {
     try {
       // Store the DocumentReference returned by addDoc in a variable
@@ -376,17 +362,19 @@ const Map: React.FC = () => {
         travelMode: travelModeSelector,
         routeCreator: "/users/" + user?.uid,
         routeLeader: "/users/" + user?.uid,
+        pathCoordinates: pathCoordinates,
       });
-  
+
       // go to the /view route page
       history.push(`/view-route/${routeDocRef.id}`);
     } catch (error) {
       console.log("Error: ", error);
     }
   };
-  
-  
-  
+
+
+
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -412,58 +400,6 @@ const Map: React.FC = () => {
                 </IonCol>
               </IonRow>
               <IonRow>
-                <div className="bikebus-action-sheet footer-content">
-                  <div className="bikebusname-button-container">
-                    {fetchedGroups ? (
-                      fetchedGroups.map((group: any) => (
-                        <IonButton
-                          shape="round"
-                          size="large"
-                          key={group.id}
-                          routerLink={`/bikebusgrouppage/${group.id}`}
-                          routerDirection="none"
-                        >
-                          <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
-                        </IonButton>
-                      ))
-                    ) : (
-                      <p>Loading groups...</p>
-                    )}
-                  </div>
-                  <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                    <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">
-                      <IonIcon size="large" icon={playOutline} />
-                    </IonButton>
-                  </IonFab>
-                  <IonActionSheet
-                    isOpen={showActionSheet}
-                    onDidDismiss={() => setShowActionSheet(false)}
-                    trigger="open-action-sheet"
-                    header="Start Actions:"
-                    buttons={[
-                      {
-                        text: "Start a Ride",
-                        role: "destructive",
-                        data: {
-                          action: "startRide",
-                        },
-                      },
-                      {
-                        text: "Start a BikeBus Ride",
-                        data: {
-                          action: "startBikeBusRide",
-                        },
-                      },
-                      {
-                        text: "Cancel",
-                        role: "cancel",
-                        data: {
-                          action: "cancel",
-                        },
-                      },
-                    ]}
-                  ></IonActionSheet>
-                </div>
               </IonRow>
             </IonGrid>
 
