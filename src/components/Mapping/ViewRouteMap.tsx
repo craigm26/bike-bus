@@ -17,13 +17,13 @@ interface ViewRouteMapProps {
     startGeo: GeoPoint;
     endGeo: GeoPoint;
     stations: Station[];
-    path: GeoPoint[];  
+    path: GeoPoint[];
 }
 
 
 const containerStyle = {
     width: '100%',
-    height: '400px',
+    height: '600px',
 };
 
 const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations, path }) => {
@@ -32,7 +32,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    const [routeType, setRouteType] = useState("SCHOOL"); 
+    const [routeType, setRouteType] = useState("SCHOOL");
     const [stationsIDs, setStationsIDs] = useState<Station[]>([]);
     const [pathCoordinates, setPathCoordinates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -64,6 +64,13 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
         fetchData();
     }, []);
 
+    console.log(path);
+
+    if (path.length > 0) {
+        console.log(path[0] instanceof GeoPoint);
+    }
+    
+
     if (loadError) {
         return <div>Error loading maps</div>;
     }
@@ -93,7 +100,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                             />
                         ))}
                         <Polyline
-                            path={pathCoordinates}
+                            path={path.map(geoPoint => ({ lat: geoPoint.latitude, lng: geoPoint.longitude }))}
                             options={{
                                 strokeColor: "#FF0000",
                                 strokeOpacity: 1.0,
@@ -101,6 +108,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                                 geodesic: true,
                             }}
                         />
+
                     </GoogleMap>
                 </IonCol>
             </IonRow>

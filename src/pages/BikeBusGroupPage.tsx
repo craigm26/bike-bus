@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { IonContent, IonHeader, IonPage, IonToolbar, IonMenuButton, IonButtons, IonButton, IonLabel, IonText, IonChip, IonAvatar, IonPopover, IonIcon } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -13,7 +13,7 @@ const BikeBusGroupPage: React.FC = () => {
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setAccountType] = useState<string>('');
   const { fetchedGroups } = UseBikeBusGroup();
-    const headerContext = useContext(HeaderContext);
+  const headerContext = useContext(HeaderContext);
 
   useEffect(() => {
     if (user) {
@@ -33,12 +33,12 @@ const BikeBusGroupPage: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-      {headerContext?.showHeader && (
-        <IonHeader>
-          <IonToolbar>
+        {headerContext?.showHeader && (
+          <IonHeader>
+            <IonToolbar>
             </IonToolbar>
-        </IonHeader>
-      )}
+          </IonHeader>
+        )}
         {fetchedGroups.map((group, index) => (
           <BikeBusGroup
             key={index}

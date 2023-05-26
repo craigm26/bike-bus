@@ -44,7 +44,7 @@ interface Route {
     pathCoordinates: Coordinate[];
 }
 
-const ViewRoute: React.FC = () => {
+const EditRoute: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
@@ -149,8 +149,8 @@ const ViewRoute: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonTitle>
-                    Viewing Route
+            <IonTitle>
+                    Editing Route
                 </IonTitle>
                 <IonList>
                     <IonItem>
@@ -168,7 +168,8 @@ const ViewRoute: React.FC = () => {
                     <IonItem>Starting Point: Lat {selectedRoute?.startPoint.lat}, Lng {selectedRoute?.startPoint.lng}</IonItem>
                     <IonItem>End Point: Lat {selectedRoute?.endPoint.lat}, Lng {selectedRoute?.endPoint.lng}</IonItem>
                 </IonList>
-                <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+                <IonButton onClick={() => { }}>Save</IonButton>
+                <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
                 {selectedRoute && (
                     <ViewRouteMap
                         path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
@@ -184,4 +185,4 @@ const ViewRoute: React.FC = () => {
 
 };
 
-export default ViewRoute;
+export default EditRoute;

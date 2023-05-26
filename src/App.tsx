@@ -47,6 +47,8 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
+import ViewRouteList from './pages/ViewRouteList';
+import EditRoute from './pages/EditRoute';
 
 setupIonicReact();
 
@@ -134,7 +136,7 @@ const App: React.FC = () => {
                       </IonCard>
                       <IonCard>
                         <IonLabel>Basic User Functions</IonLabel>
-                        <IonItem button routerLink='/ViewRoute' routerDirection="none">
+                        <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/ViewBikeBusGroup' routerDirection="none">
@@ -274,8 +276,14 @@ const App: React.FC = () => {
                       <Route path="/bikebusgrouppage/:groupId" exact>
                         <BikeBusGroupPage />
                       </Route>
-                      <Route path="/viewroute/:routeId" exact>
+                      <Route path="/viewroute/:id" exact>
                         <ViewRoute />
+                      </Route>
+                      <Route path="/editroute/:id" exact>
+                        <EditRoute />
+                      </Route>
+                      <Route exact path="/viewroutelist">
+                        <ViewRouteList />
                       </Route>
                       <Route exact path="/Profile">
                         <Profile />

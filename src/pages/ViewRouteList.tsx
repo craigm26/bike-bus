@@ -10,7 +10,7 @@ import {
     IonToolbar,
     IonPopover,
     IonText,
-    IonTitle,
+    IonCard,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -20,8 +20,7 @@ import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'fireb
 import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import { useParams } from 'react-router-dom';
-
+import UseRoutes from '../components/useRoutes';
 
 
 
@@ -41,10 +40,9 @@ interface Route {
     routeType: string;
     startPoint: Coordinate;
     travelMode: string;
-    pathCoordinates: Coordinate[];
 }
 
-const ViewRoute: React.FC = () => {
+const ViewRouteList: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
@@ -52,6 +50,7 @@ const ViewRoute: React.FC = () => {
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const [routes, setRoutes] = useState<Route[]>([]);
     const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
+    const [editableRoute, setEditableRoute] = useState<Route | null>(null);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [routeType, setRouteType] = useState('');
     const [scheduleName, setScheduleName] = useState<string>('');
@@ -64,9 +63,15 @@ const ViewRoute: React.FC = () => {
     const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
-    const { id } = useParams<{ id: string }>();
+    const { fetchedRoutes, loading: loadingRoutes, error } = UseRoutes();
 
 
+
+    let geoPoint;
+
+    if (editableRoute) {
+        geoPoint = new GeoPoint(editableRoute.startPoint.lat, editableRoute.startPoint.lng);
+    }
 
     type Schedule = {
         scheduleStartTime: string;
@@ -75,49 +80,67 @@ const ViewRoute: React.FC = () => {
         [key: string]: string;
     };
 
+    const openPopover = (e: Event, route: Route) => {
+        setPopoverState({ open: true, event: e });
+        setEditableRoute(route);
+    };
 
+    const closePopover = () => {
+        setPopoverState({ open: false, event: null });
+        setEditableRoute(null);
+    };
+
+    const saveRouteChanges = async () => {
+        if (editableRoute) {
+            try {
+                const routeRef = doc(db, "routes", editableRoute.id);
+                await updateDoc(routeRef, { ...editableRoute }); // changed
+                closePopover();
+            } catch (error) {
+                console.log("Error updating route: ", error);
+            }
+        }
+    };
     const fetchRoutes = useCallback(async () => {
+        // Assuming that your uid is stored in the user.uid
         const uid = user?.uid;
+
         if (!uid) {
+            // If there's no user, we cannot fetch routes
             return;
         }
+
+        // Create a reference to the 'routes' collection
         const routesCollection = collection(db, 'routes');
+
+        // Create a query against the collection.
+        // This will fetch all documents where the routeCreator equals the user's uid
         const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
+
         const querySnapshot = await getDocs(q);
         const routesData: Route[] = querySnapshot.docs.map(doc => ({
             ...doc.data() as Route,
             id: doc.id,
         }));
         setRoutes(routesData);
-    }, [user]);
+    }, [user]); // here user is a dependency
+
+
 
     useEffect(() => {
         fetchRoutes();
     }, [fetchRoutes]);
 
-    useEffect(() => {
-        if (id) fetchSingleRoute(id);
-    }, [id]);
 
-    const fetchSingleRoute = async (id: string) => {
-        const docRef = doc(db, 'routes', id);
-        const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            const routeData = {
-                ...docSnap.data() as Route,
-                id: docSnap.id,
-                pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-                    lat: coord.latitude,
-                    lng: coord.longitude,
-                })), // Transform pathCoordinates
-            };
-            setSelectedRoute(routeData);
-            console.log(routeData.pathCoordinates, routeData.startPoint, routeData.endPoint);
-
+    const handleRouteChange = (field: keyof Route, value: any) => {
+        if (editableRoute) {
+            setEditableRoute({
+                ...editableRoute,
+                [field]: value,
+            });
         }
     };
-
 
     useEffect(() => {
         if (headerContext) {
@@ -139,6 +162,13 @@ const ViewRoute: React.FC = () => {
         }
     }, [user]);
 
+    const editRoute = () => {
+        if (editableRoute) {
+            setSelectedRoute(editableRoute);
+            closePopover();
+        }
+    };
+
 
 
     return (
@@ -149,39 +179,21 @@ const ViewRoute: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonTitle>
-                    Viewing Route
-                </IonTitle>
-                <IonList>
-                    <IonItem>
-                        <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel>Description: {selectedRoute?.description}</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel>Route Type: {selectedRoute?.routeType}</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
-                    </IonItem>
-                    <IonItem>Starting Point: Lat {selectedRoute?.startPoint.lat}, Lng {selectedRoute?.startPoint.lng}</IonItem>
-                    <IonItem>End Point: Lat {selectedRoute?.endPoint.lat}, Lng {selectedRoute?.endPoint.lng}</IonItem>
-                </IonList>
-                <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-                {selectedRoute && (
-                    <ViewRouteMap
-                        path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
-                        startGeo={new GeoPoint(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
-                        endGeo={new GeoPoint(selectedRoute.endPoint.lat, selectedRoute.endPoint.lng)}
-                        stations={[]}
-                    />
-                )}
-
-            </IonContent >
-        </IonPage >
+                <IonCard>
+                    <IonList>
+                        {routes.map((route) => (
+                            <IonItem key={route.id} button routerLink={`/ViewRoute/${route.id}`} routerDirection="none">
+                                <IonLabel>{route.routeName}</IonLabel>
+                                <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
+                                <IonButton routerLink={`/EditRoute/${route.id}`}>Edit Route</IonButton>
+                                <IonButton routerLink={``}>Create BikeBus Group</IonButton>
+                            </IonItem>
+                        ))}
+                    </IonList>
+                </IonCard>
+            </IonContent>
+        </IonPage>
     );
-
 };
 
-export default ViewRoute;
+export default ViewRouteList;
