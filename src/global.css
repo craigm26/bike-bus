@@ -166,7 +166,7 @@
 
 @media screen and (max-width: 600px) {
   .search-container {
-    top: 10vh; 
+    top: 1vh; 
     width: 80%; 
   }
 }

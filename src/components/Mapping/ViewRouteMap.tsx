@@ -4,7 +4,6 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/
 import { getDocs, collection, GeoPoint } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { IonCol, IonContent, IonIcon, IonRow } from '@ionic/react';
-import { pin } from 'ionicons/icons';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -81,16 +80,12 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                         <Marker
                             position={{ lat: startGeo.latitude, lng: startGeo.longitude }}
                             title="Start"
-                            icon={{
-                                url: "/path/to/your/svg/pin-icon.svg",
-                                scaledSize: new window.google.maps.Size(25, 25),                            }}
+                        
                         />
                         <Marker
                             position={{ lat: endGeo.latitude, lng: endGeo.longitude }}
                             title="End"
-                            icon={{
-                                url: "/path/to/your/svg/pin-icon.svg",
-                                scaledSize: new window.google.maps.Size(25, 25),                            }}
+                          
                         />
                         <Polyline
                             path={path.map(geoPoint => ({ lat: geoPoint.latitude, lng: geoPoint.longitude }))}

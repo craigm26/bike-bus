@@ -21,7 +21,7 @@ import "./Map.css";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { personCircleOutline, playOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
@@ -34,9 +34,6 @@ import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
-
-
-
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -84,6 +81,7 @@ const Map: React.FC = () => {
   const [routeId, setRouteId] = useState<string | null>(null);
   const [routeType, setRouteType] = useState("SCHOOL");
   const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
 
 
@@ -232,8 +230,10 @@ const Map: React.FC = () => {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           });
+          setRouteStartLocation(`${place.name}, ${place.formatted_address}` ?? ''); // Concatenate place name and formatted address
           setShowCreateRouteButton(true);
           setShowGetDirectionsButton(true);
+
         }
       }
     }
@@ -268,9 +268,6 @@ const Map: React.FC = () => {
         }
       );
 
-
-
-
       const service = new google.maps.DistanceMatrixService();
       service.getDistanceMatrix(
         {
@@ -303,6 +300,8 @@ const Map: React.FC = () => {
       );
     }
   };
+
+
 
 
   const createRoute = () => {
@@ -366,6 +365,29 @@ const Map: React.FC = () => {
       console.log("Error: ", error);
     }
   };
+
+  // for the saveDestination handler, allow the user to save the destination to their account.  save the destination to their account.
+  const saveDestination = () => {
+    // if the user is logged in, save the destination to their account
+    if (user) {
+      // check to see if user is logged in
+      console.log("user is logged in");
+      // if the user is logged in, save the destination to their account
+      // get the user's document from the database
+      const userRef = doc(db, "users", user.uid);
+      // update the user's document with the new destination
+      updateDoc(userRef, {
+        savedDestinations: arrayUnion(selectedLocation)
+      });
+    } else {
+      // if the user is not logged in, prompt them to log in
+      console.log("user is not logged in");
+      // if the user is not logged in, prompt them to log in
+      // show the login modal
+      setShowLoginModal(true);
+    }
+  };
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -441,7 +463,7 @@ const Map: React.FC = () => {
                       </IonSegment>
                     </IonCol>
                     <IonCol className="Destination-box">
-                      <IonLabel>Destination:</IonLabel>
+                      <IonLabel>Destination: {routeStartLocation}</IonLabel>
                       <StandaloneSearchBox
                         onLoad={onLoad}
                         onPlacesChanged={onPlaceChanged}
@@ -454,6 +476,7 @@ const Map: React.FC = () => {
                         />
                       </StandaloneSearchBox>
                       {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
+                      {showGetDirectionsButton && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
                       {showGetDirectionsButton && <IonButton onClick={createRoute}>Create Route</IonButton>}
                     </IonCol>
                     <IonCol>
