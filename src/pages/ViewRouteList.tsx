@@ -182,7 +182,7 @@ const ViewRouteList: React.FC = () => {
                 <IonCard>
                     <IonList>
                         {routes.map((route) => (
-                            <IonItem key={route.id} button routerLink={`/ViewRoute/${route.id}`} routerDirection="none">
+                            <IonItem>
                                 <IonLabel>{route.routeName}</IonLabel>
                                 <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
                                 <IonButton routerLink={`/EditRoute/${route.id}`}>Edit Route</IonButton>

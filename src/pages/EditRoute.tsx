@@ -11,6 +11,8 @@ import {
     IonPopover,
     IonText,
     IonTitle,
+    IonSelect,
+    IonSelectOption,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -51,19 +53,7 @@ const EditRoute: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const [routes, setRoutes] = useState<Route[]>([]);
-    const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [routeType, setRouteType] = useState('');
-    const [scheduleName, setScheduleName] = useState<string>('');
-    const [scheduleDescription, setScheduleDescription] = useState<string>('');
-    const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
-    const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
-    const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
-    const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
-    const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
-    const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
-    const [showGroupModal, setShowGroupModal] = useState(false);
-    const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
     const { id } = useParams<{ id: string }>();
 
 
@@ -140,6 +130,27 @@ const EditRoute: React.FC = () => {
     }, [user]);
 
 
+    const handleSave = async () => {
+        if (!selectedRoute) {
+            return;
+        }
+
+        const routeRef = doc(db, 'routes', selectedRoute.id);
+        const updatedRoute: Partial<Route> = {
+            routeName: selectedRoute.routeName,
+            description: selectedRoute.description,
+            routeType: selectedRoute.routeType,
+            travelMode: selectedRoute.travelMode,
+            startPoint: selectedRoute.startPoint,
+            endPoint: selectedRoute.endPoint,
+        };
+        await updateDoc(routeRef, updatedRoute);
+        //then redirect to view route page
+        alert('Route Updated');
+
+    };
+
+
 
     return (
         <IonPage>
@@ -149,26 +160,39 @@ const EditRoute: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-            <IonTitle>
+                <IonTitle>
                     Editing Route
                 </IonTitle>
                 <IonList>
                     <IonItem>
-                        <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
+                        <IonLabel>Route Name:</IonLabel>
+                        <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
                     </IonItem>
                     <IonItem>
-                        <IonLabel>Description: {selectedRoute?.description}</IonLabel>
+                        <IonLabel>Description:</IonLabel>
+                        <IonInput value={selectedRoute?.description} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, description: e.detail.value! })} />
                     </IonItem>
                     <IonItem>
-                        <IonLabel>Route Type: {selectedRoute?.routeType}</IonLabel>
+                        <IonLabel>Route Type:</IonLabel>
+                        <IonSelect value={selectedRoute?.routeType} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeType: e.detail.value })}>
+                            <IonSelectOption value="Work">Work</IonSelectOption>
+                            <IonSelectOption value="School">School</IonSelectOption>
+                            <IonSelectOption value="Recreational">Recreational</IonSelectOption>
+
+                        </IonSelect>
                     </IonItem>
                     <IonItem>
-                        <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSelect value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
+                            <IonSelectOption value="WALKING">Walking</IonSelectOption>
+                            <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
+                            <IonSelectOption value="CAR">Car</IonSelectOption>
+                        </IonSelect>
                     </IonItem>
-                    <IonItem>Starting Point: Lat {selectedRoute?.startPoint.lat}, Lng {selectedRoute?.startPoint.lng}</IonItem>
-                    <IonItem>End Point: Lat {selectedRoute?.endPoint.lat}, Lng {selectedRoute?.endPoint.lng}</IonItem>
+
+                    {/* Other items */}
                 </IonList>
-                <IonButton onClick={() => { }}>Save</IonButton>
+                <IonButton onClick={handleSave}>Save</IonButton>
                 <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
                 {selectedRoute && (
                     <ViewRouteMap
@@ -178,7 +202,6 @@ const EditRoute: React.FC = () => {
                         stations={[]}
                     />
                 )}
-
             </IonContent >
         </IonPage >
     );
