@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   IonContent,
   IonHeader,
@@ -7,20 +7,26 @@ import {
   IonAvatar,
   IonButton,
   IonText,
+  IonLabel,
+  IonIcon,
+  IonToolbar,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
 import { useAvatar } from './useAvatar';
 import { ref, uploadBytesResumable } from '@firebase/storage';
-import { storage } from '../firebaseConfig';
+import { db, storage } from '../firebaseConfig';
 import Avatar from './Avatar';
 import Logout from './Logout';
 import AccountModeSelector from '../components/AccountModeSelector';
+import { doc, getDoc } from 'firebase/firestore';
+import { cogOutline } from 'ionicons/icons';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [accountType, setaccountType] = useState<string>('');
 
   const enabledAccountModes = [
     'Member',
@@ -56,6 +62,20 @@ const Profile: React.FC = () => {
 
   const [accountMode, setAccountMode] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.accountType) {
+            setaccountType(userData.accountType);
+          }
+        }
+      });
+    }
+  }, [user]);
+
   const onAccountModeChange = (mode: string[]) => {
     setAccountMode(mode);
   };
@@ -63,19 +83,21 @@ const Profile: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonTitle>Profile</IonTitle>
       </IonHeader>
       <IonContent fullscreen>
         <div className="avatar-container">
-          <IonAvatar>
+          <IonAvatar className='img-center'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
-            <IonButton fill="clear" routerLink="/account">
+            <><><IonButton fill="clear" routerLink="/account">
               Account
-            </IonButton>
+            </IonButton><IonLabel>
+                <h2>UserName: {user?.username}</h2>
+              </IonLabel></><IonText>Account Type: {accountType}</IonText></>
+
           )}
           {user?.accountType === 'Anonymous' ? (
             <>
@@ -83,6 +105,7 @@ const Profile: React.FC = () => {
               <IonButton fill="clear" routerLink="/SignUp">
                 SignUp to Add Avatar
               </IonButton>
+              <IonText>Account Type: {accountType}</IonText>
             </>
           ) : (
             <div>
@@ -103,6 +126,15 @@ const Profile: React.FC = () => {
           )}
         </div>
         <Logout />
+        <IonToolbar>
+        <IonButton routerLink='/settings'>
+          Settings
+          <IonIcon slot="end" icon={cogOutline}></IonIcon>
+        </IonButton>
+        </IonToolbar>
+        <IonLabel>
+          <IonText>Privacy Policy</IonText>
+        </IonLabel>
       </IonContent>
     </IonPage>
   );

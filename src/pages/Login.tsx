@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useAuth from '../useAuth';
 import {
   IonPage,
@@ -16,7 +16,7 @@ import './Login.css';
 import PasswordReset from '../components/PasswordReset';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-
+import { HeaderContext } from '../components/HeaderContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -28,6 +28,15 @@ const Login: React.FC = () => {
     checkAndUpdateAccountModes,
   } = useAuth();
   const history = useHistory();
+  const headerContext = useContext(HeaderContext);
+
+
+
+  useEffect(() => {
+    if (headerContext) {
+      headerContext.setShowHeader(false);
+    }
+  }, [headerContext]);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -53,12 +62,29 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleGoogleSubmit = async () => {
+    try {
+      const userCredential = await signInWithGoogle();
+      const user = userCredential?.user;
+      if (user && user.uid) {
+        await checkAndUpdateAccountModes(user.uid);
+      }
+      history.push('/Map');
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage("Error logging in with Google: " + error.message);
+      } else {
+        setErrorMessage("Error logging in with Google.");
+      }
+    }
+  };
+
 
   return (
     <IonPage>
       <IonHeader>
       </IonHeader>
-      <IonContent>
+      <IonContent className='login-container'>
         <IonText color="primary" class="BikeBusFont">
           <h1>BikeBus</h1>
         </IonText>
@@ -104,25 +130,7 @@ const Login: React.FC = () => {
         <IonText>
           <p>Or Use Google
             <IonButton
-              onClick={async () => {
-                try {
-                  const userCredential = await signInWithGoogle();
-                  const user = userCredential?.user;
-                  if (user && user.uid) {
-                    const userRef = doc(db, 'users', user.uid);
-                    const docSnap = await getDoc(userRef);
-                    if (!docSnap.exists()) {
-                      // User does not exist in Firestore, redirect to set username page
-                      history.push('/set-username');
-                    } else {
-                      await checkAndUpdateAccountModes(user.uid);
-                      history.push('/Map');
-                    }
-                  }
-                } catch (error) {
-                  // Handle the error (e.g., display an error message)
-                }
-              }}
+              onClick={handleGoogleSubmit}
             >
               Login with Google
             </IonButton>

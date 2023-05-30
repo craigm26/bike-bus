@@ -1,20 +1,12 @@
-import { Redirect, Route } from 'react-router-dom';
-import {
-  IonApp,
-  IonMenu,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonList,
-  IonItem,
-  IonPage,
-  IonMenuToggle,
-  IonLabel,
-  IonRouterOutlet,
-  setupIonicReact
-} from '@ionic/react';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonFooter, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+import useAuth from './useAuth';
+import { HeaderContext } from './components/HeaderContext';
+import { MapProvider } from './components/Mapping/MapContext';
+
+
 import Map from './pages/Map';
 import Login from './pages/Login';
 import Profile from './components/Profile';
@@ -25,16 +17,28 @@ import About from './pages/About';
 import Account from './pages/Account';
 import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
+import Settings from './pages/Settings';
+import useBikeBusGroup from './components/useBikeBusGroup';
+import ViewRoute from './pages/ViewRoute';
+import SearchForRoute from './pages/SearchForRoute';
+import SetUsername from './components/set-username';
+import Notifications from './pages/Notifications';
+import CreateOrganization from './pages/CreateOrganization';
+import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
+import CreateBikeBusStation from './pages/CreateBikeBusStations';
+import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
+import { RouteProvider } from './components/RouteContext';
+import CreateRoute from './pages/createRoute';
+import React from 'react';
+import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline, playOutline } from 'ionicons/icons';
+import Avatar from './components/Avatar';
+import { useAvatar } from './components/useAvatar';
 
-/* Core CSS required for Ionic components to work properly */
+
 import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
 import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
 import '@ionic/react/css/padding.css';
 import '@ionic/react/css/float-elements.css';
 import '@ionic/react/css/text-alignment.css';
@@ -42,84 +46,332 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/* Theme variables */
 import './theme/variables.css';
-import React from 'react';
-import Settings from './pages/Settings';
+import ViewRouteList from './pages/ViewRouteList';
+import EditRoute from './pages/EditRoute';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <React.Fragment>
-        <IonMenu side="start" content-id="main-content">
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Menu</IonTitle>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            <IonList>
-              <IonMenuToggle auto-hide="false">
-                <IonItem button routerLink="/Map" routerDirection="none">
-                  <IonLabel>Map</IonLabel>
-                </IonItem>
-                <IonItem button routerLink="/help" routerDirection="none">
-                  <IonLabel>Help</IonLabel>
-                </IonItem>
-                <IonItem button routerLink="/about" routerDirection="none">
-                  <IonLabel>About</IonLabel>
-                </IonItem>
-                <IonItem button routerLink="/settings" routerDirection="none">
-                  <IonLabel>Settings</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            </IonList>
-          </IonContent>
-        </IonMenu>
-        <IonPage id="main-content">
-          <IonRouterOutlet>
-            <Route path="/bikebusgrouppage/:groupId" component={BikeBusGroupPage} />
-            <BikeBusGroupPage />
-            <Route exact path="/Profile">
-              <Profile />
-            </Route>
-            <Route exact path="/Account">
-              <Account />
-            </Route>
-            <Route exact path="/Map">
-              <Map />
-            </Route>
-            <Route exact path="/Login">
-              <Login />
-            </Route>
-            <Route exact path="/SignUp">
-              <SignUp />
-            </Route>
-            <Route exact path="/Logout">
-              <Logout />
-            </Route>
-            <Route exact path="/help">
-              <Help />
-            </Route>
-            <Route exact path="/about">
-              <About />
-            </Route>
-            <Route exact path="/settings">
-              <Settings />
-            </Route>
-            <Route exact path="/Welcome">
-              <Welcome />
-            </Route>
-            <Route exact path="/">
-              <Redirect to="/Welcome" />
-            </Route>
-          </IonRouterOutlet>
-        </IonPage>
-      </React.Fragment>
-    </IonReactRouter>
-  </IonApp >
-);
+type Group = {
+  id: number;
+  BikeBusName: string;
+}
+
+
+
+const App: React.FC = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState<boolean>(true);
+  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
+  const [showPopover, setShowPopover] = useState(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const { avatarUrl } = useAvatar(user?.uid);
+  const [showHeader, setShowHeader] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number }>({
+    lat: 0,
+    lng: 0,
+  });
+
+  console.log('fetchGroups:', fetchedGroups);
+
+  useEffect(() => {
+    if (user !== undefined && !loadingGroups) {
+      setLoading(false);
+    }
+  }, [user, loadingGroups, error]);
+
+  const label = user?.username ? user.username : "anonymous";
+
+  const avatarElement = user ? (
+    avatarUrl ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
+    ) : (
+      <IonIcon icon={personCircleOutline} />
+    )
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
+
+  const togglePopover = (e: any) => {
+    console.log('togglePopover called');
+    console.log('event:', e);
+    setPopoverEvent(e.nativeEvent);
+    setShowPopover((prevState) => !prevState);
+    console.log('showPopover state:', showPopover);
+  };
+
+
+  if (loading) {
+    return <p>Loading...</p>; // Replace with a loading spinner if available
+  }
+
+  console.log('Loading fetchedGroups app.tsx', fetchedGroups);
+
+
+  return (
+    <IonApp>
+      <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
+        <IonReactRouter>
+          <RouteProvider>
+            <React.Fragment>
+              <IonMenu side="start" content-id="main-content">
+                <IonHeader>
+                  <IonToolbar>
+                    <IonTitle class="BikeBusFont">Menu</IonTitle>
+                  </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                  <IonList>
+                    <IonMenuToggle auto-hide="false">
+                      <IonCard>
+                        <IonLabel>Bike Bus You Belong To</IonLabel>
+                        {fetchedGroups ? fetchedGroups.map((group: any) => (
+                          <IonItem key={group.id} button routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                            <IonLabel class="BikeBusFont">{group.BikeBusName}</IonLabel>
+                          </IonItem>
+                        )) : <p>Loading groups...</p>}
+                      </IonCard>
+                      <IonCard>
+                        <IonLabel>Basic User Functions</IonLabel>
+                        <IonItem button routerLink='/ViewRouteList' routerDirection="none">
+                          <IonLabel>View Routes</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/ViewBikeBusGroup' routerDirection="none">
+                          <IonLabel>View BikeBusGroups</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
+                          <IonLabel>View BikeBusStations</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
+                          <IonLabel>Create BikeBusStation</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/CreateBikeBusGroup' routerDirection="none">
+                          <IonLabel>Create BikeBusGroup</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
+                          <IonLabel>Upgrade Account to Premium</IonLabel>
+                        </IonItem>
+                      </IonCard>
+                      <IonCard>
+                        <IonLabel>Premium User Functions</IonLabel>
+                        <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
+                          <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/AddAKid' routerDirection="none">
+                          <IonLabel>Add a Kid -Converts to Parent Account</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/CheckInKid' routerDirection="none">
+                          <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
+                        </IonItem>
+                      </IonCard>
+                      <IonCard>
+                        <IonLabel>BikeBus Leader Functions</IonLabel>
+                        <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
+                          <IonLabel>Check In a Kid to a BikeBus</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/EndBikeBusGroupRide' routerDirection="none">
+                          <IonLabel>Finish a BikeBusGroup ride - end ride for all</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
+                          <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
+                        </IonItem>
+                      </IonCard>
+                      <IonCard>
+                        <IonLabel>Org Admin Functions</IonLabel>
+                        <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
+                          <IonLabel>Update BikeBusGroups</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/UpdateBikeBusStations' routerDirection="none">
+                          <IonLabel>Update BikeBusStations</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/UpdateRoutes' routerDirection="none">
+                          <IonLabel>Update Associated Routes</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
+                          <IonLabel>Update Organization</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/DataAnalytics' routerDirection="none">
+                          <IonLabel>Data Analytics</IonLabel>
+                        </IonItem>
+                      </IonCard>
+                      <IonCard>
+                        <IonLabel>App Admin Functions</IonLabel>
+                        <IonItem button routerLink="/CreateOrganization" routerDirection="none">
+                          <IonLabel>Create Organization</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/UpdateUsers" routerDirection="none">
+                          <IonLabel>Update Users' Data</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/UpdateOrganizationalData" routerDirection="none">
+                          <IonLabel>Update Organizational Data</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/UpdateBikeBusGroupData" routerDirection="none">
+                          <IonLabel>Update BikeBusGroup Data</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/UpdateRouteData" routerDirection="none">
+                          <IonLabel>Update Route Data</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
+                          <IonLabel>Update BikeBusStation Data</IonLabel>
+                        </IonItem>
+                        <IonLabel></IonLabel>
+                      </IonCard>
+                      <IonItem button routerLink="/about" routerDirection="none">
+                        <IonLabel>About</IonLabel>
+                      </IonItem>
+                    </IonMenuToggle>
+                  </IonList>
+                </IonContent>
+              </IonMenu>
+              <IonPage id="main-content" >
+                <IonContent fullscreen>
+                  {showHeader && (
+                    <IonHeader>
+                      <IonToolbar color="primary" >
+                        <IonButtons color="secondary" slot="start">
+                          <IonMenuButton></IonMenuButton>
+                        </IonButtons>
+                        <IonText slot="start" color="secondary" class="BikeBusFont">
+                          <h1>BikeBus</h1>
+                        </IonText>
+
+                        <IonPopover
+                          isOpen={showPopover}
+                          event={popoverEvent}
+                          onDidDismiss={() => setShowPopover(false)}
+                          className="my-popover"
+                        >
+                          <Profile />
+                        </IonPopover>
+                        <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                          <IonChip>
+                            {avatarElement}
+                            <IonLabel>{label}</IonLabel>
+                          </IonChip>
+                        </IonButton>
+                        <IonPopover
+                          isOpen={showPopover}
+                          event={popoverEvent}
+                          onDidDismiss={() => setShowPopover(false)}
+                          className="my-popover"
+                        >
+                          <Profile />
+                        </IonPopover>
+                        <IonButtons slot="primary">
+                          <IonButton routerLink='/help'>
+                            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                          </IonButton>
+                          <IonButton routerLink='/notifications'>
+                            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+                          </IonButton>
+                        </IonButtons>
+                      </IonToolbar>
+                    </IonHeader>
+                  )}
+                  <IonRouterOutlet>
+                    <React.Fragment>
+                      <Route path="/bikebusgrouppage/:groupId" exact>
+                        <BikeBusGroupPage />
+                      </Route>
+                      <Route path="/viewroute/:id" exact>
+                        <ViewRoute />
+                      </Route>
+                      <Route path="/editroute/:id" exact>
+                        <EditRoute />
+                      </Route>
+                      <Route exact path="/viewroutelist">
+                        <ViewRouteList />
+                      </Route>
+                      <Route exact path="/Profile">
+                        <Profile />
+                      </Route>
+                      <Route exact path="/Account">
+                        <Account />
+                      </Route>
+                      <Route exact path="/SetUsername">
+                        <SetUsername />
+                      </Route>
+                      <Route exact path="/Map">
+                        <MapProvider 
+                        >
+                          <Map />
+                        </MapProvider>
+                      </Route>
+                      <Route exact path="/ViewBikeBusGroup">
+                        <BikeBusGroupPage />
+                      </Route>
+                      <Route exact path="/ViewRoute">
+                        <ViewRoute />
+                      </Route>
+                      <Route exact path="/SearchForRoute">
+                        <SearchForRoute />
+                      </Route>
+                      <Route exact path="/CreateOrganization">
+                        <CreateOrganization />
+                      </Route>
+                      <Route exact path="/CreateRoute">
+                        <CreateRoute />
+                      </Route>
+                      <Route exact path="/CreateBikeBusGroup">
+                        <CreateBikeBusGroup />
+                      </Route>
+                      <Route exact path="/CreateBikeBusStation">
+                        <CreateBikeBusStation />
+                      </Route>
+                      <Route exact path="/UpgradeAccountToPremium">
+                        <UpgradeAccountToPremium />
+                      </Route>
+                      <Route exact path="/Login">
+                        <Login />
+                      </Route>
+                      <Route exact path="/SignUp">
+                        <SignUp />
+                      </Route>
+                      <Route exact path="/Logout">
+                        <Logout />
+                      </Route>
+                      <Route exact path="/help">
+                        <Help />
+                      </Route>
+                      <Route exact path="/about">
+                        <About />
+                      </Route>
+                      <Route exact path="/settings">
+                        <Settings />
+                      </Route>
+                      <Route exact path="/notifications">
+                        <Notifications />
+                      </Route>
+                      <Route exact path="/Welcome">
+                        <Welcome />
+                      </Route>
+                      <Route exact path="/">
+                        <Redirect to="/Welcome" />
+                      </Route>
+                    </React.Fragment>
+                  </IonRouterOutlet>
+                </IonContent>
+              </IonPage>
+              <div className='bikebus-footer'>
+                <div className='map-button-container footer-content'>
+                  <IonFab vertical="bottom" horizontal="start" slot="fixed">
+                    <IonFabButton routerLink="/Map" routerDirection="none">
+                      <IonIcon icon={mapOutline} />
+                    </IonFabButton>
+                  </IonFab>
+                </div>
+              </div>
+            </React.Fragment>
+
+          </RouteProvider>
+
+        </IonReactRouter>
+      </HeaderContext.Provider>
+    </IonApp >
+  );
+};
 
 export default App;

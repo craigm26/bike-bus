@@ -8,3 +8,172 @@
 .BikeBusFont {
   font-family: 'Indie-Flower', sans-serif;
 }
+
+.bikebusname-button-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 10px; /* optional: for some space from the bottom */
+}
+
+
+.avatar {
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+}
+
+.avatar.extrasmall {
+  width: 26px;
+  height: 26px;
+}
+
+.avatar.small {
+  width: 50px;
+  height: 50px;
+}
+
+.avatar.medium {
+  width: 50px;
+  height: 50px;
+}
+
+.avatar.large {
+  width: 150px;
+  height: 150px;
+}
+
+.bikebus-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 0 15px; /* Adjust padding as needed */
+}
+
+.footer-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.button {
+  padding: 0;
+  margin: 0;
+  border: none;  /* If you don't want button to have border */
+  background: none;  /* If you don't want button to have background */
+}
+
+
+.map-button-container {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.bikebus-action-sheet {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.bikebus-start-button {
+  display: flex;
+  align-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+
+.welcome-to-bikebus {
+  justify-content: center;
+  text-align: center;
+  color: #ffd800;
+  font-size: 3rem;
+  font-family: 'Indie-Flower', sans-serif;
+}
+
+.welcome-to-bikebus-about {
+  display: flex;
+  justify-content: center;
+}
+
+.welcome-to-bikebus-buttons {
+  justify-content: center;
+  align-items: center;
+  display:inline;
+}
+
+.img-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.my-popover {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  position: static;
+  --height: 40vh;
+  --width: 60vw;
+  width: var(--width);
+  height: var(--height);
+  max-width: var(--width);
+  max-height: var(--height);
+}
+
+.location-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+}
+
+.search-container {
+  position: absolute;
+  width: max-content;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
+  width: 420px;
+  height: 340px;
+  padding: 2px 12px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.destination-box {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 50%;
+}
+
+@media screen and (max-width: 600px) {
+  .search-container {
+    top: 1vh; 
+    width: 80%; 
+  }
+}
+
+
+.map-base {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
