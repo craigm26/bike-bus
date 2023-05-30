@@ -1,19 +1,11 @@
 import {
     IonContent,
-    IonHeader,
     IonPage,
-    IonToolbar,
-    IonMenuButton,
-    IonButtons,
     IonButton,
     IonLabel,
     IonText,
-    IonChip,
-    IonAvatar,
-    IonPopover,
     IonItem,
     IonList,
-    IonIcon,
     IonCard,
     IonCardContent,
     IonCardHeader,
@@ -25,11 +17,12 @@ import './Account.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile';
-import { db } from '../firebaseConfig';
+import { db, storage } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import { personCircleOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
+import React from 'react';
+import { ref, uploadBytesResumable } from '@firebase/storage';
+import { refresh } from 'ionicons/icons';
 
 interface Group {
     id: string;
@@ -42,19 +35,17 @@ const DEFAULT_ACCOUNT_MODES = ['Member'];
 const Account: React.FC = () => {
     const { user, checkAndUpdateAccountModes } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
-    const [showPopover, setShowPopover] = useState(false);
-    const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
-    const [username, setusername] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [passwordConfirm, setPasswordConfirm] = useState<string>('');
+    const [username, setUsername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
 
-    const togglePopover = (e: any) => {
-        setPopoverEvent(e.nativeEvent);
-        setShowPopover((prevState) => !prevState);
-    };
+
 
     useEffect(() => {
         if (user) {
@@ -63,7 +54,7 @@ const Account: React.FC = () => {
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
                     // Get the BikeBusGroups
-                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', `${user.uid}`));
+                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user.uid}`)));
 
                     getDocs(q).then((querySnapshot) => {
                         const groups = querySnapshot.docs.map((doc) => ({
@@ -94,7 +85,7 @@ const Account: React.FC = () => {
                         setLastName(userData.lastName);
                     }
                     if (userData && userData.username) {
-                        setusername(userData.username);
+                        setUsername(userData.username);
                     }
                     if (userData && userData.accountType) {
                         setaccountType(userData.accountType);
@@ -107,50 +98,47 @@ const Account: React.FC = () => {
         }
     }, [user, checkAndUpdateAccountModes]);
 
-    const avatarElement = user ? (
-        avatarUrl ? (
-            <IonAvatar>
-                <Avatar uid={user.uid} size="extrasmall" />
-            </IonAvatar>
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        )
-    ) : (
-        <IonIcon icon={personCircleOutline} />
-    );
 
-    const label = user?.username ? user.username : 'anonymous';
+    const refresh = () => {
+        // Refresh the avatar
+    };
+    // Update the user's avatar
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+    const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const storageRef = ref(storage, `avatars/${user.uid}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot: any) => {
+                    console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                },
+                (error: any) => {
+                    console.error('Error uploading avatar:', error);
+                },
+                () => {
+                    // Notify useAvatar to update the avatar URL
+                    refresh();
+                },
+            );
+        }
+    };
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonMenuButton></IonMenuButton>
-                    </IonButtons>
-                    <IonText slot="start" color="primary" className="BikeBusFont">
-                        <h1>BikeBus</h1>
-                    </IonText>
-                    <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                        <IonChip>
-                            {avatarElement}
-                            <IonLabel>{label}</IonLabel>
-                            <IonText>({accountType})</IonText>
-                        </IonChip>
-                    </IonButton>
-                    <IonPopover isOpen={showPopover} event={popoverEvent} onDidDismiss={() => setShowPopover(false)} className="my-popover">
-                        <Profile />
-                    </IonPopover>
-                </IonToolbar>
-            </IonHeader>
             <IonContent fullscreen>
-                <IonCard>
+                <IonCard className="ion-justify-content-center">
                     <IonCardHeader>
                         <IonTitle>{user?.username}</IonTitle>
                         <IonCardTitle>Account</IonCardTitle>
                     </IonCardHeader>
                     <Avatar uid={user?.uid} size="large" />
+                    <IonButton fill="clear" onClick={(_handleFileInputChange) => fileInputRef.current?.click()}>
+                        Update Avatar
+                    </IonButton>
                     <IonItem>
                         <IonLabel>Account Type</IonLabel>
                         <IonText>{accountType}</IonText>
@@ -170,6 +158,10 @@ const Account: React.FC = () => {
                                 <IonText>{username}</IonText>
                             </IonItem>
                             <IonItem>
+                                <IonLabel position="stacked">Email</IonLabel>
+                                <IonText>{user?.email}</IonText>
+                            </IonItem>
+                            <IonItem>
                                 <IonLabel position="stacked">Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
                             </IonItem>
@@ -181,19 +173,18 @@ const Account: React.FC = () => {
                         <IonCardTitle>BikeBus You Belong To</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
-                        <Link to="/createbikebusgroup">Create a BikeBus Group</Link>
                         {BikeBusGroups.map((group, index) => (
                             <div key={group.id}>
-                            <Link to={`/bikebusgrouppage/${group.id}`}>
-                                {group.BikeBusName}
-                            </Link>
+                                <Link to={`/bikebusgrouppage/${group.id}`}>
+                                    {group.BikeBusName}
+                                </Link>
                             </div>
                         ))}
                     </IonCardContent>
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>BikeBus Routes you created, have ridden or liked</IonCardTitle>
+                        <IonCardTitle>BikeBus Routes you created</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
                     </IonCardContent>
@@ -221,8 +212,6 @@ const Account: React.FC = () => {
                     </IonCardHeader>
                     <IonCardContent>
                         <IonText>Add a Kid Account here</IonText>
-                        <IonText>When a Kid is added, a table shows with the ability to associate a known route and schedule along with the phone device phone number to send invite</IonText>
-                        <IonText>When a Kid attempts to login, a PIN code set by the parent is entered along with the account email address. This same PIN is used for the kid to login</IonText>
                         <IonText>When a Kid logs in, there's only a few visual indicators they're in the app. All they can do is "Start" and "Stop". Parents receive notifications about the ride.</IonText>
                     </IonCardContent>
                 </IonCard>

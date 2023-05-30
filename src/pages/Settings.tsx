@@ -22,6 +22,9 @@ import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import useBikeBusGroup from '../components/useBikeBusGroup';
+import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+
 
 const Settings: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -29,6 +32,7 @@ const Settings: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
   const [accountType, setaccountType] = useState<string>('');
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -69,32 +73,6 @@ const Settings: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton></IonMenuButton>
-          </IonButtons>
-          <IonText slot="start" color="primary" class="BikeBusFont">
-            <h1>BikeBus</h1>
-          </IonText>
-          <IonButton fill="clear" slot="end" onClick={togglePopover}>
-            <IonChip>
-              {avatarElement}
-              <IonLabel>{label}</IonLabel>
-              <IonText>({accountType})</IonText>
-            </IonChip>
-          </IonButton>
-          <IonPopover
-            isOpen={showPopover}
-            event={popoverEvent}
-            onDidDismiss={() => setShowPopover(false)}
-            className="my-popover"
-          >
-            <Profile />
-          </IonPopover>
-
-        </IonToolbar>
-      </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
           <IonToolbar></IonToolbar>

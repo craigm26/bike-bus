@@ -20,14 +20,16 @@ const SetUsername: React.FC = () => {
 
   return (
     <IonPage>
-      <IonItem>
-        <IonLabel position="stacked">Username</IonLabel>
-        <IonInput
-          value={username}
-          placeholder="Enter Username"
-          onIonChange={e => setUsername(e.detail.value!)}
-        />
-      </IonItem>
+        <IonItem>
+          <IonLabel position="floating">@Username</IonLabel>
+          <IonInput
+            type="text"
+            value={username}
+            onIonChange={async (event) => {
+              setUsername(event.detail.value!)
+            }}
+          />
+        </IonItem>
       <IonButton onClick={saveUsername}>Save Username</IonButton>
     </IonPage>
   );
