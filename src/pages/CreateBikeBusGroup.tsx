@@ -13,6 +13,7 @@ import {
     IonAvatar,
     IonPopover,
     IonIcon,
+    IonItem,
   } from '@ionic/react';
   import { useEffect, useState } from 'react';
   import './Help.css';
@@ -25,6 +26,8 @@ import {
   import { db } from '../firebaseConfig';
   import useBikeBusGroup from '../components/useBikeBusGroup';
   import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+  import GroupCalendar from '../components/BikeBusGroup/GroupCalendar';
+  import InviteUser from '../components/BikeBusGroup/InviteUser';
     
   
   const CreateBikeBusGroup: React.FC = () => {
@@ -33,6 +36,7 @@ import {
     const [accountType, setaccountType] = useState<string>('');
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
+
   
     const togglePopover = (e: any) => {
       console.log('togglePopover called');
@@ -53,6 +57,9 @@ import {
     ) : (
       <IonIcon icon={personCircleOutline} />
     );
+
+    // add a button to save information from the calendar and invite user to the group
+
     
     useEffect(() => {
       if (user) {
@@ -119,6 +126,12 @@ import {
           <IonHeader collapse="condense">
             <IonToolbar></IonToolbar>
           </IonHeader>
+          <GroupCalendar />
+          <InviteUser />
+          <IonItem>
+            <IonLabel>Save</IonLabel>
+            <IonButton>Save</IonButton>
+          </IonItem>
         </IonContent>
       </IonPage>
     );

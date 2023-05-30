@@ -14,17 +14,18 @@ import {
     IonSelect,
     IonSelectOption,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
-import ViewRouteMap from '../components/Mapping/ViewRouteMap';
+import EditRouteMap from '../components/Mapping/EditRouteMap';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
-
-
+import { useHistory } from 'react-router-dom';
+import { Autocomplete } from '@react-google-maps/api';
+import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 
 
 interface Coordinate {
@@ -37,11 +38,13 @@ interface Route {
     accountType: string;
     description: string;
     endPoint: Coordinate;
+    endPointName: string;
     routeCreator: string;
     routeLeader: string;
     routeName: string;
     routeType: string;
     startPoint: Coordinate;
+    startPointName: string;
     travelMode: string;
     pathCoordinates: Coordinate[];
 }
@@ -55,15 +58,10 @@ const EditRoute: React.FC = () => {
     const [routes, setRoutes] = useState<Route[]>([]);
     const [routeType, setRouteType] = useState('');
     const { id } = useParams<{ id: string }>();
+    const history = useHistory();
+    const startPointRef = usePlacesAutocomplete((location, name) => { });
+    const endPointRef = usePlacesAutocomplete((location, name) => { });
 
-
-
-    type Schedule = {
-        scheduleStartTime: string;
-        scheduleEndTime: string;
-        frequency: string;
-        [key: string]: string;
-    };
 
 
     const fetchRoutes = useCallback(async () => {
@@ -146,6 +144,7 @@ const EditRoute: React.FC = () => {
         };
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
+        history.push(`/ViewRoute/${selectedRoute.id}`)
     };
 
 
@@ -187,20 +186,26 @@ const EditRoute: React.FC = () => {
                             <IonSelectOption value="CAR">Car</IonSelectOption>
                         </IonSelect>
                     </IonItem>
-
-                    {/* Other items */}
-                </IonList>
-                <IonButton onClick={handleSave}>Save</IonButton>
-                <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
-                {selectedRoute && (
-                    <ViewRouteMap
-                        path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
-                        startGeo={new GeoPoint(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
-                        endGeo={new GeoPoint(selectedRoute.endPoint.lat, selectedRoute.endPoint.lng)}
-                        stations={[]}
-                    />
-                )}
-            </IonContent >
+                    <IonItem>
+                        <IonLabel>Start Point:</IonLabel>
+                        <IonInput value={selectedRoute?.startPointName} ref={startPointRef} />
+                </IonItem>
+                <IonItem>
+                    <IonLabel>End Point:</IonLabel>
+                    <IonInput value={selectedRoute?.endPointName} ref={endPointRef} />
+                </IonItem>
+            </IonList>
+            <IonButton onClick={handleSave}>Save</IonButton>
+            <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+            {selectedRoute && (
+                <EditRouteMap
+                    path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
+                    startGeo={new GeoPoint(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
+                    endGeo={new GeoPoint(selectedRoute.endPoint.lat, selectedRoute.endPoint.lng)}
+                    stations={[]}
+                />
+            )}
+        </IonContent >
         </IonPage >
     );
 
