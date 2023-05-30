@@ -145,9 +145,7 @@ const EditRoute: React.FC = () => {
             endPoint: selectedRoute.endPoint,
         };
         await updateDoc(routeRef, updatedRoute);
-        //then redirect to view route page
         alert('Route Updated');
-
     };
 
 

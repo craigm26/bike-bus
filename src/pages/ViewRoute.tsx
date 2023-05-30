@@ -3,27 +3,21 @@ import {
     IonPage,
     IonItem,
     IonList,
-    IonInput,
     IonLabel,
     IonButton,
     IonHeader,
     IonToolbar,
-    IonPopover,
-    IonText,
     IonTitle,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
-
-
-
 
 interface Coordinate {
     lat: number;
@@ -40,6 +34,10 @@ interface Route {
     routeName: string;
     routeType: string;
     startPoint: Coordinate;
+    startPointName: string;
+    endPointName: string;
+    startPointAddress: string;
+    endPointAddress: string;
     travelMode: string;
     pathCoordinates: Coordinate[];
 }
@@ -51,30 +49,7 @@ const ViewRoute: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const [routes, setRoutes] = useState<Route[]>([]);
-    const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
-    const [routeType, setRouteType] = useState('');
-    const [scheduleName, setScheduleName] = useState<string>('');
-    const [scheduleDescription, setScheduleDescription] = useState<string>('');
-    const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
-    const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
-    const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
-    const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
-    const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
-    const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
-    const [showGroupModal, setShowGroupModal] = useState(false);
-    const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
     const { id } = useParams<{ id: string }>();
-
-
-
-    type Schedule = {
-        scheduleStartTime: string;
-        scheduleEndTime: string;
-        frequency: string;
-        [key: string]: string;
-    };
-
 
     const fetchRoutes = useCallback(async () => {
         const uid = user?.uid;
@@ -110,7 +85,7 @@ const ViewRoute: React.FC = () => {
                 pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
                     lat: coord.latitude,
                     lng: coord.longitude,
-                })), // Transform pathCoordinates
+                })), 
             };
             setSelectedRoute(routeData);
             console.log(routeData.pathCoordinates, routeData.startPoint, routeData.endPoint);
@@ -121,7 +96,7 @@ const ViewRoute: React.FC = () => {
 
     useEffect(() => {
         if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+            headerContext.setShowHeader(true);
         }
     }, [headerContext]);
 
@@ -138,7 +113,6 @@ const ViewRoute: React.FC = () => {
             });
         }
     }, [user]);
-
 
 
     return (
@@ -165,10 +139,11 @@ const ViewRoute: React.FC = () => {
                     <IonItem>
                         <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
                     </IonItem>
-                    <IonItem>Starting Point: Lat {selectedRoute?.startPoint.lat}, Lng {selectedRoute?.startPoint.lng}</IonItem>
-                    <IonItem>End Point: Lat {selectedRoute?.endPoint.lat}, Lng {selectedRoute?.endPoint.lng}</IonItem>
+                    <IonItem>Starting Point: {selectedRoute?.startPointName}, {selectedRoute?.startPointAddress}</IonItem>
+                    <IonItem>Ending Point: {selectedRoute?.endPointName}, {selectedRoute?.endPointAddress}</IonItem>
                 </IonList>
                 <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+                <IonButton routerLink={`/CreateBikeBusGroup/`}>Create BikeBus Group</IonButton>
                 {selectedRoute && (
                     <ViewRouteMap
                         path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
@@ -177,7 +152,6 @@ const ViewRoute: React.FC = () => {
                         stations={[]}
                     />
                 )}
-
             </IonContent >
         </IonPage >
     );
