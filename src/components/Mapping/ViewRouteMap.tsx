@@ -21,7 +21,7 @@ interface ViewRouteMapProps {
 }
 
 
-const containerStyle = {
+const containerMapStyle = {
     width: '100%',
     height: '600px',
 };
@@ -32,9 +32,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    const [routeType, setRouteType] = useState("SCHOOL");
     const [stationsIDs, setStationsIDs] = useState<Station[]>([]);
-    const [pathCoordinates, setPathCoordinates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.latitude,
@@ -73,9 +71,16 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
             <IonRow>
                 <IonCol>
                     <GoogleMap
-                        mapContainerStyle={containerStyle}
+                        mapContainerStyle={containerMapStyle}
                         center={mapCenter}
                         zoom={12}
+                        options={{
+                            mapTypeControl: false,
+                            streetViewControl: false,
+                            fullscreenControl: true,
+                            disableDoubleClickZoom: true,
+                            disableDefaultUI: true, 
+                        }}
                     >
                         <Marker
                             position={{ lat: startGeo.latitude, lng: startGeo.longitude }}
@@ -94,6 +99,10 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
                                 strokeOpacity: 1.0,
                                 strokeWeight: 2,
                                 geodesic: true,
+                                draggable: true,
+                                editable: true,
+                                visible: true,
+
                             }}
                         />
                     </GoogleMap>

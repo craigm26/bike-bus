@@ -23,7 +23,7 @@ import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
-import { personCircleOutline, playOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, playOutline, walkOutline } from "ionicons/icons";
 import useBikeBusGroup from "../components/useBikeBusGroup";
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
@@ -49,18 +49,19 @@ const Map: React.FC = () => {
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });;
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.SearchBox | null>(null);
+  const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
+  const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 0,
     lng: 0,
   });
   const [mapZoom, setMapZoom] = useState(15);
-  const [newMapCenter, setNewMapCenter] = useState({ lat: 38, lng: -121 });
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
@@ -69,21 +70,35 @@ const Map: React.FC = () => {
   const [distance, setDistance] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
   const [arrivalTime, setArrivalTime] = useState<string>('');
-  const [startTrip, setStartTrip] = useState<boolean>(false);
-  const [endTrip, setEndTrip] = useState<boolean>(false);
   const [routeName, setRouteName] = useState<string>('');
   const [routeDescription, setRouteDescription] = useState<string>('');
-  const [routeDistance, setRouteDistance] = useState<string>('');
-  const [routeDuration, setRouteDuration] = useState<string>('');
   const [routeStartLocation, setRouteStartLocation] = useState<string>('');
-  const [routeTypeSelector, setRouteTypeSelector] = useState<string>('');
-  const [showModal, setShowModal] = useState(false);
-  const [routeId, setRouteId] = useState<string | null>(null);
+  const [routeStartName, setRouteStartName] = useState<string>('');
+  const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
+  const [routeEndName, setRouteEndName] = useState<string>('');
+  const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
   const [routeType, setRouteType] = useState("SCHOOL");
   const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [startPointAdress, setStartPointAdress] = useState<string>('');
+  const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>('');
+  const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>('');
+  const [endPointAdress, setEndPointAdress] = useState<string>('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [userLocationAddress, setUserLocationAddress] = useState<string>('');
 
+  type Point = {
+    lat: number;
+    lng: number;
+  };
 
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [endPoint, setEndPoint] = useState<Point | null>(null);
+  const [currentLocationRow, setCurrentLocationRow] = useState(true);
+  const [destinationRow, setDestinationRow] = useState(false);
+  const [directionsRow, setDirectionsRow] = useState(false);
+  const [detailedDirectionsRow, setDetailedDirectionsRow] = useState(false);
+  const [travelModeRow, setTravelModeRow] = useState(false);
+  const [createRouteRow, setCreateRouteRow] = useState(false);
 
 
   useEffect(() => {
@@ -103,6 +118,13 @@ const Map: React.FC = () => {
     setShowMap(true);
     setMapCenter(userLocation);
     watchLocation();
+    onPlaceChangedStart();
+    setCurrentLocationRow(false);
+    setDestinationRow(true);
+    setDirectionsRow(false);
+    setCreateRouteRow(false);
+    setDetailedDirectionsRow(false);
+    setTravelModeRow(false);
   };
 
   const watchLocation = useCallback(() => {
@@ -114,6 +136,24 @@ const Map: React.FC = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(userLocation);
+          setMapCenter(userLocation);
+          // Get user location address
+          const geocoder = new google.maps.Geocoder();
+          const latlng = new google.maps.LatLng(userLocation.lat, userLocation.lng);
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === "OK") {
+              if (results && results[0]) {
+                const userLocationAddress = `${results[0].formatted_address}`;
+                setUserLocationAddress(userLocationAddress);
+                const selectedStartLocation = { lat: userLocation.lat, lng: userLocation.lng };
+                setSelectedStartLocation(selectedStartLocation);
+              } else {
+                window.alert("No results found");
+              }
+            } else {
+              window.alert("Geocoder failed due to: " + status);
+            }
+          });
         },
         (error) => console.log(error),
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
@@ -125,8 +165,7 @@ const Map: React.FC = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          setUserLocation(newMapCenter); // Update setUserLocation with newMapCenter
-
+          setUserLocation(newMapCenter);
           if (user) {
             const positionRef = ref(rtdb, `userLocations/${user.uid}`);
             set(positionRef, newMapCenter);
@@ -147,8 +186,8 @@ const Map: React.FC = () => {
   useEffect(() => {
     console.log("MapCenter Location: ", mapCenter);
     console.log("User Location: ", userLocation)
-    console.log("Selected Location: ", selectedLocation);
-  }, [mapCenter, selectedLocation, userLocation]);
+    console.log("User Location Address", userLocationAddress)
+  }, [mapCenter, userLocation, userLocationAddress]);
 
   useEffect(() => {
     if (user) {
@@ -183,18 +222,18 @@ const Map: React.FC = () => {
 
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
-    if (userLocation && selectedLocation) {
+    if (selectedStartLocation && selectedEndLocation) {
       setMapCenter({
-        lat: (userLocation.lat + selectedLocation.lat) / 2,
-        lng: (userLocation.lng + selectedLocation.lng) / 2,
+        lat: (selectedEndLocation.lat),
+        lng: (selectedEndLocation.lng),
       });
       setMapZoom(10);
-    } else if (userLocation) {
-      setMapCenter(userLocation);
-    } else if (selectedLocation) {
-      setMapCenter(selectedLocation);
+    } else if (selectedStartLocation) {
+      setMapCenter(selectedStartLocation);
+    } else if (selectedEndLocation) {
+      setMapCenter(selectedEndLocation);
     }
-  }, [userLocation, selectedLocation]);
+  }, [selectedStartLocation, selectedEndLocation]);
 
 
   const avatarElement = user ? (
@@ -209,28 +248,58 @@ const Map: React.FC = () => {
     <IonIcon icon={personCircleOutline} />
   );
 
-
   useEffect(() => {
     console.log("Google Maps script loaded: ", isLoaded);
     console.log("Google Maps load error: ", loadError);
   }, [isLoaded, loadError]);
 
-  const onLoad = (ref: google.maps.places.SearchBox) => {
-    setAutocomplete(ref);
+  const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
+    setAutocompleteStart(ref);
   };
 
-  const onPlaceChanged = () => {
-    if (autocomplete !== null) {
-      const places = autocomplete.getPlaces();
+  const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
+    setAutocompleteEnd(ref);
+  };
+
+  const onPlaceChangedStart = () => {
+    console.log("onPlaceChangedStart called");
+    if (autocompleteStart !== null) {
+      const places = autocompleteStart.getPlaces();
       if (places && places.length > 0) {
+        console.log("Places: ", places);
         const place = places[0];
+        console.log("Place: ", place);
         if (place.geometry && place.geometry.location) {
-          // update selected location instead of map center
-          setSelectedLocation({
+          setSelectedStartLocation({
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           });
-          setRouteStartLocation(`${place.name}, ${place.formatted_address}` ?? ''); // Concatenate place name and formatted address
+          setRouteStartName(`${place.name}` ?? '');
+          setRouteStartFormattedAddress(`${place.formatted_address}` ?? '');
+        }
+      }
+    }
+  };
+
+  console.log("Selected Start Location: ", selectedStartLocation);
+  console.log("Selected End Location: ", selectedEndLocation);
+  console.log("Route Start Name: ", routeStartName);
+  console.log("Route Start Formatted Address: ", routeStartFormattedAddress);
+
+  const onPlaceChangedDestination = () => {
+    console.log("onPlaceChangedDestination called");
+    if (autocompleteEnd !== null) {
+      const places = autocompleteEnd.getPlaces();
+      if (places && places.length > 0) {
+        const place = places[0];
+        console.log("Place: ", place);
+        if (place.geometry && place.geometry.location) {
+          setSelectedEndLocation({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          });
+          setRouteEndName(`${place.name}` ?? '');
+          setRouteEndFormattedAddress(`${place.formatted_address}` ?? '');
           setShowCreateRouteButton(true);
           setShowGetDirectionsButton(true);
 
@@ -239,24 +308,26 @@ const Map: React.FC = () => {
     }
   };
 
+  console.log("Route End Name: ", routeEndName);
+  console.log("Route End Formatted Address: ", routeEndFormattedAddress);
 
   const getDirections = () => {
-    if (userLocation && selectedLocation) {
+    if (selectedStartLocation && selectedEndLocation) {
+      getEndPointAdress();
+      getStartPointAdress();
       const directionsService = new google.maps.DirectionsService();
       const directionsRenderer = new google.maps.DirectionsRenderer();
       directionsRenderer.setMap(mapRef.current);
-
       directionsService.route(
         {
-          origin: userLocation,
-          destination: selectedLocation,
+          origin: selectedStartLocation,
+          destination: selectedEndLocation,
           travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
-          if (status === "OK" && response) { // add response null check here
+          if (status === "OK" && response) {
             directionsRenderer.setDirections(response);
 
-            // Extract the path points from the result and set them in state
             const pathPoints = response.routes[0].overview_path.map(latLng => ({
               latitude: latLng.lat(),
               longitude: latLng.lng(),
@@ -271,8 +342,8 @@ const Map: React.FC = () => {
       const service = new google.maps.DistanceMatrixService();
       service.getDistanceMatrix(
         {
-          origins: [userLocation],
-          destinations: [selectedLocation],
+          origins: [selectedStartLocation],
+          destinations: [selectedEndLocation],
           travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
@@ -301,18 +372,31 @@ const Map: React.FC = () => {
     }
   };
 
+  const getStartPointAdress = async () => {
+    if (startPoint) {
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${startPoint.lat},${startPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
+      const data = await response.json();
+      setSelectedStartLocationAddress(data.results[0].formatted_address);
+    }
+  };
 
-
+  const getEndPointAdress = async () => {
+    if (endPoint) {
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${endPoint.lat},${endPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
+      const data = await response.json();
+      setSelectedEndLocationAddress(data.results[0].formatted_address);
+    }
+  };
 
   const createRoute = () => {
-    if (userLocation && selectedLocation) {
+    if (selectedStartLocation && selectedEndLocation) {
       const directionsService = new google.maps.DirectionsService();
       const directionsRenderer = new google.maps.DirectionsRenderer();
       directionsRenderer.setMap(mapRef.current);
       directionsService.route(
         {
-          origin: userLocation,
-          destination: selectedLocation,
+          origin: selectedStartLocation,
+          destination: selectedEndLocation,
           travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
         },
         (response, status) => {
@@ -331,7 +415,13 @@ const Map: React.FC = () => {
               destination: {
                 lat: route?.legs[0]?.end_location?.lat(),
                 lng: route?.legs[0]?.end_location?.lng()
-              }
+              },
+              startPointAddress: routeStartFormattedAddress,
+              endPointAddress: routeEndFormattedAddress,
+              startPoint: selectedStartLocation,
+              endPoint: selectedEndLocation,
+              routeDescription: routeDescription,
+              pathCoordinates: pathCoordinates,
             };
             console.log("Route Data: ", routeData);
             handleCreateRouteSubmit();
@@ -343,51 +433,47 @@ const Map: React.FC = () => {
     }
   };
 
+
   const handleCreateRouteSubmit = async () => {
+    getEndPointAdress();
+    getStartPointAdress();
     try {
-      // Store the DocumentReference returned by addDoc in a variable
       const routeDocRef = await addDoc(collection(db, 'routes'), {
         routeName: routeName,
         description: routeDescription,
-        startPoint: userLocation,
-        endPoint: selectedLocation,
+        startPoint: selectedStartLocation,
+        endPoint: selectedEndLocation,
         routeType: routeType,
         accountType: accountType,
         travelMode: travelModeSelector,
         routeCreator: "/users/" + user?.uid,
         routeLeader: "/users/" + user?.uid,
         pathCoordinates: pathCoordinates,
-      });
+        startPointName: routeStartName,
+        startPointAddress: routeStartFormattedAddress,
+        endPointName: routeEndName,
+        endPointAddress: routeEndFormattedAddress,
+        distance: distance,
 
-      // go to the /view route page
+      });
       history.push(`/editroute/${routeDocRef.id}`);
     } catch (error) {
       console.log("Error: ", error);
     }
   };
 
-  // for the saveDestination handler, allow the user to save the destination to their account.  save the destination to their account.
   const saveDestination = () => {
-    // if the user is logged in, save the destination to their account
     if (user) {
-      // check to see if user is logged in
       console.log("user is logged in");
-      // if the user is logged in, save the destination to their account
-      // get the user's document from the database
       const userRef = doc(db, "users", user.uid);
-      // update the user's document with the new destination
       updateDoc(userRef, {
-        savedDestinations: arrayUnion(selectedLocation)
+        savedDestinations: arrayUnion(setEndPointAdress)
       });
     } else {
-      // if the user is not logged in, prompt them to log in
       console.log("user is not logged in");
-      // if the user is not logged in, prompt them to log in
-      // show the login modal
       setShowLoginModal(true);
     }
   };
-
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -406,10 +492,8 @@ const Map: React.FC = () => {
           <>
             <IonGrid>
               <IonRow>
-                <IonCol>
-                  <div className="location-button-container">
-                    <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
-                  </div>
+                <IonCol className="location-button-container">
+                  <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow>
@@ -441,64 +525,76 @@ const Map: React.FC = () => {
               >
                 <IonGrid className="search-container">
                   <IonRow className="current-location">
+                    <IonButton onClick={getLocation}>
+                      <IonIcon icon={locateOutline} />
+                    </IonButton>
                     <IonCol>
-                      <IonLabel>Current Location:{avatarElement}</IonLabel>
-                      <IonLabel>Travel Mode:</IonLabel>
-                      <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                        setTravelMode(e.detail.value);
-                        setTravelModeSelector(e.detail.value);
-                      }}>
-                        <IonSegmentButton value="WALKING">
-                          <IonLabel>Walking</IonLabel>
-                        </IonSegmentButton>
-                        <IonSegmentButton value="BICYCLING">
-                          <IonLabel>Bicycling</IonLabel>
-                        </IonSegmentButton>
-                        <IonSegmentButton value="DRIVING">
-                          <IonLabel>Driving</IonLabel>
-                        </IonSegmentButton>
-                        <IonSegmentButton value="TRANSIT">
-                          <IonLabel>Transit</IonLabel>
-                        </IonSegmentButton>
-                      </IonSegment>
-                    </IonCol>
-                    <IonCol className="Destination-box">
-                      <IonLabel>Destination: {routeStartLocation}</IonLabel>
                       <StandaloneSearchBox
-                        onLoad={onLoad}
-                        onPlacesChanged={onPlaceChanged}
+                        onLoad={onLoadStartingLocation}
+                        onPlacesChanged={onPlaceChangedStart}
                       >
                         <input
                           type="text"
-                          placeholder="Enter a Destination"
+                          placeholder={userLocationAddress}
                           style={{
                           }}
                         />
                       </StandaloneSearchBox>
-                      {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
-                      {showGetDirectionsButton && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
-                      {showGetDirectionsButton && <IonButton onClick={createRoute}>Create Route</IonButton>}
-                    </IonCol>
-                    <IonCol>
-                      <IonRow>
-                        <IonLabel>Distance: {distance} miles </IonLabel>
-                        <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                        <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                        <IonRow className="map-directions-after-get">
-                          <IonCol>
-                            <IonLabel>Directions:</IonLabel>
-                          </IonCol>
-                        </IonRow>
-                      </IonRow>
                     </IonCol>
                   </IonRow>
+                  <IonCol className="Destination-box">
+                    <StandaloneSearchBox
+                      onLoad={onLoadDestinationValue}
+                      onPlacesChanged={onPlaceChangedDestination}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Enter a Destination"
+                        style={{
+                        }}
+                      />
+                    </StandaloneSearchBox>
+                    {showGetDirectionsButton && <IonRow className="travel-mode-row">"
+                      <IonCol>
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                          setTravelMode(e.detail.value);
+                          setTravelModeSelector(e.detail.value);
+                        }}>
+                          <IonSegmentButton value="WALKING">
+                            <IonIcon icon={walkOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="BICYCLING">
+                            <IonIcon icon={bicycleOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="DRIVING">
+                            <IonIcon icon={carOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="TRANSIT">
+                            <IonIcon icon={busOutline} />
+                          </IonSegmentButton>
+                        </IonSegment>
+                      </IonCol>
+                    </IonRow>}
+                    {showGetDirectionsButton && <IonButton onClick={getDirections}>Get Directions</IonButton>}
+                    {showGetDirectionsButton && <IonButton onClick={createRoute}>Create Route</IonButton>}
+                    {showGetDirectionsButton && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && <IonRow className="map-directions-after-get">
+                      <IonLabel>Distance: {distance} miles </IonLabel>
+                      <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                      <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                    </IonRow>}
+                  </IonCol>
                 </IonGrid>
                 <div>
                   {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
                   {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
                 </div>
                 <div>
-                  {selectedLocation && <Marker position={selectedLocation} />}
+                  {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                  {selectedEndLocation && <Marker position={selectedEndLocation} />}
                 </div>
                 <Polyline
                   path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
@@ -507,6 +603,8 @@ const Map: React.FC = () => {
                     strokeOpacity: 1.0,
                     strokeWeight: 2,
                     geodesic: true,
+                    editable: true,
+                    draggable: true,
                   }}
                 />
               </GoogleMap>
@@ -544,16 +642,16 @@ const Map: React.FC = () => {
               header="Start Actions:"
               buttons={[
                 {
-                  text: "Start a Ride",
+                  text: "Start a Trip",
                   role: "destructive",
                   data: {
-                    action: "startRide",
+                    action: "startTrip",
                   },
                 },
                 {
-                  text: "Start a BikeBus Ride",
+                  text: "Start a BikeBus Trip",
                   data: {
-                    action: "startBikeBusRide",
+                    action: "startBikeBusTrip",
                   },
                 },
                 {

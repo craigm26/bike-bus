@@ -185,8 +185,6 @@ const ViewRouteList: React.FC = () => {
                             <IonItem>
                                 <IonLabel>{route.routeName}</IonLabel>
                                 <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
-                                <IonButton routerLink={`/EditRoute/${route.id}`}>Edit Route</IonButton>
-                                <IonButton routerLink={``}>Create BikeBus Group</IonButton>
                             </IonItem>
                         ))}
                     </IonList>

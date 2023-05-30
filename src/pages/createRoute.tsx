@@ -8,6 +8,17 @@ import { HeaderContext } from '../components/HeaderContext';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { RouteContext } from '../components/RouteContext';
 import { CurrentLocationContext } from '../components/CurrentLocationContext';
+import React from 'react';
+
+type Point = {
+  lat: number;
+  lng: number;
+};
+
+type LocationContextProps = {
+  lat: number;
+  lng: number;
+};
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -17,12 +28,17 @@ const CreateRoute: React.FC = () => {
   const [routeName, setRouteName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [accountType, setAccountType] = useState<string>('');
-  const [startPoint, setStartPoint] = useState<string>('');
   const [travelMode, setTravelMode] = useState<string>('');
   const [routeType, setRouteType] = useState<string>('');
   const headerContext = useContext(HeaderContext);
-  const endPoint = useContext(CurrentLocationContext);
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [endPoint, setEndPoint] = useState<Point | null>(null);
+  const [startPointAdress, setStartPointAdress] = useState<string>('');
+  const [endPointAdress, setEndPointAdress] = useState<string>('');
+  const CurrentLocationContext = React.createContext<LocationContextProps | undefined>(undefined);
   const currentLocation = useContext(CurrentLocationContext);
+
+  
 
   useEffect(() => {
     if (headerContext) {
@@ -53,6 +69,23 @@ const CreateRoute: React.FC = () => {
     libraries,
   });
 
+  const getStartPointAdress = async () => {
+    if (startPoint) {
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${startPoint.lat},${startPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
+      const data = await response.json();
+      setStartPointAdress(data.results[0].formatted_address);
+    }
+  };
+  
+  const getEndPointAdress = async () => {
+    if (endPoint) {
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${endPoint.lat},${endPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
+      const data = await response.json();
+      setEndPointAdress(data.results[0].formatted_address);
+    }
+  };
+  
+
   const handleSubmit = async () => {
     try {
       await addDoc(collection(db, 'routes'), {
@@ -60,6 +93,8 @@ const CreateRoute: React.FC = () => {
         description,
         startPoint,
         endPoint,
+        startPointAdress: getStartPointAdress(),
+        endPointAdress: getEndPointAdress(),
         routeType,
         accountType,
         travelMode,
@@ -99,7 +134,7 @@ const CreateRoute: React.FC = () => {
                 <IonInput value={description} onIonChange={e => setDescription(e.detail.value!)} />
                 <IonText>Travel Mode</IonText>
                 <IonItem>
-                <IonSegment value={travelMode} onIonChange={(e: CustomEvent) => setTravelMode(e.detail.value as string)}>
+                  <IonSegment value={travelMode} onIonChange={(e: CustomEvent) => setTravelMode(e.detail.value as string)}>
                     <IonSegmentButton value="BICYCLING">
                       <IonLabel>Bicycling</IonLabel>
                     </IonSegmentButton>
@@ -113,7 +148,7 @@ const CreateRoute: React.FC = () => {
                 </IonItem>
                 <IonText>Route Type</IonText>
                 <IonItem>
-                <IonSegment value={routeType} onIonChange={(e: CustomEvent) => setRouteType(e.detail.value as string)}>
+                  <IonSegment value={routeType} onIonChange={(e: CustomEvent) => setRouteType(e.detail.value as string)}>
                     <IonSegmentButton value="school">
                       <IonLabel>School</IonLabel>
                     </IonSegmentButton>
