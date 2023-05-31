@@ -143,7 +143,7 @@ const ViewRoute: React.FC = () => {
                     <IonItem>Ending Point: {selectedRoute?.endPointName}, {selectedRoute?.endPointAddress}</IonItem>
                 </IonList>
                 <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-                <IonButton routerLink={`/CreateBikeBusGroup/`}>Create BikeBus Group</IonButton>
+                <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
                 {selectedRoute && (
                     <ViewRouteMap
                         path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}

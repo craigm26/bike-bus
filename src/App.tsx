@@ -315,9 +315,7 @@ const App: React.FC = () => {
                       <Route exact path="/CreateRoute">
                         <CreateRoute />
                       </Route>
-                      <Route exact path="/CreateBikeBusGroup">
-                        <CreateBikeBusGroup />
-                      </Route>
+                      <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
                       <Route exact path="/CreateBikeBusStation">
                         <CreateBikeBusStation />
                       </Route>
