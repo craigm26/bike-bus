@@ -66,7 +66,7 @@ const Map: React.FC = () => {
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
   const [travelMode, setTravelMode] = useState<string>('');
-  const [travelModeSelector, setTravelModeSelector] = useState<string>('');
+  const [travelModeSelector, setTravelModeSelector] = useState<string>('BICYCLING');
   const [distance, setDistance] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
   const [arrivalTime, setArrivalTime] = useState<string>('');
@@ -535,6 +535,7 @@ const Map: React.FC = () => {
                       >
                         <input
                           type="text"
+                          autoComplete="on"
                           placeholder={userLocationAddress}
                           style={{
                           }}
@@ -542,15 +543,17 @@ const Map: React.FC = () => {
                       </StandaloneSearchBox>
                     </IonCol>
                   </IonRow>
-                  <IonCol className="Destination-box">
+                  <IonCol className="destination-box">
                     <StandaloneSearchBox
                       onLoad={onLoadDestinationValue}
                       onPlacesChanged={onPlaceChangedDestination}
                     >
                       <input
                         type="text"
+                        autoComplete="on"
                         placeholder="Enter a Destination"
                         style={{
+                          width: "100%",
                         }}
                       />
                     </StandaloneSearchBox>
