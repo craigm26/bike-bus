@@ -5,7 +5,7 @@ import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import UseBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
-import BikeBusGroup from '../components/BikeBusGroup';
+import BikeBusGroup from '../components/BikeBusGroup/BikeBusGroup';
 import { HeaderContext } from '../components/HeaderContext';
 import InviteUser from '../components/BikeBusGroup/InviteUser';
 

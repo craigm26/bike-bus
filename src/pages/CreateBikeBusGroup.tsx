@@ -60,6 +60,8 @@ const CreateBikeBusGroup: React.FC = () => {
   const [schedules, setSchedules] = useState<Array<any>>([]);
   const [startTime, setStartTime] = useState('07:00');
   const [endTime, setEndTime] = useState('08:00');
+  const [allSchedules, setAllSchedules] = useState<Array<any>>([]);
+
 
 
 
@@ -145,17 +147,26 @@ const CreateBikeBusGroup: React.FC = () => {
     }
   }
 
+  if (!user || !user.uid) {
+    // If the user object is null, redirect to the login page
+    return <></>;
+  }
+
 // 1. create a new BikeBus group in firestore
 const createBikeBusGroupInFirestore = async () => {
   const bikeBusData = {
     name: BikeBusName,
     description: BikeBusDescription,
-    route: route,
-    schedules: [] // This will be updated later
+    route: [doc(db, 'routes', RouteID)],
+    BikeBusLeaders: [doc(db, 'users', user.uid)],    
+    BikeBusMembers: [doc(db, 'users', user.uid)],
+    BikeBusCreator: doc(db, 'users', user.uid), 
+    schedules: [] 
   };
   const docRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
   return docRef.id;
 };
+
 
 // 2. create the schedule with a unique id in a collection in firestore called "schedules"
 const createScheduleInFirestore = async (schedule: any) => {
@@ -167,7 +178,7 @@ const createScheduleInFirestore = async (schedule: any) => {
 // 3. add the schedule to the BikeBus group in firestore
 const addScheduleToBikeBusGroupInFirestore = async (bikebusgroupId: string, scheduleId: string) => {
   const bikebusgroupRef = doc(db, 'bikebusgroups', bikebusgroupId);
-  await setDoc(bikebusgroupRef, { schedules: scheduleId }, { merge: true });
+  await setDoc(bikebusgroupRef, { schedules: '/schedules/' + scheduleId }, { merge: true });
 };
 
 // 4. add the schedule to the BikeBus group in the UI
@@ -186,6 +197,8 @@ const createScheduleInMemoryAndAddtoUI = () => {
 
   // Add the new schedule to the schedules state
   setSchedules(prevState => [...prevState, newSchedule]);
+  setAllSchedules(prevState => [...prevState, newSchedule]);
+
 
   // Close the modal
   setShowScheduleModal(false);
@@ -195,13 +208,14 @@ const createScheduleInMemoryAndAddtoUI = () => {
 const createBikeBusGroupAndSchedule = async () => {
   const bikebusgroupId = await createBikeBusGroupInFirestore();
 
-  for (const schedule of schedules) {
+  for (const schedule of allSchedules) {
     const scheduleId = await createScheduleInFirestore(schedule);
     await addScheduleToBikeBusGroupInFirestore(bikebusgroupId, scheduleId);
   }
 
   history.push(`/bikebusgrouppage/${bikebusgroupId}`);
 };
+
 
 
   return (
@@ -283,6 +297,11 @@ const createBikeBusGroupAndSchedule = async () => {
       <IonContent>
         <IonItem>
           <IonLabel>Schedule Name</IonLabel>
+          {allSchedules.map(schedule => (
+          <IonLabel key={schedule.id}>
+            {schedule.scheduleName} - {schedule.startTime} to {schedule.endTime}
+          </IonLabel>
+        ))}
             <IonInput aria-label="scheduleName"
               placeholder="Schedule Name"
               value={scheduleName}

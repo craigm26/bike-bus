@@ -1,6 +1,6 @@
 {
   "rules": {
-    ".read": "now < 1685602800000",  
-    ".write": "now < 1685602800000",  
+    ".read": "true",  
+    ".write": "auth.uid === auth"  
   }
 }
