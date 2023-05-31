@@ -7,6 +7,8 @@ import UseBikeBusGroup from '../components/useBikeBusGroup';
 import { useAvatar } from '../components/useAvatar';
 import BikeBusGroup from '../components/BikeBusGroup';
 import { HeaderContext } from '../components/HeaderContext';
+import InviteUser from '../components/BikeBusGroup/InviteUser';
+
 
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();

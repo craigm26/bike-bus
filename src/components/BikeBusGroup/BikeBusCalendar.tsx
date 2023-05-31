@@ -11,21 +11,26 @@ interface Event {
     title: string;
 }
 
-const GroupCalendar: React.FC = () => {
+const BikeBusCalendar: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
 
     useEffect(() => {
-        // Fetch data from Firestore here
-        // After fetching data, format it as the array of 'Event' objects and call setEvents
-        // For now, let's use a dummy event data
-        const dummyEvents: Event[] = [
-            {
-                start: new Date(),
-                end: new Date(moment().add(1, "days").toDate()),
-                title: "Dummy Event"
-            },
-        ];
-        setEvents(dummyEvents);
+        // Initialize the array to hold our events
+        const dailyEvents: Event[] = [];
+
+        // Generate an event for each weekday
+        for (let i = 0; i < 5; i++) {
+            const start = moment().startOf('week').add(i, 'days').hours(8).minutes(0);
+            const end = moment(start).add(1, 'hour'); // Adjust this if you want a different end time
+
+            dailyEvents.push({
+                start: start.toDate(),
+                end: end.toDate(),
+                title: 'Daily Event',
+            });
+        }
+
+        setEvents(dailyEvents);
     }, []);
 
     return (
@@ -41,4 +46,4 @@ const GroupCalendar: React.FC = () => {
     );
 };
 
-export default GroupCalendar;
+export default BikeBusCalendar;
