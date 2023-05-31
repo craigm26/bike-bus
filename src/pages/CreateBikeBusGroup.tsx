@@ -58,6 +58,8 @@ const CreateBikeBusGroup: React.FC = () => {
   const [BikeBusName, setBikeBusName] = useState('');
   const [BikeBusDescription, setBikeBusDescription] = useState('');
   const [schedules, setSchedules] = useState<Array<any>>([]);
+  const [startTime, setStartTime] = useState('07:00');
+  const [endTime, setEndTime] = useState('08:00');
 
 
 
@@ -133,13 +135,11 @@ const CreateBikeBusGroup: React.FC = () => {
     Sunday: false
   });
 
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
 
   const timeOptions = [];
   for (let i = 0; i < 24; i++) {
-    for (let j = 0; j < 60; j += 30) {
+    for (let j = 0; j < 60; j++) {
       const time = `${String(i).padStart(2, '0')}:${String(j).padStart(2, '0')}`;
       timeOptions.push(time);
     }
