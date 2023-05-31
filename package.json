@@ -14,6 +14,8 @@
     "@firebase/app": "^0.9.9",
     "@firebase/auth": "^0.23.1",
     "@firebase/storage": "^0.11.2",
+    "@fullcalendar/react": "^6.1.8",
+    "@fullcalendar/timegrid": "^6.1.8",
     "@ionic/cli": "^7.1.1",
     "@ionic/react": "^7.0.7",
     "@ionic/react-router": "^7.0.0",
