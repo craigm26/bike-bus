@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -91,7 +91,40 @@ const BikeBusGroupPage: React.FC = () => {
     fetchBikeBus();
   }, [fetchBikeBus, user]);
 
+  // take the groupData and get the routes from the references generated from the groupData. 
+  const fetchRoutes = useCallback(async () => {
+    if (groupData?.BikeBusRoutes && Array.isArray(groupData.BikeBusRoutes)) {
+      const routes = groupData.BikeBusRoutes.map((route: any) => {
+        return getDoc(route).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const routeData = docSnapshot.data();
+            // Check if routeData exists before spreading
+            return routeData ? {
+              ...routeData,
+              id: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          } else {
+            console.log("No such document!");
+          }
+        })
+        .catch((error) => {
+          console.log("Error getting route document:", error);
+        });
+      });
+      const routesData = await Promise.all(routes);
+      setRoutesData(routesData);
+    }
+  }, [groupData]);
+  
+  
+  
+  useEffect(() => {
+    console.log(groupData);
+    fetchRoutes();
+  }
+    , [fetchRoutes, groupData]);
 
+  console.log(routesData);
   console.log(groupData);
 
   return (
@@ -112,15 +145,24 @@ const BikeBusGroupPage: React.FC = () => {
             <IonList>
               <IonItem>
                 <IonLabel>BikeBus Leader</IonLabel>
-                <IonText>{groupData?.BikeBusLeaders.map((leader: any) => leader.BikeBusLeaders)}</IonText>
               </IonItem>
               <IonItem>
                 <IonLabel>BikeBus Description</IonLabel>
-                <IonText>{groupData?.BikeBusDescription}</IonText>
+                <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
               </IonItem>
               <IonItem>
                 <IonLabel>BikeBus Routes</IonLabel>
-                </IonItem>
+                <IonList>
+                  {routesData.map((route, index) => (
+                    <IonItem key={index}>
+                      <IonLabel>{route?.routeName} </IonLabel>
+                      <Link to={`/ViewRoute/${route.id}`}>
+                        <IonButton>View Route</IonButton>
+                      </Link>
+                    </IonItem>
+                  ))}
+                </IonList>
+              </IonItem>
             </IonList>
           </IonCardContent>
         </IonCard>
