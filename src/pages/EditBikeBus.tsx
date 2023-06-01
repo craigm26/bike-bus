@@ -20,12 +20,9 @@ import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
-
-
 
 
 interface BikeBus {
