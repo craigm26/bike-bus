@@ -6,6 +6,7 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link } from 'react-router-dom';
+import { schedule } from 'firebase-functions/v1/pubsub';
 
 interface Coordinate {
   lat: number;
@@ -26,6 +27,10 @@ interface BikeBus {
   travelMode: string;
 }
 
+interface Schedule {
+  id: string;
+}
+
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();
   const { avatarUrl } = useAvatar(user?.uid);
@@ -36,6 +41,7 @@ const BikeBusGroupPage: React.FC = () => {
   const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
   const [membersData, setMembersData] = useState<any[]>([]);
   const [leadersData, setLeadersData] = useState<any[]>([]);
+  const [schedulesData, setSchedulesData] = useState<any[]>([]);
 
 
   const headerContext = useContext(HeaderContext);
@@ -139,7 +145,7 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }, [groupData]);
 
-const fetchMembers = useCallback(async () => {
+  const fetchMembers = useCallback(async () => {
     if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
       const members = groupData.BikeBusMembers.map((member: any) => {
         return getDoc(member).then((docSnapshot) => {
@@ -166,12 +172,42 @@ const fetchMembers = useCallback(async () => {
     , [groupData]);
 
 
+  // featchSchedules is an array. It should use groupData.BikeBusSchedules to get the schedule document and then make the properties of the schedule document available to the BikeBusGroupPage.tsx
+  const fetchSchedules = useCallback(async () => {
+    if (groupData?.BikeBusSchedules && Array.isArray(groupData.BikeBusSchedules)) {
+      const schedules = groupData.BikeBusSchedules.map((schedule: any) => {
+        return getDoc(schedule).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const schedulesData = docSnapshot.data();
+            // Check if scheduleData exists before spreading
+            return schedulesData ? {
+              ...schedulesData,
+              id: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          } else {
+            console.log("No such document!");
+          }
+        })
+          .catch((error) => {
+            console.log("Error getting schedule document:", error);
+          });
+      }
+      );
+      const schedulesData = await Promise.all(schedules);
+      setSchedulesData(schedulesData);
+    }
+  }
+    , [groupData]);
+
+
+
   useEffect(() => {
     fetchRoutes();
     fetchLeaders();
     fetchMembers();
+    fetchSchedules();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules]);
 
   console.log(groupData);
 
@@ -198,9 +234,9 @@ const fetchMembers = useCallback(async () => {
               <IonItem>
                 <IonLabel>Leaders</IonLabel>
                 <IonList>
-                  {routesData.map((users, index) => (
+                  {leadersData.map((users, index) => (
                     <IonItem key={index}>
-                      <IonLabel>{users?.displayName}</IonLabel>
+                      <IonLabel>{users?.username}</IonLabel>
                     </IonItem>
                   ))}
                 </IonList>
@@ -210,7 +246,7 @@ const fetchMembers = useCallback(async () => {
                 <IonList>
                   {membersData.map((users, index) => (
                     <IonItem key={index}>
-                      <IonLabel>{users?.displayName}</IonLabel>
+                      <IonLabel>{users?.username}</IonLabel>
                     </IonItem>
                   ))}
                 </IonList>
@@ -226,6 +262,18 @@ const fetchMembers = useCallback(async () => {
                     <IonItem key={index}>
                       <Link to={`/ViewRoute/${route.id}`}>
                         <IonButton>{route?.routeName}</IonButton>
+                      </Link>
+                    </IonItem>
+                  ))}
+                </IonList>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Schedules</IonLabel>
+                <IonList>
+                  {schedulesData.map((schedule, index) => (
+                    <IonItem key={index}>
+                      <Link to={`/ViewSchedule/${schedule.id}`}>
+                        <IonButton>{schedule?.scheduleName}</IonButton>
                       </Link>
                     </IonItem>
                   ))}
