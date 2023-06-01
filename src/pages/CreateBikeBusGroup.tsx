@@ -15,8 +15,6 @@ import {
   IonItem,
   IonCheckbox,
   IonItemGroup,
-  IonSelect,
-  IonSelectOption,
   IonFooter,
   IonModal,
   IonTitle,
@@ -32,16 +30,12 @@ import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
-import GroupCalendar from '../components/BikeBusGroup/BikeBusCalendar';
-import InviteUser from '../components/BikeBusGroup/InviteUser';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import RecurrenceSelect from '../components/BikeBusGroup/RecurrenceSelect';
-import FullCalendar from '@fullcalendar/react';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import { Calendar, momentLocalizer } from 'react-big-calendar'
+import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
-import { addDoc, collection, Timestamp, setDoc, doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, setDoc, doc, getDoc } from 'firebase/firestore';
 
 
 
@@ -65,18 +59,10 @@ const CreateBikeBusGroup: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-
-
-
   console.log("RouteID: ", RouteID);
-
-
-
 
   // fetch route data from the previous step of "CreateBikeBusGroup" button with the id from the URL and user data from firestore
   const history = useHistory();
-
-
 
   const fetchRoute = async () => {
     const routeRef = doc(db, 'routes', RouteID);
@@ -218,9 +204,6 @@ const CreateBikeBusGroup: React.FC = () => {
 
     history.push(`/bikebusgrouppage/${bikebusgroupId}`);
   };
-
-
-
   return (
     <IonPage>
       <IonHeader>
@@ -356,8 +339,6 @@ const CreateBikeBusGroup: React.FC = () => {
                 >
                 </IonDatetime>
             </IonItem>
-
-
             <IonItem>
               <IonLabel>Is Recurring?</IonLabel>
               <IonCheckbox slot="start" checked={isRecurring} onIonChange={e => setIsRecurring(e.detail.checked)} />

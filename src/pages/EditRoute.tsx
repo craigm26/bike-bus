@@ -174,8 +174,8 @@ const EditRoute: React.FC = () => {
                         <IonSelect value={selectedRoute?.routeType} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeType: e.detail.value })}>
                             <IonSelectOption value="Work">Work</IonSelectOption>
                             <IonSelectOption value="School">School</IonSelectOption>
-                            <IonSelectOption value="Recreational">Recreational</IonSelectOption>
-
+                            <IonSelectOption value="Social">Social</IonSelectOption>
+                            <IonSelectOption value="Club">Club</IonSelectOption>
                         </IonSelect>
                     </IonItem>
                     <IonItem>
