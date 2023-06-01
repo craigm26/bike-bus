@@ -229,7 +229,7 @@ const BikeBusGroupPage: React.FC = () => {
             <IonButton>Join BikeBus</IonButton>
             <IonButton>Leave BikeBus</IonButton>
             <IonButton>Invite Users</IonButton>
-            <IonButton>Edit BikeBus</IonButton>
+            <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
             <IonList>
               <IonItem>
                 <IonLabel>Leaders</IonLabel>
@@ -254,6 +254,10 @@ const BikeBusGroupPage: React.FC = () => {
               <IonItem>
                 <IonLabel>Description</IonLabel>
                 <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Type</IonLabel>
+                <IonLabel>{groupData?.BikeBusType}</IonLabel>
               </IonItem>
               <IonItem>
                 <IonLabel>Routes</IonLabel>

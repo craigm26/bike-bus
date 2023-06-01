@@ -49,6 +49,7 @@ import './theme/variables.css';
 import ViewRouteList from './pages/ViewRouteList';
 import EditRoute from './pages/EditRoute';
 import ViewBikeBusList from './pages/ViewBikeBusList';
+import EditBikeBus from './pages/EditBikeBus';
 
 setupIonicReact();
 
@@ -268,6 +269,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/viewbikebuslist">
                         <ViewBikeBusList />
+                      </Route>
+                      <Route path="/editbikebus/:id" exact>
+                        <EditBikeBus />
                       </Route>
                       <Route exact path="/Profile">
                         <Profile />
