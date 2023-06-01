@@ -24,7 +24,6 @@ import AccountModeSelector from '../components/AccountModeSelector';
 import { useHistory } from 'react-router-dom';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import useBikeBusGroup from '../components/useBikeBusGroup';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 
 const CreateOrganization: React.FC = () => {
@@ -33,7 +32,6 @@ const CreateOrganization: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
   const history = useHistory();
-  const { fetchedGroups } = useBikeBusGroup();
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');

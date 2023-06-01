@@ -27,7 +27,6 @@ import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import useBikeBusGroup from '../components/useBikeBusGroup';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 
 
@@ -37,7 +36,6 @@ const About: React.FC = () => {
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');

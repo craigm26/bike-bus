@@ -7,7 +7,6 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile';
-import useBikeBusGroup from '../components/useBikeBusGroup';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 
 
@@ -62,7 +61,6 @@ const SearchForRoute: React.FC = () => {
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
     const [routes, setRoutes] = useState<Route[]>([]); // Add state to hold routes
-    const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
 
 
     const togglePopover = (e: any) => {
@@ -123,13 +121,6 @@ const SearchForRoute: React.FC = () => {
                     <IonText slot="start" color="primary" class="BikeBusFont">
                         <h1>BikeBus</h1>
                     </IonText>
-
-                    {fetchedGroups ? fetchedGroups.map((group: any) => (
-                        <IonButton fill="outline" slot='start' key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                            <IonText>{group.BikeBusName}</IonText>
-                        </IonButton>
-                    )) : <p>Loading groups...</p>}
-
                     <IonPopover
                         isOpen={showPopover}
                         event={popoverEvent}
