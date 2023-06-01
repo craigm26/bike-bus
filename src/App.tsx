@@ -32,6 +32,7 @@ import React from 'react';
 import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
+import ViewSchedule from './pages/ViewSchedule';
 
 
 import '@ionic/react/css/core.css';
@@ -266,6 +267,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/viewroutelist">
                         <ViewRouteList />
+                      </Route>
+                      <Route exact path="/viewschedule/:id">
+                        <ViewSchedule />
                       </Route>
                       <Route exact path="/viewbikebuslist">
                         <ViewBikeBusList />

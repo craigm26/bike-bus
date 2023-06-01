@@ -7,6 +7,8 @@ import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link } from 'react-router-dom';
 import { schedule } from 'firebase-functions/v1/pubsub';
+import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { useHistory } from 'react-router-dom';
 
 interface Coordinate {
   lat: number;
@@ -42,6 +44,9 @@ const BikeBusGroupPage: React.FC = () => {
   const [membersData, setMembersData] = useState<any[]>([]);
   const [leadersData, setLeadersData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
+  const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
+  const [isUserMember, setIsUserMember] = useState<boolean>(false);
+
 
 
   const headerContext = useContext(HeaderContext);
@@ -65,6 +70,16 @@ const BikeBusGroupPage: React.FC = () => {
         if (docSnapshot.exists()) {
           const groupData = docSnapshot.data();
           setGroupData(groupData);
+
+          if (groupData?.BikeBusLeaders?.some((leaderRef: any) => leaderRef.path === `users/${user?.uid}`)) {
+            setIsUserLeader(true);
+            console.log('User is a leader');
+          }
+
+          if (groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${user?.uid}`)) {
+            setIsUserMember(true);
+            console.log('User is a member');
+          }
         } else {
           console.log("No such document!");
         }
@@ -211,6 +226,38 @@ const BikeBusGroupPage: React.FC = () => {
 
   console.log(groupData);
 
+  const joinBikeBus = async () => {
+    if (!user?.uid) {
+      console.error("User is not logged in");
+      return;
+    }
+  
+    const groupRef = doc(db, 'bikebusgroups', groupId);
+  
+    await updateDoc(groupRef, {
+      BikeBusMembers: arrayUnion(doc(db, 'users', user.uid))
+    });
+  
+    setIsUserMember(true);
+  };
+  
+  const leaveBikeBus = async () => {
+    if (!user?.uid) {
+      console.error("User is not logged in");
+      return;
+    }
+  
+    const groupRef = doc(db, 'bikebusgroups', groupId);
+  
+    await updateDoc(groupRef, {
+      BikeBusMembers: arrayRemove(doc(db, 'users', user.uid))
+    });
+  
+    setIsUserMember(false);
+  };
+  
+  
+
   return (
     <IonPage>
       <IonContent fullscreen>
@@ -226,10 +273,16 @@ const BikeBusGroupPage: React.FC = () => {
             <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <IonButton>Join BikeBus</IonButton>
-            <IonButton>Leave BikeBus</IonButton>
+            {!isUserMember &&
+              <IonButton onClick={joinBikeBus}>Join BikeBus</IonButton>
+            }
+            {isUserMember &&
+              <IonButton onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+            }
             <IonButton>Invite Users</IonButton>
-            <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+            {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+              <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+            }
             <IonList>
               <IonItem>
                 <IonLabel>Leaders</IonLabel>

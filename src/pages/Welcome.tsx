@@ -36,8 +36,7 @@ const Welcome: React.FC = () => {
             <IonText className="ion-align-items-center">
               <h4>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides</h4>
               <h4>It is currently under development</h4>
-              <h4>This is an Alpha Build</h4>
-              <h4>We're testing while I'm trying to quickly build this app - drop a line on Twitter @BikeBusApp</h4>
+              <h4>Drop a line on Twitter @BikeBusApp</h4>
             </IonText>
           </IonRow>
           <IonRow className="welcome-to-bikebus-buttons">
