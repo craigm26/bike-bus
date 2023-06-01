@@ -34,6 +34,8 @@ const BikeBusGroupPage: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const [routesData, setRoutesData] = useState<any[]>([]);
   const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
+  const [membersData, setMembersData] = useState<any[]>([]);
+  const [leadersData, setLeadersData] = useState<any[]>([]);
 
 
   const headerContext = useContext(HeaderContext);
@@ -68,21 +70,17 @@ const BikeBusGroupPage: React.FC = () => {
 
   const fetchBikeBus = useCallback(async () => {
     const uid = user?.uid;
-    console.log('UID:', uid);
-
     if (!uid) {
       return;
     }
 
     const BikeBusCollection = collection(db, 'bikebusgroups');
     const q = query(BikeBusCollection, where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
-    console.log('Query:', q);
     const querySnapshot = await getDocs(q);
     const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
       ...doc.data() as BikeBus,
       id: doc.id,
     }));
-    console.log('BikeBusData:', BikeBusData);
     setBikeBus(BikeBusData);
   }, [user]);
 
@@ -107,24 +105,74 @@ const BikeBusGroupPage: React.FC = () => {
             console.log("No such document!");
           }
         })
-        .catch((error) => {
-          console.log("Error getting route document:", error);
-        });
+          .catch((error) => {
+            console.log("Error getting route document:", error);
+          });
       });
       const routesData = await Promise.all(routes);
       setRoutesData(routesData);
     }
   }, [groupData]);
-  
-  
-  
-  useEffect(() => {
-    console.log(groupData);
-    fetchRoutes();
-  }
-    , [fetchRoutes, groupData]);
 
-  console.log(routesData);
+  const fetchLeaders = useCallback(async () => {
+    if (groupData?.BikeBusLeaders && Array.isArray(groupData.BikeBusLeaders)) {
+      const leaders = groupData.BikeBusLeaders.map((leader: any) => {
+        return getDoc(leader).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const leaderData = docSnapshot.data();
+            // Check if leaderData exists before spreading
+            return leaderData ? {
+              ...leaderData,
+              id: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          } else {
+            console.log("No such document!");
+          }
+        })
+          .catch((error) => {
+            console.log("Error getting leader document:", error);
+          });
+      }
+      );
+      const leadersData = await Promise.all(leaders);
+      setLeadersData(leadersData);
+    }
+  }, [groupData]);
+
+const fetchMembers = useCallback(async () => {
+    if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
+      const members = groupData.BikeBusMembers.map((member: any) => {
+        return getDoc(member).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const memberData = docSnapshot.data();
+            // Check if memberData exists before spreading
+            return memberData ? {
+              ...memberData,
+              id: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          } else {
+            console.log("No such document!");
+          }
+        })
+          .catch((error) => {
+            console.log("Error getting member document:", error);
+          });
+      }
+      );
+      const membersData = await Promise.all(members);
+      setMembersData(membersData);
+    }
+  }
+    , [groupData]);
+
+
+  useEffect(() => {
+    fetchRoutes();
+    fetchLeaders();
+    fetchMembers();
+  }
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData]);
+
   console.log(groupData);
 
   return (
@@ -142,22 +190,42 @@ const BikeBusGroupPage: React.FC = () => {
             <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
+            <IonButton>Join BikeBus</IonButton>
+            <IonButton>Leave BikeBus</IonButton>
+            <IonButton>Invite Users</IonButton>
+            <IonButton>Edit BikeBus</IonButton>
             <IonList>
               <IonItem>
-                <IonLabel>BikeBus Leader</IonLabel>
+                <IonLabel>Leaders</IonLabel>
+                <IonList>
+                  {routesData.map((users, index) => (
+                    <IonItem key={index}>
+                      <IonLabel>{users?.displayName}</IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
               </IonItem>
               <IonItem>
-                <IonLabel>BikeBus Description</IonLabel>
+                <IonLabel>Members</IonLabel>
+                <IonList>
+                  {membersData.map((users, index) => (
+                    <IonItem key={index}>
+                      <IonLabel>{users?.displayName}</IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Description</IonLabel>
                 <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
               </IonItem>
               <IonItem>
-                <IonLabel>BikeBus Routes</IonLabel>
+                <IonLabel>Routes</IonLabel>
                 <IonList>
                   {routesData.map((route, index) => (
                     <IonItem key={index}>
-                      <IonLabel>{route?.routeName} </IonLabel>
                       <Link to={`/ViewRoute/${route.id}`}>
-                        <IonButton>View Route</IonButton>
+                        <IonButton>{route?.routeName}</IonButton>
                       </Link>
                     </IonItem>
                   ))}

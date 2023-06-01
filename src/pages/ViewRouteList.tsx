@@ -117,14 +117,6 @@ const ViewRouteList: React.FC = () => {
 
 
 
-    const handleRouteChange = (field: keyof Route, value: any) => {
-        if (editableRoute) {
-            setEditableRoute({
-                ...editableRoute,
-                [field]: value,
-            });
-        }
-    };
 
     useEffect(() => {
         if (headerContext) {
