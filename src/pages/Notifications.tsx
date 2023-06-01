@@ -21,11 +21,9 @@ import {
   import useAuth from '../useAuth'; // Import useAuth hook
   import { useAvatar } from '../components/useAvatar';
   import Avatar from '../components/Avatar';
-  import Profile from '../components/Profile'; // Import the Profile component
   import { alertCircleOutline, cogOutline, helpCircle, helpCircleOutline, personCircleOutline } from 'ionicons/icons';
   import { doc, getDoc } from 'firebase/firestore';
   import { db } from '../firebaseConfig';
-  import useBikeBusGroup from '../components/useBikeBusGroup';
   
   const Notifications: React.FC = () => {
     const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -33,7 +31,6 @@ import {
     const [accountType, setaccountType] = useState<string>('');
     const [showPopover, setShowPopover] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<any>(null);
-    const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
   
   
     const togglePopover = (e: any) => {

@@ -24,7 +24,6 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, playOutline, walkOutline } from "ionicons/icons";
-import useBikeBusGroup from "../components/useBikeBusGroup";
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -41,7 +40,6 @@ const DEFAULT_ACCOUNT_MODES = ["Member"];
 
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
-  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
   const history = useHistory();
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -617,21 +615,6 @@ const Map: React.FC = () => {
         <IonRow>
           <div className="bikebus-action-sheet footer-content">
             <div className="bikebusname-button-container">
-              {fetchedGroups ? (
-                fetchedGroups.map((group: any) => (
-                  <IonButton
-                    shape="round"
-                    size="large"
-                    key={group.id}
-                    routerLink={`/bikebusgrouppage/${group.id}`}
-                    routerDirection="none"
-                  >
-                    <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
-                  </IonButton>
-                ))
-              ) : (
-                <p>Loading groups...</p>
-              )}
             </div>
             <IonFab vertical="bottom" horizontal="end" slot="fixed">
               <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">

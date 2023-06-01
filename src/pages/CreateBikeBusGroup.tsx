@@ -21,6 +21,7 @@ import {
   IonModal,
   IonTitle,
   IonInput,
+  IonDatetime,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -61,6 +62,8 @@ const CreateBikeBusGroup: React.FC = () => {
   const [startTime, setStartTime] = useState('07:00');
   const [endTime, setEndTime] = useState('08:00');
   const [allSchedules, setAllSchedules] = useState<Array<any>>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
 
 
@@ -152,69 +155,69 @@ const CreateBikeBusGroup: React.FC = () => {
     return <></>;
   }
 
-// 1. create a new BikeBus group in firestore
-const createBikeBusGroupInFirestore = async () => {
-  const bikeBusData = {
-    name: BikeBusName,
-    description: BikeBusDescription,
-    route: [doc(db, 'routes', RouteID)],
-    BikeBusLeaders: [doc(db, 'users', user.uid)],    
-    BikeBusMembers: [doc(db, 'users', user.uid)],
-    BikeBusCreator: doc(db, 'users', user.uid), 
-    schedules: [] 
-  };
-  const docRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
-  return docRef.id;
-};
-
-
-// 2. create the schedule with a unique id in a collection in firestore called "schedules"
-const createScheduleInFirestore = async (schedule: any) => {
-  const docRef = await addDoc(collection(db, 'schedules'), schedule);
-  return docRef.id;
-};
-
-
-// 3. add the schedule to the BikeBus group in firestore
-const addScheduleToBikeBusGroupInFirestore = async (bikebusgroupId: string, scheduleId: string) => {
-  const bikebusgroupRef = doc(db, 'bikebusgroups', bikebusgroupId);
-  await setDoc(bikebusgroupRef, { schedules: '/schedules/' + scheduleId }, { merge: true });
-};
-
-// 4. add the schedule to the BikeBus group in the UI
-const createScheduleInMemoryAndAddtoUI = () => {
-  // Create a unique id for the schedule
-  const id = Date.now().toString();
-
-  const newSchedule = {
-    id,
-    scheduleName,
-    startTime,
-    endTime,
-    isRecurring,
-    selectedDays,
+  // 1. create a new BikeBus group in firestore
+  const createBikeBusGroupInFirestore = async () => {
+    const bikeBusData = {
+      BikeBusName: BikeBusName,
+      BikeBusDescription: BikeBusDescription,
+      BikeBusRoutes: [doc(db, 'routes', RouteID)],
+      BikeBusLeaders: [doc(db, 'users', user.uid)],
+      BikeBusMembers: [doc(db, 'users', user.uid)],
+      BikeBusCreator: doc(db, 'users', user.uid),
+      BikeBusSchedules: []
+    };
+    const docRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
+    return docRef.id;
   };
 
-  // Add the new schedule to the schedules state
-  setSchedules(prevState => [...prevState, newSchedule]);
-  setAllSchedules(prevState => [...prevState, newSchedule]);
+
+  // 2. create the schedule with a unique id in a collection in firestore called "schedules"
+  const createScheduleInFirestore = async (schedule: any) => {
+    const docRef = await addDoc(collection(db, 'schedules'), schedule);
+    return docRef.id;
+  };
 
 
-  // Close the modal
-  setShowScheduleModal(false);
-};
+  // 3. add the schedule to the BikeBus group in firestore
+  const addScheduleToBikeBusGroupInFirestore = async (bikebusgroupId: string, scheduleId: string) => {
+    const bikebusgroupRef = doc(db, 'bikebusgroups', bikebusgroupId);
+    await setDoc(bikebusgroupRef, { BikeBusSchedules: '/schedules/' + scheduleId }, { merge: true });
+  };
 
-// Combine all steps
-const createBikeBusGroupAndSchedule = async () => {
-  const bikebusgroupId = await createBikeBusGroupInFirestore();
+  // 4. add the schedule to the BikeBus group in the UI
+  const createScheduleInMemoryAndAddtoUI = () => {
+    // Create a unique id for the schedule
+    const id = Date.now().toString();
 
-  for (const schedule of allSchedules) {
-    const scheduleId = await createScheduleInFirestore(schedule);
-    await addScheduleToBikeBusGroupInFirestore(bikebusgroupId, scheduleId);
-  }
+    const newSchedule = {
+      id,
+      scheduleName,
+      startTime,
+      endTime,
+      isRecurring,
+      selectedDays,
+    };
 
-  history.push(`/bikebusgrouppage/${bikebusgroupId}`);
-};
+    // Add the new schedule to the schedules state
+    setSchedules(prevState => [...prevState, newSchedule]);
+    setAllSchedules(prevState => [...prevState, newSchedule]);
+
+
+    // Close the modal
+    setShowScheduleModal(false);
+  };
+
+  // Combine all steps
+  const createBikeBusGroupAndSchedule = async () => {
+    const bikebusgroupId = await createBikeBusGroupInFirestore();
+
+    for (const schedule of allSchedules) {
+      const scheduleId = await createScheduleInFirestore(schedule);
+      await addScheduleToBikeBusGroupInFirestore(bikebusgroupId, scheduleId);
+    }
+
+    history.push(`/bikebusgrouppage/${bikebusgroupId}`);
+  };
 
 
 
@@ -270,101 +273,127 @@ const createBikeBusGroupAndSchedule = async () => {
         <IonItem>
           <IonLabel>BikeBus Name</IonLabel>
           <IonInput aria-label="BikeBusName"
-              placeholder="BikeBus Name"
-              value={BikeBusName}
-              onIonChange={(e) => setBikeBusName(e.detail.value!)}
-            />
+            placeholder="BikeBus Name"
+            value={BikeBusName}
+            onIonChange={(e) => setBikeBusName(e.detail.value!)}
+          />
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Description</IonLabel>
           <IonInput aria-label="BikeBusDescription"
-              placeholder="BikeBus Description"
-              value={BikeBusDescription}
-              onIonChange={(e) => setBikeBusDescription(e.detail.value!)}
-            />
+            placeholder="BikeBus Description"
+            value={BikeBusDescription}
+            onIonChange={(e) => setBikeBusDescription(e.detail.value!)}
+          />
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Schedule</IonLabel>
           <IonItem>
-      <IonButton expand="full" onClick={() => setShowScheduleModal(true)}>Add BikeBus Schedule</IonButton>
-    </IonItem>
-    <IonModal isOpen={showScheduleModal}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Add BikeBus Schedule</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
-        <IonItem>
-          <IonLabel>Schedule Name</IonLabel>
-          {allSchedules.map(schedule => (
-          <IonLabel key={schedule.id}>
-            {schedule.scheduleName} - {schedule.startTime} to {schedule.endTime}
-          </IonLabel>
-        ))}
-            <IonInput aria-label="scheduleName"
-              placeholder="Schedule Name"
-              value={scheduleName}
-              onIonChange={(e) => setScheduleName(e.detail.value!)}
-            />
-        </IonItem>
-        <IonItem>
-          <IonLabel>Start Time</IonLabel>
-          <IonSelect value={startTime} placeholder="Select Start Time" onIonChange={e => setStartTime(e.detail.value)}>
-            {timeOptions.map((time, index) => (
-              <IonSelectOption key={index} value={time}>
-                {time}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
-        </IonItem>
-        <IonItem>
-          <IonLabel>End Time</IonLabel>
-          <IonSelect value={endTime} placeholder="Select End Time" onIonChange={e => setEndTime(e.detail.value)}>
-            {timeOptions.map((time, index) => (
-              <IonSelectOption key={index} value={time}>
-                {time}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
-        </IonItem>
+            <IonButton expand="full" onClick={() => setShowScheduleModal(true)}>Add BikeBus Schedule</IonButton>
+          </IonItem>
+          <IonModal isOpen={showScheduleModal}>
+            <IonHeader>
+              <IonToolbar>
+                <IonTitle>Add BikeBus Schedule</IonTitle>
+              </IonToolbar>
+            </IonHeader>
+            <IonContent>
+              <IonItem>
+                <IonLabel>Schedule Name</IonLabel>
+                {allSchedules.map(schedule => (
+                  <IonLabel key={schedule.id}>
+                    {schedule.scheduleName} - {schedule.startTime} to {schedule.endTime}
+                  </IonLabel>
+                ))}
+                <IonInput aria-label="scheduleName"
+                  placeholder="Schedule Name"
+                  value={scheduleName}
+                  onIonChange={(e) => setScheduleName(e.detail.value!)}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Start Date</IonLabel>
+                <IonDatetime presentation="date" value={startDate} onIonChange={e => {
+                  if (typeof e.detail.value === 'string') {
+                    setStartTime(e.detail.value);
+                  } else {
+                    // Handle error
+                  }
+                }}
+                ></IonDatetime>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Start Time</IonLabel>
+                <IonDatetime presentation="time" value={startTime} onIonChange={e => {
+                  if (typeof e.detail.value === 'string') {
+                    setStartTime(e.detail.value);
+                  } else {
+                    // Handle error
+                  }
+                }}
+                ></IonDatetime>
+              </IonItem>
+              <IonItem>
+                <IonLabel>End Time</IonLabel>
+                <IonDatetime presentation="time" value={endTime} onIonChange={e => {
+                  if (typeof e.detail.value === 'string') {
+                    setStartTime(e.detail.value);
+                  } else {
+                    // Handle error
+                  }
+                }}
+                ></IonDatetime>
+              </IonItem>
+              <IonItem>
+                <IonLabel>End Date</IonLabel>
+                <IonDatetime presentation="date" value={endDate} onIonChange={e => {
+                  if (typeof e.detail.value === 'string') {
+                    setStartTime(e.detail.value);
+                  } else {
+                    // Handle error
+                  }
+                }}
+                >
+                </IonDatetime>
+            </IonItem>
 
-        <IonItem>
-          <IonLabel>Is Recurring?</IonLabel>
-          <IonCheckbox slot="start" checked={isRecurring} onIonChange={e => setIsRecurring(e.detail.checked)} />
-        </IonItem>
 
-        {isRecurring && (
-          <IonItemGroup>
-            <RecurrenceSelect selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
-          </IonItemGroup>
-        )}
-      </IonContent>
-      <IonFooter>
-        <IonToolbar>
-          <IonButton expand="full" onClick={createScheduleInMemoryAndAddtoUI}>Add Schedule</IonButton>
-          <IonButton expand="full" onClick={() => setShowScheduleModal(false)}>Close</IonButton>
-        </IonToolbar>
-      </IonFooter>
-    </IonModal>
-        </IonItem>
-        <IonItem>
-          <IonLabel>BikeBus Route</IonLabel>
-          <IonLabel>{route?.routeName}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Starting Point</IonLabel>
-          <IonLabel>{route?.startPointName}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonLabel>Ending Point</IonLabel>
-          <IonLabel>{route?.endPointName}</IonLabel>
-        </IonItem>
-        <IonItem>
-          <IonButton onClick={createBikeBusGroupAndSchedule}>Create BikeBus</IonButton>
-        </IonItem>
-      </IonContent>
-    </IonPage>
+            <IonItem>
+              <IonLabel>Is Recurring?</IonLabel>
+              <IonCheckbox slot="start" checked={isRecurring} onIonChange={e => setIsRecurring(e.detail.checked)} />
+            </IonItem>
+
+            {isRecurring && (
+              <IonItemGroup>
+                <RecurrenceSelect selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
+              </IonItemGroup>
+            )}
+          </IonContent>
+          <IonFooter>
+            <IonToolbar>
+              <IonButton expand="full" onClick={createScheduleInMemoryAndAddtoUI}>Add Schedule</IonButton>
+              <IonButton expand="full" onClick={() => setShowScheduleModal(false)}>Close</IonButton>
+            </IonToolbar>
+          </IonFooter>
+        </IonModal>
+      </IonItem>
+      <IonItem>
+        <IonLabel>BikeBus Route</IonLabel>
+        <IonLabel>{route?.routeName}</IonLabel>
+      </IonItem>
+      <IonItem>
+        <IonLabel>Starting Point</IonLabel>
+        <IonLabel>{route?.startPointName}</IonLabel>
+      </IonItem>
+      <IonItem>
+        <IonLabel>Ending Point</IonLabel>
+        <IonLabel>{route?.endPointName}</IonLabel>
+      </IonItem>
+      <IonItem>
+        <IonButton onClick={createBikeBusGroupAndSchedule}>Create BikeBus</IonButton>
+      </IonItem>
+    </IonContent>
+    </IonPage >
   );
 };
 

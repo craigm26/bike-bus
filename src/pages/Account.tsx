@@ -44,6 +44,7 @@ const Account: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
+    const [savedDestinations, setSavedDestinations] = useState<Group[]>([]);
 
 
 
@@ -187,10 +188,8 @@ const Account: React.FC = () => {
                         <IonCardTitle>BikeBus Routes you created</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
+                        <Link to="/ViewRouteList">View Routes</Link>
                     </IonCardContent>
-                    <Link to="/createroute">Create a Route</Link>
-                    <br />
-                    <Link to="/routes">View Routes</Link>
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
@@ -204,6 +203,13 @@ const Account: React.FC = () => {
                         <IonCardTitle>Favorite Destinations</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
+                        {savedDestinations.map((destination, index) => (
+                            <div key={destination.id}>
+                                <Link to={`/map/${destination.id}`}>
+                                    {destination.id}
+                                </Link>
+                            </div>
+                        ))}
                     </IonCardContent>
                 </IonCard>
                 <IonCard>

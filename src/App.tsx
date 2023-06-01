@@ -18,7 +18,6 @@ import Account from './pages/Account';
 import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
-import useBikeBusGroup from './components/useBikeBusGroup';
 import ViewRoute from './pages/ViewRoute';
 import SearchForRoute from './pages/SearchForRoute';
 import SetUsername from './components/set-username';
@@ -30,7 +29,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline, playOutline } from 'ionicons/icons';
+import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 
@@ -49,6 +48,7 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import ViewRouteList from './pages/ViewRouteList';
 import EditRoute from './pages/EditRoute';
+import ViewBikeBusList from './pages/ViewBikeBusList';
 
 setupIonicReact();
 
@@ -62,7 +62,6 @@ type Group = {
 const App: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
-  const { fetchedGroups, loading: loadingGroups, error } = useBikeBusGroup();
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -72,14 +71,12 @@ const App: React.FC = () => {
     lat: 0,
     lng: 0,
   });
-
-  console.log('fetchGroups:', fetchedGroups);
-
+  
   useEffect(() => {
-    if (user !== undefined && !loadingGroups) {
+    if (user !== undefined) {
       setLoading(false);
     }
-  }, [user, loadingGroups, error]);
+  }, [user]);
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -108,9 +105,6 @@ const App: React.FC = () => {
     return <p>Loading...</p>; // Replace with a loading spinner if available
   }
 
-  console.log('Loading fetchedGroups app.tsx', fetchedGroups);
-
-
   return (
     <IonApp>
       <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
@@ -127,29 +121,17 @@ const App: React.FC = () => {
                   <IonList>
                     <IonMenuToggle auto-hide="false">
                       <IonCard>
-                        <IonLabel>Bike Bus You Belong To</IonLabel>
-                        {fetchedGroups ? fetchedGroups.map((group: any) => (
-                          <IonItem key={group.id} button routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                            <IonLabel class="BikeBusFont">{group.BikeBusName}</IonLabel>
-                          </IonItem>
-                        )) : <p>Loading groups...</p>}
-                      </IonCard>
-                      <IonCard>
-                        <IonLabel>Basic User Functions</IonLabel>
                         <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink='/ViewBikeBusGroup' routerDirection="none">
-                          <IonLabel>View BikeBusGroups</IonLabel>
+                        <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
+                          <IonLabel>View BikeBusses</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
                           <IonLabel>View BikeBusStations</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
                           <IonLabel>Create BikeBusStation</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/CreateBikeBusGroup' routerDirection="none">
-                          <IonLabel>Create BikeBusGroup</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
                           <IonLabel>Upgrade Account to Premium</IonLabel>
@@ -237,7 +219,6 @@ const App: React.FC = () => {
                         <IonText slot="start" color="secondary" class="BikeBusFont">
                           <h1>BikeBus</h1>
                         </IonText>
-
                         <IonPopover
                           isOpen={showPopover}
                           event={popoverEvent}
@@ -273,7 +254,7 @@ const App: React.FC = () => {
                   )}
                   <IonRouterOutlet>
                     <React.Fragment>
-                      <Route path="/bikebusgrouppage/:groupId" exact>
+                      <Route path="/bikebusgrouppage/:groupId">
                         <BikeBusGroupPage />
                       </Route>
                       <Route path="/viewroute/:id" exact>
@@ -285,6 +266,9 @@ const App: React.FC = () => {
                       <Route exact path="/viewroutelist">
                         <ViewRouteList />
                       </Route>
+                      <Route exact path="/viewbikebuslist">
+                        <ViewBikeBusList />
+                      </Route>
                       <Route exact path="/Profile">
                         <Profile />
                       </Route>
@@ -295,7 +279,7 @@ const App: React.FC = () => {
                         <SetUsername />
                       </Route>
                       <Route exact path="/Map">
-                        <MapProvider 
+                        <MapProvider
                         >
                           <Map />
                         </MapProvider>

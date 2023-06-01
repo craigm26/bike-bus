@@ -8,7 +8,6 @@ import {
     IonButton,
     IonHeader,
     IonToolbar,
-    IonPopover,
     IonText,
     IonCard,
 } from '@ionic/react';
@@ -17,10 +16,8 @@ import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
-import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import UseRoutes from '../components/useRoutes';
 
 
 
@@ -51,19 +48,6 @@ const ViewRouteList: React.FC = () => {
     const [routes, setRoutes] = useState<Route[]>([]);
     const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
     const [editableRoute, setEditableRoute] = useState<Route | null>(null);
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
-    const [routeType, setRouteType] = useState('');
-    const [scheduleName, setScheduleName] = useState<string>('');
-    const [scheduleDescription, setScheduleDescription] = useState<string>('');
-    const [scheduleStartDate, setScheduleStartDate] = useState<string>('');
-    const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
-    const [scheduleStartTime, setScheduleStartTime] = useState<string>('');
-    const [scheduleEndTime, setScheduleEndTime] = useState<string>('');
-    const [scheduleTypeSelector, setScheduleTypeSelector] = useState<string>('');
-    const [scheduleFrequency, setScheduleFrequency] = useState<string>('');
-    const [showGroupModal, setShowGroupModal] = useState(false);
-    const [schedules, setSchedules] = useState<Schedule[]>([{ scheduleStartTime: '', scheduleEndTime: '', frequency: '' }]);
-    const { fetchedRoutes, loading: loadingRoutes, error } = UseRoutes();
 
 
 
