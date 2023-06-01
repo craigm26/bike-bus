@@ -146,13 +146,6 @@ const ViewRouteList: React.FC = () => {
         }
     }, [user]);
 
-    const editRoute = () => {
-        if (editableRoute) {
-            setSelectedRoute(editableRoute);
-            closePopover();
-        }
-    };
-
 
 
     return (
@@ -166,12 +159,13 @@ const ViewRouteList: React.FC = () => {
                 <IonCard>
                     <IonList>
                         {routes.map((route) => (
-                            <IonItem>
+                            <IonItem key={route.id}>
                                 <IonLabel>{route.routeName}</IonLabel>
                                 <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
                             </IonItem>
                         ))}
                     </IonList>
+
                 </IonCard>
             </IonContent>
         </IonPage>
