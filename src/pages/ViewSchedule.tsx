@@ -1,24 +1,22 @@
 import {
     IonContent,
     IonPage,
-    IonItem,
     IonList,
-    IonInput,
-    IonLabel,
-    IonButton,
     IonHeader,
     IonToolbar,
-    IonText,
     IonCard,
+    IonLabel,
+    IonTitle,
+    IonText,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
+import BikeBusCalendar from '../components/BikeBusGroup/BikeBusCalendar';
 
 
 interface Schedule {
@@ -30,37 +28,10 @@ const ViewSchedule: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
-    const [accountType, setaccountType] = useState<string>('');
-    const [popoverState, setPopoverState] = useState<{ open: boolean; event: Event | null }>({ open: false, event: null });
     const { id } = useParams<{ id: string }>();
-
-
-    const fetchSchedules = useCallback(async () => {
-        // Assuming that your uid is stored in the user.uid
-        const uid = user?.uid;
-
-        if (!uid) {
-            // If there's no user, we cannot fetch schedules
-            return;
-        }
-        // from the url of the page, get the schedule id after the /viewschedule/ part of the url
-
-        // Create a reference to the 'schedules' collection
-        const schedulesCollection = collection(db, 'schedules');
-
-        // Create a query against the collection.
-        // This will fetch the document where the schedule id from the url equals the schedule's document id in firestore
-        const q = query(schedulesCollection, where("id", "==", `${id}`));
-
-        const querySnapshot = await getDocs(q);
-        const schedulesData: Schedule[] = querySnapshot.docs.map(doc => ({
-            ...doc.data() as Schedule,
-            id: doc.id,
-        }));
-        fetchSchedules();
-    }, [user]); // here user is a dependency
-
-
+    const [accountType, setAccountType] = useState<string>('');
+    const [scheduleData, setscheduleData] = useState<any>(null);
+    const [schedulesData, setSchedulesData] = useState<any[]>([]);
 
 
 
@@ -77,13 +48,59 @@ const ViewSchedule: React.FC = () => {
                 if (docSnapshot.exists()) {
                     const userData = docSnapshot.data();
                     if (userData && userData.accountType) {
-                        setaccountType(userData.accountType);
+                        setAccountType(userData.accountType);
                     }
                 }
             });
         }
-    }, [user]);
+        const scheduleRef = doc(db, 'schedules', id);
+        getDoc(scheduleRef)
+            .then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const scheduleData = docSnapshot.data();
+                    setscheduleData(scheduleData);
 
+                } else {
+                    console.log("No such document!");
+                }
+            })
+            .catch((error) => {
+                console.log("Error getting schedule document:", error);
+            });
+    }, [user, id]);
+
+    // take the scheduleData and get the schedule from the references generated from the scheduleData. 
+    const fetchSchedules = useCallback(async () => {
+        if (scheduleData?.BikeBusSchedules && Array.isArray(scheduleData.BikeBusSchedules)) {
+            const schedules = scheduleData && scheduleData.BikeBusSchedules
+                ? scheduleData.BikeBusSchedules.map((schedules: any) => {
+                    return getDoc(schedules).then((docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const schedulesData = docSnapshot.data();
+                            // Check if leaderData exists before spreading
+                            return schedulesData ? {
+                                ...schedulesData,
+                                id: docSnapshot.id,
+                            } : { id: docSnapshot.id };
+                        } else {
+                            console.log("No such document!");
+                        }
+                    })
+                        .catch((error) => {
+                            console.log("Error getting leader document:", error);
+                        });
+                }
+                ) : [];
+            console.log(schedules);
+            const schedulesData = await Promise.all(schedules);
+            setSchedulesData(schedulesData);
+        }
+    }, [scheduleData]);
+
+    useEffect(() => {
+        fetchSchedules();
+    }
+        , [fetchSchedules]);
 
 
     return (
@@ -96,7 +113,11 @@ const ViewSchedule: React.FC = () => {
             <IonContent>
                 <IonCard>
                     <IonList>
+                        <IonLabel>
+                            <IonTitle>{scheduleData?.scheduleName}</IonTitle>
+                        </IonLabel>
                     </IonList>
+                    <BikeBusCalendar schedules={schedulesData} />
 
                 </IonCard>
             </IonContent>
