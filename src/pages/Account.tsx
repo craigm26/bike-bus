@@ -171,28 +171,6 @@ const Account: React.FC = () => {
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>BikeBus You Belong To</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                        {BikeBusGroups.map((group, index) => (
-                            <div key={group.id}>
-                                <Link to={`/bikebusgrouppage/${group.id}`}>
-                                    {group.BikeBusName}
-                                </Link>
-                            </div>
-                        ))}
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardHeader>
-                        <IonCardTitle>BikeBus Routes you created</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                        <Link to="/ViewRouteList">View Routes</Link>
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardHeader>
                         <IonCardTitle>Notification Settings</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
@@ -218,7 +196,7 @@ const Account: React.FC = () => {
                     </IonCardHeader>
                     <IonCardContent>
                         <IonText>Add a Kid Account here</IonText>
-                        <IonText>When a Kid logs in, there's only a few visual indicators they're in the app. All they can do is "Start" and "Stop". Parents receive notifications about the ride.</IonText>
+                        <IonText>At first, the only thing that happens with a kid account is that the Parent can check in the kid during a initiated BikeBus Trip. Parents receive notifications about the ride.</IonText>
                     </IonCardContent>
                 </IonCard>
             </IonContent>
