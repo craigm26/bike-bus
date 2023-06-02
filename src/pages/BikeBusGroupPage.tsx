@@ -198,6 +198,7 @@ const BikeBusGroupPage: React.FC = () => {
             return schedulesData ? {
               ...schedulesData,
               id: docSnapshot.id,
+              groupId: docSnapshot.id,
             } : { id: docSnapshot.id };
           } else {
             console.log("No such document!");
@@ -325,15 +326,12 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonList>
               </IonItem>
               <IonItem>
-                <IonLabel>Schedules</IonLabel>
                 <IonList>
-                  {schedulesData.map((schedule, index) => (
-                    <IonItem key={index}>
-                      <Link to={`/ViewSchedule/${schedule.id}`}>
-                        <IonButton>{schedule?.scheduleName}</IonButton>
+                    <IonItem>
+                      <Link to={`/ViewSchedule/${groupId}`}>
+                        <IonButton>Schedule</IonButton>
                       </Link>
                     </IonItem>
-                  ))}
                 </IonList>
               </IonItem>
             </IonList>

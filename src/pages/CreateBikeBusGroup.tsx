@@ -21,6 +21,8 @@ import {
   IonList,
   IonInput,
   IonDatetime,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -35,8 +37,9 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
-import { addDoc, collection, setDoc, doc, getDoc, arrayUnion, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, setDoc, doc, getDoc, arrayUnion, updateDoc } from 'firebase/firestore';
 import React from 'react';
+import { set } from 'firebase/database';
 
 
 
@@ -50,22 +53,23 @@ const CreateBikeBusGroup: React.FC = () => {
   const [route, setRoute] = useState<any>(null);
   const { RouteID } = useParams<{ RouteID: string }>();
   const localizer = momentLocalizer(moment);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [scheduleName, setScheduleName] = useState('');
   const [BikeBusName, setBikeBusName] = useState('');
   const [BikeBusDescription, setBikeBusDescription] = useState('');
   const [schedules, setSchedules] = useState<Array<any>>([]);
   const [startTime, setStartTime] = useState('07:00');
-  const [allSchedules, setAllSchedules] = useState<Array<any>>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [BikeBusType, setBikeBusType] = useState('');
   const [startDateTime, setStartDateTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('08:00');
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
+  const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
   const [recurring, setRecurring] = useState<string>('No');
   const [showRecurringModal, setShowRecurringModal] = useState<boolean>(false);
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
+  const [isRecurring, setIsRecurring] = useState('No');
+
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
     Tuesday: false,
@@ -76,46 +80,18 @@ const CreateBikeBusGroup: React.FC = () => {
     Sunday: false
   });
 
-
-  // set the endDate to be 6 months after the start date
+  // when the setStartDate is called, set the setEndDate to 30 days from that date
   useEffect(() => {
-    if (startDateTime) {
-      const date = new Date(startDateTime);
-      const endDate = new Date(date.setMonth(date.getMonth() + 6));
-      setEndDate(endDate.toISOString());
+    if (startDate) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + 30);
+      setEndDate(date.toISOString());
     }
   }
-    , [startDateTime]);
+    , [startDate]);
 
-  // set the initial start date to be today's date
-  useEffect(() => {
-    const today = new Date();
-    setStartDate(today.toISOString());
-  }
-    , []);
-
-  useEffect(() => {
-    if (startDateTime) {
-      const dateParts = startDateTime.split('T');
-      const timeParts = dateParts[1].split(':');
-      const date = new Date();
-      date.setHours(parseInt(timeParts[0]));
-      date.setMinutes(parseInt(timeParts[1]));
-      date.setSeconds(0);
-      date.setMilliseconds(0);
-
-      const endDateTime = new Date(date.getTime() + 60 * 60 * 1000); // add one hour
-
-      let hours = endDateTime.getHours().toString();
-      if (hours.length < 2) hours = '0' + hours;
-
-      let minutes = endDateTime.getMinutes().toString();
-      if (minutes.length < 2) minutes = '0' + minutes;
-
-      setEndTime(`${hours}:${minutes}`);
-    }
-  }, [startDateTime]);
-
+  // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
+  const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
   console.log("RouteID: ", RouteID);
 
@@ -170,8 +146,6 @@ const CreateBikeBusGroup: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
-  const [isRecurring, setIsRecurring] = useState(false);
-
   const timeOptions = [];
   for (let i = 0; i < 24; i++) {
     for (let j = 0; j < 60; j++) {
@@ -203,205 +177,302 @@ const CreateBikeBusGroup: React.FC = () => {
     console.log('scheduleId:', scheduleId);
 
     // create a new BikeBus group in firestore with the schedule id
-      const bikeBusData = {
-        BikeBusName: BikeBusName,
-        BikeBusDescription: BikeBusDescription,
-        BikeBusRoutes: [doc(db, 'routes', RouteID)],
-        BikeBusLeaders: [doc(db, 'users', user.uid)],
-        BikeBusMembers: [doc(db, 'users', user.uid)],
-        BikeBusCreator: doc(db, 'users', user.uid),
-        // add the schedule to the BikeBus group in firestore as a single document
-        BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
-      };
-
-      const bikeBusRef = await addDoc(collection(db, 'bikeBusGroups'), bikeBusData);
-      const bikebusgroupId = bikeBusRef.id;
-      console.log('bikebusgroupId:', bikebusgroupId);
-
-      // add the schedule document to the bikebus group in firestore
-      const bikeBusGroupRef = doc(db, 'bikeBusGroups', bikebusgroupId);
-      await updateDoc(bikeBusGroupRef, {
-        BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleId)),
-      });
-
-        history.push(`/bikebusgrouppage/${bikebusgroupId}`);
-      };
-
-      return (
-        <IonPage>
-          <IonHeader>
-            <IonToolbar>
-              <IonButtons slot="start">
-                <IonMenuButton></IonMenuButton>
-              </IonButtons>
-              <IonText slot="start" color="primary" class="BikeBusFont">
-                <h1>BikeBus</h1>
-              </IonText>
-              <IonPopover
-                isOpen={showPopover}
-                event={popoverEvent}
-                onDidDismiss={() => setShowPopover(false)}
-                className="my-popover"
-              >
-                <Profile />
-              </IonPopover>
-              <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                <IonChip>
-                  {avatarElement}
-                  <IonLabel>{label}</IonLabel>
-                </IonChip>
-              </IonButton>
-              <IonPopover
-                isOpen={showPopover}
-                event={popoverEvent}
-                onDidDismiss={() => setShowPopover(false)}
-                className="my-popover"
-              >
-                <Profile />
-              </IonPopover>
-              <IonButtons slot="primary">
-                <IonButton routerLink='/help'>
-                  <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-                </IonButton>
-                <IonButton routerLink='/settings'>
-                  <IonIcon slot="end" icon={cogOutline}></IonIcon>
-                </IonButton>
-                <IonButton routerLink='/notifications'>
-                  <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent fullscreen>
-            <IonHeader collapse="condense">
-              <IonToolbar></IonToolbar>
-            </IonHeader>
-            <IonItem>
-              <IonLabel>BikeBus Name</IonLabel>
-              <IonInput aria-label="BikeBusName"
-                placeholder="BikeBus Name"
-                value={BikeBusName}
-                onIonChange={(e) => setBikeBusName(e.detail.value!)}
-              />
-            </IonItem>
-            <IonItem>
-              <IonLabel>BikeBus Description</IonLabel>
-              <IonInput aria-label="BikeBusDescription"
-                placeholder="BikeBus Description"
-                value={BikeBusDescription}
-                onIonChange={(e) => setBikeBusDescription(e.detail.value!)}
-              />
-            </IonItem>
-            <IonItem>
-              <IonLabel>BikeBus Start Date and Start Time</IonLabel>
-              <IonLabel>
-                {startDateTime}
-              </IonLabel>
-              <IonButton onClick={() => setShowStartTimeModal(true)}>Select Starting Date and Time</IonButton>
-              <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
-                <IonDatetime
-                  onIonChange={e => {
-                    console.log('Start DateTime selected', e.detail.value);
-                    setStartDateTime(e.detail.value as string);
-                    setShowStartTimeModal(false);
-                  }}
-                ></IonDatetime>
-              </IonModal>
-            </IonItem>
-            <IonItem>
-              <IonLabel>BikeBus End Time</IonLabel>
-              <IonLabel>{endTime}</IonLabel>
-              <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
-              <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
-                <IonDatetime
-                  presentation='time'
-                  onIonChange={e => {
-                    console.log('End Time selected', e.detail.value);
-                    setEndTime(e.detail.value as string);
-                    setShowEndTimeModal(false);
-                  }}
-                ></IonDatetime>
-              </IonModal>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Is Recurring?</IonLabel>
-              <IonLabel>{recurring}</IonLabel>
-              <IonButton onClick={() => setShowRecurringModal(true)}>Select Option</IonButton>
-              <IonModal isOpen={showRecurringModal} onDidDismiss={() => setShowRecurringModal(false)}>
-                <IonList>
-                  <IonRadioGroup
-                    onIonChange={e => {
-                      console.log('Recurring selected', e.detail.value);
-                      setRecurring(e.detail.value as string);
-                      if (e.detail.value === 'yes') {
-                        setShowRecurrenceDaysModal(true);
-                      }
-                      setShowRecurringModal(false);
-                    }}
-                  >
-                    <IonItem>
-                      <IonLabel>Yes</IonLabel>
-                      <IonRadio value='yes' />
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>No</IonLabel>
-                      <IonRadio value='no' />
-                    </IonItem>
-                  </IonRadioGroup>
-                </IonList>
-                <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
-              </IonModal>
-              <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
-                <IonItemGroup>
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                    <IonItem key={day}>
-                      <IonLabel>{day}</IonLabel>
-                      <IonCheckbox
-                        checked={selectedDays[day]}
-                        onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
-                      />
-                    </IonItem>
-                  ))}
-                </IonItemGroup>
-                <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
-              </IonModal>
-              <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
-                <IonItemGroup>
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                    <IonItem key={day}>
-                      <IonLabel>{day}</IonLabel>
-                      <IonCheckbox
-                        checked={selectedDays[day]}
-                        onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
-                      />
-                    </IonItem>
-                  ))}
-                </IonItemGroup>
-                <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
-              </IonModal>
-            </IonItem>
-            <IonItem>
-              <IonLabel>BikeBus End Date</IonLabel>
-              <IonLabel>{endDate}</IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel>BikeBus Route</IonLabel>
-              <IonLabel>{route?.routeName}</IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Starting Point</IonLabel>
-              <IonLabel>{route?.startPointName}</IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Ending Point</IonLabel>
-              <IonLabel>{route?.endPointName}</IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonButton onClick={createBikeBusGroupAndSchedule}>Create BikeBus</IonButton>
-            </IonItem>
-          </IonContent>
-        </IonPage >
-      );
+    const bikeBusData = {
+      BikeBusName: BikeBusName,
+      BikeBusDescription: BikeBusDescription,
+      BikeBusType: BikeBusType,
+      BikeBusRoutes: [doc(db, 'routes', RouteID)],
+      BikeBusLeaders: [doc(db, 'users', user.uid)],
+      BikeBusMembers: [doc(db, 'users', user.uid)],
+      BikeBusCreator: doc(db, 'users', user.uid),
+      // add the schedule to the BikeBus group in firestore as a single document
+      BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
     };
 
-    export default CreateBikeBusGroup;
+    const bikeBusRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
+    const bikebusgroupId = bikeBusRef.id;
+    console.log('bikebusgroupId:', bikebusgroupId);
+
+    // add the schedule document to the bikebus group in firestore
+    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikebusgroupId);
+    await updateDoc(bikeBusGroupRef, {
+      BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleId)),
+    });
+
+    // add the bikebus group to the user's bikebusgroups array in firestore
+    const userRef = doc(db, 'users', user.uid);
+    await updateDoc(userRef, {
+      bikebusgroups: arrayUnion(doc(db, 'bikebusgroups', bikebusgroupId)),
+    });
+
+    // add the bikebusgroup document id to the schedule document in firestore
+    const scheduleRef2 = doc(db, 'schedules', scheduleId);
+    await updateDoc(scheduleRef2, {
+      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      // update the schedule name in firestore to match the bikebus name
+      scheduleName: BikeBusName,
+    });
+
+
+
+    function getRecurringDates(startDate: Date, endDate: Date, selectedDays: { [key: string]: boolean }) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const selectedDayIndices = Object.entries(selectedDays)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([day]) => days.indexOf(day));
+      const dates = [];
+    
+      for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
+        if (selectedDayIndices.includes(dt.getDay())) {
+          dates.push(new Date(dt));
+        }
+      }
+    
+      return dates;
+    }
+    
+    const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays).map(date => Timestamp.fromDate(date));
+
+
+    // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
+    const eventsData = {
+      title: BikeBusName,
+      start: startDate,
+      end: endDate,
+      startTime: startTime,
+      endTime: endTime,
+      eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
+      recurring: isRecurring,
+      selectedDays: selectedDays,
+      schedule: doc(db, 'schedules', scheduleId),
+      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      days: Object.entries(selectedDays).reduce<number[]>((acc, [day, isSelected]) => {
+        if (isSelected) acc.push(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day));
+        return acc;
+      }, []),
+    };
+    
+    // add the events document to the events collection in firestore
+    const eventsRef = await addDoc(collection(db, 'events'), eventsData);
+    const eventId = eventsRef.id;
+    console.log('eventId:', eventId);
+
+    // add the events document id (as a reference) to the schedule document in firestore
+    const scheduleRef3 = doc(db, 'schedules', scheduleId);
+    await updateDoc(scheduleRef3, {
+      events: arrayUnion(doc(db, 'events', eventId)),
+    });
+
+    history.push(`/bikebusgrouppage/${bikebusgroupId}`);
+  };
+
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton></IonMenuButton>
+          </IonButtons>
+          <IonText slot="start" color="primary" class="BikeBusFont">
+            <h1>BikeBus</h1>
+          </IonText>
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
+          >
+            <Profile />
+          </IonPopover>
+          <IonButton fill="clear" slot="end" onClick={togglePopover}>
+            <IonChip>
+              {avatarElement}
+              <IonLabel>{label}</IonLabel>
+            </IonChip>
+          </IonButton>
+          <IonPopover
+            isOpen={showPopover}
+            event={popoverEvent}
+            onDidDismiss={() => setShowPopover(false)}
+            className="my-popover"
+          >
+            <Profile />
+          </IonPopover>
+          <IonButtons slot="primary">
+            <IonButton routerLink='/help'>
+              <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/settings'>
+              <IonIcon slot="end" icon={cogOutline}></IonIcon>
+            </IonButton>
+            <IonButton routerLink='/notifications'>
+              <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
+        <IonHeader collapse="condense">
+          <IonToolbar></IonToolbar>
+        </IonHeader>
+        <IonItem>
+          <IonLabel>BikeBus Name</IonLabel>
+          <IonInput aria-label="BikeBusName"
+            placeholder="BikeBus Name"
+            value={BikeBusName}
+            onIonChange={(e) => setBikeBusName(e.detail.value!)}
+          />
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Description</IonLabel>
+          <IonInput aria-label="BikeBusDescription"
+            placeholder="BikeBus Description"
+            value={BikeBusDescription}
+            onIonChange={(e) => setBikeBusDescription(e.detail.value!)}
+          />
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Type:</IonLabel>
+          <IonSelect value={BikeBusType} placeholder="Select One">
+            <IonSelectOption value="Work">Work</IonSelectOption>
+            <IonSelectOption value="School">School</IonSelectOption>
+            <IonSelectOption value="Social">Social</IonSelectOption>
+            <IonSelectOption value="Club">Club</IonSelectOption>
+          </IonSelect>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Start Date</IonLabel>
+          <IonLabel>
+            <IonText>{formattedStartDate}</IonText>
+          </IonLabel>
+          <IonButton onClick={() => setShowStartDayModal(true)}>Select Start Date</IonButton>
+          <IonModal isOpen={showStartDayModal} onDidDismiss={() => setShowStartDayModal(false)}>
+            <IonDatetime
+              presentation='date'
+              onIonChange={e => {
+                if (typeof e.detail.value === 'string') {
+                  const date = new Date(e.detail.value);
+                  console.log('Start DateTime selected', date);
+                  setStartDate(date.toISOString());
+                }
+              }}
+              
+            ></IonDatetime>
+            <IonButton onClick={() => setShowStartDayModal(false)}>Done</IonButton>
+          </IonModal>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Start Time</IonLabel>
+          <IonLabel>{startTime}</IonLabel>
+          <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
+          <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
+            <IonDatetime
+              presentation='time'
+              onIonChange={e => {
+                console.log('End Time selected', e.detail.value);
+                setStartTime(e.detail.value as string);
+              }}
+            ></IonDatetime>
+            <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
+          </IonModal>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus End Time</IonLabel>
+          <IonLabel>{endTime}</IonLabel>
+          <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
+          <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
+            <IonDatetime
+              presentation='time'
+              onIonChange={e => {
+                console.log('End Time selected', e.detail.value);
+                setEndTime(e.detail.value as string);
+              }}
+            ></IonDatetime>
+            <IonButton onClick={() => setShowEndTimeModal(false)}>Done</IonButton>
+          </IonModal>
+        </IonItem>
+        <IonItem>
+          <IonLabel>Is Recurring?</IonLabel>
+          <IonLabel>{recurring}</IonLabel>
+          <IonButton onClick={() => setShowRecurringModal(true)}>Select Option</IonButton>
+          <IonModal isOpen={showRecurringModal} onDidDismiss={() => setShowRecurringModal(false)}>
+            <IonList>
+              <IonRadioGroup
+                onIonChange={e => {
+                  console.log('Recurring selected', e.detail.value);
+                  setRecurring(e.detail.value as string);
+                  setIsRecurring(e.detail.value as string);
+                  if (e.detail.value === 'yes') {
+                    setShowRecurrenceDaysModal(true);
+                  }
+                  setShowRecurringModal(false);
+                }}
+              >
+                <IonItem>
+                  <IonLabel>Yes</IonLabel>
+                  <IonRadio value='yes' />
+                </IonItem>
+                <IonItem>
+                  <IonLabel>No</IonLabel>
+                  <IonRadio value='no' />
+                </IonItem>
+              </IonRadioGroup>
+            </IonList>
+            <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
+          </IonModal>
+          <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
+            <IonItemGroup>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                <IonItem key={day}>
+                  <IonLabel>{day}</IonLabel>
+                  <IonCheckbox
+                    checked={selectedDays[day]}
+                    onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
+                  />
+                </IonItem>
+              ))}
+            </IonItemGroup>
+            <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
+          </IonModal>
+          <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
+            <IonItemGroup>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                <IonItem key={day}>
+                  <IonLabel>{day}</IonLabel>
+                  <IonCheckbox
+                    checked={selectedDays[day]}
+                    onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
+                  />
+                </IonItem>
+              ))}
+            </IonItemGroup>
+            <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
+          </IonModal>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus End Date</IonLabel>
+          <IonLabel>{endDate}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Route</IonLabel>
+          <IonLabel>{route?.routeName}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel>Starting Point</IonLabel>
+          <IonLabel>{route?.startPointName}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel>Ending Point</IonLabel>
+          <IonLabel>{route?.endPointName}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonButton onClick={createBikeBusGroupAndSchedule}>Create BikeBus</IonButton>
+        </IonItem>
+      </IonContent>
+    </IonPage >
+  );
+};
+
+export default CreateBikeBusGroup;
