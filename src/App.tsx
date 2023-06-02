@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonFooter, IonActionSheet } from '@ionic/react';
+import { Route, Redirect, useParams } from 'react-router-dom';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
 
@@ -69,11 +71,11 @@ const App: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
   const [showHeader, setShowHeader] = useState(true);
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number }>({
-    lat: 0,
-    lng: 0,
-  });
-  
+  const [accountType, setAccountType] = useState<string>('');
+  const [groupData, setGroupData] = useState<any>(null);
+  const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
+  const [isUserMember, setIsUserMember] = useState<boolean>(false);
+
   useEffect(() => {
     if (user !== undefined) {
       setLoading(false);
@@ -81,6 +83,21 @@ const App: React.FC = () => {
   }, [user]);
 
   const label = user?.username ? user.username : "anonymous";
+
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.accountType) {
+            setAccountType(userData.accountType);
+          }
+        }
+      });
+    }
+ 
+  }, [user, accountType]);
 
   const avatarElement = user ? (
     avatarUrl ? (
@@ -139,6 +156,7 @@ const App: React.FC = () => {
                           <IonLabel>Upgrade Account to Premium</IonLabel>
                         </IonItem>
                       </IonCard>
+                      {accountType === 'App Admin' && 
                       <IonCard>
                         <IonLabel>Premium User Functions</IonLabel>
                         <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
@@ -150,7 +168,8 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/CheckInKid' routerDirection="none">
                           <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
                         </IonItem>
-                      </IonCard>
+                      </IonCard> }
+                      {accountType === 'App Admin' && 
                       <IonCard>
                         <IonLabel>BikeBus Leader Functions</IonLabel>
                         <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
@@ -162,7 +181,8 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
                           <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
                         </IonItem>
-                      </IonCard>
+                      </IonCard>}
+                      {accountType === 'App Admin' && 
                       <IonCard>
                         <IonLabel>Org Admin Functions</IonLabel>
                         <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
@@ -180,7 +200,8 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/DataAnalytics' routerDirection="none">
                           <IonLabel>Data Analytics</IonLabel>
                         </IonItem>
-                      </IonCard>
+                      </IonCard> }
+                      {accountType === 'App Admin' && 
                       <IonCard>
                         <IonLabel>App Admin Functions</IonLabel>
                         <IonItem button routerLink="/CreateOrganization" routerDirection="none">
@@ -201,8 +222,7 @@ const App: React.FC = () => {
                         <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
                           <IonLabel>Update BikeBusStation Data</IonLabel>
                         </IonItem>
-                        <IonLabel></IonLabel>
-                      </IonCard>
+                      </IonCard>}
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>About</IonLabel>
                       </IonItem>
