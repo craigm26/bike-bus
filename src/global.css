@@ -9,6 +9,13 @@
   font-family: 'Indie-Flower', sans-serif;
 }
 
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
 .bikebusname-button-container {
   position: fixed;
   bottom: 0;
