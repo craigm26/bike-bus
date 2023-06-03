@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonInput, IonItem, IonLabel, IonPage, IonText } from '@ionic/react';
+import { IonButton, IonHeader, IonInput, IonItem, IonLabel, IonPage, IonText } from '@ionic/react';
 import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { HeaderContext } from '../components/HeaderContext';
+
 
 const Signup: React.FC = () => {
     const { signUpWithEmailAndPassword } = useAuth();
@@ -15,6 +17,7 @@ const Signup: React.FC = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [isUsernameTaken, setIsUsernameTaken] = useState(false);
+    const headerContext = useContext(HeaderContext);
 
     const checkUsername = async (username: string) => {
         const usersCollectionRef = collection(db, 'users');
@@ -29,6 +32,13 @@ const Signup: React.FC = () => {
     };
 
 
+    useEffect(() => {
+        if (headerContext) {
+            headerContext.setShowHeader(false);
+        }
+    }
+        , [headerContext]);
+        
     const handleSignup = async (email: string, password: string, username: string, firstName: string, lastName:string) => {
         try {
             // Create the user in Firebase Authentication
@@ -52,9 +62,12 @@ const Signup: React.FC = () => {
 
 
     return (
-        <IonPage>
+
+        <IonPage className="signup-page">
+            <IonHeader>
+            </IonHeader>
             <IonItem>
-                <IonLabel position="floating">Email</IonLabel>
+                <IonLabel>Email</IonLabel>
                 <IonInput
                     type="email"
                     value={email}
