@@ -35,60 +35,38 @@ const ViewSchedule: React.FC = () => {
 
     useEffect(() => {
         const fetchSchedules = async () => {
-            const schedulesCollection = collection(db, 'schedules');
             const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
-            const q = query(schedulesCollection, where('BikeBusGroup', '==', bikeBusGroupDocRef));
-            const querySnapshot = await getDocs(q);
-            const fetchedEvents: ((prevState: Event[]) => Event[]) | { start: Date; end: Date; title: any; }[] = [];
-        
-            for (const scheduleDoc of querySnapshot.docs) {
-                const scheduleData = scheduleDoc.data();
+            const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
+            const bikeBusGroupData = bikeBusGroupSnapshot.data();
+            console.log('BikeBusGroup data:', bikeBusGroupData);
+    
+            // Check if schedule field is defined and is a Firestore document reference
+            if (bikeBusGroupData && bikeBusGroupData.schedule instanceof DocumentReference) {
+                // Get the referenced schedule document
+                const scheduleDocSnapshot = await getDoc(bikeBusGroupData.schedule);
+                const scheduleData = scheduleDocSnapshot.data();
                 console.log('Schedule data:', scheduleData);
                 
+                // Your previous code assumed each schedule document is associated with multiple events.
+                // However, it seems like each schedule document is associated with exactly one event document in the 'events' collection.
+                // Let's get the event document associated with this schedule.
+    
                 // Get the referenced event document
-                const eventDocRef: DocumentReference = doc(db, 'events', scheduleData.eventId); // Replace 'eventId' with the correct field name in your schedule document
+                const eventDocRef: DocumentReference = doc(db, 'events', bikeBusGroupData.schedule.id); // Replace 'schedule.id' with the correct field name in your schedule document
                 const eventDocSnapshot = await getDoc(eventDocRef);
                 const eventData = eventDocSnapshot.data();
-        
-                if (!eventData) {
-                    console.warn(`Event document with id ${scheduleData.eventId} does not exist.`);
-                    continue;
-                }
-        
                 console.log('Event data:', eventData);
-        
-                const startTime = new Date(eventData.startTime);
-                const endTime = new Date(eventData.endTime);
-        
-                // Check if eventData.eventDays is defined and is an array before using forEach on it
-                if (Array.isArray(eventData.eventDays)) {
-                    eventData.eventDays.forEach((eventDay: string) => {
-                        const eventDate = new Date(eventDay);
-                        const start = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), startTime.getHours(), startTime.getMinutes());
-                        const end = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), endTime.getHours(), endTime.getMinutes());
-                        
-                        fetchedEvents.push({
-                            start,
-                            end,
-                            title: eventData.title,
-                        });
-                    });
-                } else {
-                    console.warn(`Event document with id ${scheduleData.eventId} does not have eventDays defined.`);
-                }
+    
+                // The rest of your code...
+            } else {
+                console.warn(`BikeBusGroup document with id ${id} does not have a schedule field defined.`);
             }
-        
-            setEvents(fetchedEvents);
-            console.log('fetchedEvents:', fetchedEvents); // To check the resultant array
         };
-        
-        
-
+    
         fetchSchedules();
-        
     }, [id]);
+    
 
-    // Rest of your code...
 
     return (
         <IonPage>
