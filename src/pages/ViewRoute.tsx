@@ -124,12 +124,9 @@ const ViewRoute: React.FC = () => {
             </IonHeader>
             <IonContent>
                 <IonTitle>
-                    Viewing Route
+                 {selectedRoute?.routeName}
                 </IonTitle>
                 <IonList>
-                    <IonItem>
-                        <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
-                    </IonItem>
                     <IonItem>
                         <IonLabel>Description: {selectedRoute?.description}</IonLabel>
                     </IonItem>

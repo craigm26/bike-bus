@@ -41,9 +41,9 @@ const ViewSchedule: React.FC = () => {
             console.log('BikeBusGroup data:', bikeBusGroupData);
     
             // Check if schedule field is defined and is a Firestore document reference
-            if (bikeBusGroupData && bikeBusGroupData.schedule instanceof DocumentReference) {
+            if (bikeBusGroupData && bikeBusGroupData.BikeBusSchedules instanceof DocumentReference) {
                 // Get the referenced schedule document
-                const scheduleDocSnapshot = await getDoc(bikeBusGroupData.schedule);
+                const scheduleDocSnapshot = await getDoc(bikeBusGroupData.BikeBusSchedules);
                 const scheduleData = scheduleDocSnapshot.data();
                 console.log('Schedule data:', scheduleData);
                 
@@ -52,7 +52,7 @@ const ViewSchedule: React.FC = () => {
                 // Let's get the event document associated with this schedule.
     
                 // Get the referenced event document
-                const eventDocRef: DocumentReference = doc(db, 'events', bikeBusGroupData.schedule.id); // Replace 'schedule.id' with the correct field name in your schedule document
+                const eventDocRef: DocumentReference = doc(db, 'events', bikeBusGroupData.BikeBusSchedules.id); // Replace 'schedule.id' with the correct field name in your schedule document
                 const eventDocSnapshot = await getDoc(eventDocRef);
                 const eventData = eventDocSnapshot.data();
                 console.log('Event data:', eventData);
