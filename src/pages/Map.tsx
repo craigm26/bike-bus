@@ -477,6 +477,10 @@ const Map: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+  // when the user clicks on the "startTrip" action button, we want to create a new trip document in Firestore and use the current values for start and end locations as turn by turn google directions 
+
+
+  // when the user clicks on the "startBikeBusTrip" action button, we want to create a new trip document in Firestore and use the current values for start (users current location) and end (use the route in the bikbusgroup)  locations as turn by turn google directions
 
   return (
     <IonPage>
