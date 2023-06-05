@@ -284,6 +284,8 @@ const BikeBusGroupPage: React.FC = () => {
             {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
               <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
             }
+            {isUserLeader && <IonButton routerLink={`/CreateBikeBusStops/${groupId}`}>Create BikeBusStops</IonButton>
+            }
             <IonList>
               <IonItem>
                 <IonLabel>Leaders</IonLabel>

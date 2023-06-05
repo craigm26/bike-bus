@@ -37,9 +37,8 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
-import { addDoc, collection, Timestamp, setDoc, doc, getDoc, arrayUnion, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, doc, getDoc, arrayUnion, updateDoc } from 'firebase/firestore';
 import React from 'react';
-import { set } from 'firebase/database';
 
 
 
@@ -55,7 +54,6 @@ const CreateBikeBusGroup: React.FC = () => {
   const localizer = momentLocalizer(moment);
   const [BikeBusName, setBikeBusName] = useState('');
   const [BikeBusDescription, setBikeBusDescription] = useState('');
-  const [schedules, setSchedules] = useState<Array<any>>([]);
   const [startTime, setStartTime] = useState('07:00');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -65,10 +63,10 @@ const CreateBikeBusGroup: React.FC = () => {
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
-  const [recurring, setRecurring] = useState<string>('No');
+  const [recurring, setRecurring] = useState<string>('no');
   const [showRecurringModal, setShowRecurringModal] = useState<boolean>(false);
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
-  const [isRecurring, setIsRecurring] = useState('No');
+  const [isRecurring, setIsRecurring] = useState('no');
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -80,18 +78,30 @@ const CreateBikeBusGroup: React.FC = () => {
     Sunday: false
   });
 
-  // when the setStartDate is called, set the setEndDate to 30 days from that date
+  // when the setStartDate is called, set the setEndDate to 30 days from that date - only if the recurring option is set to Yes
   useEffect(() => {
-    if (startDate) {
+    if (startDate && isRecurring === 'yes') {
       const date = new Date(startDate);
       date.setDate(date.getDate() + 30);
       setEndDate(date.toISOString());
-    }
+    } else {  // if the recurring option is set to No, set the setEndDate to the same date as the setStartDate
+      if (startDate && isRecurring === 'no') {
+      setEndDate(startDate);
   }
-    , [startDate]);
+}
+  }, [startDate, isRecurring]);
 
   // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+  // when the setEndDate is called, format formattedEndDate to be in the format "Month Day, Year"
+  const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+  // format the startTime in am or pm (not 24 hour time)
+  const formattedStartTime = startTime ? new Date(startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+
+  // format the endTime in am or pm (not 24 hour time)
+  const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
   console.log("RouteID: ", RouteID);
 
@@ -239,8 +249,8 @@ const CreateBikeBusGroup: React.FC = () => {
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
       title: BikeBusName,
-      start: startDate,
-      end: endDate,
+      start: startDate.split('T')[0],
+      end: endDate.split('T')[0],
       startTime: startTime,
       endTime: endTime,
       eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
@@ -253,6 +263,7 @@ const CreateBikeBusGroup: React.FC = () => {
         return acc;
       }, []),
     };
+    
     
     // add the events document to the events collection in firestore
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
@@ -365,7 +376,7 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Start Time</IonLabel>
-          <IonLabel>{startTime}</IonLabel>
+          <IonLabel>{formattedStartTime}</IonLabel>
           <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
           <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
             <IonDatetime
@@ -380,7 +391,7 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus End Time</IonLabel>
-          <IonLabel>{endTime}</IonLabel>
+          <IonLabel>{formattedEndTime}</IonLabel>
           <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
           <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
             <IonDatetime
@@ -453,7 +464,7 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus End Date</IonLabel>
-          <IonLabel>{endDate}</IonLabel>
+          <IonLabel>{formattedEndDate}</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Route</IonLabel>

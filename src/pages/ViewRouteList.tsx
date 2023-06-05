@@ -138,6 +138,8 @@ const ViewRouteList: React.FC = () => {
         }
     }, [user]);
 
+    // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
+    const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
 
 
     return (

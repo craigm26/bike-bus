@@ -153,6 +153,25 @@ const EditBikeBus: React.FC = () => {
                             <IonSelectOption value="Club">Club</IonSelectOption>
                         </IonSelect>
                     </IonItem>
+                    <IonItem>
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSelect value={selectedBikeBus?.travelMode} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, travelMode: e.detail.value })}>
+                            <IonSelectOption value="Bike">Bike</IonSelectOption>
+                            <IonSelectOption value="Bus">Bus</IonSelectOption>
+                        </IonSelect>
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>Start Point:</IonLabel>
+                        <IonInput value={selectedBikeBus?.startPoint} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, startPoint: e.detail.value! })} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>End Point:</IonLabel>
+                        <IonInput value={selectedBikeBus?.endPoint} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, endPoint: e.detail.value! })} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>Create Inverse Route and Schedule: </IonLabel>
+                        <IonButton>Create</IonButton>
+                    </IonItem>
             </IonList>
             <IonButton onClick={handleSave}>Save</IonButton>
             <IonButton routerLink={`/bikebusgrouppage/${id}`}>Cancel</IonButton>

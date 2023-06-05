@@ -91,7 +91,7 @@ const ViewBikeBusList: React.FC = () => {
     useEffect(() => {
         console.log(user);
         fetchBikeBus();
-    }, [fetchBikeBus]);
+    }, [fetchBikeBus, user]);
 
 
 

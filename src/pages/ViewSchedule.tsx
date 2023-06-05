@@ -33,39 +33,111 @@ const ViewSchedule: React.FC = () => {
     const headerContext = useContext(HeaderContext);
     const { id } = useParams<{ id: string }>();
 
+
+
     useEffect(() => {
         const fetchSchedules = async () => {
             const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
             const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
             const bikeBusGroupData = bikeBusGroupSnapshot.data();
             console.log('BikeBusGroup data:', bikeBusGroupData);
-    
-            // Check if schedule field is defined and is a Firestore document reference
-            if (bikeBusGroupData && bikeBusGroupData.BikeBusSchedules instanceof DocumentReference) {
-                // Get the referenced schedule document
-                const scheduleDocSnapshot = await getDoc(bikeBusGroupData.BikeBusSchedules);
-                const scheduleData = scheduleDocSnapshot.data();
-                console.log('Schedule data:', scheduleData);
-                
-                // Your previous code assumed each schedule document is associated with multiple events.
-                // However, it seems like each schedule document is associated with exactly one event document in the 'events' collection.
-                // Let's get the event document associated with this schedule.
-    
-                // Get the referenced event document
-                const eventDocRef: DocumentReference = doc(db, 'events', bikeBusGroupData.BikeBusSchedules.id); // Replace 'schedule.id' with the correct field name in your schedule document
-                const eventDocSnapshot = await getDoc(eventDocRef);
-                const eventData = eventDocSnapshot.data();
-                console.log('Event data:', eventData);
-    
-                // The rest of your code...
-            } else {
-                console.warn(`BikeBusGroup document with id ${id} does not have a schedule field defined.`);
+
+            // Check if schedule field is defined and is an array of Firestore document references
+            if (bikeBusGroupData && Array.isArray(bikeBusGroupData.BikeBusSchedules)) {
+                for (let i = 0; i < bikeBusGroupData.BikeBusSchedules.length; i++) {
+                    const scheduleDocRef = bikeBusGroupData.BikeBusSchedules[i];
+
+                    if (scheduleDocRef instanceof DocumentReference) {
+                        // Get the referenced schedule document
+                        const scheduleDocSnapshot = await getDoc(scheduleDocRef);
+                        const scheduleData = scheduleDocSnapshot.data();
+                        console.log('Schedule data:', scheduleData);
+
+                        // If scheduleData doesn't exist, we continue to the next iteration
+                        if (!scheduleData) continue;
+
+                        // Prepare an array to store the events for this schedule
+                        const scheduleEvents: Event[] = [];
+
+                        // Iterate over the events array
+                        for (let j = 0; j < scheduleData.events.length; j++) {
+
+                            // Get the reference to the event document
+                            const eventDocRef: DocumentReference = scheduleData.events[j];
+
+                            // Fetch the event document
+                            const eventDocSnapshot = await getDoc(eventDocRef);
+                            const eventData = eventDocSnapshot.data();
+                            console.log('Event data:', eventData);
+
+                            // If eventData doesn't exist, we continue to the next iteration
+                            if (!eventData) continue;
+
+                            // use the eventData to grab the startTime after the T value and set that as startTime
+                            const startTime = eventData.startTime.split('T')[1];
+                            console.log(startTime);
+
+                            // use the eventData to grab the endTime after the T value and set that as endTime
+                            const endTime = eventData.endTime.split('T')[1];
+                            console.log(endTime);
+
+                            // use the eventData to grab the start (as a date)
+                            const start = eventData.start.split('T')[0];
+                            console.log(start);
+
+                            // use the eventData to grab the end (as a date)
+                            const end = eventData.end.split('T')[0];
+                            console.log(end);
+
+                            // now combine the startTime and start fields to create a startDateTime field that is a Date object that big-calendar can use
+                            const startDateTime = new Date(start + 'T' + startTime);
+                            console.log(startDateTime.toISOString());    
+
+                            // now combine the endTime and end fields to create a endDateTime field that is a Date object that big-calendar can use
+                            const endDateTime = new Date(end + 'T' + endTime);
+                            console.log(endDateTime.toISOString());
+
+
+                            // if the eventDays field in events document with the field "recurring" and is set to "no", then only one event will be created and the event is startTime and endTime from the events document
+                            if (eventData.isRecurring === "no") {
+                                const event: Event = {
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    title: bikeBusGroupData.title,
+                                };
+                                setEvents(prevEvents => {
+                                    const newEvents = [...prevEvents, event];
+                                    console.log(newEvents);
+                                    return newEvents;
+                                });                                
+                                console.log(event);
+                                scheduleEvents.push(event);
+                            }
+
+                            // if the eventDays field in events document with the field "recurring" and is set to "yes", then multiple events will be created and the event is startTime and endTime from the events document
+                            if (eventData.isRecurring === "yes") {
+                                // Here you would need to implement logic to handle recurring events
+                                const event: Event = {
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    title: bikeBusGroupData.title,
+                                };
+                                console.log(event);
+                                scheduleEvents.push(event);
+                            }
+                        }
+
+                        // After iterating over all events for this schedule, update the events state
+                        setEvents(prevEvents => [...prevEvents, ...scheduleEvents]);
+                    }
+                }
             }
         };
-    
+
         fetchSchedules();
     }, [id]);
-    
+
+
 
 
     return (
@@ -77,16 +149,16 @@ const ViewSchedule: React.FC = () => {
             </IonHeader>
             <IonContent>
                 <IonCard>
-                        <IonTitle style={{ textAlign: 'center' }}>Schedule</IonTitle>
-                <div style={{ height: 500 }}>
-                    <Calendar
-                        localizer={localizer}
-                        events={events}
-                        startAccessor="start"
-                        endAccessor="end"
-                    />
-                </div>
+                    <div style={{ height: 500 }}>
+                        <Calendar
+                            localizer={localizer}
+                            events={events}
+                            startAccessor="start"
+                            endAccessor="end"
+                        />
+                    </div>
                 </IonCard>
+                <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
                 <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
             </IonContent>
         </IonPage>
@@ -94,3 +166,4 @@ const ViewSchedule: React.FC = () => {
 };
 
 export default ViewSchedule;
+
