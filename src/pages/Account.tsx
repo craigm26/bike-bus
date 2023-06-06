@@ -34,17 +34,16 @@ const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
     const { user, checkAndUpdateAccountModes } = useAuth();
-    const { avatarUrl } = useAvatar(user?.uid);
+    const { avatarUrl, refresh } = useAvatar(user?.uid);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
-    const [email, setEmail] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [passwordConfirm, setPasswordConfirm] = useState<string>('');
     const [username, setUsername] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
     const [savedDestinations, setSavedDestinations] = useState<Group[]>([]);
+    const [uploadComplete, setUploadComplete] = useState(false);
+
 
 
 
@@ -100,8 +99,11 @@ const Account: React.FC = () => {
     }, [user, checkAndUpdateAccountModes]);
 
 
-    const refresh = () => {
-        // Refresh the avatar
+    const refreshAvatar = () => {
+        if (user) {
+            refresh(); // Use refresh function returned by useAvatar
+            setTimeout(() => refreshAvatar(), 1000);
+        }
     };
     // Update the user's avatar
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -128,6 +130,7 @@ const Account: React.FC = () => {
         }
     };
 
+
     return (
         <IonPage>
             <IonContent fullscreen>
@@ -137,9 +140,16 @@ const Account: React.FC = () => {
                         <IonCardTitle>Account</IonCardTitle>
                     </IonCardHeader>
                     <Avatar uid={user?.uid} size="large" />
-                    <IonButton fill="clear" onClick={(_handleFileInputChange) => fileInputRef.current?.click()}>
-                        Update Avatar
-                    </IonButton>
+                <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                    Update Avatar
+                </IonButton>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleFileInputChange}
+                />
                     <IonItem>
                         <IonLabel>Account Type</IonLabel>
                         <IonText>{accountType}</IonText>
