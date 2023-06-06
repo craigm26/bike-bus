@@ -48,7 +48,7 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });;
-  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });;
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
@@ -422,15 +422,41 @@ const Map: React.FC = () => {
               pathCoordinates: pathCoordinates,
             };
             console.log("Route Data: ", routeData);
-            // use the route data to start a turn-by-turn navigation from Google Maps
-            // inititate new map with route data
-            
-          
+            handleCreateRouteSubmit();
           } else {
             console.error("Directions request failed due to " + status);
           }
         }
       );
+    }
+  };
+
+
+  const handleCreateRouteSubmit = async () => {
+    getEndPointAdress();
+    getStartPointAdress();
+    try {
+      const routeDocRef = await addDoc(collection(db, 'routes'), {
+        routeName: routeName,
+        description: routeDescription,
+        startPoint: selectedStartLocation,
+        endPoint: selectedEndLocation,
+        routeType: routeType,
+        accountType: accountType,
+        travelMode: travelModeSelector,
+        routeCreator: "/users/" + user?.uid,
+        routeLeader: "/users/" + user?.uid,
+        pathCoordinates: pathCoordinates,
+        startPointName: routeStartName,
+        startPointAddress: routeStartFormattedAddress,
+        endPointName: routeEndName,
+        endPointAddress: routeEndFormattedAddress,
+        distance: distance,
+
+      });
+      history.push(`/editroute/${routeDocRef.id}`);
+    } catch (error) {
+      console.log("Error: ", error);
     }
   };
 
@@ -451,133 +477,7 @@ const Map: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  // the createTrip function creates a new trip document in Firestore with the current map values for start (either start or selectedStartLocation - selectedStartLocation takes precendent) and end locations as turn by turn google directions
-  const createTrip = async (uid: string, userLocation: { lat: number; lng: number; }, selectedStartLocation: { lat: number; lng: number; }, selectedEndLocation: { lat: number; lng: number; }) => {
-    const directionsService = new google.maps.DirectionsService();
-    const directionsRenderer = new google.maps.DirectionsRenderer();
-    directionsRenderer.setMap(mapRef.current);
-    // the directionsService.route should have a basic trip with pathCoordinates, but when it's a BikeBusRoute, we should add BikeBusStations (BikeBusStops) to the trip
-    directionsService.route(
-      {
-        origin: selectedStartLocation,
-        destination: selectedEndLocation,
-        travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-      },
-      (response, status) => {
-        if (status === "OK") {
-          directionsRenderer.setDirections(response);
-          const route = response?.routes[0];
-          const routeData = {
-            distance: route?.legs[0]?.distance?.value,
-            duration: route?.legs[0]?.duration?.value,
-            arrivalTime: new Date(),
-            travelMode: travelModeSelector,
-            origin: {
-              lat: route?.legs[0]?.start_location?.lat(),
-              lng: route?.legs[0]?.start_location?.lng()
-            },
-            destination: {
-              lat: route?.legs[0]?.end_location?.lat(),
-              lng: route?.legs[0]?.end_location?.lng()
-            },
-            startPointAddress: routeStartFormattedAddress,
-            endPointAddress: routeEndFormattedAddress,
-            startPoint: selectedStartLocation,
-            endPoint: selectedEndLocation,
-            routeDescription: routeDescription,
-            pathCoordinates: pathCoordinates,
-          };
-          console.log("Route Data: ", routeData);
-          handleCreateTripSubmit();
-        } else {
-          console.error("Directions request failed due to " + status);
-        }
-      }
-    );
-
-    const service = new google.maps.DistanceMatrixService();
-    service.getDistanceMatrix(
-      {
-        origins: [selectedStartLocation],
-        destinations: [selectedEndLocation],
-        travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-      },
-      (response, status) => {
-        if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
-          const distance = response?.rows[0]?.elements[0]?.distance?.value;
-          const duration = response?.rows[0]?.elements[0]?.duration?.value;
-          console.log("Distance Matrix Response: ", response);
-
-          setDistance(
-            (Math.round((distance * 0.000621371192) * 100) / 100).toString()
-          );
-
-          setDuration(
-            (Math.round((duration * 0.0166667) * 100) / 100).toString()
-          );
-
-          const arrivalTime = new Date();
-          const durationInMinutes = duration / 60;
-          arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
-          setArrivalTime(arrivalTime.toLocaleTimeString());
-        } else {
-          console.error("Error calculating distance:", status);
-        }
-      }
-    );
-  };
-
-  const handleCreateTripSubmit = async () => {
-    getEndPointAdress();
-    getStartPointAdress();
-    try {
-      const tripDocRef = await addDoc(collection(db, 'trips'), {
-        startPoint: selectedStartLocation,
-        endPoint: selectedEndLocation,
-        routeType: routeType,
-        accountType: accountType,
-        travelMode: travelModeSelector,
-        routeCreator: "/users/" + user?.uid,
-        routeLeader: "/users/" + user?.uid,
-        pathCoordinates: pathCoordinates,
-        startPointName: routeStartName,
-        startPointAddress: routeStartFormattedAddress,
-        endPointName: routeEndName,
-        endPointAddress: routeEndFormattedAddress,
-        distance: distance,
-        user: "/users/" + user?.uid,
-      });
-      // add tripDocRef to the user's trips array
-      history.push(`/turnByturnMap/${tripDocRef.id}`);
-    } catch (error) {
-      console.log("Error: ", error);
-    }
-  };
-
-
   // when the user clicks on the "startTrip" action button, we want to create a new trip document in Firestore and use the current values for start and end locations as turn by turn google directions 
-  const startTrip = () => {
-    // create a new trip document in Firestore
-    // use the current values for start and end locations as turn by turn google directions
-
-    // if the user is logged in, we want to create a new trip document in Firestore and use the current values for start and end locations as turn by turn google directions
-    // if the user is not logged in, we want to show the login modal
-    if (user) {
-      console.log("user is logged in");
-      const userRef = doc(db, "users", user.uid);
-      const tripRef = doc(db, "trips", user.uid);
-      // create new trip document in Firestore with the current map values for start (either start or selectedStartLocation - selectedStartLocation takes precendent) and end locations as turn by turn google directions
-      createTrip(user.uid, userLocation, selectedStartLocation, selectedEndLocation);
-      // add the trip to the user's trips array
-      updateDoc(userRef, {
-        trips: arrayUnion(tripRef),
-      });
-    } else {
-      console.log("user is not logged in");
-      setShowLoginModal(true);
-    }
-  };
-
 
 
   // when the user clicks on the "startBikeBusTrip" action button, we want to create a new trip document in Firestore and use the current values for start (users current location) and end (use the route in the bikbusgroup)  locations as turn by turn google directions
@@ -734,9 +634,9 @@ const Map: React.FC = () => {
                 {
                   text: "Start a Trip",
                   role: "destructive",
-                  handler: () => {
-                    startTrip();
-                  }
+                  data: {
+                    action: "startTrip",
+                  },
                 },
                 {
                   text: "Start a BikeBus Trip",
@@ -762,4 +662,3 @@ const Map: React.FC = () => {
 };
 
 export default Map;
-
