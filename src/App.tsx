@@ -147,15 +147,6 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                           <IonLabel>View BikeBusses</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
-                          <IonLabel>View BikeBusStations</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
-                          <IonLabel>Create BikeBusStation</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
-                          <IonLabel>Upgrade Account to Premium</IonLabel>
-                        </IonItem>
                       </IonCard>
                       {accountType === 'App Admin' && 
                       <IonCard>
@@ -182,6 +173,9 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
                           <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
                         </IonItem>
+                        <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
+                          <IonLabel>Create BikeBusStation</IonLabel>
+                        </IonItem>
                       </IonCard>}
                       {accountType === 'App Admin' && 
                       <IonCard>
@@ -205,6 +199,12 @@ const App: React.FC = () => {
                       {accountType === 'App Admin' && 
                       <IonCard>
                         <IonLabel>App Admin Functions</IonLabel>
+                        <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
+                          <IonLabel>TODO: View BikeBusStations</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
+                          <IonLabel>TODO: Upgrade Account to Premium</IonLabel>
+                        </IonItem>
                         <IonItem button routerLink="/CreateOrganization" routerDirection="none">
                           <IonLabel>Create Organization</IonLabel>
                         </IonItem>
