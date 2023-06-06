@@ -33,97 +33,103 @@ const ViewSchedule: React.FC = () => {
     const headerContext = useContext(HeaderContext);
     const { id } = useParams<{ id: string }>();
 
-
-
     useEffect(() => {
         const fetchSchedules = async () => {
             const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
             const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
             const bikeBusGroupData = bikeBusGroupSnapshot.data();
             console.log('BikeBusGroup data:', bikeBusGroupData);
-    
-            // If no data or BikeBusSchedules is not array, return
+
             if (!bikeBusGroupData || !Array.isArray(bikeBusGroupData.BikeBusSchedules)) return;
-    
-            // Prepare an array to store all the events for all schedules
+
             let allEvents: Event[] = [];
-    
+
             for (let i = 0; i < bikeBusGroupData.BikeBusSchedules.length; i++) {
                 const scheduleDocRef = bikeBusGroupData.BikeBusSchedules[i];
-    
+
                 if (scheduleDocRef instanceof DocumentReference) {
                     const scheduleDocSnapshot = await getDoc(scheduleDocRef);
                     const scheduleData = scheduleDocSnapshot.data();
                     console.log('Schedule data:', scheduleData);
-    
+
                     if (!scheduleData) continue;
-    
+
+
                     for (let j = 0; j < scheduleData.events.length; j++) {
                         const eventDocRef: DocumentReference = scheduleData.events[j];
                         const eventDocSnapshot = await getDoc(eventDocRef);
                         const eventData = eventDocSnapshot.data();
                         console.log('Event data:', eventData);
-    
+
                         if (!eventData) continue;
 
                         const title = eventData.title;
-    
                         const startTime = eventData.startTime.split('T')[1];
                         const endTime = eventData.endTime.split('T')[1];
-                        const start = eventData.start.split('T')[0];
-                        const end = eventData.end.split('T')[0];
-    
-                        const startDateTime = new Date(start + 'T' + startTime);
-                        const endDateTime = new Date(end + 'T' + endTime);
-    
-                        const event: Event = {
-                            start: startDateTime,
-                            end: endDateTime,
-                            title: title,
-                        };
-    
-                        console.log(event);
-                        allEvents.push(event);
+
+                        if (eventData.recurring === "yes") {
+                            for (let k = 0; k < eventData.eventDays.length; k++) {
+                                const eventDay = eventData.eventDays[k];
+                                const startDateTime = new Date(eventDay + 'T' + startTime);
+                                const endDateTime = new Date(eventDay + 'T' + endTime);
+
+                                const event: Event = {
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    title: title,
+                                };
+
+                                console.log(event);
+                                allEvents.push(event);
+                            }
+                        } else {
+                            const start = eventData.start.split('T')[0];
+                            const end = eventData.end.split('T')[0];
+
+                            const startDateTime = new Date(start + 'T' + startTime);
+                            const endDateTime = new Date(end + 'T' + endTime);
+
+                            const event: Event = {
+                                start: startDateTime,
+                                end: endDateTime,
+                                title: title,
+                            };
+
+                            console.log(event);
+                            allEvents.push(event);
+                        }
                     }
                 }
             }
-    
-            // Update the events state after all events for all schedules have been processed
-            setEvents(allEvents);
+setEvents(allEvents);
         };
-    
-        fetchSchedules();
+fetchSchedules();
     }, [id]);
-    
 
-
-
-
-    return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent>
-                <IonCard>
-                    <div style={{ height: 500 }}>
-                        <Calendar
-                            localizer={localizer}
-                            events={events}
-                            startAccessor="start"
-                            endAccessor="end"
-                            defaultView="week"
-                        />
-                    </div>
-                </IonCard>
-                <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
-                <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
-            </IonContent>
-        </IonPage>
-    );
+return (
+    <IonPage>
+        <IonHeader>
+            <IonToolbar>
+                {headerContext?.showHeader && <IonHeader></IonHeader>}
+            </IonToolbar>
+        </IonHeader>
+        <IonContent>
+            <IonCard>
+                <div style={{ height: 500 }}>
+                    <Calendar
+                        localizer={localizer}
+                        events={events}
+                        startAccessor="start"
+                        endAccessor="end"
+                        defaultView="week"
+                    />
+                </div>
+            </IonCard>
+            <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
+            <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+        </IonContent>
+    </IonPage>
+);
 };
 
 export default ViewSchedule;
-
