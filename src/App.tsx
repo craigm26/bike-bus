@@ -363,7 +363,7 @@ const App: React.FC = () => {
                         <Welcome />
                       </Route>
                       <Route exact path="/">
-                        <Redirect to="/Welcome" />
+                        <Redirect to="/Login" />
                       </Route>
                     </React.Fragment>
                   </IonRouterOutlet>

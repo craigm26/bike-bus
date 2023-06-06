@@ -16,6 +16,32 @@
   height: 100%;
 }
 
+.email-input {
+  width: 80%;
+  margin: 20px;
+  border: 1px solid #ccc;
+}
+
+.email-button {
+  width: 100%;
+  margin: 20px;
+  border: 1px solid #ccc;
+}
+
+
+
+.use-google, .use-anonymously, .signup {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px;
+}
+
+.forgot-password-button {
+  width: 30%;
+  margin: 10px;
+}
+
 .bikebusname-button-container {
   position: fixed;
   bottom: 0;

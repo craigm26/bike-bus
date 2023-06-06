@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import useAuth from '../useAuth';
 import {
   IonPage,
-  IonTitle,
   IonContent,
   IonItem,
   IonLabel,
@@ -10,12 +9,11 @@ import {
   IonButton,
   IonText,
   IonHeader,
+  IonRow,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import './Login.css';
 import PasswordReset from '../components/PasswordReset';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 import { HeaderContext } from '../components/HeaderContext';
 
 const Login: React.FC = () => {
@@ -80,16 +78,24 @@ const Login: React.FC = () => {
   };
 
 
+
+
+
+
   return (
     <IonPage>
       <IonHeader>
       </IonHeader>
       <IonContent className='login-container'>
-        <IonText color="primary" class="BikeBusFont">
-          <h1>BikeBus</h1>
-        </IonText>
-        <IonTitle>Login</IonTitle>
-        <IonText>
+        <IonRow className="welcome-to-bikebus">
+          <IonText color="primary">
+            <h1>BikeBus</h1>
+          </IonText>
+        </IonRow>
+        <IonRow className="welcome-to-bikebus-about">
+          <IonText className="ion-align-items-center">BikeBus is an app to help BikeBus Leaders organize BikeBus trips.</IonText>
+        </IonRow>
+        <IonText className="signup">
           <p>
             Don't have an account?{' '}
             <IonButton
@@ -101,7 +107,7 @@ const Login: React.FC = () => {
             </IonButton>
           </p>
         </IonText>
-        <form onSubmit={handleSubmit}>
+        <form className="email-input" onSubmit={handleSubmit}>
           <IonText color="danger">{errorMessage}</IonText>
           <IonText color="success">{successMessage}</IonText>
           <IonItem>
@@ -122,13 +128,13 @@ const Login: React.FC = () => {
               onIonChange={(e) => setPassword(e.detail.value!)}
             />
           </IonItem>
-          <IonButton type="submit">
+          <IonButton className="email-button" type="submit">
             Login with Email
           </IonButton>
         </form>
         <PasswordReset email={email} />
-        <IonText>
-          <p>Or Use Google
+        <IonText className="use-google">
+          <p>
             <IonButton
               onClick={handleGoogleSubmit}
             >
@@ -137,8 +143,8 @@ const Login: React.FC = () => {
 
           </p>
         </IonText>
-        <IonText>
-          <p>Or Use Anonymously
+        <IonText className="use-anonymously">
+          <p>
             <IonButton
               onClick={async () => {
                 try {
