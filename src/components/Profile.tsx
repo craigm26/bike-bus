@@ -84,25 +84,25 @@ const Profile: React.FC = () => {
     <IonPage>
       <IonHeader>
       </IonHeader>
-      <IonContent fullscreen>
-        <div className="avatar-container">
-          <IonAvatar className='img-center'>
+      <IonContent className="ion-content-profile" fullscreen>
+        <div className="avatar-container-profile">
+          <IonAvatar className='img-center-profile'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
-            <><><IonButton fill="clear" routerLink="/account">
+            <><><IonButton className="ion-button-profile" fill="clear" routerLink="/account">
               Account
-            </IonButton><IonLabel>
+            </IonButton><IonLabel className="ion-label-profile">
                 <h2>UserName: {user?.username}</h2>
-              </IonLabel></><IonText>Account Type: {accountType}</IonText></>
+              </IonLabel></><IonText className="ion-label-profile">Account Type: {accountType}</IonText></>
 
           )}
           {user?.accountType === 'Anonymous' ? (
             <>
-              <IonText></IonText>
-              <IonButton fill="clear" routerLink="/SignUp">
+              <IonText className="ion-text-profile"></IonText>
+              <IonButton className="ion-button-profile" fill="clear" routerLink="/SignUp">
                 SignUp to Add Avatar
               </IonButton>
               <IonText>Account Type: {accountType}</IonText>
@@ -116,7 +116,7 @@ const Profile: React.FC = () => {
                     value={accountMode}
                     onAccountModeChange={onAccountModeChange}
                   />
-                  <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                  <IonButton className="ion-button-profile" fill="clear" onClick={() => fileInputRef.current?.click()}>
                     Add Avatar
                   </IonButton>
                 </>
@@ -126,15 +126,18 @@ const Profile: React.FC = () => {
           )}
         </div>
         <Logout />
-        <IonToolbar>
-        <IonButton routerLink='/settings'>
+        <IonToolbar className="ion-toolbar-profile">
+        <IonButton className="ion-button-profile" routerLink='/settings'>
           Settings
           <IonIcon slot="end" icon={cogOutline}></IonIcon>
         </IonButton>
-        </IonToolbar>
-        <IonLabel>
-          <IonText>Privacy Policy</IonText>
+        <IonLabel className="ion-label-profile">
+          Terms of Service
         </IonLabel>
+        <IonLabel className="ion-label-profile">
+          Privacy Policy
+        </IonLabel>
+        </IonToolbar>
       </IonContent>
     </IonPage>
   );
