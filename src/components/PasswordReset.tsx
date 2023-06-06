@@ -25,9 +25,8 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ email }) => {
 
   return (
     <>
-      <IonText>Forgot password?</IonText>
-      <IonButton onClick={handlePasswordReset}>
-        Reset Password
+      <IonButton className="forgot-password-button" onClick={handlePasswordReset}>
+        Forgot Password?
       </IonButton>
       <IonText color={message.startsWith('Error') ? 'danger' : 'success'}>
         {message}
