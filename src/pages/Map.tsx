@@ -620,39 +620,6 @@ const Map: React.FC = () => {
           <div className="bikebus-action-sheet footer-content">
             <div className="bikebusname-button-container">
             </div>
-            <IonFab vertical="bottom" horizontal="end" slot="fixed">
-              <IonButton className="bikebus-start-button" color="success" shape="round" size="large" id="open-action-sheet">
-                <IonIcon size="large" icon={playOutline} />
-              </IonButton>
-            </IonFab>
-            <IonActionSheet
-              isOpen={showActionSheet}
-              onDidDismiss={() => setShowActionSheet(false)}
-              trigger="open-action-sheet"
-              header="Start Actions:"
-              buttons={[
-                {
-                  text: "Start a Trip",
-                  role: "destructive",
-                  data: {
-                    action: "startTrip",
-                  },
-                },
-                {
-                  text: "Start a BikeBus Trip",
-                  data: {
-                    action: "startBikeBusTrip",
-                  },
-                },
-                {
-                  text: "Cancel",
-                  role: "cancel",
-                  data: {
-                    action: "cancel",
-                  },
-                },
-              ]}
-            ></IonActionSheet>
           </div>
         </IonRow>
 
