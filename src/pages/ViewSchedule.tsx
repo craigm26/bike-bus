@@ -67,11 +67,20 @@ const ViewSchedule: React.FC = () => {
                         const startTime = eventData.startTime.split('T')[1];
                         const endTime = eventData.endTime.split('T')[1];
 
+
                         if (eventData.recurring === "yes") {
                             for (let k = 0; k < eventData.eventDays.length; k++) {
-                                const eventDay = eventData.eventDays[k];
-                                const startDateTime = new Date(eventDay + 'T' + startTime);
-                                const endDateTime = new Date(eventDay + 'T' + endTime);
+                                const eventDayTimestamp = eventData.eventDays[k];
+                                const eventDay = eventDayTimestamp.toDate(); // converts Timestamp to Date
+
+                                // Create date string in 'YYYY-MM-DD' format
+                                const year = eventDay.getFullYear();
+                                const month = String(eventDay.getMonth() + 1).padStart(2, '0'); // Months are 0 based
+                                const day = String(eventDay.getDate()).padStart(2, '0');
+                                const eventDayStr = `${year}-${month}-${day}`;
+
+                                const startDateTime = new Date(eventDayStr + 'T' + startTime);
+                                const endDateTime = new Date(eventDayStr + 'T' + endTime);
 
                                 const event: Event = {
                                     start: startDateTime,
@@ -101,35 +110,35 @@ const ViewSchedule: React.FC = () => {
                     }
                 }
             }
-setEvents(allEvents);
+            setEvents(allEvents);
         };
-fetchSchedules();
+        fetchSchedules();
     }, [id]);
 
-return (
-    <IonPage>
-        <IonHeader>
-            <IonToolbar>
-                {headerContext?.showHeader && <IonHeader></IonHeader>}
-            </IonToolbar>
-        </IonHeader>
-        <IonContent>
-            <IonCard>
-                <div style={{ height: 500 }}>
-                    <Calendar
-                        localizer={localizer}
-                        events={events}
-                        startAccessor="start"
-                        endAccessor="end"
-                        defaultView="week"
-                    />
-                </div>
-            </IonCard>
-            <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
-            <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
-        </IonContent>
-    </IonPage>
-);
+    return (
+        <IonPage>
+            <IonHeader>
+                <IonToolbar>
+                    {headerContext?.showHeader && <IonHeader></IonHeader>}
+                </IonToolbar>
+            </IonHeader>
+            <IonContent>
+                <IonCard>
+                    <div style={{ height: 500 }}>
+                        <Calendar
+                            localizer={localizer}
+                            events={events}
+                            startAccessor="start"
+                            endAccessor="end"
+                            defaultView="week"
+                        />
+                    </div>
+                </IonCard>
+                <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
+                <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+            </IonContent>
+        </IonPage>
+    );
 };
 
 export default ViewSchedule;
