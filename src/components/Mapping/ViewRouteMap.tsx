@@ -27,6 +27,7 @@ const containerMapStyle = {
 };
 
 const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations, path }) => {
+
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
@@ -38,6 +39,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
         lat: startGeo.latitude,
         lng: startGeo.longitude,
     });
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -65,6 +67,7 @@ const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations,
     if (loadError) {
         return <div>Error loading maps</div>;
     }
+    
 
     return isLoaded ? (
         <IonContent>

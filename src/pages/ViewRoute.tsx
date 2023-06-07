@@ -20,12 +20,15 @@ import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory } from 'react-router-dom';
 
 interface Coordinate {
+    latitude: number;
+    longitude: number;
     lat: number;
     lng: number;
 }
 
 interface Route {
     id: string;
+    BikeBusGroupId: string;
     accountType: string;
     description: string;
     endPoint: Coordinate;
@@ -40,6 +43,7 @@ interface Route {
     endPointAddress: string;
     travelMode: string;
     pathCoordinates: Coordinate[];
+    isBikeBus: boolean;
 }
 
 const ViewRoute: React.FC = () => {
@@ -53,48 +57,25 @@ const ViewRoute: React.FC = () => {
     const [routes, setRoutes] = useState<Route[]>([]);
     const { id } = useParams<{ id: string }>();
 
-    const fetchRoutes = useCallback(async () => {
-        const uid = user?.uid;
-        if (!uid) {
-            return;
-        }
-        const routesCollection = collection(db, 'routes');
-        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
-        const querySnapshot = await getDocs(q);
-        const routesData: Route[] = querySnapshot.docs.map(doc => ({
-            ...doc.data() as Route,
-            id: doc.id,
-        }));
-        setRoutes(routesData);
-    }, [user]);
-
+    // retrieve the route from the database using the id from the url. 
     useEffect(() => {
-        fetchRoutes();
-    }, [fetchRoutes]);
-
-    useEffect(() => {
-        if (id) fetchSingleRoute(id);
-    }, [id]);
-
-    const fetchSingleRoute = async (id: string) => {
-        const docRef = doc(db, 'routes', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const routeData = {
-                ...docSnap.data() as Route,
-                id: docSnap.id,
-                pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-                    lat: coord.latitude,
-                    lng: coord.longitude,
-                })),
-            };
-            setSelectedRoute(routeData);
-            console.log(routeData.pathCoordinates, routeData.startPoint, routeData.endPoint);
-
-        }
-    };
-
+        const getRoute = async () => {
+            const routeRef = doc(db, 'routes', id);
+            const routeSnapshot = await getDoc(routeRef);
+            if (routeSnapshot.exists()) {
+                const routeData = routeSnapshot.data();
+                if (routeData) {
+                    const route = {
+                        id: routeSnapshot.id,
+                        ...routeData
+                    } as Route;
+                    setSelectedRoute(route);
+                }
+            }
+        };
+        getRoute();
+    }
+        , [id]);
 
     useEffect(() => {
         if (headerContext) {
@@ -121,7 +102,7 @@ const ViewRoute: React.FC = () => {
         if (selectedRoute) {
             const routeRef = doc(db, 'routes', selectedRoute.id);
             await deleteDoc(routeRef);
-            fetchRoutes();
+            goToRouteList();
         }
     };
     // go to the /viewroutelist/ page after deleting a route
@@ -129,7 +110,7 @@ const ViewRoute: React.FC = () => {
         history.push('/ViewRouteList');
     };
 
-
+    console.log(selectedRoute)
 
     return (
         <IonPage>
@@ -152,24 +133,38 @@ const ViewRoute: React.FC = () => {
                     <IonItem>
                         <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
                     </IonItem>
-                    <IonItem>Starting Point: {selectedRoute?.startPointName}, {selectedRoute?.startPointAddress}</IonItem>
-                    <IonItem>Ending Point: {selectedRoute?.endPointName}, {selectedRoute?.endPointAddress}</IonItem>
                     <IonItem>
-                        <IonLabel>Claimed by BikeBus?</IonLabel>
+                        <IonLabel>
+                            Starting Point: {selectedRoute?.startPointName}
+                        </IonLabel>
                     </IonItem>
+                    <IonItem>
+                        <IonLabel>
+                            Ending Point: {selectedRoute?.endPointName}
+                        </IonLabel>
+                    </IonItem>
+                    <IonItem>BikeBus Group: {selectedRoute?.BikeBusGroupId}</IonItem>
                 </IonList>
                 <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
                 <IonButton onClick={deleteRoute}>Delete Route</IonButton>
                 <IonButton onClick={goToRouteList}>Go to Route List</IonButton>
                 <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
-                {selectedRoute && (
-                    <ViewRouteMap
-                        path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.lat, coordinate.lng))}
-                        startGeo={new GeoPoint(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
-                        endGeo={new GeoPoint(selectedRoute.endPoint.lat, selectedRoute.endPoint.lng)}
-                        stations={[]}
-                    />
-                )}
+
+
+                {selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint && selectedRoute.pathCoordinates && (
+  <>
+    {console.log('startPoint:', selectedRoute.startPoint)}
+    {console.log('endPoint:', selectedRoute.endPoint)}
+    <ViewRouteMap
+      path={selectedRoute.pathCoordinates.map(coordinate => new GeoPoint(coordinate.latitude, coordinate.longitude))}
+      startGeo={new GeoPoint(selectedRoute.startPoint.latitude, selectedRoute.startPoint.longitude)}
+      endGeo={new GeoPoint(selectedRoute.endPoint.latitude, selectedRoute.endPoint.longitude)}
+      stations={[]}
+    />
+  </>
+)}
+
+
             </IonContent >
         </IonPage >
     );
