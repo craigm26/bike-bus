@@ -6,9 +6,7 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link } from 'react-router-dom';
-import { schedule } from 'firebase-functions/v1/pubsub';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
-import { useHistory } from 'react-router-dom';
 
 interface Coordinate {
   lat: number;
@@ -27,10 +25,6 @@ interface BikeBus {
   BikeBusType: string;
   startPoint: Coordinate;
   travelMode: string;
-}
-
-interface Schedule {
-  id: string;
 }
 
 const BikeBusGroupPage: React.FC = () => {
@@ -317,6 +311,7 @@ const BikeBusGroupPage: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonLabel>Routes</IonLabel>
+                {groupId && (
                 <IonList>
                   {routesData.map((route, index) => (
                     <IonItem key={index}>
@@ -326,6 +321,7 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonItem>
                   ))}
                 </IonList>
+                )}
               </IonItem>
               <IonItem>
                 <IonList>

@@ -219,6 +219,12 @@ const CreateBikeBusGroup: React.FC = () => {
       BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleId)),
     });
 
+    // add the bikebusgroupid to the routes collection in the firestore document for the route
+    const routeRef = doc(db, 'routes', RouteID);
+    await updateDoc(routeRef, {
+      BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
+    });
+
     // add the bikebus group to the user's bikebusgroups array in firestore
     const userRef = doc(db, 'users', user.uid);
     await updateDoc(userRef, {
