@@ -38,12 +38,14 @@ interface Route {
     accountType: string;
     description: string;
     endPoint: Coordinate;
+    endPointAddress: string;
     endPointName: string;
     routeCreator: string;
     routeLeader: string;
     routeName: string;
     routeType: string;
     startPoint: Coordinate;
+    startPointAddress: string;
     startPointName: string;
     travelMode: string;
     pathCoordinates: Coordinate[];
@@ -179,11 +181,11 @@ const EditRoute: React.FC = () => {
                     </IonItem>
                     <IonItem>
                         <IonLabel>Start Point:</IonLabel>
-                        <IonInput value={selectedRoute?.startPointName} ref={startPointRef} />
+                        <IonInput value={selectedRoute?.startPointAddress} ref={startPointRef} />
                 </IonItem>
                 <IonItem>
                     <IonLabel>End Point:</IonLabel>
-                    <IonInput value={selectedRoute?.endPointName} ref={endPointRef} />
+                    <IonInput value={selectedRoute?.endPointAddress} ref={endPointRef} />
                 </IonItem>
             </IonList>
             <IonButton onClick={handleSave}>Save</IonButton>
