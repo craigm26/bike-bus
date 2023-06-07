@@ -1,6 +1,11 @@
 {
   "rules": {
-    ".read": "true",  
-    ".write": "auth.uid === auth"  
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "userLocations": {
+      "$uid": {
+        ".write": "$uid === auth.uid"
+      }
+    }
   }
 }

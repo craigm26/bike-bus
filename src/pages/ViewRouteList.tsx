@@ -74,17 +74,22 @@ const ViewRouteList: React.FC = () => {
         setEditableRoute(null);
     };
 
-    const saveRouteChanges = async () => {
+    const saveRouteChanges = useCallback(async () => {
         if (editableRoute) {
-            try {
-                const routeRef = doc(db, "routes", editableRoute.id);
-                await updateDoc(routeRef, { ...editableRoute }); // changed
-                closePopover();
-            } catch (error) {
-                console.log("Error updating route: ", error);
-            }
+          try {
+            const routeRef = doc(db, "routes", editableRoute.id);
+            await updateDoc(routeRef, { ...editableRoute });
+            closePopover();
+          } catch (error) {
+            console.log("Error updating route: ", error);
+          }
         }
-    };
+      }, [editableRoute]);
+      
+      useEffect(() => {
+        saveRouteChanges();
+      }, [saveRouteChanges]);
+      
     const fetchRoutes = useCallback(async () => {
         // Assuming that your uid is stored in the user.uid
         const uid = user?.uid;

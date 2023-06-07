@@ -268,9 +268,6 @@ const App: React.FC = () => {
                           <IonButton routerLink='/help'>
                             <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
                           </IonButton>
-                          <IonButton routerLink='/notifications'>
-                            <IonIcon slot="end" icon={alertCircleOutline}></IonIcon>
-                          </IonButton>
                         </IonButtons>
                       </IonToolbar>
                     </IonHeader>

@@ -13,11 +13,11 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import ViewRouteMap from '../components/Mapping/ViewRouteMap';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 
 interface Coordinate {
     lat: number;
@@ -44,6 +44,8 @@ interface Route {
 
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
+    const history = useHistory();
+
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
@@ -85,7 +87,7 @@ const ViewRoute: React.FC = () => {
                 pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
                     lat: coord.latitude,
                     lng: coord.longitude,
-                })), 
+                })),
             };
             setSelectedRoute(routeData);
             console.log(routeData.pathCoordinates, routeData.startPoint, routeData.endPoint);
@@ -115,6 +117,20 @@ const ViewRoute: React.FC = () => {
     }, [user]);
 
 
+    const deleteRoute = async () => {
+        if (selectedRoute) {
+            const routeRef = doc(db, 'routes', selectedRoute.id);
+            await deleteDoc(routeRef);
+            fetchRoutes();
+        }
+    };
+    // go to the /viewroutelist/ page after deleting a route
+    const goToRouteList = () => {
+        history.push('/ViewRouteList');
+    };
+
+
+
     return (
         <IonPage>
             <IonHeader>
@@ -124,22 +140,27 @@ const ViewRoute: React.FC = () => {
             </IonHeader>
             <IonContent>
                 <IonTitle>
-                 {selectedRoute?.routeName}
+                    {selectedRoute?.routeName}
                 </IonTitle>
                 <IonList>
                     <IonItem>
-                        <IonLabel>Description: {selectedRoute?.description}</IonLabel>
+                        <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
                     </IonItem>
                     <IonItem>
-                        <IonLabel>Route Type: {selectedRoute?.routeType}</IonLabel>
+                        <IonLabel>Description: {selectedRoute?.description}</IonLabel>
                     </IonItem>
                     <IonItem>
                         <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
                     </IonItem>
                     <IonItem>Starting Point: {selectedRoute?.startPointName}, {selectedRoute?.startPointAddress}</IonItem>
                     <IonItem>Ending Point: {selectedRoute?.endPointName}, {selectedRoute?.endPointAddress}</IonItem>
+                    <IonItem>
+                        <IonLabel>Claimed by BikeBus?</IonLabel>
+                    </IonItem>
                 </IonList>
                 <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+                <IonButton onClick={deleteRoute}>Delete Route</IonButton>
+                <IonButton onClick={goToRouteList}>Go to Route List</IonButton>
                 <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
                 {selectedRoute && (
                     <ViewRouteMap
