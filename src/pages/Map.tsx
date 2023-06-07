@@ -69,7 +69,6 @@ const Map: React.FC = () => {
   const [distance, setDistance] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
   const [arrivalTime, setArrivalTime] = useState<string>('');
-  const [routeName, setRouteName] = useState<string>('');
   const [routeDescription, setRouteDescription] = useState<string>('');
   const [routeStartLocation, setRouteStartLocation] = useState<string>('');
   const [routeStartName, setRouteStartName] = useState<string>('');
@@ -102,10 +101,8 @@ const Map: React.FC = () => {
   const [createRouteRow, setCreateRouteRow] = useState(false);
   const [directionsFetched, setDirectionsFetched] = useState(false);
   const [showCreateRouteModal, setCreateRouteShowModal] = useState(false);
-  const [routeDetails, setRouteDetails] = useState({
-    routeName: '',
-    description: '',
-  });
+  const [routeName, setRouteName] = useState('');
+  const [description, setDescription] = useState('');
 
 
 
@@ -441,7 +438,10 @@ const Map: React.FC = () => {
               endPointAddress: routeEndFormattedAddress,
               startPoint: selectedStartLocation,
               endPoint: selectedEndLocation,
-              routeDescription: routeDescription,
+              startPointName: routeStartName,
+              endPointName: routeEndName,
+              routeName: routeName,
+              routeDescription: description,
               pathCoordinates: pathCoordinates,
             };
             console.log("Route Data: ", routeData);
@@ -460,8 +460,8 @@ const Map: React.FC = () => {
     getStartPointAdress();
     try {
       const routeDocRef = await addDoc(collection(db, 'routes'), {
-        routeName: routeDetails.routeName,
-        description: routeDetails.description,
+        routeName: routeName,
+        description: description,
         startPoint: selectedStartLocation,
         endPoint: selectedEndLocation,
         routeType: routeType,
@@ -481,7 +481,7 @@ const Map: React.FC = () => {
       console.log("Error: ", error);
     }
   };
-  
+
 
   const saveDestination = () => {
     if (user) {
@@ -507,17 +507,13 @@ const Map: React.FC = () => {
   };
 
 
-  const handleInputChange = (event: CustomEvent<InputChangeEventDetail>) => {
-    const inputElement = event.target as HTMLInputElement;
-    const name = inputElement.name;
-    const value = event.detail.value;
-    setRouteDetails((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+  const handleRouteNameChange = (event: CustomEvent<InputChangeEventDetail>) => {
+    setRouteName(event.detail.value || '');
   };
-  
 
+  const handleDescriptionChange = (event: CustomEvent<InputChangeEventDetail>) => {
+    setDescription(event.detail.value || '');
+  };
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -634,81 +630,77 @@ const Map: React.FC = () => {
                     </IonRow>}
                     <IonRow>
                       <>
-                      {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                      {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                        <IonButton expand="block" onClick={() => setCreateRouteShowModal(true)}>
-                          Create Route
-                        </IonButton>
-                      )}
-                      <IonModal isOpen={showCreateRouteModal} onDidDismiss={() => setCreateRouteShowModal(false)}>
-                        <IonHeader>
-                          <IonToolbar>
-                            <IonTitle>Create Route</IonTitle>
-                          </IonToolbar>
-                        </IonHeader>
-                        <IonContent>
-                          <IonInput
-                            value={routeDetails.routeName}
-                            placeholder="Enter Route Name"
-                            name="routeName"
-                            onIonChange={handleInputChange}
-                          />
-                          <IonLabel>Route Name</IonLabel>
-                          <IonInput
-                            value={routeDetails.description}
-                            placeholder="Enter Description"
-                            name="description"
-                            onIonChange={handleInputChange}
-                          />
-                          <IonLabel>Description</IonLabel>
-                          <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>
-                        </IonContent>
-                      </IonModal>
-                    </>
-                    {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
-                      history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);
-                    }}>Start Trip</IonButton>}
-                  </IonRow>
-                </IonCol>
-                <IonCol>
-                  {showGetDirectionsButton && <IonRow className="map-directions-after-get">
-                    <IonLabel>Distance: {distance} miles </IonLabel>
-                    <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                    <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                  </IonRow>}
-                </IonCol>
-              </IonGrid>
-              <div>
-                {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-                {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-              </div>
-              <div>
-                {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                {selectedEndLocation && <Marker position={selectedEndLocation} />}
-              </div>
-              <Polyline
-                path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                options={{
-                  strokeColor: "#FF0000",
-                  strokeOpacity: 1.0,
-                  strokeWeight: 2,
-                  geodesic: true,
-                  editable: true,
-                  draggable: true,
-                }}
-              />
-            </GoogleMap>
-          </IonRow>
+                        {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                          <IonButton expand="block" onClick={() => setCreateRouteShowModal(true)}>
+                            Create Route
+                          </IonButton>
+                        )}
+                        <IonModal isOpen={showCreateRouteModal} onDidDismiss={() => setCreateRouteShowModal(false)}>
+                          <IonHeader>
+                            <IonToolbar>
+                              <IonTitle>Create Route</IonTitle>
+                            </IonToolbar>
+                          </IonHeader>
+                          <IonContent>
+                            <IonInput
+                              value={routeName}
+                              placeholder="Enter Route Name"
+                              onIonChange={handleRouteNameChange}
+                            />
+                            <IonInput
+                              value={description}
+                              placeholder="Enter Description"
+                              onIonChange={handleDescriptionChange}
+                            />
+                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>
+                          </IonContent>
+                        </IonModal>
+                      </>
+                      {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
+                        history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);
+                      }}>Start Trip</IonButton>}
+                    </IonRow>
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && <IonRow className="map-directions-after-get">
+                      <IonLabel>Distance: {distance} miles </IonLabel>
+                      <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                      <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                    </IonRow>}
+                  </IonCol>
+                </IonGrid>
+                <div>
+                  {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                </div>
+                <div>
+                  {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                  {selectedEndLocation && <Marker position={selectedEndLocation} />}
+                </div>
+                <Polyline
+                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    geodesic: true,
+                    editable: true,
+                    draggable: true,
+                  }}
+                />
+              </GoogleMap>
+            </IonRow>
           </IonGrid>
         )}
-      <IonRow>
-        <div className="bikebus-action-sheet footer-content">
-          <div className="bikebusname-button-container">
+        <IonRow>
+          <div className="bikebus-action-sheet footer-content">
+            <div className="bikebusname-button-container">
+            </div>
           </div>
-        </div>
-      </IonRow>
+        </IonRow>
 
-    </IonContent>
+      </IonContent>
     </IonPage >
   );
 };
