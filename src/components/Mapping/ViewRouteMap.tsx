@@ -23,7 +23,7 @@ interface ViewRouteMapProps {
 
 const containerMapStyle = {
     width: '100%',
-    height: '600px',
+    height: '400px',
 };
 
 const ViewRouteMap: React.FC<ViewRouteMapProps> = ({ startGeo, endGeo, stations, path }) => {

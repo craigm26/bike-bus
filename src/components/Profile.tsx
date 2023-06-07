@@ -124,9 +124,9 @@ const Profile: React.FC = () => {
               <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
             </div>
           )}
-        </div>
-        <Logout />
+
         <IonToolbar className="ion-toolbar-profile">
+        <Logout />
         <IonButton className="ion-button-profile" routerLink='/settings'>
           Settings
           <IonIcon slot="end" icon={cogOutline}></IonIcon>
@@ -138,6 +138,7 @@ const Profile: React.FC = () => {
           Privacy Policy
         </IonLabel>
         </IonToolbar>
+        </div>
       </IonContent>
     </IonPage>
   );
