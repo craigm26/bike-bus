@@ -509,6 +509,8 @@ const Map: React.FC = () => {
 
   const handleRouteNameChange = (event: CustomEvent<InputChangeEventDetail>) => {
     setRouteName(event.detail.value || '');
+    // show message to user that "the route name may not be set in mobile as it is a bug. Create the route for now and then edit the route to add the route name"
+
   };
 
   const handleDescriptionChange = (event: CustomEvent<InputChangeEventDetail>) => {
@@ -643,6 +645,7 @@ const Map: React.FC = () => {
                             </IonToolbar>
                           </IonHeader>
                           <IonContent>
+                            <IonLabel>route name and directions may not be set in mobile as it is a bug. Create the route for now and then edit the route to add the route name</IonLabel>
                             <IonInput
                               value={routeName}
                               placeholder="Enter Route Name"

@@ -170,15 +170,6 @@ const EditRoute: React.FC = () => {
                         <IonInput value={selectedRoute?.description} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, description: e.detail.value! })} />
                     </IonItem>
                     <IonItem>
-                        <IonLabel>Route Type:</IonLabel>
-                        <IonSelect value={selectedRoute?.routeType} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeType: e.detail.value })}>
-                            <IonSelectOption value="Work">Work</IonSelectOption>
-                            <IonSelectOption value="School">School</IonSelectOption>
-                            <IonSelectOption value="Social">Social</IonSelectOption>
-                            <IonSelectOption value="Club">Club</IonSelectOption>
-                        </IonSelect>
-                    </IonItem>
-                    <IonItem>
                         <IonLabel>Travel Mode:</IonLabel>
                         <IonSelect value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
                             <IonSelectOption value="WALKING">Walking</IonSelectOption>
