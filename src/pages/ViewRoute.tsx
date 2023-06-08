@@ -208,6 +208,21 @@ const ViewRoute: React.FC = () => {
         }
     }, [user]);
 
+    console.log(selectedRoute?.startPoint.lat);
+    console.log(selectedRoute?.startPoint.lng);
+    console.log(selectedRoute?.endPoint.lat);
+    console.log(selectedRoute?.endPoint.lng);
+    console.log(selectedRoute?.startPoint);
+    console.log(selectedRoute?.endPoint);
+
+    useEffect(() => {
+        if (selectedRoute) {
+            setStartGeo(selectedRoute.startPoint);
+            setEndGeo(selectedRoute.endPoint);
+        }
+    }, [selectedRoute]);
+    
+
 
     const deleteRoute = async () => {
         if (selectedRoute) {
