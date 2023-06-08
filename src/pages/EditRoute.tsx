@@ -15,7 +15,6 @@ import {
     IonRow,
     IonGrid,
     IonModal,
-    InputChangeEventDetail,
     IonText,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
@@ -38,10 +37,12 @@ interface Coordinate {
 }
 
 interface Route {
-    stopPoint: any;
-    stopPoints: string[] | (() => string[]);
+    newStop: Coordinate | null;
+    oldIds: Coordinate | null;
+    stopPoint: Coordinate | null;
+    BikeBusStopName: string;
+    bikeBusStop: Coordinate;   
     BikeBusGroupId: string;
-    bikebusstopIds: string[] | (() => string[]);
     id: string;
     accountType: string;
     description: string;
@@ -85,14 +86,13 @@ const EditRoute: React.FC = () => {
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
-    const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+    const [bikeBusStop, setbikeBusStop] = useState<Coordinate>({lat: 0, lng: 0});
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
     const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
-    const [bikebusstopIds, setbikebusstopIds] = useState<string[]>(selectedRoute ? selectedRoute.bikebusstopIds : []);
     const [showModal, setShowModal] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [newStop, setNewStop] = useState<Coordinate | null>(null);
@@ -237,12 +237,6 @@ const EditRoute: React.FC = () => {
         }
     }, [user]);
 
-    // instead of a handleMapClick, we need to use the add stop button to add a stop to the route
-    //const handleCreateBikeBusStopButton = () => {
-    //    alert("Select a location on the map to add a stop or search for a location in the search box");
-    //    handleMapClick();
-    //};
-
     useEffect(() => {
         if (selectedStartLocation) {
             setStartGeo(selectedStartLocation);
@@ -258,69 +252,84 @@ const EditRoute: React.FC = () => {
     }
         , [selectedEndLocation]);
 
-        const onMapClick = (event: google.maps.MapMouseEvent) => {
-            if (event.latLng) {
-                const newStop: Coordinate = {
-                    lat: event.latLng.lat(),
-                    lng: event.latLng.lng(),
-                };
-                setNewStop(newStop);
-                
-                if (selectedRoute) {
-                    let insertPosition = 0;
-                    let minDistance = Infinity;
-                    for (let i = 0; i < selectedRoute.pathCoordinates.length; i++) {
-                        const coord = selectedRoute.pathCoordinates[i];
-                        const distance = Math.hypot(coord.lat - newStop.lat, coord.lng - newStop.lng);
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            insertPosition = i;
-                        }
-                    }
-                    
-                    const newPathCoordinates = [...selectedRoute.pathCoordinates];
-                    newPathCoordinates.splice(insertPosition, 0, newStop);
-                    setBikeBusStops([...bikeBusStops, newStop]);
-        
-                    // Define DirectionsService
-                    const directionsService = new google.maps.DirectionsService();
-        
-                    const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-        
-                    const waypoints = newPathCoordinates.slice(1, newPathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
-        
-                    directionsService.route({
-                        origin: newPathCoordinates[0],
-                        destination: newPathCoordinates[newPathCoordinates.length - 1],
-                        waypoints: waypoints,
-                        optimizeWaypoints: true,
-                        travelMode: selectedTravelMode,
-                    }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
-                        if (status === google.maps.DirectionsStatus.OK && response) {
-                            // update your map with the new route
-                        } else {
-                            console.error('Directions request failed due to ' + status);
-                        }
-                    });
-                }
-            }
-        };
-        
+    const onMapClick = (event: google.maps.MapMouseEvent) => {
+        if (event.latLng) {
+            setNewStop({ lat: event.latLng.lat(), lng: event.latLng.lng() });
+        }
+        console.log("onMapClick called");
+        console.log("event.latLng: ", event.latLng);
 
+
+        if (event.latLng) {
+            const newStop: Coordinate = {
+                lat: event.latLng.lat(),
+                lng: event.latLng.lng(),
+            };
+            setNewStop(newStop);
+
+            if (selectedRoute) {
+                let insertPosition = 0;
+                let minDistance = Infinity;
+                for (let i = 0; i < selectedRoute.pathCoordinates.length; i++) {
+                    const coord = selectedRoute.pathCoordinates[i];
+                    const distance = Math.hypot(coord.lat - newStop.lat, coord.lng - newStop.lng);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        insertPosition = i;
+                    }
+                }
+
+                const newPathCoordinates = [...selectedRoute.pathCoordinates];
+                newPathCoordinates.splice(insertPosition, 0, newStop);
+                setSelectedRoute({ ...selectedRoute, pathCoordinates: newPathCoordinates });
+
+                // Define DirectionsService
+                const directionsService = new google.maps.DirectionsService();
+
+                const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
+
+                const waypoints = newPathCoordinates.slice(1, newPathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
+
+                directionsService.route({
+                    origin: newPathCoordinates[0],
+                    destination: newPathCoordinates[newPathCoordinates.length - 1],
+                    waypoints: waypoints,
+                    optimizeWaypoints: true,
+                    travelMode: selectedTravelMode,
+                }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+                    if (status === google.maps.DirectionsStatus.OK && response) {
+                        // update your map with the new route
+                    } else {
+                        console.error('Directions request failed due to ' + status);
+                    }
+                });
+            }
+        }
+    };
 
     const onSaveButtonClick = async () => {
-        if (newStop) {
-            const newStopId = await handleNewBikeBusStop(newStop);
-            if (newStopId) {
-                setbikebusstopIds([...bikebusstopIds, newStopId]);
-                setNewStop(null);
-                setShowModal(false);
+        console.log("Saving new stop: ", bikeBusStop);
+        // your existing save logic here...
+
+        if (newStop !== null && newStopName !== '') {
+            try {
+                const newStopId = await handleNewBikeBusStop(newStop);
+                if (newStopId) {
+                    setNewStop(null);
+                    console.log(`New stop saved with ID ${newStopId}`);
+                } else {
+                    console.error('New stop id is undefined!');
+                }
+            } catch (error) {
+                console.error('Error saving new stop:', error);
             }
-            console.log(`New stop saved with ID ${newStopId}`);
+            handleCloseModal();
         } else {
             console.error('No new stop to save!');
         }
     };
+
+
 
 
     const handleNewBikeBusStop = async (newStop: Coordinate) => {
@@ -329,21 +338,23 @@ const EditRoute: React.FC = () => {
             return;
         }
 
-        const bikebusstopsCollection = collection(db, 'bikebusstops');
-        const newbikebusstopRef = await addDoc(bikebusstopsCollection, {
+        setbikeBusStop(newStop);
+        console.log("newStop: ", newStop);
+        // save the new stop to the bikeBusStop collection    
+        const bikeBusStopCollection = collection(db, 'bikeBusStop');
+        const newbikebusstopRef = await addDoc(bikeBusStopCollection, {
             BikeBusGroupId: selectedRoute.BikeBusGroupId || "",
             stopPoint: newStop,
             BikeBusStopName: newStopName,
             // include other fields as needed
 
         });
-        // if there is a new stop id or multiple new stop ids, save the document id from the bikebusstops collection to the route as a reference
+        // if there is a new stop id or multiple new stop ids, save the document id from the bikeBusStop collection to the route as a reference
         // if there is no new stop id, then just save the route as is
 
         const routeRef = doc(db, 'routes', selectedRoute.id);
         const updatedRoute: Partial<Route> = {
             routeName: selectedRoute.routeName,
-            bikebusstopIds: bikebusstopIds,
             BikeBusGroupId: selectedRoute.BikeBusGroupId,
             description: selectedRoute.description,
             routeType: selectedRoute.routeType,
@@ -363,27 +374,39 @@ const EditRoute: React.FC = () => {
 
 
     const handleRouteSave = async () => {
-        if (!selectedRoute) {
+        if (selectedRoute === null) {
+            console.error("selectedRoute is null");
             return;
         }
 
-        const routeRef = doc(db, 'routes', selectedRoute.id);
-        const updatedRoute: Partial<Route> = {
-            routeName: selectedRoute.routeName,
-            bikebusstopIds: bikebusstopIds,
-            BikeBusGroupId: selectedRoute.BikeBusGroupId,
-            description: selectedRoute.description,
-            routeType: selectedRoute.routeType,
-            travelMode: selectedRoute.travelMode,
-            startPoint: selectedRoute.startPoint,
-            endPoint: selectedRoute.endPoint,
-            pathCoordinates: selectedRoute.pathCoordinates,
+        console.log("selectedRoute: ", selectedRoute);
+        console.log("selectedRoute.pathCoordinates: ", selectedRoute.pathCoordinates);
+        console.log("selectedRoute.startPoint: ", selectedRoute.startPoint);
+        console.log("selectedRoute.endPoint: ", selectedRoute.endPoint);
+        console.log("selectedRoute.BikeBusGroupId: ", selectedRoute.BikeBusGroupId);
+        console.log("selectedRoute.description: ", selectedRoute.description);
+        console.log("selectedRoute.routeType: ", selectedRoute.routeType);
+        console.log("selectedRoute.travelMode: ", selectedRoute.travelMode);
+        console.log("selectedRoute.routeName: ", selectedRoute.routeName);
 
-        };
+
+        const routeRef = doc(db, 'routes', selectedRoute.id);
+
+        const updatedRoute: Partial<Route> = {};
+        if (selectedRoute.routeName !== undefined) updatedRoute.routeName = selectedRoute.routeName;
+        if (selectedRoute.BikeBusGroupId !== undefined) updatedRoute.BikeBusGroupId = selectedRoute.BikeBusGroupId;
+        if (selectedRoute.description !== undefined) updatedRoute.description = selectedRoute.description;
+        if (selectedRoute.routeType !== undefined) updatedRoute.routeType = selectedRoute.routeType;
+        if (selectedRoute.travelMode !== undefined) updatedRoute.travelMode = selectedRoute.travelMode;
+        if (selectedRoute.startPoint !== undefined) updatedRoute.startPoint = selectedRoute.startPoint;
+        if (selectedRoute.endPoint !== undefined) updatedRoute.endPoint = selectedRoute.endPoint;
+        if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
+
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
         history.push(`/ViewRouteList/${selectedRoute.id}`)
     };
+
 
     // Open the modal when user clicks on 'Add BikeBusStop' button
     const handleCreateBikeBusStopButton = () => {
@@ -501,16 +524,16 @@ const EditRoute: React.FC = () => {
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
                                     />
-                                    {bikeBusStops.map((stop, index) => (
+                                    {bikeBusStop && (
                                         <Marker
-                                            key={index}
-                                            position={stop}
-                                            title={`Stop ${index + 1}`}
+                                        position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
+                                            title="New Stop"
                                             onClick={() => {
-                                                console.log(`Clicked on stop ${index + 1}`);
+                                                console.log("Clicked on new stop");
                                             }}
                                         />
-                                    ))}
+                                    )}
+
                                     <Polyline
                                         path={selectedRoute.pathCoordinates}
                                         options={{
@@ -532,8 +555,8 @@ const EditRoute: React.FC = () => {
                         <div>
                             <IonModal isOpen={showModal} onDidDismiss={handleCloseModal}>
                                 <IonItem>
-                                <IonLabel>New BikeBus Stop Name:</IonLabel>
-                                <IonInput value={newStopName} onIonChange={e => setNewStopName(e.detail.value!)} />
+                                    <IonLabel>New BikeBus Stop Name:</IonLabel>
+                                    <IonInput value={newStopName} onIonChange={e => setNewStopName(e.detail.value!)} />
                                 </IonItem>
                                 <IonText>Click on the map to select a location</IonText>
                                 <IonButton onClick={onSaveButtonClick}>Save New BikeBusStop</IonButton>
@@ -561,16 +584,10 @@ const EditRoute: React.FC = () => {
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
                                     />
-                                    {bikeBusStops.map((stop, index) => (
                                         <Marker
-                                            key={index}
-                                            position={stop}
-                                            title={`Stop ${index + 1}`}
-                                            onClick={() => {
-                                                console.log(`Clicked on stop ${index + 1}`);
-                                            }}
+                                            position={bikeBusStop}
+                                            title={newStopName}
                                         />
-                                    ))}
                                     <IonButton onClick={handleCloseModal}>Close</IonButton>
                                 </GoogleMap>
                             </IonModal>
