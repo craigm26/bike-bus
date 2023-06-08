@@ -189,6 +189,8 @@ const Map: React.FC = () => {
     }
   }, [user, getLocationClicked, watchLocation]);
 
+  
+
   useEffect(() => {
     console.log("MapCenter Location: ", mapCenter);
     console.log("User Location: ", userLocation)
@@ -327,6 +329,47 @@ const Map: React.FC = () => {
   console.log("Route End Name: ", routeEndName);
   console.log("Route End Formatted Address: ", routeEndFormattedAddress);
 
+  interface LatLng {
+    latitude: number;
+    longitude: number;
+  }
+  
+  function perpendicularDistance(point: LatLng, linePoint1: LatLng, linePoint2: LatLng): number {
+    const { latitude: x, longitude: y } = point;
+    const { latitude: x1, longitude: y1 } = linePoint1;
+    const { latitude: x2, longitude: y2 } = linePoint2;
+  
+    const area = Math.abs(0.5 * (x1 * y2 + x2 * y + x * y1 - x2 * y1 - x * y2 - x1 * y));
+    const bottom = Math.hypot(x1 - x2, y1 - y2);
+    const height = (2 * area) / bottom;
+  
+    return height;
+  }
+  
+  function ramerDouglasPeucker(pointList: LatLng[], epsilon: number): LatLng[] {
+    let dmax = 0;
+    let index = 0;
+    const end = pointList.length - 1;
+  
+    for (let i = 1; i < end; i++) {
+      const d = perpendicularDistance(pointList[i], pointList[0], pointList[end]);
+      if (d > dmax) {
+        index = i;
+        dmax = d;
+      }
+    }
+  
+    if (dmax > epsilon) {
+      const recResults1 = ramerDouglasPeucker(pointList.slice(0, index + 1), epsilon);
+      const recResults2 = ramerDouglasPeucker(pointList.slice(index, end + 1), epsilon);
+  
+      const resultPoints = [...recResults1, ...recResults2.slice(1)];
+      return resultPoints;
+    } else {
+      return [pointList[0], pointList[end]];
+    }
+  }
+
   const getDirections = () => {
     if (selectedStartLocation && selectedEndLocation) {
       getEndPointAdress();
@@ -343,12 +386,14 @@ const Map: React.FC = () => {
         (response, status) => {
           if (status === "OK" && response) {
             directionsRenderer.setDirections(response);
-
-            const pathPoints = response.routes[0].overview_path.map(latLng => ({
+        
+            const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
               latitude: latLng.lat(),
               longitude: latLng.lng(),
             }));
-            setPathCoordinates(pathPoints);
+            const epsilon = 0.0001;
+            const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
+            setPathCoordinates(simplifiedPathPoints);
           } else {
             console.error("Directions request failed due to " + status);
           }
@@ -444,7 +489,7 @@ const Map: React.FC = () => {
               routeDescription: description,
               pathCoordinates: pathCoordinates,
               // create a new field called isBikeBus and make it a boolean. Set the default value to false. 
-              isBikeBus: false,
+              isBikeBus: "",
             };
             console.log("Route Data: ", routeData);
             handleCreateRouteSubmit();
@@ -466,7 +511,7 @@ const Map: React.FC = () => {
         description: description,
         isBikeBus: false,
         BikeBusGroupId: "",
-        BikeBusStationIds: [],
+        bikebusstopIds: [],
         startPoint: selectedStartLocation,
         endPoint: selectedEndLocation,
         routeType: routeType,
