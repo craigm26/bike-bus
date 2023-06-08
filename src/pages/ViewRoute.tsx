@@ -96,11 +96,12 @@ const ViewRoute: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [path, setPath] = useState<GeoPoint[]>([]);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
-    const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });    
+    const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
+    const [BikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
 
     const containerMapStyle = {
         width: '100%',
@@ -144,8 +145,14 @@ const ViewRoute: React.FC = () => {
                     lat: coord.latitude,
                     lng: coord.longitude,
                 })),
+                BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
+                    lat: coord.latitude,
+                    lng: coord.longitude,
+                })),
             };
             setSelectedRoute(routeData);
+            setPath(routeData.pathCoordinates);
+            setBikeBusStationsIds(routeData.BikeBusStationsIds);
         }
     };
 
@@ -164,6 +171,9 @@ const ViewRoute: React.FC = () => {
     };
 
     console.log(selectedRoute?.BikeBusGroupId);
+    console.log(bikeBusGroup?.name)
+    console.log(selectedRoute?.isBikeBus)
+    console.log(selectedRoute?.pathCoordinates)
 
     // if the route is in a bikebusgroup, then make the isGroup variable true
     const isGroup = selectedRoute?.isBikeBus;
@@ -208,20 +218,13 @@ const ViewRoute: React.FC = () => {
         }
     }, [user]);
 
-    console.log(selectedRoute?.startPoint.lat);
-    console.log(selectedRoute?.startPoint.lng);
-    console.log(selectedRoute?.endPoint.lat);
-    console.log(selectedRoute?.endPoint.lng);
-    console.log(selectedRoute?.startPoint);
-    console.log(selectedRoute?.endPoint);
-
     useEffect(() => {
         if (selectedRoute) {
             setStartGeo(selectedRoute.startPoint);
             setEndGeo(selectedRoute.endPoint);
         }
     }, [selectedRoute]);
-    
+
 
 
     const deleteRoute = async () => {
@@ -315,8 +318,18 @@ const ViewRoute: React.FC = () => {
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
                                     />
+                                    {BikeBusStationsIds.map((stop, index) => (
+                                        <Marker
+                                            key={index}
+                                            position={stop}
+                                            title={`Stop ${index + 1}`}
+                                            onClick={() => {
+                                                console.log(`Clicked on stop ${index + 1}`);
+                                            }}
+                                        />
+                                    ))}
                                     <Polyline
-                                        path={path.map(geoPoint => ({ lat: geoPoint.latitude, lng: geoPoint.longitude }))}
+                                        path={selectedRoute.pathCoordinates} 
                                         options={{
                                             strokeColor: "#FF0000",
                                             strokeOpacity: 1.0,
@@ -328,6 +341,7 @@ const ViewRoute: React.FC = () => {
                                         }}
                                     />
                                 </GoogleMap>
+
                             </IonCol>
                         </IonRow>
                     )}
