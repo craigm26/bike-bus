@@ -16,6 +16,7 @@ import {
     IonGrid,
     IonModal,
     InputChangeEventDetail,
+    IonText,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -37,8 +38,10 @@ interface Coordinate {
 }
 
 interface Route {
+    stopPoint: any;
+    stopPoints: string[] | (() => string[]);
     BikeBusGroupId: string;
-    BikeBusStationIds: string[] | (() => string[]);
+    bikebusstopIds: string[] | (() => string[]);
     id: string;
     accountType: string;
     description: string;
@@ -89,9 +92,12 @@ const EditRoute: React.FC = () => {
         libraries,
     });
     const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
-    const [bikeBusStationIds, setBikeBusStationIds] = useState<string[]>(selectedRoute ? selectedRoute.BikeBusStationIds : []);
+    const [bikebusstopIds, setbikebusstopIds] = useState<string[]>(selectedRoute ? selectedRoute.bikebusstopIds : []);
     const [showModal, setShowModal] = useState(false);
     const [searchInput, setSearchInput] = useState("");
+    const [newStop, setNewStop] = useState<Coordinate | null>(null);
+    const [newStopName, setNewStopName] = useState<string>('');
+
 
 
 
@@ -252,89 +258,111 @@ const EditRoute: React.FC = () => {
     }
         , [selectedEndLocation]);
 
-
-    const handleMapClick = async (e?: google.maps.MapMouseEvent) => {
-        if (selectedRoute === null) {
-            console.log('No route selected');
-            return;
-        }
-
-        // show the automcomplete search box and use that to set the new stop
-        // if the user clicks on the map, use that to set the new stop
-
-
-        let newStop: Coordinate;
-        if (e && e.latLng) {
-            newStop = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        } else {
-            newStop = endGeo;
-        }
-
-        // Calculate where to insert the new stop
-        let insertPosition = 0;
-        let minDistance = Infinity;
-        for (let i = 0; i < selectedRoute.pathCoordinates.length; i++) {
-            const coord = selectedRoute.pathCoordinates[i];
-            const distance = Math.hypot(coord.lat - newStop.lat, coord.lng - newStop.lng);
-            if (distance < minDistance) {
-                minDistance = distance;
-                insertPosition = i;
+        const onMapClick = (event: google.maps.MapMouseEvent) => {
+            if (event.latLng) {
+                const newStop: Coordinate = {
+                    lat: event.latLng.lat(),
+                    lng: event.latLng.lng(),
+                };
+                setNewStop(newStop);
+                
+                if (selectedRoute) {
+                    let insertPosition = 0;
+                    let minDistance = Infinity;
+                    for (let i = 0; i < selectedRoute.pathCoordinates.length; i++) {
+                        const coord = selectedRoute.pathCoordinates[i];
+                        const distance = Math.hypot(coord.lat - newStop.lat, coord.lng - newStop.lng);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            insertPosition = i;
+                        }
+                    }
+                    
+                    const newPathCoordinates = [...selectedRoute.pathCoordinates];
+                    newPathCoordinates.splice(insertPosition, 0, newStop);
+                    setBikeBusStops([...bikeBusStops, newStop]);
+        
+                    // Define DirectionsService
+                    const directionsService = new google.maps.DirectionsService();
+        
+                    const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
+        
+                    const waypoints = newPathCoordinates.slice(1, newPathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
+        
+                    directionsService.route({
+                        origin: newPathCoordinates[0],
+                        destination: newPathCoordinates[newPathCoordinates.length - 1],
+                        waypoints: waypoints,
+                        optimizeWaypoints: true,
+                        travelMode: selectedTravelMode,
+                    }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+                        if (status === google.maps.DirectionsStatus.OK && response) {
+                            // update your map with the new route
+                        } else {
+                            console.error('Directions request failed due to ' + status);
+                        }
+                    });
+                }
             }
-        }
-
-        // Insert the new stop at the calculated position
-        const newPathCoordinates = [...selectedRoute.pathCoordinates];
-        newPathCoordinates.splice(insertPosition, 0, newStop);
-
-        // use the new map click as a "BikeBusStationIds" geopoin in the field array of the route document
-        // add the new stop to the bikeBusStops array
-        setBikeBusStops([...bikeBusStops, newStop]);
-
-        // Define DirectionsService
-        const directionsService = new google.maps.DirectionsService();
-
-        const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-
-        const waypoints = newPathCoordinates.slice(1, newPathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
-
-        directionsService.route({
-            origin: newPathCoordinates[0],
-            destination: newPathCoordinates[newPathCoordinates.length - 1],
-            waypoints: waypoints,
-            optimizeWaypoints: true,
-            travelMode: selectedTravelMode,
-        }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
-            if (status === google.maps.DirectionsStatus.OK && response) {
-                // update your map with the new route
-            } else {
-                console.error('Directions request failed due to ' + status);
-            }
-        });
-
-        // After adding a new stop and saving to the bikebusstations collection, add the id (document) to bikeBusStationIds array
-        // add the new stop to the bikebusstations collection as a new document
-        const addBikeBusStation = async (newStop: Coordinate) => {
-            const bikeBusStationsCollection = collection(db, 'bikebusstations');
-
-            const newBikeBusStationRef = await addDoc(bikeBusStationsCollection, {
-                BikeBusGroupId: selectedRoute.BikeBusGroupId,
-                endPoint: newStop,
-                startPoint: newStop,
-                // include other fields as needed
-            });
-            return newBikeBusStationRef.id;
         };
+        
 
-        const newBikeBusStationId = await addBikeBusStation(newStop);
-        setBikeBusStationIds(prevIds => [...prevIds, newBikeBusStationId]);
+
+    const onSaveButtonClick = async () => {
+        if (newStop) {
+            const newStopId = await handleNewBikeBusStop(newStop);
+            if (newStopId) {
+                setbikebusstopIds([...bikebusstopIds, newStopId]);
+                setNewStop(null);
+                setShowModal(false);
+            }
+            console.log(`New stop saved with ID ${newStopId}`);
+        } else {
+            console.error('No new stop to save!');
+        }
     };
 
 
+    const handleNewBikeBusStop = async (newStop: Coordinate) => {
+        if (selectedRoute === null) {
+            console.error("selectedRoute is null");
+            return;
+        }
+
+        const bikebusstopsCollection = collection(db, 'bikebusstops');
+        const newbikebusstopRef = await addDoc(bikebusstopsCollection, {
+            BikeBusGroupId: selectedRoute.BikeBusGroupId || "",
+            stopPoint: newStop,
+            BikeBusStopName: newStopName,
+            // include other fields as needed
+
+        });
+        // if there is a new stop id or multiple new stop ids, save the document id from the bikebusstops collection to the route as a reference
+        // if there is no new stop id, then just save the route as is
+
+        const routeRef = doc(db, 'routes', selectedRoute.id);
+        const updatedRoute: Partial<Route> = {
+            routeName: selectedRoute.routeName,
+            bikebusstopIds: bikebusstopIds,
+            BikeBusGroupId: selectedRoute.BikeBusGroupId,
+            description: selectedRoute.description,
+            routeType: selectedRoute.routeType,
+            travelMode: selectedRoute.travelMode,
+            startPoint: selectedRoute.startPoint,
+            endPoint: selectedRoute.endPoint,
+            pathCoordinates: selectedRoute.pathCoordinates,
+
+        };
+        await updateDoc(routeRef, updatedRoute);
+        alert('Route Updated');
+        history.push(`/EditRoute/${selectedRoute.id}`)
 
 
+        return newbikebusstopRef.id;
+    };
 
 
-    const handleSave = async () => {
+    const handleRouteSave = async () => {
         if (!selectedRoute) {
             return;
         }
@@ -342,16 +370,19 @@ const EditRoute: React.FC = () => {
         const routeRef = doc(db, 'routes', selectedRoute.id);
         const updatedRoute: Partial<Route> = {
             routeName: selectedRoute.routeName,
-            BikeBusStationIds: bikeBusStationIds,
+            bikebusstopIds: bikebusstopIds,
+            BikeBusGroupId: selectedRoute.BikeBusGroupId,
             description: selectedRoute.description,
             routeType: selectedRoute.routeType,
             travelMode: selectedRoute.travelMode,
             startPoint: selectedRoute.startPoint,
             endPoint: selectedRoute.endPoint,
+            pathCoordinates: selectedRoute.pathCoordinates,
+
         };
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
-        history.push(`/ViewRoute/${selectedRoute.id}`)
+        history.push(`/ViewRouteList/${selectedRoute.id}`)
     };
 
     // Open the modal when user clicks on 'Add BikeBusStop' button
@@ -362,18 +393,6 @@ const EditRoute: React.FC = () => {
     // Close the modal
     const handleCloseModal = () => {
         setShowModal(false);
-    };
-
-// Update search input
-const handleSearchInputChange = (event: CustomEvent<InputChangeEventDetail>) => {
-    setSearchInput(event.detail.value || "");
-};
-
-
-
-    // Search function to use with Google Autocomplete or Places API
-    const handleSearch = () => {
-        // Use Google Autocomplete or Places API to search with searchInput
     };
 
     useEffect(() => {
@@ -455,123 +474,109 @@ const handleSearchInputChange = (event: CustomEvent<InputChangeEventDetail>) => 
                     <IonRow>
                         <IonCol>
                             <IonButton onClick={handleCreateBikeBusStopButton}>Add BikeBusStop</IonButton>
-                            <IonButton onClick={handleSave}>Save</IonButton>
+                            <IonButton onClick={handleRouteSave}>Save</IonButton>
                             <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
                         </IonCol>
                     </IonRow>
-                    <div style={{ position: 'relative' }}>
-                        {selectedRoute && !showModal &&(
-                            <IonRow style={{ flex: '1' }}>
-                                <IonCol>
-                                    <GoogleMap
-                                        mapContainerStyle={containerMapStyle}
-                                        center={mapCenter}
-                                        zoom={12}
-                                        options={{
-                                            mapTypeControl: false,
-                                            streetViewControl: false,
-                                            fullscreenControl: true,
-                                            disableDoubleClickZoom: true,
-                                            disableDefaultUI: true,
-                                        }}
-                                    >
+                    {selectedRoute && !showModal && (
+                        <IonRow style={{ flex: '1' }}>
+                            <IonCol>
+                                <GoogleMap
+                                    mapContainerStyle={containerMapStyle}
+                                    center={mapCenter}
+                                    zoom={12}
+                                    options={{
+                                        mapTypeControl: false,
+                                        streetViewControl: false,
+                                        fullscreenControl: true,
+                                        disableDoubleClickZoom: true,
+                                        disableDefaultUI: true,
+                                    }}
+                                >
+                                    <Marker
+                                        position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                                        title="Start"
+                                    />
+                                    <Marker
+                                        position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                                        title="End"
+                                    />
+                                    {bikeBusStops.map((stop, index) => (
                                         <Marker
-                                            position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                                            title="Start"
-                                        />
-                                        <Marker
-                                            position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                                            title="End"
-                                        />
-                                        {bikeBusStops.map((stop, index) => (
-                                            <Marker
-                                                key={index}
-                                                position={stop}
-                                                title={`Stop ${index + 1}`}
-                                                onClick={() => {
-                                                    console.log(`Clicked on stop ${index + 1}`);
-                                                }}
-                                            />
-                                        ))}
-                                        <Polyline
-                                            path={selectedRoute.pathCoordinates}
-                                            options={{
-                                                strokeColor: "#FF0000",
-                                                strokeOpacity: 1.0,
-                                                strokeWeight: 2,
-                                                geodesic: true,
-                                                draggable: true,
-                                                editable: true,
-                                                visible: true,
+                                            key={index}
+                                            position={stop}
+                                            title={`Stop ${index + 1}`}
+                                            onClick={() => {
+                                                console.log(`Clicked on stop ${index + 1}`);
                                             }}
                                         />
-                                    </GoogleMap>
-
-                                </IonCol>
-                            </IonRow>
-                        )}
-                        {selectedRoute && showModal && (
-                            <div>
-                                <IonModal isOpen={showModal} onDidDismiss={handleCloseModal}>
-                                    <h1>Select a location</h1>
-                                    <IonInput value={searchInput} placeholder="Enter location" onIonChange={handleSearchInputChange}></IonInput>
-                                    <IonButton onClick={handleSearch}>Search</IonButton>
-                                    <GoogleMap
-                                        mapContainerStyle={containerMapStyle}
-                                        center={mapCenter}
-                                        zoom={12}
+                                    ))}
+                                    <Polyline
+                                        path={selectedRoute.pathCoordinates}
                                         options={{
-                                            mapTypeControl: false,
-                                            streetViewControl: false,
-                                            fullscreenControl: true,
-                                            disableDoubleClickZoom: true,
-                                            disableDefaultUI: true,
+                                            strokeColor: "#FF0000",
+                                            strokeOpacity: 1.0,
+                                            strokeWeight: 2,
+                                            geodesic: true,
+                                            draggable: true,
+                                            editable: true,
+                                            visible: true,
                                         }}
-                                        onClick={handleMapClick}
-                                    >
-                                        <Marker
-                                            position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                                            title="Start"
-                                        />
-                                        <Marker
-                                            position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                                            title="End"
-                                        />
-                                        {bikeBusStops.map((stop, index) => (
-                                            <Marker
-                                                key={index}
-                                                position={stop}
-                                                title={`Stop ${index + 1}`}
-                                                onClick={() => {
-                                                    console.log(`Clicked on stop ${index + 1}`);
-                                                }}
-                                            />
-                                        ))}
-                                        <IonButton onClick={handleCloseModal}>Close</IonButton>
-                                    </GoogleMap>
-                                </IonModal>
+                                    />
+                                </GoogleMap>
 
-                            </div>
-                        )}
-                        <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center'
-                        }}>
-                            <div>
-                                <h2>BikeBusStation IDs</h2>
-                                {bikeBusStationIds.map((id, index) => (
-                                    <p key={index}>{id}</p>
-                                ))}
-                            </div>
+                            </IonCol>
+                        </IonRow>
+                    )}
+                    {selectedRoute && showModal && (
+                        <div>
+                            <IonModal isOpen={showModal} onDidDismiss={handleCloseModal}>
+                                <IonItem>
+                                <IonLabel>New BikeBus Stop Name:</IonLabel>
+                                <IonInput value={newStopName} onIonChange={e => setNewStopName(e.detail.value!)} />
+                                </IonItem>
+                                <IonText>Click on the map to select a location</IonText>
+                                <IonButton onClick={onSaveButtonClick}>Save New BikeBusStop</IonButton>
+                                <GoogleMap
+                                    mapContainerStyle={{
+                                        width: '100%',
+                                        height: '100%',
+                                    }}
+                                    center={mapCenter}
+                                    zoom={12}
+                                    options={{
+                                        mapTypeControl: false,
+                                        streetViewControl: false,
+                                        fullscreenControl: true,
+                                        disableDoubleClickZoom: true,
+                                        disableDefaultUI: true,
+                                    }}
+                                    onClick={onMapClick}
+                                >
+                                    <Marker
+                                        position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                                        title="Start"
+                                    />
+                                    <Marker
+                                        position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                                        title="End"
+                                    />
+                                    {bikeBusStops.map((stop, index) => (
+                                        <Marker
+                                            key={index}
+                                            position={stop}
+                                            title={`Stop ${index + 1}`}
+                                            onClick={() => {
+                                                console.log(`Clicked on stop ${index + 1}`);
+                                            }}
+                                        />
+                                    ))}
+                                    <IonButton onClick={handleCloseModal}>Close</IonButton>
+                                </GoogleMap>
+                            </IonModal>
+
                         </div>
-                    </div>
+                    )}
                 </IonGrid>
             </IonContent >
         </IonPage >

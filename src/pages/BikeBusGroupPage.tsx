@@ -287,85 +287,91 @@ const BikeBusGroupPage: React.FC = () => {
             <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            {!isUserMember &&
-              <IonButton onClick={joinBikeBus}>Join BikeBus</IonButton>
-            }
-            {isUserMember &&
-              <IonButton onClick={leaveBikeBus}>Leave BikeBus</IonButton>
-            }
-            <IonButton onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
+            <div>
+              {!isUserMember &&
+                <IonButton onClick={joinBikeBus}>Join BikeBus</IonButton>
+              }
+              {isUserMember &&
+                <IonButton onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+              }
+              <IonButton onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
 
-            <IonModal isOpen={showInviteModal}>
-              <IonHeader>
-                <IonToolbar>
-                  <IonTitle>Invite a User</IonTitle>
-                </IonToolbar>
-              </IonHeader>
-              <IonContent>
-                <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
-                <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
-                <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
-              </IonContent>
-            </IonModal>
+              <IonModal isOpen={showInviteModal}>
+                <IonHeader>
+                  <IonToolbar>
+                    <IonTitle>Invite a User</IonTitle>
+                  </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                  <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                  <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
+                  <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+                </IonContent>
+              </IonModal>
 
-            {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
-              <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
-            }
-            {isUserLeader && <IonButton routerLink={`/CreateBikeBusStops/${groupId}`}>Create BikeBusStops</IonButton>
-            }
-            <IonList>
-              <IonItem>
-                <IonLabel>Leaders</IonLabel>
-                <IonList>
-                  {leadersData.map((users, index) => (
-                    <IonItem key={index}>
-                      <IonLabel>{users?.username}</IonLabel>
-                    </IonItem>
-                  ))}
-                </IonList>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Members</IonLabel>
-                <IonList>
-                  {membersData.map((users, index) => (
-                    <IonItem key={index}>
-                      <IonLabel>{users?.username}</IonLabel>
-                    </IonItem>
-                  ))}
-                </IonList>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Description</IonLabel>
-                <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Type</IonLabel>
-                <IonLabel>{groupData?.BikeBusType}</IonLabel>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Routes</IonLabel>
-                {groupId && (
+              {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+                <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+              }
+              {isUserLeader && routesData.map((route, index) => (
+                <IonItem key={index}>
+                  <IonButton routerLink={`/EditRoute/${route.id}`}>Create BikeBusStops</IonButton>
+                </IonItem>
+              ))}
+              <IonList>
+                <IonItem>
+                  <IonLabel>Leaders</IonLabel>
                   <IonList>
-                    {routesData.map((route, index) => (
+                    {leadersData.map((users, index) => (
                       <IonItem key={index}>
-                        <Link to={`/ViewRoute/${route.id}`}>
-                          <IonButton>{route?.routeName}</IonButton>
-                        </Link>
+                        <IonLabel>{users?.username}</IonLabel>
                       </IonItem>
                     ))}
                   </IonList>
-                )}
-              </IonItem>
-              <IonItem>
-                <IonList>
-                  <IonItem>
-                    <Link to={`/ViewSchedule/${groupId}`}>
-                      <IonButton>Schedule</IonButton>
-                    </Link>
-                  </IonItem>
-                </IonList>
-              </IonItem>
-            </IonList>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Members</IonLabel>
+                  <IonList>
+                    {membersData.map((users, index) => (
+                      <IonItem key={index}>
+                        <IonLabel>{users?.username}</IonLabel>
+                      </IonItem>
+                    ))}
+                  </IonList>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Description</IonLabel>
+                  <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Type</IonLabel>
+                  <IonLabel>{groupData?.BikeBusType}</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Routes</IonLabel>
+                  {groupId && (
+                    <IonList>
+                      {routesData.map((route, index) => (
+                        <IonItem key={index}>
+                          <Link to={`/ViewRoute/${route.id}`}>
+                            <IonButton>{route?.routeName}</IonButton>
+                          </Link>
+
+                        </IonItem>
+                      ))}
+                    </IonList>
+                  )}
+                </IonItem>
+                <IonItem>
+                  <IonList>
+                    <IonItem>
+                      <Link to={`/ViewSchedule/${groupId}`}>
+                        <IonButton>Schedule</IonButton>
+                      </Link>
+                    </IonItem>
+                  </IonList>
+                </IonItem>
+              </IonList>
+            </div>
           </IonCardContent>
         </IonCard>
       </IonContent>
