@@ -130,7 +130,7 @@ const ViewSchedule: React.FC = () => {
                             events={events}
                             startAccessor="start"
                             endAccessor="end"
-                            defaultView="week"
+                            defaultView="agenda"
                         />
                     </div>
                 </IonCard>
