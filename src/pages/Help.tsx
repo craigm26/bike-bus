@@ -13,6 +13,11 @@ import {
   IonAvatar,
   IonPopover,
   IonIcon,
+  IonTitle,
+  IonCardTitle,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -73,6 +78,35 @@ const Help: React.FC = () => {
         <IonHeader collapse="condense">
           <IonToolbar></IonToolbar>
         </IonHeader>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Help</IonTitle>
+            </IonToolbar>
+        </IonHeader>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>How do I create a BikeBus?</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonText>1. First, you should be signed up as a User</IonText>
+            <IonText>2. Then you create a route</IonText>
+            <IonText>3. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonText>
+            <IonText>4. Invite users to your BikeBus</IonText>
+            <IonText>5. When your schedule indicates that you (as BikeBus Leader) should start the BikeBus, Start the BikeBus on the Map</IonText>
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Creating a Route</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonText>1. Go to the Map Page</IonText>
+            <IonText>2. Search for a Starting Location</IonText>
+            <IonText>3. Search for a Destination</IonText>
+            <IonText>4. Click on the "Get Directions" button</IonText>
+            <IonText>5. Click on the "Create Route" button</IonText>
+          </IonCardContent>
+        </IonCard>
       </IonContent>
     </IonPage>
   );
