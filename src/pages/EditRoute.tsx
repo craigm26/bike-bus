@@ -8,13 +8,11 @@ import {
     IonButton,
     IonHeader,
     IonToolbar,
-    IonPopover,
-    IonText,
     IonTitle,
     IonSelect,
     IonSelectOption,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState, useRef } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
@@ -24,7 +22,6 @@ import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { Autocomplete } from '@react-google-maps/api';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where } from 'firebase/firestore';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal } from '@ionic/react';
+import { getDoc, doc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -40,6 +40,9 @@ const BikeBusGroupPage: React.FC = () => {
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+
 
 
 
@@ -154,6 +157,22 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }, [groupData]);
 
+  const inviteUserByEmail = async () => {
+    if (!inviteEmail) {
+      console.error("No email entered");
+      return;
+    }
+
+    const groupRef = doc(db, 'bikebusgroups', groupId);
+
+    await updateDoc(groupRef, {
+      BikeBusInvites: arrayUnion(inviteEmail)
+    });
+
+    setInviteEmail('');
+    setShowInviteModal(false);
+  };
+
   const fetchMembers = useCallback(async () => {
     if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
       const members = groupData.BikeBusMembers.map((member: any) => {
@@ -226,32 +245,32 @@ const BikeBusGroupPage: React.FC = () => {
       console.error("User is not logged in");
       return;
     }
-  
+
     const groupRef = doc(db, 'bikebusgroups', groupId);
-  
+
     await updateDoc(groupRef, {
       BikeBusMembers: arrayUnion(doc(db, 'users', user.uid))
     });
-  
+
     setIsUserMember(true);
   };
-  
+
   const leaveBikeBus = async () => {
     if (!user?.uid) {
       console.error("User is not logged in");
       return;
     }
-  
+
     const groupRef = doc(db, 'bikebusgroups', groupId);
-  
+
     await updateDoc(groupRef, {
       BikeBusMembers: arrayRemove(doc(db, 'users', user.uid))
     });
-  
+
     setIsUserMember(false);
   };
-  
-  
+
+
 
   return (
     <IonPage>
@@ -274,7 +293,21 @@ const BikeBusGroupPage: React.FC = () => {
             {isUserMember &&
               <IonButton onClick={leaveBikeBus}>Leave BikeBus</IonButton>
             }
-            <IonButton>Invite Users</IonButton>
+            <IonButton onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
+
+            <IonModal isOpen={showInviteModal}>
+              <IonHeader>
+                <IonToolbar>
+                  <IonTitle>Invite a User</IonTitle>
+                </IonToolbar>
+              </IonHeader>
+              <IonContent>
+                <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
+                <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+              </IonContent>
+            </IonModal>
+
             {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
               <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
             }
@@ -312,24 +345,24 @@ const BikeBusGroupPage: React.FC = () => {
               <IonItem>
                 <IonLabel>Routes</IonLabel>
                 {groupId && (
-                <IonList>
-                  {routesData.map((route, index) => (
-                    <IonItem key={index}>
-                      <Link to={`/ViewRoute/${route.id}`}>
-                        <IonButton>{route?.routeName}</IonButton>
-                      </Link>
-                    </IonItem>
-                  ))}
-                </IonList>
+                  <IonList>
+                    {routesData.map((route, index) => (
+                      <IonItem key={index}>
+                        <Link to={`/ViewRoute/${route.id}`}>
+                          <IonButton>{route?.routeName}</IonButton>
+                        </Link>
+                      </IonItem>
+                    ))}
+                  </IonList>
                 )}
               </IonItem>
               <IonItem>
                 <IonList>
-                    <IonItem>
-                      <Link to={`/ViewSchedule/${groupId}`}>
-                        <IonButton>Schedule</IonButton>
-                      </Link>
-                    </IonItem>
+                  <IonItem>
+                    <Link to={`/ViewSchedule/${groupId}`}>
+                      <IonButton>Schedule</IonButton>
+                    </Link>
+                  </IonItem>
                 </IonList>
               </IonItem>
             </IonList>
