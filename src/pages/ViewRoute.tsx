@@ -288,7 +288,7 @@ const ViewRoute: React.FC = () => {
                             <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
                         </IonCol>
                     </IonRow>
-                    {isGroup && (
+                    {!isGroup && (
                         <IonRow>
                             <IonCol>
                                 <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
