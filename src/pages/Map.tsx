@@ -103,6 +103,7 @@ const Map: React.FC = () => {
   const [showCreateRouteModal, setCreateRouteShowModal] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [description, setDescription] = useState('');
+  const [isBikeBus, setIsBikeBus] = useState(false);
 
 
 
@@ -488,8 +489,7 @@ const Map: React.FC = () => {
               routeName: routeName,
               routeDescription: description,
               pathCoordinates: pathCoordinates,
-              // create a new field called isBikeBus and make it a boolean. Set the default value to false. 
-              isBikeBus: "",
+              isBikeBus: false,
             };
             console.log("Route Data: ", routeData);
             handleCreateRouteSubmit();

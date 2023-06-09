@@ -67,6 +67,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [showRecurringModal, setShowRecurringModal] = useState<boolean>(false);
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
   const [isRecurring, setIsRecurring] = useState('no');
+  const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -108,16 +109,20 @@ const CreateBikeBusGroup: React.FC = () => {
   // fetch route data from the previous step of "CreateBikeBusGroup" button with the id from the URL and user data from firestore
   const history = useHistory();
 
-  const fetchRoute = async () => {
-    const routeRef = doc(db, 'routes', RouteID);
-    const routeSnapshot = await getDoc(routeRef);
-    if (routeSnapshot.exists()) {
-      const routeData = routeSnapshot.data();
-      if (routeData) {
-        setRoute(routeData);
+  useEffect(() => {
+    const fetchRoute = async () => {
+      const routeRef = doc(db, 'routes', RouteID);
+      const routeSnapshot = await getDoc(routeRef);
+      if (routeSnapshot.exists()) {
+        const routeData = routeSnapshot.data();
+        if (routeData) {
+          setRoute(routeData);
+        }
       }
-    }
-  };
+    };
+    fetchRoute();
+  }, [RouteID]);
+
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -142,7 +147,6 @@ const CreateBikeBusGroup: React.FC = () => {
   useEffect(() => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
-      fetchRoute();
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
@@ -152,7 +156,7 @@ const CreateBikeBusGroup: React.FC = () => {
         }
       });
     }
-  }, [user, RouteID]);
+  }, [user, RouteID, ]);
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -223,6 +227,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
       BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
+      isBikeBus: true,
     });
 
     // add the bikebus group to the user's bikebusgroups array in firestore
@@ -362,7 +367,7 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Type:</IonLabel>
-          <IonSelect value={BikeBusType} placeholder="Select One">
+          <IonSelect value={setBikeBusType} placeholder="Select One">
             <IonSelectOption value="Work">Work</IonSelectOption>
             <IonSelectOption value="School">School</IonSelectOption>
             <IonSelectOption value="Social">Social</IonSelectOption>
@@ -488,11 +493,11 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>Starting Point</IonLabel>
-          <IonLabel>{route?.startPointName}</IonLabel>
+          <IonLabel>{route?.startPointAddress}</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Ending Point</IonLabel>
-          <IonLabel>{route?.endPointName}</IonLabel>
+          <IonLabel>{route?.endPointAddress}</IonLabel>
         </IonItem>
         <IonItem>
           <IonButton onClick={createBikeBusGroupAndSchedule}>Create BikeBus</IonButton>
