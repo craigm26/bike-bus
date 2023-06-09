@@ -1,17 +1,9 @@
-// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
   IonPage,
   IonToolbar,
-  IonMenuButton,
-  IonButtons,
-  IonButton,
-  IonLabel,
-  IonText,
-  IonChip,
   IonAvatar,
-  IonPopover,
   IonIcon,
   IonTitle,
   IonCardTitle,
@@ -26,7 +18,7 @@ import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { alertCircleOutline, cogOutline, helpCircleOutline, personCircleOutline } from 'ionicons/icons';
+import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 

@@ -1,8 +1,6 @@
 import {
     IonContent,
     IonPage,
-    IonItem,
-    IonList,
     IonLabel,
     IonButton,
     IonHeader,
@@ -11,12 +9,11 @@ import {
     IonGrid,
     IonRow,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import ViewRouteMap from '../components/Mapping/ViewRouteMap';
+import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory } from 'react-router-dom';
@@ -52,6 +49,7 @@ interface Station {
 
 interface Route {
     id: string;
+    BikeBusStationsIds: string[];
     BikeBusGroupId: string;
     accountType: string;
     description: string;
@@ -94,7 +92,7 @@ const ViewRoute: React.FC = () => {
         libraries,
     });
     const [loading, setLoading] = useState(true);
-    const [path, setPath] = useState<GeoPoint[]>([]);
+    const [path, setPath] = useState<Coordinate[]>([]);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
@@ -108,27 +106,6 @@ const ViewRoute: React.FC = () => {
         height: '100%',
     };
 
-
-
-    const fetchRoutes = useCallback(async () => {
-        const uid = user?.uid;
-        if (!uid) {
-            return;
-        }
-        const routesCollection = collection(db, 'routes');
-        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
-        const querySnapshot = await getDocs(q);
-        const routesData: Route[] = querySnapshot.docs.map(doc => ({
-            ...doc.data() as Route,
-            id: doc.id,
-        }));
-        setRoutes(routesData);
-    }, [user]);
-
-    useEffect(() => {
-        fetchRoutes();
-    }, [fetchRoutes]);
-
     useEffect(() => {
         if (id) fetchSingleRoute(id);
     }, [id]);
@@ -141,10 +118,10 @@ const ViewRoute: React.FC = () => {
             const routeData = {
                 ...docSnap.data() as Route,
                 id: docSnap.id,
-                pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-                    lat: coord.latitude,
-                    lng: coord.longitude,
-                })),
+                startPoint: docSnap.data().startPoint,
+                endPoint: docSnap.data().endPoint,
+                BikeBusGroupId: docSnap.data().BikeBusGroupId,
+                pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
                 BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
                     lat: coord.latitude,
                     lng: coord.longitude,
@@ -156,34 +133,8 @@ const ViewRoute: React.FC = () => {
         }
     };
 
-    // make a new const to fetch the bikebusgroup name based on teh BikeBusGroupId in the route document
-    const fetchBikeBusGroup = async (id: string) => {
-        const docRef = doc(db, 'bikebusgroups', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const bikeBusGroupData = {
-                ...docSnap.data() as BikeBusGroup,
-                id: docSnap.id,
-            };
-            setBikeBusGroup(bikeBusGroupData);
-        }
-    };
-
-    console.log(selectedRoute?.BikeBusGroupId);
-    console.log(bikeBusGroup?.name)
-    console.log(selectedRoute?.isBikeBus)
-    console.log(selectedRoute?.pathCoordinates)
-
-    // if the route is in a bikebusgroup, then make the isGroup variable true
-    const isGroup = selectedRoute?.isBikeBus;
-
-    useEffect(() => {
-        if (selectedRoute) {
-            fetchBikeBusGroup(selectedRoute.id);
-        }
-    }
-        , [selectedRoute]);
+    // if the BikeBusGroupId is not null, then make the isGroup variable true
+    const isGroup = selectedRoute?.BikeBusGroupId !== null;
 
 
     useEffect(() => {
@@ -274,9 +225,14 @@ const ViewRoute: React.FC = () => {
                     </IonRow>
                     <IonRow>
                         <IonCol>
+                            <IonLabel>BikeBusStops: {selectedRoute?.BikeBusStationsIds}</IonLabel>
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
                             {!isGroup && (
                                 <IonLabel>
-                                    {bikeBusGroup?.name}
+                                    {selectedRoute?.BikeBusGroupId}
                                 </IonLabel>
                             )}
                         </IonCol>
@@ -288,16 +244,16 @@ const ViewRoute: React.FC = () => {
                             <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
                         </IonCol>
                     </IonRow>
-                    {!isGroup && (
+                    {isGroup && (
                         <IonRow>
                             <IonCol>
                                 <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
                             </IonCol>
                         </IonRow>
                     )}
-                    {selectedRoute && (
-                        <IonRow style={{ flex: '1' }}>
-                            <IonCol>
+                    <IonRow style={{ flex: '1' }}>
+                        <IonCol>
+                            {isLoaded && selectedRoute ? (
                                 <GoogleMap
                                     mapContainerStyle={containerMapStyle}
                                     center={mapCenter}
@@ -310,14 +266,8 @@ const ViewRoute: React.FC = () => {
                                         disableDefaultUI: true,
                                     }}
                                 >
-                                    <Marker
-                                        position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                                        title="Start"
-                                    />
-                                    <Marker
-                                        position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                                        title="End"
-                                    />
+                                    <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
+                                    <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
                                     {BikeBusStationsIds.map((stop, index) => (
                                         <Marker
                                             key={index}
@@ -328,23 +278,61 @@ const ViewRoute: React.FC = () => {
                                             }}
                                         />
                                     ))}
-                                    <Polyline
-                                        path={selectedRoute.pathCoordinates} 
-                                        options={{
-                                            strokeColor: "#FF0000",
-                                            strokeOpacity: 1.0,
-                                            strokeWeight: 2,
-                                            geodesic: true,
-                                            draggable: true,
-                                            editable: true,
-                                            visible: true,
-                                        }}
-                                    />
+                                    {selectedRoute?.pathCoordinates && ( // Check if pathCoordinates is not empty
+                                        <Polyline
+                                            path={selectedRoute.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#FF0000",
+                                                strokeOpacity: 1.0,
+                                                strokeWeight: 2,
+                                                geodesic: true,
+                                                draggable: true,
+                                                editable: true,
+                                                visible: true,
+                                            }}
+                                        />
+                                    )}
                                 </GoogleMap>
+                            ) : (
+                                <>
+                                    {isLoaded && selectedRoute && (
+                                        <>
+                                            <GoogleMap
+                                                mapContainerStyle={containerMapStyle}
+                                                center={mapCenter}
+                                                zoom={12}
+                                                options={{
+                                                    mapTypeControl: false,
+                                                    streetViewControl: false,
+                                                    fullscreenControl: true,
+                                                    disableDoubleClickZoom: true,
+                                                    disableDefaultUI: true,
+                                                }}
+                                            >
+                                                <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
+                                                <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
+                                            </GoogleMap>
+                                            {selectedRoute?.pathCoordinates && (
+                                                <Polyline
+                                                    path={selectedRoute.pathCoordinates}
+                                                    options={{
+                                                        strokeColor: "#FF0000",
+                                                        strokeOpacity: 1.0,
+                                                        strokeWeight: 2,
+                                                        geodesic: true,
+                                                        draggable: true,
+                                                        editable: true,
+                                                        visible: true,
+                                                    }}
+                                                />
+                                            )}
+                                        </>
+                                    )}
+                                </>
+                            )}
 
-                            </IonCol>
-                        </IonRow>
-                    )}
+                        </IonCol>
+                    </IonRow>
                 </IonGrid>
             </IonContent>
         </IonPage>
