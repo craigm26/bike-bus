@@ -26,7 +26,7 @@ import SetUsername from './components/set-username';
 import Notifications from './pages/Notifications';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
-import CreateBikeBusStation from './pages/CreateBikeBusStations';
+import CreateBikeBusStops from './pages/CreateBikeBusStops';
 import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
@@ -173,8 +173,8 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
                           <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink='/CreateBikeBusStation' routerDirection="none">
-                          <IonLabel>Create BikeBusStation</IonLabel>
+                        <IonItem button routerLink='/CreateBikeBusStops' routerDirection="none">
+                          <IonLabel>Create BikeBusStops</IonLabel>
                         </IonItem>
                       </IonCard>}
                       {accountType === 'App Admin' && 
@@ -329,8 +329,8 @@ const App: React.FC = () => {
                         <CreateRoute />
                       </Route>
                       <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
-                      <Route exact path="/CreateBikeBusStation">
-                        <CreateBikeBusStation />
+                      <Route path="/CreateBikeBusStops/:id">
+                        <CreateBikeBusStops />
                       </Route>
                       <Route exact path="/UpgradeAccountToPremium">
                         <UpgradeAccountToPremium />
