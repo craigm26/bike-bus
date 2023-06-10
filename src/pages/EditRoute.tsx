@@ -14,20 +14,16 @@ import {
     IonCol,
     IonRow,
     IonGrid,
-    IonModal,
-    IonText,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDoc, getDocs, updateDoc, query, where, addDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { GeoPoint } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
-import { set } from 'firebase/database';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -127,7 +123,6 @@ const EditRoute: React.FC = () => {
             setEndGeo(selectedRoute.endPoint);
             setMapCenter(selectedRoute.startPoint);
             setEndGeo(selectedRoute.endPoint);
-            setPath(selectedRoute.pathCoordinates);
             setRouteStartFormattedAddress(selectedRoute.startPointAddress);
             setRouteEndFormattedAddress(selectedRoute.endPointAddress);
         }
@@ -199,7 +194,6 @@ const EditRoute: React.FC = () => {
                 })),
             };
             setSelectedRoute(routeData);
-            setPath(routeData.pathCoordinates);
             setBikeBusStationsIds(routeData.BikeBusStationsIds);
         }
     };
@@ -221,27 +215,6 @@ const EditRoute: React.FC = () => {
         }
     }
         , [selectedRoute, user]);
-
-
-
-    // fetch the data from the BikeBusGroup collection and check if the user is listed as a leader in the bikebusgroup document
-    const fetchBikeBusGroupData = useCallback(async () => {
-        if (selectedRoute?.BikeBusGroupId) {
-            const bikeBusGroupRef = doc(db, 'bikebusgroup', selectedRoute.BikeBusGroupId);
-            getDoc(bikeBusGroupRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const bikeBusGroupData = docSnapshot.data();
-                    if (bikeBusGroupData && bikeBusGroupData.bikeBusLeader) {
-                        setIsBikeBusLeader(bikeBusGroupData.bikeBusLeader === user?.uid);
-                    }
-                }
-            });
-        }
-    }, [selectedRoute, user]);
-
-    useEffect(() => {
-        fetchBikeBusGroupData();
-    }, [fetchBikeBusGroupData]);
 
 
     useEffect(() => {
@@ -376,7 +349,7 @@ const EditRoute: React.FC = () => {
                 if (status === google.maps.DirectionsStatus.OK && response) {
                     const newRoute = response.routes[0];
                     let newRoutePathCoordinates = newRoute.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
-                    newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);  // Simplify the path using ramerDouglasPeucker
+                    newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);
                     setSelectedRoute((selectedRoute) => {
                         if (!selectedRoute) {
                             return null;
@@ -394,114 +367,47 @@ const EditRoute: React.FC = () => {
 
     const onGenerateNewRouteClick = async () => {
         if (!bikeBusStop) {
-            console.error('No new stop to add to route');
-            return;
+          console.error('No new stop to add to route');
+          return;
         }
-
+      
         if (bikeBusStop && selectedRoute) {
-            let insertPosition = 0;
-            let minDistance = Infinity;
-            for (let i = 0; i < selectedRoute.pathCoordinates.length; i++) {
-                const coord = selectedRoute.pathCoordinates[i];
-                const distance = Math.hypot(coord.lat - bikeBusStop.lat, coord.lng - bikeBusStop.lng);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    insertPosition = i;
-                }
-            }
-
-            const newPathCoordinates = [...selectedRoute.pathCoordinates];
-            newPathCoordinates.splice(insertPosition, 0, bikeBusStop);
-
-            const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
-
-            setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
-
-            const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-
-            let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
-
-            calculateRoute(waypoints, selectedTravelMode);
+          // Calculate the distances between the new stop, start point, and end point
+          const startDistance = Math.hypot(
+            bikeBusStop.lat - selectedRoute.pathCoordinates[0].lat,
+            bikeBusStop.lng - selectedRoute.pathCoordinates[0].lng
+          );
+          const endDistance = Math.hypot(
+            bikeBusStop.lat - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lat,
+            bikeBusStop.lng - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lng
+          );
+      
+          // Find the closest point (start or end) to the new stop
+          let insertPosition;
+          if (startDistance <= endDistance) {
+            insertPosition = 0; // Insert at the beginning
+          } else {
+            insertPosition = selectedRoute.pathCoordinates.length; // Insert at the end
+          }
+      
+          // Create a new path with the new stop included
+          const newPathCoordinates = [...selectedRoute.pathCoordinates];
+          newPathCoordinates.splice(insertPosition, 0, bikeBusStop);
+      
+          // Simplify the new path using ramerDouglasPeucker
+          const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
+      
+          setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
+      
+          const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
+      
+          // Create waypoints excluding the start and end points
+          let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
+      
+          calculateRoute(waypoints, selectedTravelMode);
         }
-    };
-
-
-    const onSaveStopButtonClick = async () => {
-        console.log("Saving new stop: ", stop);
-        // save to route as a new stop point in the pathCoordinates array and bikebusstopIds array
-
-        if (stop !== null) {
-            try {
-                const newStopId = await handleNewBikeBusStop(stop);
-                if (newStopId) {
-                    setStop(null);
-                    console.log(`New stop saved with ID ${newStopId}`);
-                } else {
-                    console.error('New stop id is undefined!');
-                }
-            } catch (error) {
-                console.error('Error saving new stop:', error);
-            }
-            handleCloseModal();
-        } else {
-            console.error('No new stop to save!');
-        }
-    };
-
-    const handleNewBikeBusStop = async (newStop: Coordinate) => {
-        if (selectedRoute === null) {
-            console.error("selectedRoute is null");
-            return;
-        }
-
-        setbikeBusStop(newStop);
-        console.log("newStop: ", newStop);
-        // save the new stop to the bikeBusStop collection    
-        const bikeBusStopCollection = collection(db, 'bikebusstop');
-        const newbikebusstopRef = await addDoc(bikeBusStopCollection, {
-            BikeBusGroupId: selectedRoute.BikeBusGroupId || "",
-            stopPoint: newStop,
-            route: selectedRoute.id,
-            BikeBusStopName: newStopName,
-            // include other fields as needed
-        });
-
-        // if there is a new stop id or multiple new stop ids, save the document id from the bikeBusStop collection to the route as a reference
-        // if there is no new stop id, then just save the route as is
-        // put the new stop id into the bikeBusStopIds array in the route and the pathCoordinates array in the route
-
-        const updatedRoute: Partial<Route> = {
-            routeName: selectedRoute.routeName,
-            BikeBusGroupId: selectedRoute.BikeBusGroupId,
-            description: selectedRoute.description,
-            routeType: selectedRoute.routeType,
-            travelMode: selectedRoute.travelMode,
-            startPoint: selectedRoute.startPoint,
-            endPoint: selectedRoute.endPoint,
-            pathCoordinates: selectedRoute.pathCoordinates,
-        };
-
-        if (selectedRoute.pathCoordinates !== undefined) {
-            updatedRoute.pathCoordinates = [
-                ...selectedRoute.pathCoordinates,
-                newStop,
-            ];
-        }
-
-        if (selectedRoute.bikeBusStop !== undefined) {
-            updatedRoute.bikeBusStop = [
-                ...selectedRoute.bikeBusStop,
-                newStop,
-            ];
-        }
-
-        const routeRef = doc(db, 'routes', selectedRoute.id);
-        await updateDoc(routeRef, updatedRoute);
-        alert('Route Updated');
-        history.push(`/EditRoute/${selectedRoute.id}`);
-
-        return newbikebusstopRef.id;
-    };
+      };
+      
 
     const handleRouteSave = async () => {
         if (selectedRoute === null) {
@@ -525,16 +431,6 @@ const EditRoute: React.FC = () => {
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
         history.push(`/ViewRouteList/`)
-    };
-
-    // Open the modal when user clicks on 'Add BikeBusStop' button
-    const handleCreateBikeBusStopButton = () => {
-        setShowModal(true);
-    };
-
-    // Close the modal
-    const handleCloseModal = () => {
-        setShowModal(false);
     };
 
     useEffect(() => {
@@ -616,14 +512,14 @@ const EditRoute: React.FC = () => {
                     <IonRow>
                         <IonCol>
                             {isBikeBus && (
-                                <IonButton onClick={handleCreateBikeBusStopButton}>Add BikeBusStop</IonButton>
+                                <IonButton routerLink={`/CreateBikeBusStops/`}>Add BikeBusStop</IonButton>
                             )}
                             <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
                             <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
                         </IonCol>
                     </IonRow>
-                    {selectedRoute && !showModal && (
+                    {selectedRoute && (
                         <IonRow style={{ flex: '1' }}>
                             <IonCol>
                                 <GoogleMap
@@ -674,47 +570,7 @@ const EditRoute: React.FC = () => {
                             </IonCol>
                         </IonRow>
                     )}
-                    {selectedRoute && showModal && (
-                        <div>
-                            <IonModal isOpen={showModal} onDidDismiss={handleCloseModal}>
-                                <IonItem>
-                                    <IonLabel>New BikeBus Stop Name:</IonLabel>
-                                    <IonInput value={newStopName} onIonChange={e => setNewStopName(e.detail.value!)} />
-                                </IonItem>
-                                <IonText>Click on the map to select a location and then "save new bikebusstop"</IonText>
-                                <IonButton onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
-                                <GoogleMap
-                                    mapContainerStyle={{
-                                        width: '100%',
-                                        height: '100%',
-                                    }}
-                                    center={mapCenter}
-                                    zoom={12}
-                                    options={{
-                                        mapTypeControl: false,
-                                        streetViewControl: false,
-                                        fullscreenControl: true,
-                                        disableDoubleClickZoom: true,
-                                        disableDefaultUI: true,
-                                    }}
-                                    onClick={onMapClick}
-                                >
-                                    <Marker
-                                        position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                                        title="Start"
-                                    />
-                                    {stop && (
-                                        <Marker
-                                            position={{ lat: stop.lat, lng: stop.lng }}
-                                            title={newStopName}
-                                        />
-                                    )}
-                                    <IonButton onClick={handleCloseModal}>Close</IonButton>
-                                </GoogleMap>
-                            </IonModal>
 
-                        </div>
-                    )}
                 </IonGrid>
             </IonContent >
         </IonPage >

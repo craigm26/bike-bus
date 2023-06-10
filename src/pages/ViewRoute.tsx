@@ -278,20 +278,6 @@ const ViewRoute: React.FC = () => {
                                             }}
                                         />
                                     ))}
-                                    {selectedRoute?.pathCoordinates && ( // Check if pathCoordinates is not empty
-                                        <Polyline
-                                            path={selectedRoute.pathCoordinates}
-                                            options={{
-                                                strokeColor: "#FF0000",
-                                                strokeOpacity: 1.0,
-                                                strokeWeight: 2,
-                                                geodesic: true,
-                                                draggable: true,
-                                                editable: true,
-                                                visible: true,
-                                            }}
-                                        />
-                                    )}
                                 </GoogleMap>
                             ) : (
                                 <>
