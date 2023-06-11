@@ -18,7 +18,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { doc, getDoc } from 'firebase/firestore';
+import { setDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -33,12 +33,13 @@ interface Coordinate {
 }
 
 interface Route {
+    name: string;
     newStop: Coordinate | null;
     oldIds: Coordinate | null;
     stopPoint: Coordinate | null;
     BikeBusStopName: string;
     BikeBusStopId: string;
-    BikeBusStopIds: Coordinate[];
+    BikeBusStopIds: string[];
     BikeBusStop: Coordinate[];
     isBikeBus: boolean;
     bikeBusStop: Coordinate[];
@@ -85,12 +86,6 @@ const CreateBikeBusStop: React.FC = () => {
     const [stop, setStop] = useState<Coordinate | null>(null);
 
 
-
-
-
-
-    // if the BikeBusGroupId is not null, then make the isGroup variable true
-
     // when the map is loading, set startGeo to the route's startPoint
     useEffect(() => {
         if (selectedRoute) {
@@ -100,8 +95,6 @@ const CreateBikeBusStop: React.FC = () => {
         }
     }
         , [selectedRoute]);
-
-    
 
     useEffect(() => {
         if (headerContext) {
@@ -133,19 +126,51 @@ const CreateBikeBusStop: React.FC = () => {
         }
     };
 
-    const onSaveStopButtonClick = async () => {
-        console.log("Saving new stop: ", stop);
-        // save to route as a new stop point in the pathCoordinates array and bikebusstopIds array
+    const addNewStop = async (newStop: Coordinate): Promise<string | null> => {
+        const newStopRef = doc(db, 'bikeBusStops');
+        await setDoc(newStopRef, newStop); 
+        return newStopRef.id;
     };
 
+    const updateRoute = async (newRoute: Route) => {
+        const routeRef = doc(db, 'routes', id);
+        await updateDoc(routeRef, {...newRoute}); // Spread object properties
+    };
 
-    useEffect(() => {
-        console.log("Google Maps script loaded: ", isLoaded);
-    }, [isLoaded]);
 
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
+
+    
+    const onSaveStopButtonClick = async () => {
+        if (selectedRoute && stop) {
+            const newStop: Coordinate = {
+                lat: stop.lat,
+                lng: stop.lng,
+            };
+            const newStopId = await addNewStop(newStop);
+            if (newStopId) {
+                const newStopIds = [...selectedRoute.BikeBusStopIds, newStopId].filter(id => typeof id === 'string');
+                const newStops: Coordinate[] = [...selectedRoute.BikeBusStop, newStop];
+                const newRoute: Route = {
+                    ...selectedRoute,
+                    BikeBusStopIds: newStopIds,
+                    BikeBusStop: newStops as Coordinate[],
+                    // add any missing properties with the correct types
+                    startPoint: selectedRoute.startPoint as Coordinate,
+                    endPoint: selectedRoute.endPoint as Coordinate,
+                    name: selectedRoute.name as string,
+                    id: selectedRoute.id as string,
+                };
+                await updateRoute(newRoute);
+                history.goBack();
+            }
+        }
+    };
+
+
+
 
     return (
         <IonPage style={{ height: '100%' }}>
