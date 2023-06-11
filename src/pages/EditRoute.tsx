@@ -75,9 +75,7 @@ const EditRoute: React.FC = () => {
     const [routeEndName, setRouteEndName] = useState<string>('');
     const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
     const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
-    const [path, setPath] = useState<Coordinate[]>([]);
     const [bikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
-
     const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
     const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -92,10 +90,6 @@ const EditRoute: React.FC = () => {
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    const [showModal, setShowModal] = useState(false);
-    const [newStopName, setNewStopName] = useState<string>('');
-    const [stop, setStop] = useState<Coordinate | null>(null);
-    const [isBikeBusLeader, setIsBikeBusLeader] = useState(false);
 
 
 
@@ -194,27 +188,8 @@ const EditRoute: React.FC = () => {
                 })),
             };
             setSelectedRoute(routeData);
-            setBikeBusStationsIds(routeData.BikeBusStationsIds);
         }
     };
-
-    // if the user viewing the page is listed as leader (bikeBusLeader) of the bikebusgroup in the bikebusgroup collection in the bikebusgroupId document, then set isBikeBusLeader to true
-    // lookup the value of the bikebusgroupId of the routes collection in the route document and look for the document in the bikebusgroup collection with the same id
-    useEffect(() => {
-        if (selectedRoute?.BikeBusGroupId) {
-            const bikeBusGroupRef = doc(db, 'bikebusgroup', selectedRoute.BikeBusGroupId);
-            console.log("bikeBusGroupRef: ", bikeBusGroupRef)
-            getDoc(bikeBusGroupRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const bikeBusGroupData = docSnapshot.data();
-                    if (bikeBusGroupData && bikeBusGroupData.bikeBusLeader) {
-                        setIsBikeBusLeader(bikeBusGroupData.bikeBusLeader === user?.uid);
-                    }
-                }
-            });
-        }
-    }
-        , [selectedRoute, user]);
 
 
     useEffect(() => {
@@ -234,23 +209,9 @@ const EditRoute: React.FC = () => {
 
     useEffect(() => {
         if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+            headerContext.setShowHeader(true);
         }
     }, [headerContext]);
-
-    useEffect(() => {
-        if (user) {
-            const userRef = doc(db, 'users', user.uid);
-            getDoc(userRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const userData = docSnapshot.data();
-                    if (userData && userData.accountType) {
-                        setaccountType(userData.accountType);
-                    }
-                }
-            });
-        }
-    }, [user]);
 
     useEffect(() => {
         if (selectedStartLocation) {
@@ -266,16 +227,6 @@ const EditRoute: React.FC = () => {
         }
     }
         , [selectedEndLocation]);
-
-    const onMapClick = (event: google.maps.MapMouseEvent) => {
-        if (event.latLng) {
-            const newStop: Coordinate = {
-                lat: event.latLng.lat(),
-                lng: event.latLng.lng(),
-            };
-            setStop(newStop);
-        }
-    };
 
     function perpendicularDistance(point: Coordinate, linePoint1: Coordinate, linePoint2: Coordinate): number {
         const { lat: x, lng: y } = point;
@@ -312,8 +263,6 @@ const EditRoute: React.FC = () => {
             return [pointList[0], pointList[end]];
         }
     }
-
-
 
     const calculateRoute = (waypoints: any[], selectedTravelMode: any) => {
         const batchSize = 10;
