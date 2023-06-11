@@ -486,7 +486,6 @@ const Map: React.FC = () => {
               endPoint: selectedEndLocation,
               startPointName: routeStartName,
               endPointName: routeEndName,
-              routeName: routeName,
               routeDescription: description,
               pathCoordinates: pathCoordinates,
               isBikeBus: false,
