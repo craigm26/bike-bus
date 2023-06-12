@@ -42,7 +42,6 @@ interface Route {
     BikeBusStopIds: Coordinate[];
     BikeBusStop: Coordinate[];
     isBikeBus: boolean;
-    bikeBusStop: Coordinate[];
     BikeBusGroupId: string;
     id: string;
     accountType: string;
@@ -84,7 +83,7 @@ const EditRoute: React.FC = () => {
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
-    const [bikeBusStop, setbikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
+    const [BikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
@@ -107,8 +106,8 @@ const EditRoute: React.FC = () => {
         setAutocompleteStart(ref);
     };
 
-    // if the BikeBusGroupId is not null, then make the isGroup variable true
-    const isBikeBus = selectedRoute?.BikeBusGroupId !== null;
+    // if the field isbikeBus is set to true, then make the isBikeBus variable true
+    const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
     // when the map is loading, set startGeo to the route's startPoint
     useEffect(() => {
@@ -178,6 +177,7 @@ const EditRoute: React.FC = () => {
             const routeData = {
                 ...docSnap.data() as Route,
                 id: docSnap.id,
+                routeName: docSnap.data().routeName,
                 startPoint: docSnap.data().startPoint,
                 endPoint: docSnap.data().endPoint,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
@@ -315,20 +315,20 @@ const EditRoute: React.FC = () => {
 
 
     const onGenerateNewRouteClick = async () => {
-        if (!bikeBusStop) {
+        if (!BikeBusStop) {
           console.error('No new stop to add to route');
           return;
         }
       
-        if (bikeBusStop && selectedRoute) {
-          // Calculate the distances between the new stop, start point, and end point
+        if (BikeBusStop && selectedRoute) {
+          // Calculate the distances between any BikeBusStop (lat lng in a array), start point, and end point
           const startDistance = Math.hypot(
-            bikeBusStop.lat - selectedRoute.pathCoordinates[0].lat,
-            bikeBusStop.lng - selectedRoute.pathCoordinates[0].lng
+            BikeBusStop.lat - selectedRoute.pathCoordinates[0].lat,
+            BikeBusStop.lng - selectedRoute.pathCoordinates[0].lng
           );
           const endDistance = Math.hypot(
-            bikeBusStop.lat - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lat,
-            bikeBusStop.lng - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lng
+            BikeBusStop.lat - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lat,
+            BikeBusStop.lng - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lng
           );
       
           // Find the closest point (start or end) to the new stop
@@ -341,7 +341,7 @@ const EditRoute: React.FC = () => {
       
           // Create a new path with the new stop included
           const newPathCoordinates = [...selectedRoute.pathCoordinates];
-          newPathCoordinates.splice(insertPosition, 0, bikeBusStop);
+          newPathCoordinates.splice(insertPosition, 0, BikeBusStop);
       
           // Simplify the new path using ramerDouglasPeucker
           const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
@@ -375,6 +375,7 @@ const EditRoute: React.FC = () => {
         if (selectedRoute.travelMode !== undefined) updatedRoute.travelMode = selectedRoute.travelMode;
         if (selectedRoute.startPoint !== undefined) updatedRoute.startPoint = selectedRoute.startPoint;
         if (selectedRoute.endPoint !== undefined) updatedRoute.endPoint = selectedRoute.endPoint;
+        if (selectedRoute.BikeBusStopIds !== undefined) updatedRoute.BikeBusStopIds = selectedRoute.BikeBusStopIds;
         if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
 
         await updateDoc(routeRef, updatedRoute);
@@ -461,7 +462,7 @@ const EditRoute: React.FC = () => {
                     <IonRow>
                         <IonCol>
                             {isBikeBus && (
-                                <IonButton routerLink={`/CreateBikeBusStops/`}>Add BikeBusStop</IonButton>
+                                <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
                             )}
                             <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
@@ -491,29 +492,6 @@ const EditRoute: React.FC = () => {
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
                                     />
-                                    {bikeBusStop && (
-                                        <Marker
-                                            position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
-                                            title="New Stop"
-                                            onClick={() => {
-                                                console.log("Clicked on new stop");
-                                            }}
-                                        />
-                                    )}
-                                    {selectedRoute.pathCoordinates && (
-                                        <Polyline
-                                            path={selectedRoute?.pathCoordinates}
-                                            options={{
-                                                strokeColor: "#FF0000",
-                                                strokeOpacity: 1.0,
-                                                strokeWeight: 2,
-                                                geodesic: true,
-                                                draggable: true,
-                                                editable: true,
-                                                visible: true,
-                                            }}
-                                        />
-                                    )}
                                 </GoogleMap>
 
                             </IonCol>
