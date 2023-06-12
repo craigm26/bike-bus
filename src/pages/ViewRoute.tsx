@@ -48,6 +48,7 @@ interface Station {
 }
 
 interface Route {
+    BikeBusStopName: string[];
     id: string;
     BikeBusStationsIds: string[];
     BikeBusGroupId: string;
@@ -72,35 +73,6 @@ interface Coordinate {
     lat: number;
     lng: number;
 }
-
-interface Route {
-    newStop: Coordinate | null;
-    oldIds: Coordinate | null;
-    stopPoint: Coordinate | null;
-    BikeBusStopName: string;
-    BikeBusStopId: string;
-    BikeBusStopIds: Coordinate[];
-    BikeBusStop: Coordinate[];
-    isBikeBus: boolean;
-    bikeBusStop: Coordinate[];
-    BikeBusGroupId: string;
-    id: string;
-    accountType: string;
-    description: string;
-    endPoint: Coordinate;
-    endPointAddress: string;
-    endPointName: string;
-    routeCreator: string;
-    routeLeader: string;
-    routeName: string;
-    routeType: string;
-    startPoint: Coordinate;
-    startPointAddress: string;
-    startPointName: string;
-    travelMode: string;
-    pathCoordinates: Coordinate[];
-}
-
 
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
@@ -235,6 +207,15 @@ const ViewRoute: React.FC = () => {
                             <IonLabel>Description: {selectedRoute?.description}</IonLabel>
                         </IonCol>
                     </IonRow>
+                    {isBikeBus && (
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>
+                                    BikeBus Group:
+                                </IonLabel>
+                            </IonCol>
+                        </IonRow>
+                    )}
                     <IonRow>
                         <IonCol>
                             <IonLabel>Travel Mode: {selectedRoute?.travelMode}</IonLabel>
@@ -257,16 +238,7 @@ const ViewRoute: React.FC = () => {
                     {isBikeBus && (
                         <IonRow>
                             <IonCol>
-                                <IonLabel>BikeBus Stops: {selectedRoute?.BikeBusStopName}</IonLabel>
-                            </IonCol>
-                        </IonRow>
-                    )}
-                    {isBikeBus && (
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>
-                                    BikeBus Group:
-                                </IonLabel>
+                                <IonLabel>BikeBus Stops: {(selectedRoute?.BikeBusStopName || []).join(', ')}</IonLabel>
                             </IonCol>
                         </IonRow>
                     )}

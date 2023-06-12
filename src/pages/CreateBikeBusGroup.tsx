@@ -194,7 +194,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const bikeBusData = {
       BikeBusName: BikeBusName,
       BikeBusDescription: BikeBusDescription,
-      BikeBusType: setBikeBusType,
+      BikeBusType: BikeBusType,
       BikeBusRoutes: [doc(db, 'routes', RouteID)],
       BikeBusLeaders: [doc(db, 'users', user.uid)],
       BikeBusMembers: [doc(db, 'users', user.uid)],
@@ -367,7 +367,7 @@ const CreateBikeBusGroup: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Type:</IonLabel>
-          <IonSelect value={setBikeBusType} placeholder="Select One">
+          <IonSelect value={BikeBusType} placeholder="Select One" onIonChange={e => setBikeBusType(e.detail.value)}>
             <IonSelectOption value="Work">Work</IonSelectOption>
             <IonSelectOption value="School">School</IonSelectOption>
             <IonSelectOption value="Social">Social</IonSelectOption>

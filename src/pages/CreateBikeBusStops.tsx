@@ -22,7 +22,7 @@ import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection } from '
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { add } from 'ionicons/icons';
 import { set } from 'firebase/database';
 
@@ -46,6 +46,7 @@ interface Route {
     startPoint: Coordinate;
     startPointAddress: string;
     startPointName: string;
+    pathCoordinates: Coordinate[];
 }
 
 const CreateBikeBusStop: React.FC = () => {
@@ -92,6 +93,7 @@ const CreateBikeBusStop: React.FC = () => {
                             BikeBusStopName: [],
                             BikeBusStopIds: [],
                             BikeBusStop: [],
+                            pathCoordinates: [],
                             endPointAddress: routeData.endPointAddress ? routeData.endPointAddress as string : '',
                             endPointName: routeData.endPointName ? routeData.endPointName as string : '',
                             startPointAddress: routeData.startPointAddress ? routeData.startPointAddress as string : '',
@@ -104,10 +106,6 @@ const CreateBikeBusStop: React.FC = () => {
         }
     }
         , [id]);
-
-    
-
-
 
     // when the map is loading, set startGeo to the route's startPoint
     useEffect(() => {
@@ -162,37 +160,38 @@ const CreateBikeBusStop: React.FC = () => {
 
     const updateBikeBusStops = async (newStopId: string) => {
         const BikeBusStopRef = doc(db, 'bikebusstops', newStopId);
-        // also get the bikebusgroup's id
-        const BikeBusGroupIdRef = doc(db, 'bikebusgroups', id);
+        // also get the bikebusgroup's id - which is in the routes id from the url
+        const BikeBusGroupIdRef = doc(db, 'routes', id);
         const BikeBusGroupIdSnapshot = await getDoc(BikeBusGroupIdRef);
         const BikeBusGroupId = BikeBusGroupIdSnapshot.data()?.id;
+        console.log(BikeBusGroupId);
         // get the route id and add it to the bikebusstop
         const routeRef = doc(db, 'routes', id);
         const routeSnapshot = await getDoc(routeRef);
         const routeId = routeSnapshot.data()?.id;
-        await updateDoc(BikeBusStopRef, { BikeBusGroupId: routeId });
+        console.log(routeId);
+        await updateDoc(BikeBusStopRef, { BikeBusRouteId: routeId });
         await updateDoc(BikeBusStopRef, { BikeBusGroupId: BikeBusGroupId });
-        await updateDoc(BikeBusStopRef, { BikeBusStopName: newStopName });
-    };
-
-    // await addStopToRoute(newStopId, id);
-    const addStopToRoute = async (newStopId: string, routeId: string) => {
-        const routeRef = doc(db, 'routes', routeId);
-        await updateDoc(routeRef, { BikeBusStopIds: arrayUnion("/bikebusstops/" + newStopId) });
+        await updateDoc(BikeBusStopRef, { BikeBusStopName: BikeBusStopName });
     };
 
 
-    const updateRoute = async (newRoute: Route) => {
+    const updateRoute = async (newRoute: Route, newStopId: string) => {
         const routeRef = doc(db, 'routes', id);
-        await updateDoc(routeRef, {...newRoute}); // Spread object properties
-    };
+        await updateDoc(routeRef, { 
+            ...newRoute,
+            BikeBusStopName: arrayUnion(BikeBusStopName),
+            BikeBusStopIds: arrayUnion("/bikebusstops/" + newStopId),
+            BikeBusStop: arrayUnion(BikeBusStop)
+        });
+    };    
 
 
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
 
-    
+
     const onSaveStopButtonClick = async () => {
         if (selectedRoute && BikeBusStop) {
             const newStop: Coordinate = {
@@ -206,14 +205,13 @@ const CreateBikeBusStop: React.FC = () => {
                     ...selectedRoute,
                     BikeBusStop: newStops as Coordinate[],
                 };
-                await updateRoute(newRoute);
-                await addNewStop(BikeBusStop);
-                await addStopToRoute(newStopId, id);
+                await updateRoute(newRoute, newStopId);
                 await updateBikeBusStops(newStopId);
                 history.push(`/EditRoute/${id}`);
             }
         }
     };
+
 
     return (
         <IonPage style={{ height: '100%' }}>
@@ -238,6 +236,10 @@ const CreateBikeBusStop: React.FC = () => {
                         <IonInput value={BikeBusStopName} onIonChange={e => setBikeBusStopName(e.detail.value!)} />
                     </IonItem>
                     <IonText>Click on the map to select a location and then "save new bikebusstop"</IonText>
+                    <IonLabel>OR Select a Location by doing a google maps api autocomplete search and then the marker will show up</IonLabel>
+                    <IonItem>
+                        <IonLabel>Search for a location:</IonLabel>
+                    </IonItem>
                     <IonButton onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
                     <IonButton routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
                     <GoogleMap
@@ -256,19 +258,29 @@ const CreateBikeBusStop: React.FC = () => {
                         }}
                         onClick={onMapClick}
                     >
-                        <Marker
-                            position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                            title="Start"
-                        />
+                        <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
+                        <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
                         {BikeBusStop && (
                             <Marker
                                 position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
                                 title={BikeBusStopName}
                             />
                         )}
-                    </GoogleMap>             
-            </IonGrid>
-        </IonContent >
+                        <Polyline
+                            path={selectedRoute ? selectedRoute.pathCoordinates : []}
+                            options={{
+                                strokeColor: "#FF0000",
+                                strokeOpacity: 1.0,
+                                strokeWeight: 2,
+                                geodesic: true,
+                                draggable: true,
+                                editable: true,
+                                visible: true,
+                            }}
+                        />
+                    </GoogleMap>
+                </IonGrid>
+            </IonContent >
         </IonPage >
     );
 };
