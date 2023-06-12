@@ -316,46 +316,47 @@ const EditRoute: React.FC = () => {
 
     const onGenerateNewRouteClick = async () => {
         if (!BikeBusStop) {
-          console.error('No new stop to add to route');
-          return;
+            console.error('No new stop to add to route');
+            return;
         }
       
         if (BikeBusStop && selectedRoute) {
-          // Calculate the distances between any BikeBusStop (lat lng in a array), start point, and end point
-          const startDistance = Math.hypot(
-            BikeBusStop.lat - selectedRoute.pathCoordinates[0].lat,
-            BikeBusStop.lng - selectedRoute.pathCoordinates[0].lng
-          );
-          const endDistance = Math.hypot(
-            BikeBusStop.lat - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lat,
-            BikeBusStop.lng - selectedRoute.pathCoordinates[selectedRoute.pathCoordinates.length - 1].lng
-          );
+            // Calculate the distances between any BikeBusStop (lat lng in a array), start point, and end point
+            const startDistance = Math.hypot(
+                BikeBusStop.lat - selectedRoute.startPoint.lat,
+                BikeBusStop.lng - selectedRoute.startPoint.lng
+            );
+            const endDistance = Math.hypot(
+                BikeBusStop.lat - selectedRoute.endPoint.lat,
+                BikeBusStop.lng - selectedRoute.endPoint.lng
+            );
       
-          // Find the closest point (start or end) to the new stop
-          let insertPosition;
-          if (startDistance <= endDistance) {
-            insertPosition = 0; // Insert at the beginning
-          } else {
-            insertPosition = selectedRoute.pathCoordinates.length; // Insert at the end
-          }
+            // Find the closest point (start or end) to the new stop
+            let insertPosition;
+            if (startDistance <= endDistance) {
+                insertPosition = 0; // Insert at the beginning
+            } else {
+                insertPosition = selectedRoute.pathCoordinates.length; // Insert at the end
+            }
       
-          // Create a new path with the new stop included
-          const newPathCoordinates = [...selectedRoute.pathCoordinates];
-          newPathCoordinates.splice(insertPosition, 0, BikeBusStop);
+            // Create a new path with the new stop included
+            const newPathCoordinates = [selectedRoute.startPoint, ...selectedRoute.pathCoordinates, selectedRoute.endPoint];
+            newPathCoordinates.splice(insertPosition, 0, BikeBusStop);
       
-          // Simplify the new path using ramerDouglasPeucker
-          const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
+            // Simplify the new path using ramerDouglasPeucker
+            const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
       
-          setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
+            setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
       
-          const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
+            const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
       
-          // Create waypoints excluding the start and end points
-          let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
+            // Create waypoints excluding the start and end points
+            let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
       
-          calculateRoute(waypoints, selectedTravelMode);
+            calculateRoute(waypoints, selectedTravelMode);
         }
-      };
+    };
+    
       
 
     const handleRouteSave = async () => {

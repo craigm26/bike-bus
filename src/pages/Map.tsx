@@ -107,6 +107,7 @@ const Map: React.FC = () => {
 
 
 
+
   useEffect(() => {
     if (headerContext) {
       headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
@@ -190,7 +191,7 @@ const Map: React.FC = () => {
     }
   }, [user, getLocationClicked, watchLocation]);
 
-  
+
 
   useEffect(() => {
     console.log("MapCenter Location: ", mapCenter);
@@ -334,24 +335,24 @@ const Map: React.FC = () => {
     latitude: number;
     longitude: number;
   }
-  
+
   function perpendicularDistance(point: LatLng, linePoint1: LatLng, linePoint2: LatLng): number {
     const { latitude: x, longitude: y } = point;
     const { latitude: x1, longitude: y1 } = linePoint1;
     const { latitude: x2, longitude: y2 } = linePoint2;
-  
+
     const area = Math.abs(0.5 * (x1 * y2 + x2 * y + x * y1 - x2 * y1 - x * y2 - x1 * y));
     const bottom = Math.hypot(x1 - x2, y1 - y2);
     const height = (2 * area) / bottom;
-  
+
     return height;
   }
-  
+
   function ramerDouglasPeucker(pointList: LatLng[], epsilon: number): LatLng[] {
     let dmax = 0;
     let index = 0;
     const end = pointList.length - 1;
-  
+
     for (let i = 1; i < end; i++) {
       const d = perpendicularDistance(pointList[i], pointList[0], pointList[end]);
       if (d > dmax) {
@@ -359,11 +360,11 @@ const Map: React.FC = () => {
         dmax = d;
       }
     }
-  
+
     if (dmax > epsilon) {
       const recResults1 = ramerDouglasPeucker(pointList.slice(0, index + 1), epsilon);
       const recResults2 = ramerDouglasPeucker(pointList.slice(index, end + 1), epsilon);
-  
+
       const resultPoints = [...recResults1, ...recResults2.slice(1)];
       return resultPoints;
     } else {
@@ -387,7 +388,7 @@ const Map: React.FC = () => {
         (response, status) => {
           if (status === "OK" && response) {
             directionsRenderer.setDirections(response);
-        
+
             const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
               latitude: latLng.lat(),
               longitude: latLng.lng(),
@@ -686,10 +687,20 @@ const Map: React.FC = () => {
                             <IonInput
                               value={routeName}
                               placeholder="Enter Route Name"
+                              onIonChange={e => {
+                                if (typeof e.detail.value === 'string') {
+                                  setRouteName(e.detail.value);
+                                }
+                              }}
                             />
                             <IonInput
                               value={description}
                               placeholder="Enter Description"
+                              onIonChange={e => {
+                                if (typeof e.detail.value === 'string') {
+                                  setDescription(e.detail.value);
+                                }
+                              }}
                             />
                             <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>
                           </IonContent>
