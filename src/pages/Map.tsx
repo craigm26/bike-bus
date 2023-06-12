@@ -484,6 +484,7 @@ const Map: React.FC = () => {
               endPointAddress: routeEndFormattedAddress,
               startPoint: selectedStartLocation,
               endPoint: selectedEndLocation,
+              routeName: routeName,
               startPointName: routeStartName,
               endPointName: routeEndName,
               routeDescription: description,
@@ -510,7 +511,6 @@ const Map: React.FC = () => {
         description: description,
         isBikeBus: false,
         BikeBusGroupId: "",
-        bikebusstopIds: [],
         startPoint: selectedStartLocation,
         endPoint: selectedEndLocation,
         routeType: routeType,
@@ -553,17 +553,6 @@ const Map: React.FC = () => {
       console.log("user is not logged in");
       setShowLoginModal(true);
     }
-  };
-
-
-  const handleRouteNameChange = (event: CustomEvent<InputChangeEventDetail>) => {
-    setRouteName(event.detail.value || '');
-    // show message to user that "the route name may not be set in mobile as it is a bug. Create the route for now and then edit the route to add the route name"
-
-  };
-
-  const handleDescriptionChange = (event: CustomEvent<InputChangeEventDetail>) => {
-    setDescription(event.detail.value || '');
   };
 
   if (!isLoaded) {
@@ -694,16 +683,13 @@ const Map: React.FC = () => {
                             </IonToolbar>
                           </IonHeader>
                           <IonContent>
-                            <IonLabel>route name and directions may not be set in mobile as it is a bug. Create the route for now and then edit the route to add the route name</IonLabel>
                             <IonInput
                               value={routeName}
                               placeholder="Enter Route Name"
-                              onIonChange={handleRouteNameChange}
                             />
                             <IonInput
                               value={description}
                               placeholder="Enter Description"
-                              onIonChange={handleDescriptionChange}
                             />
                             <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>
                           </IonContent>

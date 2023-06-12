@@ -194,7 +194,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const bikeBusData = {
       BikeBusName: BikeBusName,
       BikeBusDescription: BikeBusDescription,
-      BikeBusType: BikeBusType,
+      BikeBusType: setBikeBusType,
       BikeBusRoutes: [doc(db, 'routes', RouteID)],
       BikeBusLeaders: [doc(db, 'users', user.uid)],
       BikeBusMembers: [doc(db, 'users', user.uid)],

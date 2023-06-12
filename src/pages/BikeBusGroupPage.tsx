@@ -314,7 +314,7 @@ const BikeBusGroupPage: React.FC = () => {
               }
               {isUserLeader && routesData.map((route, index) => (
                 <IonItem key={index}>
-                  <IonButton routerLink={`/EditRoute/${route.id}`}>Create BikeBusStops</IonButton>
+                  <IonButton routerLink={`/CreateBikeBusStops/${route.id}`}>Create BikeBusStops</IonButton>
                 </IonItem>
               ))}
               <IonList>

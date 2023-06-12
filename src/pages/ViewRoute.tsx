@@ -73,6 +73,34 @@ interface Coordinate {
     lng: number;
 }
 
+interface Route {
+    newStop: Coordinate | null;
+    oldIds: Coordinate | null;
+    stopPoint: Coordinate | null;
+    BikeBusStopName: string;
+    BikeBusStopId: string;
+    BikeBusStopIds: Coordinate[];
+    BikeBusStop: Coordinate[];
+    isBikeBus: boolean;
+    bikeBusStop: Coordinate[];
+    BikeBusGroupId: string;
+    id: string;
+    accountType: string;
+    description: string;
+    endPoint: Coordinate;
+    endPointAddress: string;
+    endPointName: string;
+    routeCreator: string;
+    routeLeader: string;
+    routeName: string;
+    routeType: string;
+    startPoint: Coordinate;
+    startPointAddress: string;
+    startPointName: string;
+    travelMode: string;
+    pathCoordinates: Coordinate[];
+}
+
 
 const ViewRoute: React.FC = () => {
     const { user } = useAuth();
@@ -95,6 +123,7 @@ const ViewRoute: React.FC = () => {
     const [path, setPath] = useState<Coordinate[]>([]);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+    const [bikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.lat,
         lng: startGeo.lng,
@@ -133,9 +162,8 @@ const ViewRoute: React.FC = () => {
         }
     };
 
-    // if the BikeBusGroupId is not null, then make the isGroup variable true
-    const isGroup = selectedRoute?.BikeBusGroupId !== null;
-
+    // if the field isbikeBus is set to true, then make the isBikeBus variable true
+    const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
     useEffect(() => {
         if (headerContext) {
@@ -182,6 +210,9 @@ const ViewRoute: React.FC = () => {
         if (selectedRoute) {
             const routeRef = doc(db, 'routes', selectedRoute.id);
             await deleteDoc(routeRef);
+            // send message to user that the route was deleted
+            alert('Route Deleted');
+            history.push('/viewroutelist/');
         }
     };
 
@@ -223,20 +254,22 @@ const ViewRoute: React.FC = () => {
                             </IonLabel>
                         </IonCol>
                     </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>BikeBusStops: {selectedRoute?.BikeBusStationsIds}</IonLabel>
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            {!isGroup && (
+                    {isBikeBus && (
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>BikeBus Stops: {selectedRoute?.BikeBusStopName}</IonLabel>
+                            </IonCol>
+                        </IonRow>
+                    )}
+                    {isBikeBus && (
+                        <IonRow>
+                            <IonCol>
                                 <IonLabel>
-                                    {selectedRoute?.BikeBusGroupId}
+                                    BikeBus Group:
                                 </IonLabel>
-                            )}
-                        </IonCol>
-                    </IonRow>
+                            </IonCol>
+                        </IonRow>
+                    )}
                     <IonRow>
                         <IonCol>
                             <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
@@ -244,7 +277,7 @@ const ViewRoute: React.FC = () => {
                             <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
                         </IonCol>
                     </IonRow>
-                    {isGroup && (
+                    {!isBikeBus && (
                         <IonRow>
                             <IonCol>
                                 <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
@@ -309,6 +342,15 @@ const ViewRoute: React.FC = () => {
                                                         draggable: true,
                                                         editable: true,
                                                         visible: true,
+                                                    }}
+                                                />
+                                            )}
+                                            {bikeBusStop && (
+                                                <Marker
+                                                    position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
+                                                    title="New Stop"
+                                                    onClick={() => {
+                                                        console.log("Clicked on new stop");
                                                     }}
                                                 />
                                             )}

@@ -18,11 +18,13 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { setDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { add } from 'ionicons/icons';
+import { set } from 'firebase/database';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -33,31 +35,17 @@ interface Coordinate {
 }
 
 interface Route {
-    name: string;
-    newStop: Coordinate | null;
-    oldIds: Coordinate | null;
-    stopPoint: Coordinate | null;
-    BikeBusStopName: string;
-    BikeBusStopId: string;
+    BikeBusGroupId: string;
+    BikeBusStopName: string[];
     BikeBusStopIds: string[];
     BikeBusStop: Coordinate[];
-    isBikeBus: boolean;
-    bikeBusStop: Coordinate[];
-    BikeBusGroupId: string;
     id: string;
-    accountType: string;
-    description: string;
     endPoint: Coordinate;
     endPointAddress: string;
     endPointName: string;
-    routeCreator: string;
-    routeLeader: string;
-    routeName: string;
-    routeType: string;
     startPoint: Coordinate;
     startPointAddress: string;
     startPointName: string;
-    travelMode: string;
 }
 
 const CreateBikeBusStop: React.FC = () => {
@@ -83,7 +71,42 @@ const CreateBikeBusStop: React.FC = () => {
         libraries,
     });
     const [newStopName, setNewStopName] = useState<string>('');
-    const [stop, setStop] = useState<Coordinate | null>(null);
+    const [BikeBusStopName, setBikeBusStopName] = useState<string>('');
+    const [BikeBusStop, setBikeBusStop] = useState<Coordinate | null>(null);
+
+    // load the route from the url param
+    useEffect(() => {
+        if (id) {
+            const routeRef = doc(db, 'routes', id);
+            getDoc(routeRef).then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const routeData = docSnapshot.data();
+                    if (routeData) {
+                        const route: Route = {
+                            ...routeData,
+                            // add any missing properties with the correct types
+                            startPoint: routeData.startPoint as Coordinate,
+                            endPoint: routeData.endPoint as Coordinate,
+                            id: routeData.id ? routeData.name as string : '',
+                            BikeBusGroupId: routeData.BikeBusGroupId ? routeData.BikeBusGroupId as string : '',
+                            BikeBusStopName: [],
+                            BikeBusStopIds: [],
+                            BikeBusStop: [],
+                            endPointAddress: routeData.endPointAddress ? routeData.endPointAddress as string : '',
+                            endPointName: routeData.endPointName ? routeData.endPointName as string : '',
+                            startPointAddress: routeData.startPointAddress ? routeData.startPointAddress as string : '',
+                            startPointName: routeData.startPointName ? routeData.startPointName as string : '',
+                        };
+                        setSelectedRoute(route);
+                    }
+                }
+            });
+        }
+    }
+        , [id]);
+
+    
+
 
 
     // when the map is loading, set startGeo to the route's startPoint
@@ -122,15 +145,42 @@ const CreateBikeBusStop: React.FC = () => {
                 lat: event.latLng.lat(),
                 lng: event.latLng.lng(),
             };
-            setStop(newStop);
+            setBikeBusStop(newStop);
         }
     };
 
     const addNewStop = async (newStop: Coordinate): Promise<string | null> => {
-        const newStopRef = doc(db, 'bikeBusStops');
-        await setDoc(newStopRef, newStop); 
-        return newStopRef.id;
+        try {
+            const docRef = await addDoc(collection(db, 'bikebusstops'), newStop);
+            return docRef.id;
+            // set docRef.id as the new stop's id
+        } catch (e) {
+            console.error("Error adding document: ", e);
+        }
+        return null;
     };
+
+    const updateBikeBusStops = async (newStopId: string) => {
+        const BikeBusStopRef = doc(db, 'bikebusstops', newStopId);
+        // also get the bikebusgroup's id
+        const BikeBusGroupIdRef = doc(db, 'bikebusgroups', id);
+        const BikeBusGroupIdSnapshot = await getDoc(BikeBusGroupIdRef);
+        const BikeBusGroupId = BikeBusGroupIdSnapshot.data()?.id;
+        // get the route id and add it to the bikebusstop
+        const routeRef = doc(db, 'routes', id);
+        const routeSnapshot = await getDoc(routeRef);
+        const routeId = routeSnapshot.data()?.id;
+        await updateDoc(BikeBusStopRef, { BikeBusGroupId: routeId });
+        await updateDoc(BikeBusStopRef, { BikeBusGroupId: BikeBusGroupId });
+        await updateDoc(BikeBusStopRef, { BikeBusStopName: newStopName });
+    };
+
+    // await addStopToRoute(newStopId, id);
+    const addStopToRoute = async (newStopId: string, routeId: string) => {
+        const routeRef = doc(db, 'routes', routeId);
+        await updateDoc(routeRef, { BikeBusStopIds: arrayUnion("/bikebusstops/" + newStopId) });
+    };
+
 
     const updateRoute = async (newRoute: Route) => {
         const routeRef = doc(db, 'routes', id);
@@ -144,33 +194,26 @@ const CreateBikeBusStop: React.FC = () => {
 
     
     const onSaveStopButtonClick = async () => {
-        if (selectedRoute && stop) {
+        if (selectedRoute && BikeBusStop) {
             const newStop: Coordinate = {
-                lat: stop.lat,
-                lng: stop.lng,
+                lat: BikeBusStop.lat,
+                lng: BikeBusStop.lng,
             };
             const newStopId = await addNewStop(newStop);
             if (newStopId) {
-                const newStopIds = [...selectedRoute.BikeBusStopIds, newStopId].filter(id => typeof id === 'string');
                 const newStops: Coordinate[] = [...selectedRoute.BikeBusStop, newStop];
                 const newRoute: Route = {
                     ...selectedRoute,
-                    BikeBusStopIds: newStopIds,
                     BikeBusStop: newStops as Coordinate[],
-                    // add any missing properties with the correct types
-                    startPoint: selectedRoute.startPoint as Coordinate,
-                    endPoint: selectedRoute.endPoint as Coordinate,
-                    name: selectedRoute.name as string,
-                    id: selectedRoute.id as string,
                 };
                 await updateRoute(newRoute);
-                history.goBack();
+                await addNewStop(BikeBusStop);
+                await addStopToRoute(newStopId, id);
+                await updateBikeBusStops(newStopId);
+                history.push(`/EditRoute/${id}`);
             }
         }
     };
-
-
-
 
     return (
         <IonPage style={{ height: '100%' }}>
@@ -192,11 +235,11 @@ const CreateBikeBusStop: React.FC = () => {
                     </IonList>
                     <IonItem>
                         <IonLabel>New BikeBus Stop Name:</IonLabel>
-                        <IonInput value={newStopName} onIonChange={e => setNewStopName(e.detail.value!)} />
+                        <IonInput value={BikeBusStopName} onIonChange={e => setBikeBusStopName(e.detail.value!)} />
                     </IonItem>
                     <IonText>Click on the map to select a location and then "save new bikebusstop"</IonText>
                     <IonButton onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
-                    <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+                    <IonButton routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
                     <GoogleMap
                         mapContainerStyle={{
                             width: '100%',
@@ -217,16 +260,13 @@ const CreateBikeBusStop: React.FC = () => {
                             position={{ lat: startGeo.lat, lng: startGeo.lng }}
                             title="Start"
                         />
-                        {stop && (
+                        {BikeBusStop && (
                             <Marker
-                                position={{ lat: stop.lat, lng: stop.lng }}
-                                title={newStopName}
+                                position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
+                                title={BikeBusStopName}
                             />
                         )}
-                    </GoogleMap>
-
-
-             
+                    </GoogleMap>             
             </IonGrid>
         </IonContent >
         </IonPage >
