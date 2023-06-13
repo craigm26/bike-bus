@@ -19,6 +19,7 @@
 .email-input {
   margin: 20px;
   border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .email-button {

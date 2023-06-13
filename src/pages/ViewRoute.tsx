@@ -8,6 +8,7 @@ import {
     IonCol,
     IonGrid,
     IonRow,
+    IonSpinner,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -46,6 +47,7 @@ interface Route {
     id: string;
     BikeBusStationsIds: string[];
     BikeBusGroupId: string;
+    BikeBusName: string;
     accountType: string;
     description: string;
     endPoint: Coordinate;
@@ -90,6 +92,7 @@ const ViewRoute: React.FC = () => {
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [BikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
+    const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.lat,
         lng: startGeo.lng,
@@ -115,6 +118,7 @@ const ViewRoute: React.FC = () => {
                 id: docSnap.id,
                 startPoint: docSnap.data().startPoint,
                 endPoint: docSnap.data().endPoint,
+                BikeBusName: docSnap.data().BikeBusName,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
                 pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
                     lat: coord.lat,  // use 'lat' instead of 'latitude'
@@ -214,7 +218,7 @@ const ViewRoute: React.FC = () => {
                         <IonRow>
                             <IonCol>
                                 <IonLabel>
-                                    BikeBus Group:
+                                    BikeBus Group: {selectedRoute?.BikeBusName}
                                 </IonLabel>
                             </IonCol>
                         </IonRow>
@@ -275,15 +279,14 @@ const ViewRoute: React.FC = () => {
                                     }}
                                 >
                                     <Polyline
-                                        path={selectedRoute?.pathCoordinates}
+                                        path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                                         options={{
                                             strokeColor: "#FF0000",
                                             strokeOpacity: 1.0,
                                             strokeWeight: 2,
                                             geodesic: true,
-                                            draggable: true,
                                             editable: true,
-                                            visible: true,
+                                            draggable: true,
                                         }}
                                     />
                                     <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" />
@@ -301,48 +304,8 @@ const ViewRoute: React.FC = () => {
                                     ))}
                                 </GoogleMap>
                             ) : (
-                                <>
-                                    {isLoaded && selectedRoute && (
-                                        <>
-                                            <GoogleMap
-                                                mapContainerStyle={containerMapStyle}
-                                                center={mapCenter}
-                                                zoom={12}
-                                                options={{
-                                                    mapTypeControl: false,
-                                                    streetViewControl: false,
-                                                    fullscreenControl: true,
-                                                    disableDoubleClickZoom: true,
-                                                    disableDefaultUI: true,
-                                                }}
-                                            >
-                                                <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
-                                                <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
-                                            </GoogleMap>
-                                            <Polyline
-                                                path={selectedRoute.pathCoordinates}
-                                                options={{
-                                                    strokeColor: "#FF0000",
-                                                    strokeOpacity: 1.0,
-                                                    strokeWeight: 2,
-                                                    geodesic: true,
-                                                    draggable: true,
-                                                    editable: true,
-                                                    visible: true,
-                                                }}
-                                            />
-                                            <Marker
-                                                position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
-                                                title="New Stop"
-                                                onClick={() => {
-                                                    console.log("Clicked on new stop");
-                                                }}
-                                            />
-                                        </>
-                                    )}
-                                </>
+                                <IonSpinner />
                             )}
-
                         </IonCol>
                     </IonRow>
                 </IonGrid>
