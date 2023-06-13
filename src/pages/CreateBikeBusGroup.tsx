@@ -68,7 +68,6 @@ const CreateBikeBusGroup: React.FC = () => {
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
   const [isRecurring, setIsRecurring] = useState('no');
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
-  const [duration, setDuration] = useState<number>(0);
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -119,16 +118,11 @@ const CreateBikeBusGroup: React.FC = () => {
         const routeData = routeSnapshot.data();
         if (routeData) {
           setRoute(routeData);
-          const duration = routeData.duration;
-          setDuration(duration);
         }
       }
     };
     fetchRoute();
-  }, [RouteID, setDuration]);
-
-  const EstimatedEndTime = endTime ? moment(startTime, 'HH:mm').add(route?.duration, 'minutes').format('HH:mm') : '';
-
+  }, [RouteID]);
 
 
   const togglePopover = (e: any) => {
@@ -417,10 +411,6 @@ const CreateBikeBusGroup: React.FC = () => {
             ></IonDatetime>
             <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
           </IonModal>
-        </IonItem>
-        <IonItem>
-          <IonLabel>BikeBus Duration from Estimated Google Route Time</IonLabel>
-          <IonLabel>{duration} Minutes</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus End Time</IonLabel>
