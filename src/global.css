@@ -154,7 +154,7 @@
   align-items: center;
   position: absolute;
   position: static;
-  --height: 40vw;
+  --height: 60vw;
   width: var(--width);
   height: var(--height);
   max-width: var(--width);
