@@ -28,13 +28,6 @@ interface Coordinate {
     lng: number;
 }
 
-interface ViewRouteMapProps {
-    startGeo: GeoPoint;
-    endGeo: GeoPoint;
-    stations: Station[];
-    path: GeoPoint[];
-}
-
 interface BikeBusGroup {
     id: string;
     name: string;
@@ -49,6 +42,7 @@ interface Station {
 
 interface Route {
     BikeBusStopName: string[];
+    BikeBusStop: Coordinate[];
     id: string;
     BikeBusStationsIds: string[];
     BikeBusGroupId: string;
@@ -95,12 +89,12 @@ const ViewRoute: React.FC = () => {
     const [path, setPath] = useState<Coordinate[]>([]);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
-    const [bikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
+    const [BikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
-    const [BikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
+    const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
 
     const containerMapStyle = {
         width: '100%',
@@ -122,15 +116,24 @@ const ViewRoute: React.FC = () => {
                 startPoint: docSnap.data().startPoint,
                 endPoint: docSnap.data().endPoint,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
-                pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
+                pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
+                    lat: coord.lat,  // use 'lat' instead of 'latitude'
+                    lng: coord.lng,  // use 'lng' instead of 'longitude'
+                })),
                 BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
-                    lat: coord.latitude,
-                    lng: coord.longitude,
+                    lat: coord.lat,  // use 'lat' instead of 'latitude'
+                    lng: coord.lng,  // use 'lng' instead of 'longitude'
+                })),
+                BikeBusStops: (docSnap.data().BikeBusStop || []).map((coord: any) => ({
+                    lat: coord.lat,  // use 'lat' instead of 'latitude'
+                    lng: coord.lng,  // use 'lng' instead of 'longitude'
                 })),
             };
             setSelectedRoute(routeData);
             setPath(routeData.pathCoordinates);
-            setBikeBusStationsIds(routeData.BikeBusStationsIds);
+            setBikeBusStops(routeData.BikeBusStops);
+            setStartGeo(routeData.startPoint);
+            setEndGeo(routeData.endPoint);
         }
     };
 
@@ -271,13 +274,26 @@ const ViewRoute: React.FC = () => {
                                         disableDefaultUI: true,
                                     }}
                                 >
-                                    <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
-                                    <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
-                                    {BikeBusStationsIds.map((stop, index) => (
+                                    <Polyline
+                                        path={selectedRoute?.pathCoordinates}
+                                        options={{
+                                            strokeColor: "#FF0000",
+                                            strokeOpacity: 1.0,
+                                            strokeWeight: 2,
+                                            geodesic: true,
+                                            draggable: true,
+                                            editable: true,
+                                            visible: true,
+                                        }}
+                                    />
+                                    <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" />
+                                    <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" label="End" />
+                                    {BikeBusStops.map((stop, index) => (
                                         <Marker
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
+                                            label={`${index + 1}`}
                                             onClick={() => {
                                                 console.log(`Clicked on stop ${index + 1}`);
                                             }}
@@ -303,29 +319,25 @@ const ViewRoute: React.FC = () => {
                                                 <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
                                                 <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
                                             </GoogleMap>
-                                            {selectedRoute?.pathCoordinates && (
-                                                <Polyline
-                                                    path={selectedRoute.pathCoordinates}
-                                                    options={{
-                                                        strokeColor: "#FF0000",
-                                                        strokeOpacity: 1.0,
-                                                        strokeWeight: 2,
-                                                        geodesic: true,
-                                                        draggable: true,
-                                                        editable: true,
-                                                        visible: true,
-                                                    }}
-                                                />
-                                            )}
-                                            {bikeBusStop && (
-                                                <Marker
-                                                    position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
-                                                    title="New Stop"
-                                                    onClick={() => {
-                                                        console.log("Clicked on new stop");
-                                                    }}
-                                                />
-                                            )}
+                                            <Polyline
+                                                path={selectedRoute.pathCoordinates}
+                                                options={{
+                                                    strokeColor: "#FF0000",
+                                                    strokeOpacity: 1.0,
+                                                    strokeWeight: 2,
+                                                    geodesic: true,
+                                                    draggable: true,
+                                                    editable: true,
+                                                    visible: true,
+                                                }}
+                                            />
+                                            <Marker
+                                                position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
+                                                title="New Stop"
+                                                onClick={() => {
+                                                    console.log("Clicked on new stop");
+                                                }}
+                                            />
                                         </>
                                     )}
                                 </>
