@@ -199,7 +199,7 @@ const ViewRoute: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent style={{ height: '100%' }}>
-                <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <IonGrid className="gridContainer">
                     <IonRow>
                         <IonCol>
                             <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>

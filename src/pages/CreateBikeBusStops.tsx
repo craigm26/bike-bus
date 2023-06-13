@@ -236,10 +236,6 @@ const CreateBikeBusStop: React.FC = () => {
                         <IonInput value={BikeBusStopName} onIonChange={e => setBikeBusStopName(e.detail.value!)} />
                     </IonItem>
                     <IonText>Click on the map to select a location and then "save new bikebusstop"</IonText>
-                    <IonLabel>OR Select a Location by doing a google maps api autocomplete search and then the marker will show up</IonLabel>
-                    <IonItem>
-                        <IonLabel>Search for a location:</IonLabel>
-                    </IonItem>
                     <IonButton onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
                     <IonButton routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
                     <GoogleMap
