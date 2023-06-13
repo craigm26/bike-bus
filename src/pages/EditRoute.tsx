@@ -180,6 +180,7 @@ const EditRoute: React.FC = () => {
                 routeName: docSnap.data().routeName,
                 startPoint: docSnap.data().startPoint,
                 endPoint: docSnap.data().endPoint,
+                BikeBusStop: docSnap.data().BikeBusStop,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
                 pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
                 BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
@@ -312,56 +313,61 @@ const EditRoute: React.FC = () => {
         }
     };
 
-
-
     const onGenerateNewRouteClick = async () => {
-        if (!BikeBusStop) {
+        if (!selectedRoute?.BikeBusStop || selectedRoute?.BikeBusStop.length === 0) {
             console.error('No new stop to add to route');
             return;
         }
-
+    
         console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
-      
-        if (BikeBusStop && selectedRoute) {
-            // Calculate the distances between any BikeBusStop (lat lng in a array), start point, and end point
-            const startDistance = Math.hypot(
-                BikeBusStop.lat - selectedRoute.startPoint.lat,
-                BikeBusStop.lng - selectedRoute.startPoint.lng
-            );
-            const endDistance = Math.hypot(
-                BikeBusStop.lat - selectedRoute.endPoint.lat,
-                BikeBusStop.lng - selectedRoute.endPoint.lng
-            );
-      
-            // Find the closest point (start or end) to the new stop
-            let insertPosition;
-            if (startDistance <= endDistance) {
-                insertPosition = 0; // Insert at the beginning
-            } else {
-                insertPosition = selectedRoute.pathCoordinates.length; // Insert at the end
-            }
-      
+        console.log('BikeBusStop: ', selectedRoute?.BikeBusStop);
+    
+        if (selectedRoute) {
             // Create a new path with the new stops included
             const newPathCoordinates = [selectedRoute.startPoint, ...selectedRoute.pathCoordinates, selectedRoute.endPoint];
-            newPathCoordinates.splice(insertPosition, 0, BikeBusStop);
-      
+            
+            // Add all stops to the path
+            for (const stop of selectedRoute.BikeBusStop) {
+                // Calculate the distances between the stop, start point, and end point
+                const startDistance = Math.hypot(
+                    stop.lat - selectedRoute.startPoint.lat,
+                    stop.lng - selectedRoute.startPoint.lng
+                );
+                const endDistance = Math.hypot(
+                    stop.lat - selectedRoute.endPoint.lat,
+                    stop.lng - selectedRoute.endPoint.lng
+                );
+                
+                // Find the closest point (start or end) to the new stop
+                let insertPosition;
+                if (startDistance <= endDistance) {
+                    insertPosition = 0; // Insert at the beginning
+                } else {
+                    insertPosition = newPathCoordinates.length - 1; // Insert at the end
+                }
+                
+                // Insert the stop into the path
+                newPathCoordinates.splice(insertPosition, 0, stop);
+            }
+          
             // Simplify the new path using ramerDouglasPeucker
             const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
-      
+    
             setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
-      
+    
             const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-      
+    
             // Create waypoints excluding the start and end points
             let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
-      
+    
             calculateRoute(waypoints, selectedTravelMode);
-
+    
             console.log('newPathCoordinates: ', newPathCoordinates);
         }
     };
     
-      
+
+
 
     const handleRouteSave = async () => {
         if (selectedRoute === null) {

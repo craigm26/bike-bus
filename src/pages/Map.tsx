@@ -671,38 +671,10 @@ const Map: React.FC = () => {
                       <>
                         {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
                         {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                          <IonButton expand="block" onClick={() => setCreateRouteShowModal(true)}>
-                            Create Route
-                          </IonButton>
-                        )}
-                        <IonModal isOpen={showCreateRouteModal} onDidDismiss={() => setCreateRouteShowModal(false)}>
-                          <IonHeader>
-                            <IonToolbar>
-                              <IonTitle>Create Route</IonTitle>
-                            </IonToolbar>
-                          </IonHeader>
-                          <IonContent>
-                            <IonInput
-                              value={routeName}
-                              placeholder="Enter Route Name"
-                              onIonChange={e => {
-                                if (typeof e.detail.value === 'string') {
-                                  setRouteName(e.detail.value);
-                                }
-                              }}
-                            />
-                            <IonInput
-                              value={description}
-                              placeholder="Enter Description"
-                              onIonChange={e => {
-                                if (typeof e.detail.value === 'string') {
-                                  setDescription(e.detail.value);
-                                }
-                              }}
-                            />
-                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>
-                          </IonContent>
-                        </IonModal>
+
+                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                        }
+                          
                       </>
                       {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
                         history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);

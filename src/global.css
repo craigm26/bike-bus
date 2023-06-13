@@ -161,6 +161,12 @@
   max-height: var(--height);
 }
 
+.gridContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .location-button-container {
   display: flex;
   justify-content: center;
