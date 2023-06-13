@@ -319,6 +319,8 @@ const EditRoute: React.FC = () => {
             console.error('No new stop to add to route');
             return;
         }
+
+        console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
       
         if (BikeBusStop && selectedRoute) {
             // Calculate the distances between any BikeBusStop (lat lng in a array), start point, and end point
@@ -339,7 +341,7 @@ const EditRoute: React.FC = () => {
                 insertPosition = selectedRoute.pathCoordinates.length; // Insert at the end
             }
       
-            // Create a new path with the new stop included
+            // Create a new path with the new stops included
             const newPathCoordinates = [selectedRoute.startPoint, ...selectedRoute.pathCoordinates, selectedRoute.endPoint];
             newPathCoordinates.splice(insertPosition, 0, BikeBusStop);
       
@@ -354,6 +356,8 @@ const EditRoute: React.FC = () => {
             let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
       
             calculateRoute(waypoints, selectedTravelMode);
+
+            console.log('newPathCoordinates: ', newPathCoordinates);
         }
     };
     
@@ -381,7 +385,7 @@ const EditRoute: React.FC = () => {
 
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
-        history.push(`/ViewRouteList/`)
+        history.push(`/ViewRoute/${id}`)
     };
 
     useEffect(() => {

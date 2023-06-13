@@ -15,7 +15,6 @@ import {
   IonModal,
   IonInput,
   IonTitle,
-  InputChangeEventDetail,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -25,7 +24,7 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -515,6 +514,7 @@ const Map: React.FC = () => {
         startPoint: selectedStartLocation,
         endPoint: selectedEndLocation,
         routeType: routeType,
+        duration: duration,
         accountType: accountType,
         travelMode: travelModeSelector,
         routeCreator: "/users/" + user?.uid,
@@ -538,14 +538,12 @@ const Map: React.FC = () => {
       console.log("user is logged in");
       const userRef = doc(db, "users", user.uid);
       updateDoc(userRef, {
-        // use the setEndPointAddress function to get the address of the selected end point and return the place name and address from Google Maps API
         savedDestinations: arrayUnion({
           name: routeEndName,
           address: routeEndFormattedAddress,
         }),
-        // if the record was saved, display a IonToast message to the user that the destination has been saved
       }).then(() => {
-        console.log("Document successfully updated!");
+        console.log("Destination successfully saved to your account!");
         // set the showSaveDestinationButton to false so that the user can't save the same destination multiple times
         // setShowSaveDestinationButton(false);
       });
@@ -647,7 +645,7 @@ const Map: React.FC = () => {
                       />
                     </StandaloneSearchBox>
                     {showGetDirectionsButton && !isAnonymous && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
-                    {showGetDirectionsButton && <IonRow className="travel-mode-row">"
+                    {showGetDirectionsButton && <IonRow className="travel-mode-row">
                       <IonCol>
                         <IonLabel>Travel Mode:</IonLabel>
                         <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
@@ -712,7 +710,7 @@ const Map: React.FC = () => {
                     </IonRow>
                   </IonCol>
                   <IonCol>
-                    {showGetDirectionsButton && <IonRow className="map-directions-after-get">
+                    {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
                       <IonLabel>Distance: {distance} miles </IonLabel>
                       <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
                       <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
