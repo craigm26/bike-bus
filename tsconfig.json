@@ -23,6 +23,6 @@
     "types": ["jest", "google.maps"]
   },
   "include": [
-    "src", "typings", "jest"
+    "src", "typings", "jest", "functions"
   ]
 }

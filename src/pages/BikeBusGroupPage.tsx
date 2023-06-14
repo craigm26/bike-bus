@@ -171,6 +171,7 @@ const BikeBusGroupPage: React.FC = () => {
 
     setInviteEmail('');
     setShowInviteModal(false);
+    alert('Invite sent!');
   };
 
   const fetchMembers = useCallback(async () => {
