@@ -265,14 +265,17 @@ const EditRoute: React.FC = () => {
         }
     }
 
-    const calculateRoute = (waypoints: any[], selectedTravelMode: any) => {
-        const batchSize = 10;
+    const calculateRoute = async (startPoint: Coordinate, endPoint: Coordinate, waypoints: google.maps.DirectionsWaypoint[], travelMode: google.maps.TravelMode, optimize = false) => {
         const directionsService = new google.maps.DirectionsService();
+        const batchSize = 10;
         const batches = [];
         const epsilon = 0.01; // Define epsilon here. You might need to adjust this value based on your needs
-
+        const routeRequests = [];
+        console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
+        console.log('waypoints: ', waypoints);
+    
         for (let i = 0; i < waypoints.length; i += batchSize) {
-            const batch = waypoints.slice(i, i + batchSize);
+            const batch: google.maps.DirectionsWaypoint[] = waypoints.slice(i, Math.min(i + batchSize, waypoints.length));
             if (i !== 0) {
                 batch.unshift(waypoints[i - 1]);
             }
@@ -280,94 +283,67 @@ const EditRoute: React.FC = () => {
                 batch.push(waypoints[i + batchSize]);
             }
             batches.push(batch);
-            console.log('batch: ', batch);
         }
-
+    
         for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
-            const origin = batch[0].location;
-            const destination = batch[batch.length - 1].location;
+            console.log('batch: ', batch);
+            const origin = batch.length > 0 ? batch[0].location : undefined;
+            const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
             const batchWaypoints = batch.slice(1, batch.length - 1);
-
-            directionsService.route({
-                origin,
-                destination,
-                waypoints: batchWaypoints,
-                optimizeWaypoints: true,
-                travelMode: selectedTravelMode,
-            }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
-                if (status === google.maps.DirectionsStatus.OK && response) {
-                    const newRoute = response.routes[0];
-                    let newRoutePathCoordinates = newRoute.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
-                    newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);
-                    setSelectedRoute((selectedRoute) => {
-                        if (!selectedRoute) {
-                            return null;
+    
+            if (origin && destination) {
+                routeRequests.push(new Promise<Coordinate[]>((resolve, reject) => {
+                    directionsService.route({
+                        origin: startPoint,
+                        destination: endPoint,
+                        waypoints: batchWaypoints,
+                        optimizeWaypoints: true,
+                        travelMode: travelMode,
+                    }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+                        if (status === google.maps.DirectionsStatus.OK && response) {
+                            const newRoute = response.routes[0];
+                            let newRoutePathCoordinates = newRoute.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
+                            newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);
+                            resolve(newRoutePathCoordinates);
+                        } else {
+                            reject('Directions request failed due to ' + status);
                         }
-                        return { ...selectedRoute, pathCoordinates: newRoutePathCoordinates };
                     });
-                } else {
-                    console.error('Directions request failed due to ' + status);
-                }
-            });
+                }));
+            }
         }
+    
+        return Promise.all(routeRequests).then(routeResults => {
+            return routeResults.flat();
+        });
     };
+    
 
     const onGenerateNewRouteClick = async () => {
-        if (!selectedRoute?.BikeBusStop || selectedRoute?.BikeBusStop.length === 0) {
+        if (!selectedRoute?.BikeBusStop || selectedRoute.BikeBusStop.length === 0) {
             console.error('No new stop to add to route');
             return;
         }
     
-        console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
-        console.log('BikeBusStop: ', selectedRoute?.BikeBusStop);
-    
         if (selectedRoute) {
-            // Create a new path with the new stops included
-            const newPathCoordinates = [selectedRoute.startPoint, ...selectedRoute.pathCoordinates, selectedRoute.endPoint];
+            // Create a new path with the stops included
+            const busStops: google.maps.DirectionsWaypoint[] = selectedRoute.BikeBusStop.map(coord => ({ location: coord, stopover: true }));
+            const pathCoordinates: google.maps.DirectionsWaypoint[] = selectedRoute.pathCoordinates.slice(1, selectedRoute.pathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
+    
+            const waypoints = [...busStops, ...pathCoordinates];
             
-            // Add all stops to the path
-            for (const stop of selectedRoute.BikeBusStop) {
-                // Calculate the distances between the stop, start point, and end point
-                const startDistance = Math.hypot(
-                    stop.lat - selectedRoute.startPoint.lat,
-                    stop.lng - selectedRoute.startPoint.lng
-                );
-                const endDistance = Math.hypot(
-                    stop.lat - selectedRoute.endPoint.lat,
-                    stop.lng - selectedRoute.endPoint.lng
-                );
-                
-                // Find the closest point (start or end) to the new stop
-                let insertPosition;
-                if (startDistance <= endDistance) {
-                    insertPosition = 0; // Insert at the beginning
-                } else {
-                    insertPosition = newPathCoordinates.length - 1; // Insert at the end
-                }
-                
-                // Insert the stop into the path
-                newPathCoordinates.splice(insertPosition, 0, stop);
-            }
-          
-            // Simplify the new path using ramerDouglasPeucker
-            const simplifiedPath = ramerDouglasPeucker(newPathCoordinates, 0.00001);
-    
-            setSelectedRoute({ ...selectedRoute, pathCoordinates: simplifiedPath });
-    
             const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
     
-            // Create waypoints excluding the start and end points
-            let waypoints = simplifiedPath.slice(1, simplifiedPath.length - 1).map(coord => ({ location: coord, stopover: true }));
+            const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
+            setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
     
-            calculateRoute(waypoints, selectedTravelMode);
-    
-            console.log('newPathCoordinates: ', newPathCoordinates);
+            console.log('newPathCoordinates: ', newCoordinates);
         }
     };
     
-
-
+    
+    
 
     const handleRouteSave = async () => {
         if (selectedRoute === null) {
@@ -375,9 +351,7 @@ const EditRoute: React.FC = () => {
             return;
         }
 
-
         const routeRef = doc(db, 'routes', selectedRoute.id);
-
         const updatedRoute: Partial<Route> = {};
         if (selectedRoute.routeName !== undefined) updatedRoute.routeName = selectedRoute.routeName;
         if (selectedRoute.BikeBusGroupId !== undefined) updatedRoute.BikeBusGroupId = selectedRoute.BikeBusGroupId;
