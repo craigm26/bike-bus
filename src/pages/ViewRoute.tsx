@@ -281,8 +281,8 @@ const ViewRoute: React.FC = () => {
                                             strokeOpacity: 1.0,
                                             strokeWeight: 2,
                                             geodesic: true,
-                                            draggable: true,
-                                            editable: true,
+                                            draggable: false,
+                                            editable: false,
                                             visible: true,
                                         }}
                                     />
