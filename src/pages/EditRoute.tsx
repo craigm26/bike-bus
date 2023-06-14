@@ -214,6 +214,17 @@ const EditRoute: React.FC = () => {
         }
     }, [headerContext]);
 
+    // center the map between the start point of the route and the end point of the route
+    useEffect(() => {
+        if (selectedRoute) {
+            setMapCenter({
+                lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+                lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+            });
+        }
+    }
+        , [selectedRoute]);
+
     useEffect(() => {
         if (selectedStartLocation) {
             setStartGeo(selectedStartLocation);
@@ -269,11 +280,11 @@ const EditRoute: React.FC = () => {
         const directionsService = new google.maps.DirectionsService();
         const batchSize = 10;
         const batches = [];
-        const epsilon = 0.01; // Define epsilon here. You might need to adjust this value based on your needs
+        const epsilon = 0.00005; // Define epsilon for Douglas-Peucker algorithm. Distance in degrees. 0.00005 is about 5.5 meters.
         const routeRequests = [];
         console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
         console.log('waypoints: ', waypoints);
-    
+
         for (let i = 0; i < waypoints.length; i += batchSize) {
             const batch: google.maps.DirectionsWaypoint[] = waypoints.slice(i, Math.min(i + batchSize, waypoints.length));
             if (i !== 0) {
@@ -284,14 +295,14 @@ const EditRoute: React.FC = () => {
             }
             batches.push(batch);
         }
-    
+
         for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
             console.log('batch: ', batch);
             const origin = batch.length > 0 ? batch[0].location : undefined;
             const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
             const batchWaypoints = batch.slice(1, batch.length - 1);
-    
+
             if (origin && destination) {
                 routeRequests.push(new Promise<Coordinate[]>((resolve, reject) => {
                     directionsService.route({
@@ -313,37 +324,37 @@ const EditRoute: React.FC = () => {
                 }));
             }
         }
-    
+
         return Promise.all(routeRequests).then(routeResults => {
             return routeResults.flat();
         });
     };
-    
+
 
     const onGenerateNewRouteClick = async () => {
         if (!selectedRoute?.BikeBusStop || selectedRoute.BikeBusStop.length === 0) {
             console.error('No new stop to add to route');
             return;
         }
-    
+
         if (selectedRoute) {
             // Create a new path with the stops included
             const busStops: google.maps.DirectionsWaypoint[] = selectedRoute.BikeBusStop.map(coord => ({ location: coord, stopover: true }));
             const pathCoordinates: google.maps.DirectionsWaypoint[] = selectedRoute.pathCoordinates.slice(1, selectedRoute.pathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
-    
+
             const waypoints = [...busStops, ...pathCoordinates];
-            
+
             const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-    
+
             const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-    
+
             console.log('newPathCoordinates: ', newCoordinates);
         }
     };
-    
-    
-    
+
+
+
 
     const handleRouteSave = async () => {
         if (selectedRoute === null) {
@@ -474,8 +485,27 @@ const EditRoute: React.FC = () => {
                                         title="Start"
                                     />
                                     <Marker
+                                        position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
+                                        title="New Stop"
+                                        onClick={() => {
+                                            console.log("Clicked on new stop");
+                                        }}
+                                    />
+                                    <Marker
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
+                                    />
+                                    <Polyline
+                                        path={selectedRoute?.pathCoordinates}
+                                        options={{
+                                            strokeColor: "#FF0000",
+                                            strokeOpacity: 1.0,
+                                            strokeWeight: 2,
+                                            geodesic: true,
+                                            draggable: false,
+                                            editable: true,
+                                            visible: true,
+                                        }}
                                     />
                                 </GoogleMap>
 

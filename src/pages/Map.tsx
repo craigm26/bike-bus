@@ -484,7 +484,7 @@ const Map: React.FC = () => {
               endPointAddress: routeEndFormattedAddress,
               startPoint: selectedStartLocation,
               endPoint: selectedEndLocation,
-              routeName: routeName,
+              routeName: routeStartName + " to " + routeEndName,
               startPointName: routeStartName,
               endPointName: routeEndName,
               routeDescription: description,
@@ -507,7 +507,7 @@ const Map: React.FC = () => {
     getStartPointAdress();
     try {
       const routeDocRef = await addDoc(collection(db, 'routes'), {
-        routeName: routeName,
+        routeName: routeStartName + " to " + routeEndName,
         description: description,
         isBikeBus: false,
         BikeBusGroupId: "",
