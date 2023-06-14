@@ -204,15 +204,6 @@ const CreateBikeBusGroup: React.FC = () => {
       BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
     };
 
-    console.log('bikeBusData:', bikeBusData.BikeBusName);
-    console.log('bikeBusData:', bikeBusData.BikeBusDescription);
-    console.log('bikeBusData:', bikeBusData.BikeBusType);
-    console.log('bikeBusData:', bikeBusData.BikeBusRoutes);
-    console.log('bikeBusData:', bikeBusData.BikeBusLeaders);
-    console.log('bikeBusData:', bikeBusData.BikeBusMembers);
-    console.log('bikeBusData:', bikeBusData.BikeBusCreator);
-    console.log('bikeBusData:', bikeBusData.BikeBusSchedules);
-
 
     const bikeBusRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
     const bikebusgroupId = bikeBusRef.id;
@@ -228,7 +219,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
       BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
-      BikeBusName: doc(db, 'bikebusgroups', BikeBusName),
+      BikeBusName: BikeBusName,
       isBikeBus: true,
     });
 

@@ -31,7 +31,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { alertCircleOutline, helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
+import { helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';

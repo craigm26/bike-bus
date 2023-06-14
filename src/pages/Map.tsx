@@ -71,8 +71,10 @@ const Map: React.FC = () => {
   const [routeDescription, setRouteDescription] = useState<string>('');
   const [routeStartLocation, setRouteStartLocation] = useState<string>('');
   const [routeStartName, setRouteStartName] = useState<string>('');
+  const [routeStartStreetName, setRouteStartStreetName] = useState<string>('');
   const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
   const [routeEndName, setRouteEndName] = useState<string>('');
+  const [routeEndStreetName, setRouteEndStreetName] = useState<string>('');
   const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
   const [routeType, setRouteType] = useState("SCHOOL");
   const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
@@ -281,6 +283,14 @@ const Map: React.FC = () => {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           });
+          // define place.address_components
+          const addressComponents = place.address_components;
+          // extract street name
+          const streetName = addressComponents?.find(component =>
+            component.types.includes('route')
+          )?.long_name;
+
+          setRouteStartStreetName(streetName ?? '');
           setRouteStartName(`${place.name}` ?? '');
           setRouteStartFormattedAddress(`${place.formatted_address}` ?? '');
           // need to set startPointAddress to the address of the selected start point
@@ -301,6 +311,7 @@ const Map: React.FC = () => {
   };
 
   console.log("Selected Start Location: ", selectedStartLocation);
+  console.log("Route Start Name: ", routeStartStreetName);
   console.log("Selected End Location: ", selectedEndLocation);
   console.log("Route Start Name: ", routeStartName);
   console.log("Route Start Formatted Address: ", routeStartFormattedAddress);
@@ -317,6 +328,15 @@ const Map: React.FC = () => {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           });
+
+          // define place.address_components
+          const addressComponents = place.address_components;
+          // extract street name
+          const streetName = addressComponents?.find(component =>
+            component.types.includes('route')
+          )?.long_name;
+
+          setRouteEndStreetName(streetName ?? '');
           setRouteEndName(`${place.name}` ?? '');
           setRouteEndFormattedAddress(`${place.formatted_address}` ?? '');
           setShowCreateRouteButton(true);
@@ -328,6 +348,7 @@ const Map: React.FC = () => {
   };
 
   console.log("Route End Name: ", routeEndName);
+  console.log("Route End Street Name: ", routeEndStreetName)
   console.log("Route End Formatted Address: ", routeEndFormattedAddress);
 
   interface LatLng {
@@ -484,14 +505,17 @@ const Map: React.FC = () => {
               endPointAddress: routeEndFormattedAddress,
               startPoint: selectedStartLocation,
               endPoint: selectedEndLocation,
-              routeName: routeStartName + " to " + routeEndName,
+              routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
               startPointName: routeStartName,
+              startPointStreetName: routeStartStreetName,
+              routeEndStreetName: routeEndStreetName,
               endPointName: routeEndName,
               routeDescription: description,
               pathCoordinates: pathCoordinates,
               isBikeBus: false,
             };
             console.log("Route Data: ", routeData);
+            console.log("routeName: ", routeStartName + " to " + routeEndName);
             handleCreateRouteSubmit();
           } else {
             console.error("Directions request failed due to " + status);
@@ -506,8 +530,14 @@ const Map: React.FC = () => {
     getEndPointAdress();
     getStartPointAdress();
     try {
+
+      const convertedPathCoordinates = pathCoordinates.map(coord => ({
+        lat: coord.latitude,
+        lng: coord.longitude,
+      }));
+
       const routeDocRef = await addDoc(collection(db, 'routes'), {
-        routeName: routeStartName + " to " + routeEndName,
+        routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
         description: description,
         isBikeBus: false,
         BikeBusGroupId: "",
@@ -519,13 +549,14 @@ const Map: React.FC = () => {
         travelMode: travelModeSelector,
         routeCreator: "/users/" + user?.uid,
         routeLeader: "/users/" + user?.uid,
-        pathCoordinates: pathCoordinates,
+        pathCoordinates: convertedPathCoordinates,
         startPointName: routeStartName,
         startPointAddress: routeStartFormattedAddress,
         endPointName: routeEndName,
         endPointAddress: routeEndFormattedAddress,
         distance: distance,
       });
+      console.log("routeName: ", routeStartName + " to " + routeEndName);
       history.push(`/viewroute/${routeDocRef.id}`);
     } catch (error) {
       console.log("Error: ", error);
@@ -672,9 +703,9 @@ const Map: React.FC = () => {
                         {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
                         {showGetDirectionsButton && directionsFetched && !isAnonymous && (
 
-                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                          <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
                         }
-                          
+
                       </>
                       {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
                         history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);

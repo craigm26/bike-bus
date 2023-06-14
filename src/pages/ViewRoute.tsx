@@ -8,6 +8,7 @@ import {
     IonCol,
     IonGrid,
     IonRow,
+    IonRouterLink,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -16,7 +17,7 @@ import { HeaderContext } from "../components/HeaderContext";
 import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, Link } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 
 
@@ -41,6 +42,7 @@ interface Station {
 }
 
 interface Route {
+    BikeBusName: string;
     BikeBusStopName: string[];
     BikeBusStop: Coordinate[];
     id: string;
@@ -180,7 +182,6 @@ const ViewRoute: React.FC = () => {
     }, [selectedRoute]);
 
 
-
     const deleteRoute = async () => {
         if (selectedRoute) {
             const routeRef = doc(db, 'routes', selectedRoute.id);
@@ -215,6 +216,8 @@ const ViewRoute: React.FC = () => {
                             <IonCol>
                                 <IonLabel>
                                     BikeBus Group:
+                                    {selectedRoute?.BikeBusName}
+
                                 </IonLabel>
                             </IonCol>
                         </IonRow>
@@ -248,7 +251,9 @@ const ViewRoute: React.FC = () => {
                     <IonRow>
                         <IonCol>
                             <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-                            <IonButton onClick={deleteRoute}>Delete Route</IonButton>
+                            {!isBikeBus && (
+                                <IonButton onClick={deleteRoute}>Delete Route</IonButton>
+                            )}
                             <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
                         </IonCol>
                     </IonRow>
@@ -277,7 +282,7 @@ const ViewRoute: React.FC = () => {
                                     <Polyline
                                         path={selectedRoute?.pathCoordinates}
                                         options={{
-                                            strokeColor: "#FF0000",
+                                            strokeColor: "#ffd800",
                                             strokeOpacity: 1.0,
                                             strokeWeight: 2,
                                             geodesic: true,
@@ -316,18 +321,24 @@ const ViewRoute: React.FC = () => {
                                                     disableDefaultUI: true,
                                                 }}
                                             >
-                                                <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
-                                                <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
+                                                <Marker
+                                                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                                                    title="Start"
+                                                />
+                                                <Marker
+                                                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                                                    title="End"
+                                                />
                                             </GoogleMap>
                                             <Polyline
                                                 path={selectedRoute.pathCoordinates}
                                                 options={{
-                                                    strokeColor: "#FF0000",
+                                                    strokeColor: "#ffd800",
                                                     strokeOpacity: 1.0,
                                                     strokeWeight: 2,
                                                     geodesic: true,
-                                                    draggable: true,
-                                                    editable: true,
+                                                    draggable: false,
+                                                    editable: false,
                                                     visible: true,
                                                 }}
                                             />
