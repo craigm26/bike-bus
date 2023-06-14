@@ -20,10 +20,19 @@ exports.sendInviteEmail = functions.firestore
       if (bikebusgroup) {
         const msg = {
           to: newValue.BikeBusInvites[newValue.BikeBusInvites.length - 1],
-          from: "craigm26@gmail.com", // Change to your verified sender
+          from: "invitation@bikebus.app", // Change to your verified sender
           subject: "Invitation to join BikeBus Group",
-          text: `You have been invited to join the BikeBus group "${bikebusgroup.name}". The route is "${bikebusgroup.route}", and the schedule is "${bikebusgroup.schedule}".`,
+          html: `
+            <p>You have been invited to join the BikeBus group <strong>"${bikebusgroup.BikeBusName}"</strong>.</p>
+            <p>The route is <a href="https://bikebus.app/bikebusroute/${bikebusgroup.BikeBusRoutes[0]}">Click here to view the route</a>.</p>
+            <p>The schedule is <a href="https://bikebus.app/bikebusschedule/${bikebusgroup.BikeBusSchedules[0]}">Click here to view the schedule</a>.</p>
+          `,
         };
+
+        console.log("To:", msg.to);
+        console.log("From:", msg.from);
+        console.log("Subject:", msg.subject);
+        console.log("HTML:", msg.html);
 
         try {
           await sgMail.send(msg);

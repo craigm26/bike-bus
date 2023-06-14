@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal, IonRouterLink } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -271,6 +271,12 @@ const BikeBusGroupPage: React.FC = () => {
     setIsUserMember(false);
   };
 
+  // when the user clicks on the copyUrl button, the url is copied to the clipboard
+  const copyUrl = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    alert('Copied URL to clipboard!');
+  };
+
 
 
   return (
@@ -304,9 +310,36 @@ const BikeBusGroupPage: React.FC = () => {
                   </IonToolbar>
                 </IonHeader>
                 <IonContent>
-                  <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                  <IonList>
+                    <IonItem>
+                      <IonLabel>
+                        BikeBus Name:
+                        <IonRouterLink href={`https://bikebus.app/bikebusgrouppage/${groupId}`}>
+                          {groupData?.BikeBusName}
+                        </IonRouterLink>
+                      </IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Routes</IonLabel>
+                      {routesData.map((route, index) => (
+                        <IonRouterLink key={index}>
+                          <Link to={`/ViewRoute/${route.id}`}>
+                            <IonLabel>{route?.routeName}</IonLabel>
+                          </Link>
+                        </IonRouterLink>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Email</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                    </IonItem>
+                  </IonList>
                   <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
                   <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+                  <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
+                  <IonButton onClick={copyUrl}>Copy URL</IonButton>
                 </IonContent>
               </IonModal>
 
@@ -375,7 +408,7 @@ const BikeBusGroupPage: React.FC = () => {
             </div>
           </IonCardContent>
         </IonCard>
-      </IonContent>
+      </IonContent >
     </IonPage >
   );
 };
