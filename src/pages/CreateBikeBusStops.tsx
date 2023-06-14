@@ -207,6 +207,7 @@ const CreateBikeBusStop: React.FC = () => {
                 };
                 await updateRoute(newRoute, newStopId);
                 await updateBikeBusStops(newStopId);
+                alert('BikeBusStop added successfully!');
                 history.push(`/EditRoute/${id}`);
             }
         }

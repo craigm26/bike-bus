@@ -348,7 +348,7 @@ const EditRoute: React.FC = () => {
 
             const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-
+            alert('Route Updated, Hit Save to save the new route');
             console.log('newPathCoordinates: ', newCoordinates);
         }
     };
