@@ -37,7 +37,7 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
-import { addDoc, collection, Timestamp, doc, getDoc, arrayUnion, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, doc, getDoc, arrayUnion, updateDoc, getDocs } from 'firebase/firestore';
 import React from 'react';
 
 
@@ -69,6 +69,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [isRecurring, setIsRecurring] = useState('no');
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
   const [BikeBusStopName, setBikeBusStopName] = useState('');
+  const [bulletinBoardData, setBulletinBoardData] = useState<any>(null);
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -315,6 +316,30 @@ const CreateBikeBusGroup: React.FC = () => {
 
       await addDoc(collection(db, 'event'), eventData);
     }
+
+    // add the references to the event documents to the bikebusgroup document in firestore
+    const bikeBusGroupRef2 = doc(db, 'bikebusgroups', bikebusgroupId);
+    await updateDoc(bikeBusGroupRef2, {
+      events: arrayUnion(doc(db, 'events', eventId)),
+    });
+
+    // create a reference in the bulletinboard collection in firestore for the bikebusgroup
+    const bulletinBoardData = {
+      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      Messages: [],
+    }
+    await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
+
+    // get the bulletinboard document id
+    const bulletinBoardRef = await getDocs(collection(db, 'bulletinboard'));
+    const bulletinBoardId = bulletinBoardRef.docs[bulletinBoardRef.docs.length - 1].id;
+    console.log('bulletinBoardId:', bulletinBoardId);
+
+    // add the bulletinboard reference to the bikebusgroup document in firestore
+    const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+    await updateDoc(bikeBusGroupRef3, {
+      bulletinboard: doc(db, 'bulletinboard', bulletinBoardId),
+    });
 
     history.push(`/bikebusgrouppage/${bikebusgroupId}`);
   };
