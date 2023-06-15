@@ -16,6 +16,9 @@ exports.sendInviteEmail = functions.firestore
       const bikebusgroupRef = admin.firestore().collection("bikebusgroups").doc(context.params.groupId);
       const bikebusgroupSnap = await bikebusgroupRef.get();
       const bikebusgroup = bikebusgroupSnap.data();
+
+      console.log("bikebusgroup", bikebusgroup);
+      console.log("bikebusgroup?.groupId", bikebusgroup?.groupId);
       
 
       if (bikebusgroup) {
@@ -27,7 +30,7 @@ exports.sendInviteEmail = functions.firestore
           from: "invitation@bikebus.app", // Change to your verified sender
           subject: "Invitation to join BikeBus Group",
           html: `
-          <p>You have been invited to join the BikeBus group <strong><a href="https://bikebus.app/bikebusgrouppage/${bikebusgroup?.groupIdid}">${bikebusgroup?.BikeBusName}</a></strong>.</p>
+          <p>You have been invited to join the BikeBus group <strong><a href="https://bikebus.app/bikebusgrouppage/${bikebusgroup?.groupId}">${bikebusgroup?.BikeBusName}</a></strong>.</p>
           <p>Click here to view the group and click on the "Join Group" button to join the group.</p>
           <p>Thanks,</p>
           <p>BikeBus Team</p>
