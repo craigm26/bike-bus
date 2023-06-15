@@ -4,27 +4,51 @@ import {
     IonHeader,
     IonToolbar,
     IonCard,
-    IonTitle,
     IonButton,
+    IonModal,
+    IonTitle,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
+    IonLabel,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDocs, query, where, DocumentReference, getDoc } from 'firebase/firestore';
+import { doc, DocumentReference, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { event } from 'firebase-functions/v1/analytics';
+import { set } from 'firebase/database';
 
 const localizer = momentLocalizer(moment);
 
 type Event = {
+    id: string,
     start: Date,
     end: Date,
-    title: string
+    title: string,
+    route: string,
+    schedule: string,
+    startTime: string,
+    endTime: string,
+    BikeBusGroup: string,
+    BikeBusStopTimes: [],
+    BikeBusStops: [],
+    StaticMap: string,
+    caboose: [],
+    captains: [],
+    kids: [],
+    leader: string,
+    members: [],
+    sheepdogs: [],
+    sprinters: [],
 };
+
 
 const ViewSchedule: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
@@ -32,13 +56,15 @@ const ViewSchedule: React.FC = () => {
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
     const { id } = useParams<{ id: string }>();
+    const [showEventModal, setShowEventModal] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+
 
     useEffect(() => {
         const fetchSchedules = async () => {
             const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
             const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
             const bikeBusGroupData = bikeBusGroupSnapshot.data();
-            console.log('BikeBusGroup data:', bikeBusGroupData);
 
             if (!bikeBusGroupData || !Array.isArray(bikeBusGroupData.BikeBusSchedules)) return;
 
@@ -50,7 +76,6 @@ const ViewSchedule: React.FC = () => {
                 if (scheduleDocRef instanceof DocumentReference) {
                     const scheduleDocSnapshot = await getDoc(scheduleDocRef);
                     const scheduleData = scheduleDocSnapshot.data();
-                    console.log('Schedule data:', scheduleData);
 
                     if (!scheduleData) continue;
 
@@ -59,7 +84,6 @@ const ViewSchedule: React.FC = () => {
                         const eventDocRef: DocumentReference = scheduleData.events[j];
                         const eventDocSnapshot = await getDoc(eventDocRef);
                         const eventData = eventDocSnapshot.data();
-                        console.log('Event data:', eventData);
 
                         if (!eventData) continue;
 
@@ -86,9 +110,23 @@ const ViewSchedule: React.FC = () => {
                                     start: startDateTime,
                                     end: endDateTime,
                                     title: title,
+                                    route: eventData.route,
+                                    schedule: eventData.schedule,
+                                    startTime: eventData.startTime,
+                                    endTime: eventData.endTime,
+                                    BikeBusGroup: eventData.BikeBusGroup,
+                                    BikeBusStopTimes: eventData.BikeBusStopTimes,
+                                    BikeBusStops: eventData.BikeBusStops,
+                                    StaticMap: eventData.StaticMap,
+                                    caboose: eventData.caboose,
+                                    captains: eventData.captains,
+                                    kids: eventData.kids,
+                                    leader: eventData.leader,
+                                    members: eventData.members,
+                                    sheepdogs: eventData.sheepdogs,
+                                    sprinters: eventData.sprinters,
+                                    id: '',
                                 };
-
-                                console.log(event);
                                 allEvents.push(event);
                             }
                         } else {
@@ -102,9 +140,23 @@ const ViewSchedule: React.FC = () => {
                                 start: startDateTime,
                                 end: endDateTime,
                                 title: title,
+                                route: eventData.route,
+                                schedule: eventData.schedule,
+                                startTime: eventData.startTime,
+                                endTime: eventData.endTime,
+                                BikeBusGroup: eventData.BikeBusGroup,
+                                BikeBusStopTimes: eventData.BikeBusStopTimes,
+                                BikeBusStops: eventData.BikeBusStops,
+                                StaticMap: eventData.StaticMap,
+                                caboose: eventData.caboose,
+                                captains: eventData.captains,
+                                kids: eventData.kids,
+                                leader: eventData.leader,
+                                members: eventData.members,
+                                sheepdogs: eventData.sheepdogs,
+                                sprinters: eventData.sprinters,
+                                id: '',
                             };
-
-                            console.log(event);
                             allEvents.push(event);
                         }
                     }
@@ -113,7 +165,108 @@ const ViewSchedule: React.FC = () => {
             setEvents(allEvents);
         };
         fetchSchedules();
-    }, [id]);
+
+    }, [events, id]);
+
+    // write a new fetch for the event data in the firestore collection "event" by using the document id of the group
+    // get the event id's listed in the "events" array of the bikebusgroups collection for the specific group id
+    useEffect(() => {
+        const fetchEvents = async () => {
+            const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
+            const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
+            const bikeBusGroupData = bikeBusGroupSnapshot.data();
+
+            if (!bikeBusGroupData || !Array.isArray(bikeBusGroupData.events)) return;
+
+            // for each document in the event collection, get the data and push it to the events array
+            let eventDocs: Event[] = [];
+            for (let i = 0; i < bikeBusGroupData.events.length; i++) {
+                const eventDocRef: DocumentReference = bikeBusGroupData.events[i];
+                const eventDocSnapshot = await getDoc(eventDocRef);
+                const eventData = eventDocSnapshot.data();
+
+                if (!eventData) continue;
+
+                const title = eventData.title;
+                const startTime = eventData.startTime.split('T')[1];
+                const endTime = eventData.endTime.split('T')[1];
+
+                if (eventData.recurring === "yes") {
+                    for (let j = 0; j < eventData.eventDays.length; j++) {
+                        const eventDayTimestamp = eventData.eventDays[j];
+                        const eventDay = eventDayTimestamp.toDate(); // converts Timestamp to Date
+
+                        // Create date string in 'YYYY-MM-DD' format
+                        const year = eventDay.getFullYear();
+                        const month = String(eventDay.getMonth() + 1).padStart(2, '0'); // Months are 0 based
+                        const day = String(eventDay.getDate()).padStart(2, '0');
+                        const eventDayStr = `${year}-${month}-${day}`;
+
+                        const startDateTime = new Date(eventDayStr + 'T' + startTime);
+                        const endDateTime = new Date(eventDayStr + 'T' + endTime);
+
+                        const event: Event = {
+                            start: startDateTime,
+                            end: endDateTime,
+                            title: title,
+                            route: eventData.route,
+                            schedule: eventData.schedule,
+                            startTime: eventData.startTime,
+                            endTime: eventData.endTime,
+                            BikeBusGroup: eventData.BikeBusGroup,
+                            BikeBusStopTimes: eventData.BikeBusStopTimes,
+                            BikeBusStops: eventData.BikeBusStops,
+                            StaticMap: eventData.StaticMap,
+                            caboose: eventData.caboose,
+                            captains: eventData.captains,
+                            kids: eventData.kids,
+                            leader: eventData.leader,
+                            members: eventData.members,
+                            sheepdogs: eventData.sheepdogs,
+                            sprinters: eventData.sprinters,
+                            id: '',
+                        };
+                        eventDocs.push(event);
+                    }
+                } else {
+
+                    const event: Event = {
+                        start: startTime,
+                        end: endTime,
+                        title: title,
+                        route: eventData.route,
+                        schedule: eventData.schedule,
+                        startTime: eventData.startTime,
+                        endTime: eventData.endTime,
+                        BikeBusGroup: eventData.BikeBusGroup,
+                        BikeBusStopTimes: eventData.BikeBusStopTimes,
+                        BikeBusStops: eventData.BikeBusStops,
+                        StaticMap: eventData.StaticMap,
+                        caboose: eventData.caboose,
+                        captains: eventData.captains,
+                        kids: eventData.kids,
+                        leader: eventData.leader,
+                        members: eventData.members,
+                        sheepdogs: eventData.sheepdogs,
+                        sprinters: eventData.sprinters,
+                        id: '',
+                    };
+                    eventDocs.push(event);
+                }
+            }
+
+            setEvents(eventDocs);
+        };
+        fetchEvents();
+    }
+        , [id]);
+
+    const handleSelectEvent = (event: Event) => {
+        setSelectedEvent(event);
+        setEvents(events);
+        setShowEventModal(true);
+    };
+
 
     return (
         <IonPage>
@@ -131,11 +284,32 @@ const ViewSchedule: React.FC = () => {
                             startAccessor="start"
                             endAccessor="end"
                             defaultView="agenda"
+                            onSelectEvent={handleSelectEvent}
                         />
                     </div>
                 </IonCard>
                 <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
                 <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle></IonTitle>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                        <IonCard>
+                            <IonCardContent>
+                                <IonLabel>Start Time: {selectedEvent?.startTime}</IonLabel>
+                                <IonLabel>End Time: {selectedEvent?.endTime}</IonLabel>
+                                <IonLabel>Route: {events[0]?.route}</IonLabel>
+
+                            </IonCardContent>
+                        </IonCard>
+                        <IonButton routerLink={`/editevent/${selectedEvent?.id}`}>Edit Event</IonButton>
+                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                    </IonContent>
+                </IonModal>
+
             </IonContent>
         </IonPage>
     );
