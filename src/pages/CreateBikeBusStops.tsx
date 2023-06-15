@@ -36,6 +36,7 @@ interface Coordinate {
 
 interface Route {
     BikeBusGroupId: string;
+    BikeBusRouteId: string;
     BikeBusStopName: string[];
     BikeBusStopIds: string[];
     BikeBusStop: Coordinate[];
@@ -91,6 +92,7 @@ const CreateBikeBusStop: React.FC = () => {
                             id: routeData.id ? routeData.name as string : '',
                             BikeBusGroupId: routeData.BikeBusGroupId ? routeData.BikeBusGroupId as string : '',
                             BikeBusStopName: [],
+                            BikeBusRouteId: routeData.BikeBusRouteId ? routeData.BikeBusRouteId as string : '',
                             BikeBusStopIds: [],
                             BikeBusStop: [],
                             pathCoordinates: [],
@@ -159,21 +161,21 @@ const CreateBikeBusStop: React.FC = () => {
     };
 
     const updateBikeBusStops = async (newStopId: string) => {
-        const BikeBusStopRef = doc(db, 'bikebusstops', newStopId);
-        // also get the bikebusgroup's id - which is in the routes id from the url
-        const BikeBusGroupIdRef = doc(db, 'routes', id);
-        const BikeBusGroupIdSnapshot = await getDoc(BikeBusGroupIdRef);
-        const BikeBusGroupId = BikeBusGroupIdSnapshot.data()?.id;
-        console.log(BikeBusGroupId);
-        // get the route id and add it to the bikebusstop
-        const routeRef = doc(db, 'routes', id);
-        const routeSnapshot = await getDoc(routeRef);
-        const routeId = routeSnapshot.data()?.id;
-        console.log(routeId);
-        await updateDoc(BikeBusStopRef, { BikeBusRouteId: routeId });
-        await updateDoc(BikeBusStopRef, { BikeBusGroupId: BikeBusGroupId });
-        await updateDoc(BikeBusStopRef, { BikeBusStopName: BikeBusStopName });
-    };
+        const bikeBusStopRef = doc(db, 'bikebusstops', newStopId);
+        
+        // Get the bikebusgroup's id from the selected route
+        const bikeBusGroupId = selectedRoute?.BikeBusGroupId || '';
+      
+        // Get the route id from the URL parameter
+        const routeId = id || '';
+      
+        await updateDoc(bikeBusStopRef, {
+          BikeBusGroupId: bikeBusGroupId,
+          BikeBusRouteId: routeId,
+          BikeBusStopName: BikeBusStopName
+        });
+      };
+      
 
 
     const updateRoute = async (newRoute: Route, newStopId: string) => {

@@ -78,7 +78,35 @@ const About: React.FC = () => {
           </IonCardHeader>
           <IonCardContent>
             Our app helps users find and join bikebus routes to commute to school together. Users can create and publish routes, organize groups, and participate in a safer, more enjoyable, and environmentally-friendly way to travel to school.
-            <IonText>All built and ran by Craig Merry. E-mail me at craigm26@gmail.com for any feedback or questions!</IonText>
+            <IonText>All built and ran by Craig Merry.</IonText>
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>About the Developer</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonText>Hi, I'm Craig Merry</IonText>
+            <Avatar uid="ScLzYFaBBlMbfZs0z5vq47C0eRY2" size="large" />
+            <IonText>I'm a Microsoft SharePoint Developer and Administrator for a small Power Utility in the Sacramento Region. I am passionate about using technology to solve problems and make the world a better place. I am also passionate about biking, and excited to combine my passions to create a useful app for the community. E-mail me at craigm26@gmail.com for any feedback or questions!</IonText>
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Privacy Policy</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonText>
+            </IonText>
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Terms of Service</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonText>Our app is provided as-is, with no warranty or guarantee. Please keep your eyes on the road and follow all traffic laws.
+            </IonText>
           </IonCardContent>
         </IonCard>
       </IonContent>
