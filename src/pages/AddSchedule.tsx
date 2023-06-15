@@ -80,6 +80,7 @@ const AddSchedule: React.FC = () => {
     const [showRoutePicker, setShowRoutePicker] = useState<boolean>(false);
     const [showRoutePickerModal, setShowRoutePickerModal] = useState<boolean>(false);
     const [RouteID, setRouteID] = useState<string>('');
+    const [BikeBusStopName, setBikeBusStopName] = useState<string>('');
 
     // when user loads the page, the Picker for choosing a route will be shown as a dropdown menu. The routes are populated from the bikebusgroup document in the database
     // grab the id from the url and get the bikebusgroup document from the database
@@ -245,10 +246,7 @@ const AddSchedule: React.FC = () => {
         }
       
         return dates;
-      }
-      
-      const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays).map(date => Timestamp.fromDate(date));
-  
+      }  
   
       // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
       const eventsData = {
@@ -279,6 +277,32 @@ const AddSchedule: React.FC = () => {
       await updateDoc(scheduleNewRef3, {
         events: arrayUnion(doc(db, 'events', eventId)),
       });
+
+    // Create event documents based on eventDays
+    const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
+    for (const day of eventDays) {
+      const eventData = {
+        title: BikeBusName + ' BikeBus on route ' + route.routeName + ' for ' + day,
+        start: day,
+        leader: '',
+        members: [],
+        kids: [],
+        sprinters: [],
+        captains: [],
+        sheepdogs: [],
+        caboose: [],
+        startTime: startTime,
+        endTime: endTime,
+        route: doc(db, 'routes', RouteID),
+        BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+        BikeBusStops: [],
+        BikeBusStopTimes: [],
+        StaticMap: '',
+        schedule: doc(db, 'schedules', scheduleNewId),
+      };
+
+      await addDoc(collection(db, 'event'), eventData);
+    }
   
       history.push(`/bikebusgrouppage/${bikebusgroupId}`);
     };

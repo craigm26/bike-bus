@@ -68,6 +68,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
   const [isRecurring, setIsRecurring] = useState('no');
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
+  const [BikeBusStopName, setBikeBusStopName] = useState('');
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -87,9 +88,9 @@ const CreateBikeBusGroup: React.FC = () => {
       setEndDate(date.toISOString());
     } else {  // if the recurring option is set to No, set the setEndDate to the same date as the setStartDate
       if (startDate && isRecurring === 'no') {
-      setEndDate(startDate);
-  }
-}
+        setEndDate(startDate);
+      }
+    }
   }, [startDate, isRecurring]);
 
   // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
@@ -157,7 +158,7 @@ const CreateBikeBusGroup: React.FC = () => {
         }
       });
     }
-  }, [user, RouteID, ]);
+  }, [user, RouteID,]);
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -175,7 +176,7 @@ const CreateBikeBusGroup: React.FC = () => {
   }
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
-
+    alert('a lot of magic happens here.. please be patient while we create your BikeBus group and schedule');
     const scheduleData = {
       startTime: startTime,
       startDateTime: startDateTime,
@@ -248,18 +249,15 @@ const CreateBikeBusGroup: React.FC = () => {
         .filter(([_, isSelected]) => isSelected)
         .map(([day]) => days.indexOf(day));
       const dates = [];
-    
+
       for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
         if (selectedDayIndices.includes(dt.getDay())) {
           dates.push(new Date(dt));
         }
       }
-    
+
       return dates;
     }
-    
-    const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays).map(date => Timestamp.fromDate(date));
-
 
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
@@ -278,8 +276,9 @@ const CreateBikeBusGroup: React.FC = () => {
         return acc;
       }, []),
     };
-    
-    
+
+
+
     // add the events document to the events collection in firestore
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
@@ -290,6 +289,32 @@ const CreateBikeBusGroup: React.FC = () => {
     await updateDoc(scheduleRef3, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
+
+    // Create event documents based on eventDays
+    const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
+    for (const day of eventDays) {
+      const eventData = {
+        title: BikeBusName + ' BikeBus on route ' + route.routeName + ' for ' + day,
+        start: day,
+        leader: '',
+        members: [],
+        kids: [],
+        sprinters: [],
+        captains: [],
+        sheepdogs: [],
+        caboose: [],
+        startTime: startTime,
+        endTime: endTime,
+        route: doc(db, 'routes', RouteID),
+        BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+        BikeBusStops: [],
+        BikeBusStopTimes: [],
+        StaticMap: '',
+        schedule: doc(db, 'schedules', scheduleId),
+      };
+
+      await addDoc(collection(db, 'event'), eventData);
+    }
 
     history.push(`/bikebusgrouppage/${bikebusgroupId}`);
   };
@@ -384,7 +409,7 @@ const CreateBikeBusGroup: React.FC = () => {
                   setStartDate(date.toISOString());
                 }
               }}
-              
+
             ></IonDatetime>
             <IonButton onClick={() => setShowStartDayModal(false)}>Done</IonButton>
           </IonModal>
