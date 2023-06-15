@@ -35,6 +35,7 @@ import { helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/ico
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
+import AddSchedule from './pages/AddSchedule';
 
 
 import '@ionic/react/css/core.css';
@@ -288,6 +289,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/viewschedule/:id">
                         <ViewSchedule />
+                      </Route>
+                      <Route exact path="/addschedule/:id">
+                        <AddSchedule />
                       </Route>
                       <Route exact path="/editschedule/:id">
                         <EditSchedule />

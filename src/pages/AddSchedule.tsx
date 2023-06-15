@@ -36,7 +36,7 @@ type Event = {
     title: string
 };
 
-const EditSchedule: React.FC = () => {
+const AddSchedule: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
@@ -423,4 +423,4 @@ const EditSchedule: React.FC = () => {
     );
 };
 
-export default EditSchedule;
+export default AddSchedule;
