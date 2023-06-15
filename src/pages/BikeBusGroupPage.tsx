@@ -14,7 +14,7 @@ interface Coordinate {
 }
 
 interface BulletinBoard {
-  messages: any[]; 
+  Messages: any[];
 }
 
 
@@ -47,11 +47,8 @@ const BikeBusGroupPage: React.FC = () => {
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [bulletinBoardData, setBulletinBoardData] = useState<BulletinBoard[]>([]);
   const [eventsData, setEventsData] = useState<any[]>([]);
   const [messagesData, setMessagesData] = useState<any[]>([]);
-
-
 
 
   const headerContext = useContext(HeaderContext);
@@ -265,7 +262,26 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [groupData]);
 
-
+    const fetchBulletinBoard = useCallback(async () => {
+      if (groupData?.bulletinboard) {
+        const bulletinBoardRef = groupData.bulletinboard;
+        const bulletinBoardDoc = await getDoc(bulletinBoardRef);
+    
+        if (bulletinBoardDoc.exists()) {
+          const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
+          const messagesData = bulletinBoardData?.Messages || [];
+          setMessagesData(messagesData);
+        } else {
+          // Handle the case when the bulletin board document doesn't exist
+        }
+      } else {
+        // Handle the case when the bulletin board reference is missing
+      }
+    
+      // Move this line inside the fetchBulletinBoard function
+    }, [groupData]);
+    
+    
 
   useEffect(() => {
     fetchRoutes();
@@ -273,31 +289,10 @@ const BikeBusGroupPage: React.FC = () => {
     fetchMembers();
     fetchSchedules();
     fetchEvents();
+    fetchBulletinBoard();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules, fetchEvents]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules, fetchEvents, fetchBulletinBoard]);
 
-
-    const fetchBulletinBoard = async () => {
-      if (groupData?.bulletinboard) {
-        const bulletinBoardRef = groupData.bulletinboard;
-        const bulletinBoardDoc = await getDoc(bulletinBoardRef);
-    
-        if (bulletinBoardDoc.exists()) {
-          const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
-          const messagesData = bulletinBoardData.messages || [];
-          setBulletinBoardData(messagesData);
-        } else {
-          console.log("Bulletin board document does not exist!");
-        }
-      } else {
-        console.log("Bulletin board reference is missing!");
-      }
-    };
-    
-
-  console.log("fetchBulletinBoard", fetchBulletinBoard);
-
-  
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -408,26 +403,20 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonItem>
               ))}
               <IonList>
-                <IonItem>
-                  <IonLabel>Leaders</IonLabel>
-                  <IonList>
-                    {leadersData.map((users, index) => (
-                      <IonItem key={index}>
-                        <IonLabel>{users?.username}</IonLabel>
-                      </IonItem>
-                    ))}
-                  </IonList>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Members</IonLabel>
-                  <IonList>
-                    {membersData.map((users, index) => (
-                      <IonItem key={index}>
-                        <IonLabel>{users?.username}</IonLabel>
-                      </IonItem>
-                    ))}
-                  </IonList>
-                </IonItem>
+                {leadersData.map((users, index) => (
+                  <IonItem key={index}>
+                    <IonLabel>Leaders</IonLabel>
+                    <IonLabel>{users?.username}</IonLabel>
+                  </IonItem>
+                ))}
+                <IonList>
+                  {membersData.map((users, index) => (
+                    <IonItem key={index}>
+                      <IonLabel>Members</IonLabel>
+                      <IonLabel>{users?.username}</IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
                 <IonItem>
                   <IonLabel>Description</IonLabel>
                   <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
@@ -473,9 +462,9 @@ const BikeBusGroupPage: React.FC = () => {
           </IonCardHeader>
           <IonCardContent>
             <IonList>
-              {bulletinBoardData.map((bulletin, index) => (
+              {messagesData.map((message, index) => (
                 <IonItem key={index}>
-                  <IonLabel>{bulletin?.messages}</IonLabel>
+                  <IonLabel>{message?.message}</IonLabel>
                 </IonItem>
               ))}
             </IonList>
