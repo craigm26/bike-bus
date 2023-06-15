@@ -13,6 +13,11 @@ interface Coordinate {
   lng: number;
 }
 
+interface BulletinBoard {
+  messages: any[]; 
+}
+
+
 interface BikeBus {
   BikeBusRoutes: string;
   id: string;
@@ -42,6 +47,9 @@ const BikeBusGroupPage: React.FC = () => {
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [bulletinBoardData, setBulletinBoardData] = useState<BulletinBoard[]>([]);
+  const [eventsData, setEventsData] = useState<any[]>([]);
+  const [messagesData, setMessagesData] = useState<any[]>([]);
 
 
 
@@ -229,6 +237,34 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [groupData]);
 
+  // event is a firestore collection with event documents. We should use the bikebusgorupid to lookup the event documents that belong to the bikebusgroup.
+  const fetchEvents = useCallback(async () => {
+    if (groupData?.BikeBusEvents && Array.isArray(groupData.BikeBusEvents)) {
+      const events = groupData.BikeBusEvents.map((event: any) => {
+        return getDoc(event).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const eventData = docSnapshot.data();
+            // Check if eventData exists before spreading
+            return eventData ? {
+              ...eventData,
+              id: docSnapshot.id,
+              groupId: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          } else {
+            console.log("No such document!");
+          }
+        })
+          .catch((error) => {
+            console.log("Error getting event document:", error);
+          });
+      }
+      );
+      const eventsData = await Promise.all(events);
+      setEventsData(eventsData);
+    }
+  }
+    , [groupData]);
+
 
 
   useEffect(() => {
@@ -236,10 +272,32 @@ const BikeBusGroupPage: React.FC = () => {
     fetchLeaders();
     fetchMembers();
     fetchSchedules();
+    fetchEvents();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules, fetchEvents]);
 
-  console.log(groupData);
+
+    const fetchBulletinBoard = async () => {
+      if (groupData?.bulletinboard) {
+        const bulletinBoardRef = groupData.bulletinboard;
+        const bulletinBoardDoc = await getDoc(bulletinBoardRef);
+    
+        if (bulletinBoardDoc.exists()) {
+          const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
+          const messagesData = bulletinBoardData.messages || [];
+          setBulletinBoardData(messagesData);
+        } else {
+          console.log("Bulletin board document does not exist!");
+        }
+      } else {
+        console.log("Bulletin board reference is missing!");
+      }
+    };
+    
+
+  console.log("fetchBulletinBoard", fetchBulletinBoard);
+
+  
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -276,8 +334,6 @@ const BikeBusGroupPage: React.FC = () => {
     await navigator.clipboard.writeText(window.location.href);
     alert('Copied URL to clipboard!');
   };
-
-
 
   return (
     <IonPage>
@@ -396,6 +452,9 @@ const BikeBusGroupPage: React.FC = () => {
                   )}
                 </IonItem>
                 <IonItem>
+                  <IonLabel>Next Event:</IonLabel>
+                </IonItem>
+                <IonItem>
                   <IonList>
                     <IonItem>
                       <Link to={`/ViewSchedule/${groupId}`}>
@@ -406,6 +465,20 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonItem>
               </IonList>
             </div>
+          </IonCardContent>
+        </IonCard>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Bulletin Board:</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonList>
+              {bulletinBoardData.map((bulletin, index) => (
+                <IonItem key={index}>
+                  <IonLabel>{bulletin?.messages}</IonLabel>
+                </IonItem>
+              ))}
+            </IonList>
           </IonCardContent>
         </IonCard>
       </IonContent >
