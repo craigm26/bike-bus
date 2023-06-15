@@ -16,16 +16,25 @@ exports.sendInviteEmail = functions.firestore
       const bikebusgroupRef = admin.firestore().collection("bikebusgroups").doc(context.params.groupId);
       const bikebusgroupSnap = await bikebusgroupRef.get();
       const bikebusgroup = bikebusgroupSnap.data();
+      
 
       if (bikebusgroup) {
+        const invites = newValue.BikeBusInvites;
+        const latestInvite = invites[invites.length - 1]; // Get the latest invite email
+
         const msg = {
-          to: newValue.BikeBusInvites[newValue.BikeBusInvites.length - 1],
+          to: latestInvite,
           from: "invitation@bikebus.app", // Change to your verified sender
           subject: "Invitation to join BikeBus Group",
           html: `
-            <p>You have been invited to join the BikeBus group <strong>"${bikebusgroup.BikeBusName}"</strong>.</p>
-            <p>The route is <a href="https://bikebus.app/bikebusroute/${bikebusgroup.BikeBusRoutes[0]}">Click here to view the route</a>.</p>
-            <p>The schedule is <a href="https://bikebus.app/bikebusschedule/${bikebusgroup.BikeBusSchedules[0]}">Click here to view the schedule</a>.</p>
+          <p>You have been invited to join the BikeBus group <strong><a href="https://bikebus.app/bikebusgrouppage/${bikebusgroup?.groupIdid}">${bikebusgroup?.BikeBusName}</a></strong>.</p>
+          <p>Click here to view the group and click on the "Join Group" button to join the group.</p>
+          <p>Thanks,</p>
+          <p>BikeBus Team</p>
+          <p>Craig Merry</p>
+          <p><a href="https://bikebus.app">https://bikebus.app</a></p>
+          <p>This is an automated email. Please do not reply to this email.</p>
+
           `,
         };
 
@@ -43,3 +52,4 @@ exports.sendInviteEmail = functions.firestore
       }
     }
   });
+

@@ -134,7 +134,7 @@ const ViewSchedule: React.FC = () => {
                         />
                     </div>
                 </IonCard>
-                <IonButton routerLink={`/editschedule/${id}`}>Edit Schedule</IonButton>
+                <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
                 <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
             </IonContent>
         </IonPage>

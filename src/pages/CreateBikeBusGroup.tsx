@@ -221,6 +221,7 @@ const CreateBikeBusGroup: React.FC = () => {
       BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
       BikeBusName: BikeBusName,
       isBikeBus: true,
+      ScheduleId: doc(db, 'schedules', scheduleId),
     });
 
     // add the bikebus group to the user's bikebusgroups array in firestore
