@@ -10,6 +10,7 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
+  IonText,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './About.css';
@@ -77,6 +78,7 @@ const About: React.FC = () => {
           </IonCardHeader>
           <IonCardContent>
             Our app helps users find and join bikebus routes to commute to school together. Users can create and publish routes, organize groups, and participate in a safer, more enjoyable, and environmentally-friendly way to travel to school.
+            <IonText>All built and ran by Craig Merry. E-mail me at craigm26@gmail.com for any feedback or questions!</IonText>
           </IonCardContent>
         </IonCard>
       </IonContent>

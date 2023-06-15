@@ -163,6 +163,9 @@ const Login: React.FC = () => {
             </IonButton>
           </p>
         </IonText>
+        <IonText>
+          <p>Copyright 2023 for Craig Merry</p>
+        </IonText>
       </IonContent>
     </IonPage>
   );
