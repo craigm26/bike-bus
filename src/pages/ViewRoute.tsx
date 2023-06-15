@@ -18,7 +18,7 @@ import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory, Link } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -97,6 +97,8 @@ const ViewRoute: React.FC = () => {
         lng: startGeo.lng,
     });
     const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+    const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
+    const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
 
     const containerMapStyle = {
         width: '100%',
@@ -200,7 +202,7 @@ const ViewRoute: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent style={{ height: '100%' }}>
-                <IonGrid className="gridContainer">
+                <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <IonRow>
                         <IonCol>
                             <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
@@ -291,17 +293,28 @@ const ViewRoute: React.FC = () => {
                                             visible: true,
                                         }}
                                     />
-                                    <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" />
-                                    <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" label="End" />
+                                    <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" onClick={() => setSelectedMarker(selectedMarker)} />
+                                    <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" label="End" onClick={() => setSelectedMarker(selectedMarker)} />
+                                    {selectedMarker && (
+                                        <InfoWindow
+                                            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                                            onCloseClick={() => setSelectedMarker(null)}
+                                        >
+                                            {/* Content to display in the info window */}
+                                            <div>
+                                                <h4>Marker Data</h4>
+                                                <p>Latitude: {selectedMarker.lat}</p>
+                                                <p>Longitude: {selectedMarker.lng}</p>
+                                            </div>
+                                        </InfoWindow>
+                                    )}
                                     {BikeBusStops.map((stop, index) => (
                                         <Marker
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
                                             label={`${index + 1}`}
-                                            onClick={() => {
-                                                console.log(`Clicked on stop ${index + 1}`);
-                                            }}
+                                            onClick={() => setSelectedMarker(selectedMarker)}
                                         />
                                     ))}
                                 </GoogleMap>
@@ -321,13 +334,28 @@ const ViewRoute: React.FC = () => {
                                                     disableDefaultUI: true,
                                                 }}
                                             >
+                                                {selectedMarker && (
+                                                    <InfoWindow
+                                                        position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                                                        onCloseClick={() => setSelectedMarker(null)}
+                                                    >
+                                                        {/* Content to display in the info window */}
+                                                        <div>
+                                                            <h4>Marker Data</h4>
+                                                            <p>Latitude: {selectedMarker.lat}</p>
+                                                            <p>Longitude: {selectedMarker.lng}</p>
+                                                        </div>
+                                                    </InfoWindow>
+                                                )}
                                                 <Marker
                                                     position={{ lat: startGeo.lat, lng: startGeo.lng }}
                                                     title="Start"
+                                                    onClick={() => setSelectedMarker(selectedMarker)}
                                                 />
                                                 <Marker
                                                     position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                                     title="End"
+                                                    onClick={() => setSelectedMarker(selectedMarker)}
                                                 />
                                             </GoogleMap>
                                             <Polyline
@@ -345,9 +373,7 @@ const ViewRoute: React.FC = () => {
                                             <Marker
                                                 position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
                                                 title="New Stop"
-                                                onClick={() => {
-                                                    console.log("Clicked on new stop");
-                                                }}
+                                                onClick={() => setSelectedMarker(selectedMarker)}
                                             />
                                         </>
                                     )}

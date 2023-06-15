@@ -11,6 +11,7 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonTitle,
+    IonIcon,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Account.css';
@@ -22,7 +23,7 @@ import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'fireb
 import { Link } from 'react-router-dom';
 import React from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
-import { refresh } from 'ionicons/icons';
+import { cogOutline, refresh } from 'ionicons/icons';
 
 interface Group {
     id: string;
@@ -140,20 +141,24 @@ const Account: React.FC = () => {
                         <IonCardTitle>Account</IonCardTitle>
                     </IonCardHeader>
                     <Avatar uid={user?.uid} size="large" />
-                <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
-                    Update Avatar
-                </IonButton>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={handleFileInputChange}
-                />
+                    <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                        Update Avatar
+                    </IonButton>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleFileInputChange}
+                    />
                     <IonItem>
                         <IonLabel>Account Type</IonLabel>
                         <IonText>{accountType}</IonText>
                     </IonItem>
+                    <IonButton className="ion-button-profile" routerLink='/settings'>
+                        Settings
+                        <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                    </IonButton>
                     <IonCardContent>
                         <IonList>
                             <IonItem>

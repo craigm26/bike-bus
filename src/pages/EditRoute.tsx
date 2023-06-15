@@ -89,6 +89,7 @@ const EditRoute: React.FC = () => {
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
+    const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
 
 
 
@@ -189,6 +190,7 @@ const EditRoute: React.FC = () => {
                 })),
             };
             setSelectedRoute(routeData);
+            setBikeBusStops(routeData.BikeBusStop);
         }
     };
 
@@ -351,6 +353,9 @@ const EditRoute: React.FC = () => {
             alert('Route Updated, Hit Save to save the new route');
             console.log('newPathCoordinates: ', newCoordinates);
         }
+
+        setBikeBusStops(selectedRoute.BikeBusStop);
+
     };
 
 
@@ -491,6 +496,17 @@ const EditRoute: React.FC = () => {
                                             console.log("Clicked on new stop");
                                         }}
                                     />
+                                                                        {BikeBusStops.map((stop, index) => (
+                                        <Marker
+                                            key={index}
+                                            position={stop}
+                                            title={`Stop ${index + 1}`}
+                                            label={`${index + 1}`}
+                                            onClick={() => {
+                                                console.log(`Clicked on stop ${index + 1}`);
+                                            }}
+                                        />
+                                    ))}
                                     <Marker
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"

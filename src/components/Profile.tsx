@@ -3,13 +3,9 @@ import {
   IonContent,
   IonHeader,
   IonPage,
-  IonTitle,
   IonAvatar,
   IonButton,
   IonText,
-  IonLabel,
-  IonIcon,
-  IonToolbar,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -20,7 +16,6 @@ import Avatar from './Avatar';
 import Logout from './Logout';
 import AccountModeSelector from '../components/AccountModeSelector';
 import { doc, getDoc } from 'firebase/firestore';
-import { cogOutline } from 'ionicons/icons';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -92,17 +87,15 @@ const Profile: React.FC = () => {
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
-            <><><IonButton className="ion-button-profile" fill="clear" routerLink="/account">
+            <><><IonButton className="ion-button-profile" fill="solid" routerLink="/account">
               Account
-            </IonButton><IonLabel className="ion-label-profile">
-                <h2>UserName: {user?.username}</h2>
-              </IonLabel></><IonText className="ion-label-profile">Account Type: {accountType}</IonText></>
-
+            </IonButton><Logout /></></>
+            
           )}
           {user?.accountType === 'Anonymous' ? (
             <>
               <IonText className="ion-text-profile"></IonText>
-              <IonButton className="ion-button-profile" fill="clear" routerLink="/SignUp">
+              <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp">
                 SignUp to Add Avatar
               </IonButton>
               <IonText>Account Type: {accountType}</IonText>
@@ -116,7 +109,7 @@ const Profile: React.FC = () => {
                     value={accountMode}
                     onAccountModeChange={onAccountModeChange}
                   />
-                  <IonButton className="ion-button-profile" fill="clear" onClick={() => fileInputRef.current?.click()}>
+                  <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
                     Add Avatar
                   </IonButton>
                 </>
@@ -124,20 +117,6 @@ const Profile: React.FC = () => {
               <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
             </div>
           )}
-
-        <IonToolbar className="ion-toolbar-profile">
-        <Logout />
-        <IonButton className="ion-button-profile" routerLink='/settings'>
-          Settings
-          <IonIcon slot="end" icon={cogOutline}></IonIcon>
-        </IonButton>
-        <IonLabel className="ion-label-profile">
-          Terms of Service
-        </IonLabel>
-        <IonLabel className="ion-label-profile">
-          Privacy Policy
-        </IonLabel>
-        </IonToolbar>
         </div>
       </IonContent>
     </IonPage>
