@@ -453,21 +453,15 @@ const BikeBusGroupPage: React.FC = () => {
                   </IonList>
                 </IonItem>
               </IonList>
-            </div>
-          </IonCardContent>
-        </IonCard>
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Bulletin Board:</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonList>
+              <IonList>
+              <IonText>BulletinBoard</IonText>
               {messagesData.map((message, index) => (
                 <IonItem key={index}>
                   <IonLabel>{message?.message}</IonLabel>
                 </IonItem>
               ))}
             </IonList>
+            </div>
           </IonCardContent>
         </IonCard>
       </IonContent >

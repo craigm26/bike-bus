@@ -315,6 +315,22 @@ const CreateBikeBusGroup: React.FC = () => {
       };
 
       await addDoc(collection(db, 'event'), eventData);
+      // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
+      const eventRef = await getDocs(collection(db, 'event'));
+      const eventIds = eventRef.docs.map((doc) => doc.id);
+      console.log('eventIds:', eventIds);
+
+      for (const eventId of eventIds) {
+        const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+        await updateDoc(bikeBusGroupRef3, {
+          events: arrayUnion(doc(db, 'event', eventId)),
+        });
+      }
+
+
+
+
+
     }
 
     // add the references to the event documents to the bikebusgroup document in firestore
@@ -323,9 +339,11 @@ const CreateBikeBusGroup: React.FC = () => {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
+
     // create a reference in the bulletinboard collection in firestore for the bikebusgroup
     const bulletinBoardData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      // make an array of messageIds references in "Messages"
       Messages: [],
     }
     await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
