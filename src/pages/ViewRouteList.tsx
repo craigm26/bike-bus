@@ -10,6 +10,9 @@ import {
     IonToolbar,
     IonText,
     IonCard,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -155,20 +158,37 @@ const ViewRouteList: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonCard>
-                    <IonList>
-                        {routes.map((route) => (
-                            <IonItem key={route.id}>
-                                <IonLabel>{route.routeName}</IonLabel>
-                                <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
-                            </IonItem>
-                        ))}
-                    </IonList>
-
-                </IonCard>
+                {routes.length === 0 ? (
+                    <IonCard>
+                        <IonCardHeader>
+                            <IonCardTitle>Creating a Route</IonCardTitle>
+                        </IonCardHeader>
+                        <IonCardContent>
+                            <IonList>
+                                <IonItem>1. Go to the Map Page</IonItem>
+                                <IonItem>2. Search for a Starting Location</IonItem>
+                                <IonItem>3. Search for a Destination</IonItem>
+                                <IonItem>4. Click on the "Get Directions" button</IonItem>
+                                <IonItem>5. Click on the "Create Route" button</IonItem>
+                            </IonList>
+                        </IonCardContent>
+                    </IonCard>
+                ) : (
+                    <IonCard>
+                        <IonList>
+                            {routes.map((route) => (
+                                <IonItem key={route.id}>
+                                    <IonLabel>{route.routeName}</IonLabel>
+                                    <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
+                                </IonItem>
+                            ))}
+                        </IonList>
+                    </IonCard>
+                )}
             </IonContent>
         </IonPage>
     );
+    
 };
 
 export default ViewRouteList;
