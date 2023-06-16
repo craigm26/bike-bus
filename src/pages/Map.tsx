@@ -622,24 +622,17 @@ const Map: React.FC = () => {
                     <IonCardContent>
                       <IonList>
                         <IonItem>1. First, you should be signed up as a User</IonItem>
-                        <IonItem>2. Then you create a route</IonItem>
-                        <IonItem>3. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
-                        <IonItem>4. Invite users to your BikeBus</IonItem>
-                        <IonItem>5. When your schedule indicates that you (as BikeBus Leader) should start the BikeBus, Start the BikeBus on the Map</IonItem>
-                      </IonList>
-                    </IonCardContent>
-                  </IonCard>
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>Creating a Route</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                      <IonList>
-                        <IonItem>1. Go to the Map Page</IonItem>
-                        <IonItem>2. Search for a Starting Location</IonItem>
-                        <IonItem>3. Search for a Destination</IonItem>
-                        <IonItem>4. Click on the "Get Directions" button</IonItem>
-                        <IonItem>5. Click on the "Create Route" button</IonItem>
+                        <IonItem>2. Go to the Map Page</IonItem>
+                        <IonItem>3. Click on the "Start Map by retrieving your Current Location" button</IonItem>
+                        <IonItem>4. Search for a Starting Location</IonItem>
+                        <IonItem>5. Search for a Destination</IonItem>
+                        <IonItem>6. Set your traval mode</IonItem>
+                        <IonItem>7. Click on the "Get Directions" button</IonItem>
+                        <IonItem>8. Click on the "Create Route" button</IonItem>
+                        <IonItem>9. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
+                        <IonItem>10. Invite users to your BikeBus</IonItem>
+                        <IonItem>11. When your schedule indicates that you -as BikeBus Leader- should start the BikeBus, Start the BikeBus on the Map</IonItem>
+                        <IonItem>12. Before the BikeBus Trip, users can RSVP for the trip. After the Leader starts the BikeBus, members can "Check-In".</IonItem>
                       </IonList>
                     </IonCardContent>
                   </IonCard>
