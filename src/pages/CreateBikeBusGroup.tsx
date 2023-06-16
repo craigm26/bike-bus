@@ -177,7 +177,6 @@ const CreateBikeBusGroup: React.FC = () => {
   }
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
-    alert('a lot of magic happens here.. please be patient while we create your BikeBus group and schedule');
     const scheduleData = {
       startTime: startTime,
       startDateTime: startDateTime,
@@ -326,9 +325,6 @@ const CreateBikeBusGroup: React.FC = () => {
           events: arrayUnion(doc(db, 'event', eventId)),
         });
       }
-
-
-
 
 
     }
