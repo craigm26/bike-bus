@@ -36,6 +36,7 @@ import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
 import AddSchedule from './pages/AddSchedule';
+import UpdateRouteManually from './pages/UpdateRouteManually';
 
 
 import '@ionic/react/css/core.css';
