@@ -165,11 +165,12 @@ const ViewRouteList: React.FC = () => {
                         </IonCardHeader>
                         <IonCardContent>
                             <IonList>
-                                <IonItem>1. Go to the Map Page</IonItem>
-                                <IonItem>2. Search for a Starting Location</IonItem>
-                                <IonItem>3. Search for a Destination</IonItem>
-                                <IonItem>4. Click on the "Get Directions" button</IonItem>
-                                <IonItem>5. Click on the "Create Route" button</IonItem>
+                                <IonItem>1. Login as a registered user</IonItem>
+                                <IonItem>2. Go to the Map Page</IonItem>
+                                <IonItem>3. Search for a Starting Location</IonItem>
+                                <IonItem>4. Search for a Destination</IonItem>
+                                <IonItem>5. Click on the "Get Directions" button</IonItem>
+                                <IonItem>6. Click on the "Create Route" button</IonItem>
                             </IonList>
                         </IonCardContent>
                     </IonCard>
