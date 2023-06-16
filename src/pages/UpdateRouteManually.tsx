@@ -261,13 +261,6 @@ const UpdateRouteManually: React.FC = () => {
                                         position={{ lat: startGeo.lat, lng: startGeo.lng }}
                                         title="Start"
                                     />
-                                    <Marker
-                                        position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
-                                        title="New Stop"
-                                        onClick={() => {
-                                            console.log("Clicked on new stop");
-                                        }}
-                                    />
                                     {BikeBusStops?.map((stop, index) => (
                                         <Marker
                                             key={index}
