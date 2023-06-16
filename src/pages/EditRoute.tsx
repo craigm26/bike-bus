@@ -350,7 +350,7 @@ const EditRoute: React.FC = () => {
 
             const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-            alert('Route Updated, Hit Save to save the new route');
+            alert('Route Updated, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
             console.log('newPathCoordinates: ', newCoordinates);
         }
 
@@ -466,6 +466,7 @@ const EditRoute: React.FC = () => {
                                 <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
                             )}
                             <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
+                            <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
                             <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
                         </IonCol>
