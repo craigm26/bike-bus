@@ -615,27 +615,19 @@ const Map: React.FC = () => {
             <IonGrid>
               <IonRow className="location-button-container">
                 <IonCol className="location-app-help-container">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>How do I create a BikeBus?</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
+                      <IonTitle>How do I create a BikeBus?</IonTitle>
                       <IonList>
                         <IonItem>1. First, you should be signed up as a User</IonItem>
                         <IonItem>2. Go to the Map Page</IonItem>
                         <IonItem>3. Click on the "Start Map by retrieving your Current Location" button</IonItem>
-                        <IonItem>4. Search for a Starting Location</IonItem>
-                        <IonItem>5. Search for a Destination</IonItem>
-                        <IonItem>6. Set your traval mode</IonItem>
-                        <IonItem>7. Click on the "Get Directions" button</IonItem>
-                        <IonItem>8. Click on the "Create Route" button</IonItem>
-                        <IonItem>9. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
-                        <IonItem>10. Invite users to your BikeBus</IonItem>
-                        <IonItem>11. When your schedule indicates that you -as BikeBus Leader- should start the BikeBus, Start the BikeBus on the Map</IonItem>
-                        <IonItem>12. Before the BikeBus Trip, users can RSVP for the trip. After the Leader starts the BikeBus, members can "Check-In".</IonItem>
+                        <IonItem>4. Search for a Starting Location and Destination</IonItem>
+                        <IonItem>5. Click on the "Get Directions" button</IonItem>
+                        <IonItem>6. Click on the "Create Route" button</IonItem>
+                        <IonItem>7. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
+                        <IonItem>8. Invite users to your BikeBus</IonItem>
+                        <IonItem>9. When your schedule indicates that you -as BikeBus Leader- should start the BikeBus, Start the BikeBus on the Map</IonItem>
+                        <IonItem>10. Before the BikeBus Trip, users can RSVP for the trip. After the Leader starts the BikeBus, members can "Check-In".</IonItem>
                       </IonList>
-                    </IonCardContent>
-                  </IonCard>
                 </IonCol>
                 <IonCol >
                   <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>

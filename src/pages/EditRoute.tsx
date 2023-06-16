@@ -496,7 +496,7 @@ const EditRoute: React.FC = () => {
                                             console.log("Clicked on new stop");
                                         }}
                                     />
-                                                                        {BikeBusStops.map((stop, index) => (
+                                                                        {BikeBusStops?.map((stop, index) => (
                                         <Marker
                                             key={index}
                                             position={stop}
