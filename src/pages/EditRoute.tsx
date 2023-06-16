@@ -520,7 +520,7 @@ const EditRoute: React.FC = () => {
                                             strokeWeight: 2,
                                             geodesic: true,
                                             draggable: false,
-                                            editable: true,
+                                            editable: false,
                                             visible: true,
                                         }}
                                     />
