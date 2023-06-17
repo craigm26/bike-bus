@@ -285,6 +285,9 @@ const App: React.FC = () => {
                       <Route path="/editroute/:id" exact>
                         <EditRoute />
                       </Route>
+                      <Route path="/updateroutemanually/:id" exact>
+                        <UpdateRouteManually />
+                      </Route>
                       <Route exact path="/viewroutelist">
                         <ViewRouteList />
                       </Route>
