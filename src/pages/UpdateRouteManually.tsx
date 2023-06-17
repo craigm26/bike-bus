@@ -17,7 +17,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, Polygon as PolygonReact, DrawingManager } from '@react-google-maps/api';
+import { GoogleMap, Polyline, useJsApiLoader, Marker, DrawingManager } from '@react-google-maps/api';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -28,12 +28,11 @@ interface Coordinate {
 }
 
 interface Route {
-    newStop: Coordinate | null;
-    oldIds: Coordinate | null;
+    oldIds: Coordinate | null | undefined;
     stopPoint: Coordinate | null;
     BikeBusStopName: string;
     BikeBusStopId: string;
-    BikeBusStopIds: Coordinate[];
+    BikeBusStopIds: string[];
     BikeBusStop: Coordinate[];
     isBikeBus: boolean;
     BikeBusGroupId: string;
@@ -62,36 +61,49 @@ const UpdateRouteManually: React.FC = () => {
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const polygonRef = useRef<{ paths: Coordinate[] }>({ paths: [] });
+    const polylineRef = useRef<{ paths: Coordinate[] }>({ paths: [] });
     const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
     const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
     const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
-    const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
-    const [BikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
     const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+    const drawingModeOptions = [
+        google.maps.drawing.OverlayType.POLYLINE,
+    ];
 
-    // need to make a useState function for the setPolygon function
-    const [polygon, setPolygon] = useState<google.maps.Polygon | null>(null);
-    const [polygonCoordinates, setPolygonCoordinates] = useState<Coordinate[] | null>(null);
+    // need to make a useState function for the setPolyline function
+    const [polylineCoordinates, setPolylineCoordinates] = useState<Coordinate[] | null>(null);
 
-    function handlePolygonComplete(polygon: google.maps.Polygon) {
-        const coordinates = polygon.getPath().getArray().map(latLng => {
+    function handlePolylineComplete(polyline: google.maps.Polyline) {
+        const coordinates = polyline.getPath().getArray().map(latLng => {
             return { lat: latLng.lat(), lng: latLng.lng() }
         });
-        setPolygonCoordinates(coordinates);
+    
+        if (selectedRoute) {
+            setSelectedRoute(prevRoute => {
+                if (prevRoute === null) {
+                    return null;
+                }
+                return {
+                    ...prevRoute,
+                    oldIds: prevRoute ? prevRoute.oldIds : null,
+                    pathCoordinates: coordinates
+                };
+            });
+        }
     }
+
 
 
 
@@ -129,10 +141,9 @@ const UpdateRouteManually: React.FC = () => {
                 routeName: docSnap.data().routeName,
                 startPoint: docSnap.data().startPoint,
                 endPoint: docSnap.data().endPoint,
-                BikeBusStop: docSnap.data().BikeBusStop,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
                 pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-                BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
+                BikeBusStop: (docSnap.data().BikeBusStop || []).map((coord: any) => ({
                     lat: coord.latitude,
                     lng: coord.longitude,
                 })),
@@ -197,23 +208,23 @@ const UpdateRouteManually: React.FC = () => {
         }
 
         const routeRef = doc(db, 'routes', selectedRoute.id);
-        const updatedRoute: Partial<Route> = {};
-        if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
+        const updatedRoute: Partial<Route> = { ...selectedRoute };
 
         await updateDoc(routeRef, updatedRoute);
         alert('Route Updated');
-        history.push(`/ViewRoute/${id}`)
+        history.push(`/ViewRoute/${id}`);
     };
+
 
     useEffect(() => {
         console.log("Google Maps script loaded: ", isLoaded);
     }, [isLoaded]);
 
     useEffect(() => {
-        if (polygonCoordinates) {
-            setSelectedRoute(prevRoute => prevRoute ? { ...prevRoute, pathCoordinates: polygonCoordinates } : null);
+        if (polylineCoordinates) {
+            setSelectedRoute(prevRoute => prevRoute ? { ...prevRoute, pathCoordinates: polylineCoordinates } : null);
         }
-    }, [polygonCoordinates]);
+    }, [polylineCoordinates]);
 
 
     if (!isLoaded) {
@@ -276,26 +287,33 @@ const UpdateRouteManually: React.FC = () => {
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
                                     />
+                                    {
+                                        selectedRoute?.pathCoordinates.length > 0 &&
+                                        <Polyline
+                                            path={selectedRoute.pathCoordinates}
+                                            options={{ strokeColor: "#FF0000" }}
+                                        />
+                                    }
+
                                     <DrawingManager
                                         options={{
                                             drawingControl: true,
                                             drawingControlOptions: {
                                                 position: google.maps.ControlPosition.TOP_CENTER,
-                                                drawingModes: [google.maps.drawing.OverlayType.POLYGON],
+                                                drawingModes: drawingModeOptions
                                             },
-                                            polygonOptions: {
+                                            polylineOptions: {
+                                                strokeColor: '#FF0000',
                                                 editable: true,
                                                 draggable: true,
-                                                strokeColor: "#FF0000",
+                                                strokeWeight: 4,
                                                 strokeOpacity: 1.0,
-                                                strokeWeight: 2,
-                                                fillOpacity: 0.2,
-                                                fillColor: "#FF0000",
+                                                clickable: false,
+                                                zIndex: 1,
                                             },
                                         }}
-                                        onPolygonComplete={(value) => handlePolygonComplete(value)}
+                                        onPolylineComplete={(polyline) => handlePolylineComplete(polyline)}
                                     />
-
                                 </GoogleMap>
 
                             </IonCol>
