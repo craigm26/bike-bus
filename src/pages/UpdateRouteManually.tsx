@@ -78,33 +78,6 @@ const UpdateRouteManually: React.FC = () => {
         libraries,
     });
     const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
-    const drawingModeOptions = [
-        google.maps.drawing.OverlayType.POLYLINE,
-    ];
-
-    // need to make a useState function for the setPolyline function
-    const [polylineCoordinates, setPolylineCoordinates] = useState<Coordinate[] | null>(null);
-
-    function handlePolylineComplete(polyline: google.maps.Polyline) {
-        const coordinates = polyline.getPath().getArray().map(latLng => {
-            return { lat: latLng.lat(), lng: latLng.lng() }
-        });
-    
-        if (selectedRoute) {
-            setSelectedRoute(prevRoute => {
-                if (prevRoute === null) {
-                    return null;
-                }
-                return {
-                    ...prevRoute,
-                    oldIds: prevRoute ? prevRoute.oldIds : null,
-                    pathCoordinates: coordinates
-                };
-            });
-        }
-    }
-
-
 
 
     const containerMapStyle = {
@@ -220,12 +193,17 @@ const UpdateRouteManually: React.FC = () => {
         console.log("Google Maps script loaded: ", isLoaded);
     }, [isLoaded]);
 
-    useEffect(() => {
-        if (polylineCoordinates) {
-            setSelectedRoute(prevRoute => prevRoute ? { ...prevRoute, pathCoordinates: polylineCoordinates } : null);
-        }
-    }, [polylineCoordinates]);
-
+    const [pathCoordinates, setPathCoordinates] = useState([
+        // find the pathCooardinates from the selectedRoute
+        ...(selectedRoute?.pathCoordinates ?? []),
+    ]);
+    
+    const handleDragEnd = (index: number) => (e: google.maps.MapMouseEvent) => {
+        const newLat = e.latLng?.lat() ?? 0;
+        const newLng = e.latLng?.lng() ?? 0;
+        setPathCoordinates(prev => prev.map((vertex, i) => i === index ? { lat: newLat, lng: newLng } : vertex));
+    };
+    
 
     if (!isLoaded) {
         return <div>Loading...</div>;
@@ -294,26 +272,16 @@ const UpdateRouteManually: React.FC = () => {
                                             options={{ strokeColor: "#FF0000" }}
                                         />
                                     }
+                                    <Polyline path={pathCoordinates} />
 
-                                    <DrawingManager
-                                        options={{
-                                            drawingControl: true,
-                                            drawingControlOptions: {
-                                                position: google.maps.ControlPosition.TOP_CENTER,
-                                                drawingModes: drawingModeOptions
-                                            },
-                                            polylineOptions: {
-                                                strokeColor: '#FF0000',
-                                                editable: true,
-                                                draggable: true,
-                                                strokeWeight: 4,
-                                                strokeOpacity: 1.0,
-                                                clickable: false,
-                                                zIndex: 1,
-                                            },
-                                        }}
-                                        onPolylineComplete={(polyline) => handlePolylineComplete(polyline)}
-                                    />
+                                    {pathCoordinates.map((coordinate, index) => (
+                                        <Marker
+                                            position={coordinate}
+                                            draggable={true}
+                                            onDragEnd={handleDragEnd(index)}
+                                        />
+                                    ))}
+
                                 </GoogleMap>
 
                             </IonCol>

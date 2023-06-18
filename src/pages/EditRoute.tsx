@@ -90,6 +90,7 @@ const EditRoute: React.FC = () => {
         libraries,
     });
     const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+    const [isClicked, setIsClicked] = useState<boolean>(false);
 
 
 
@@ -352,6 +353,8 @@ const EditRoute: React.FC = () => {
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
             alert('Route Updated, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
             console.log('newPathCoordinates: ', newCoordinates);
+            // set the isClicked to true
+            setIsClicked(true);
         }
 
         setBikeBusStops(selectedRoute.BikeBusStop);
@@ -465,7 +468,9 @@ const EditRoute: React.FC = () => {
                             {isBikeBus && (
                                 <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
                             )}
+                            {!isClicked && (
                             <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
+                            )}
                             <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
                             <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
