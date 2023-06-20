@@ -103,14 +103,6 @@ const Profile: React.FC = () => {
             <div>
               {!avatarUrl && (
                 <>
-                  <AccountModeSelector
-                    enabledModes={enabledAccountModes}
-                    value={accountMode}
-                    onAccountModeChange={onAccountModeChange}
-                  />
-                  <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
-                    Add Avatar
-                  </IonButton>
                 </>
               )}
               <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
