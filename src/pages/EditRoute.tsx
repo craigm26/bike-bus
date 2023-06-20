@@ -466,7 +466,7 @@ const EditRoute: React.FC = () => {
                                     autoComplete="on"
                                     placeholder={routeStartFormattedAddress}
                                     style={{
-                                        width: "350px",
+                                        width: "250px",
                                         height: "40px",
                                     }}
                                 />
@@ -483,7 +483,7 @@ const EditRoute: React.FC = () => {
                                     autoComplete="on"
                                     placeholder={routeEndFormattedAddress}
                                     style={{
-                                        width: "350px",
+                                        width: "250px",
                                         height: "40px",
                                     }}
                                 />
