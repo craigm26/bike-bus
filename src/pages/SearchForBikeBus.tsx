@@ -93,9 +93,6 @@ const SearchForBikeBus: React.FC = () => {
     const [routeStartName, setRouteStartName] = useState<string>("");
     const [routeStartStreetName, setRouteStartStreetName] = useState<string>("");
     const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>("");
-    const [routeEndName, setRouteEndName] = useState<string>("");
-    const [routeEndStreetName, setRouteEndStreetName] = useState<string>("");
-    const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>("");
     const [routeType, setRouteType] = useState<RouteType>("SCHOOL");
     const [pathCoordinates, setPathCoordinates] = useState<Point[]>([]);
     const [startPointAddress, setStartPointAddress] = useState<string>("");
@@ -185,10 +182,8 @@ const SearchForBikeBus: React.FC = () => {
     }, [user, getLocationClicked, watchLocation]);
 
     useEffect(() => {
-        console.log("MapCenter Location: ", mapCenter);
-        console.log("User Location: ", userLocation);
         console.log("User Location Address", userLocationAddress);
-    }, [mapCenter, userLocation, userLocationAddress]);
+    }, [userLocationAddress]);
 
     useEffect(() => {
         if (user) {
@@ -197,7 +192,7 @@ const SearchForBikeBus: React.FC = () => {
             const queryObj = query(
                 routesRef,
                 where("isBikeBus", "==", true),
-                where("distance", "<=", 50)
+
             );
             getDocs(queryObj)
             .then((querySnapshot) => {
@@ -233,6 +228,9 @@ const SearchForBikeBus: React.FC = () => {
             });
         }
     }, [user]);
+
+    console.log("User Location", userLocation);
+    console.log("Bike Bus Routes", bikeBusRoutes);
 
     useEffect(() => {
         if (user && getLocationClicked) {
@@ -273,8 +271,15 @@ const SearchForBikeBus: React.FC = () => {
     }, [isLoaded, loadError]);
 
     const handleBikeBusRouteClick = (routeId: string) => {
+        // the routeId is the document id of the route in the routes collection, we need the name of the BikeBusGroup to redirect to the correct page
+        // the field is called BikeBusGroupId and is formmatted like string: "/bikebusgroups/FHgipOLo06DVmMWyq4T5"
+        // we need to extract the id from the string
+        const bikeBusGroupId = bikeBusRoutes.find((route) => route.id === routeId)?.BikeBusGroupId;
+        const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
+        const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
+        console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
         // Redirect to the page for the corresponding bike/bus group
-        history.push(`/bikebusgroup${routeId}`);
+        history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
     };
 
 
@@ -351,7 +356,7 @@ const SearchForBikeBus: React.FC = () => {
                                     height: "100%",
                                 }}
                                 center={mapCenter}
-                                zoom={8}
+                                zoom={12}
                                 options={{
                                     disableDefaultUI: true,
                                     zoomControl: false,
@@ -389,8 +394,8 @@ const SearchForBikeBus: React.FC = () => {
                                         path={route.pathCoordinates}
                                         options={{
                                             strokeColor: "blue",
-                                            strokeOpacity: 0.7,
-                                            strokeWeight: 2,
+                                            strokeOpacity: 1,
+                                            strokeWeight: 3,
                                         }}
                                         onClick={() => handleBikeBusRouteClick(route.id)}
                                     />
@@ -405,7 +410,6 @@ const SearchForBikeBus: React.FC = () => {
                                 </div>
                                 <div>
                                     {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                                    {selectedEndLocation && <Marker position={selectedEndLocation} />}
                                 </div>
                             </GoogleMap>
                         </IonRow>
