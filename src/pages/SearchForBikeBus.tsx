@@ -102,7 +102,7 @@ const SearchForBikeBus: React.FC = () => {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
 
-    const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]); 
+    const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
 
     useEffect(() => {
         if (headerContext) {
@@ -195,17 +195,17 @@ const SearchForBikeBus: React.FC = () => {
 
             );
             getDocs(queryObj)
-            .then((querySnapshot) => {
-                const routes: any[] = [];
-                querySnapshot.forEach((doc) => {
-                    const routeData = doc.data();
-                    routes.push(routeData);
+                .then((querySnapshot) => {
+                    const routes: any[] = [];
+                    querySnapshot.forEach((doc) => {
+                        const routeData = doc.data();
+                        routes.push(routeData);
+                    });
+                    setBikeBusRoutes(routes);
+                })
+                .catch((error) => {
+                    console.log("Error fetching bike/bus routes:", error);
                 });
-                setBikeBusRoutes(routes);
-            })
-            .catch((error) => {
-                console.log("Error fetching bike/bus routes:", error);
-            });
 
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
@@ -269,16 +269,28 @@ const SearchForBikeBus: React.FC = () => {
     }, [isLoaded, loadError]);
 
     const handleBikeBusRouteClick = (routeId: string) => {
-        // the routeId is the document id of the route in the routes collection, we need the name of the BikeBusGroup to redirect to the correct page
-        // the field is called BikeBusGroupId and is formmatted like string: "/bikebusgroups/FHgipOLo06DVmMWyq4T5"
-        // we need to extract the id from the string
-        const bikeBusGroupId = bikeBusRoutes.find((route) => route.id === routeId)?.BikeBusGroupId;
-        const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-        const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-        console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-        // Redirect to the page for the corresponding bike/bus group
-        history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
-    };
+        const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
+        if (bikeBusGroup) {
+          const bikeBusGroupName = bikeBusGroup.BikeBusName;
+          const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
+          const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
+          const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
+          console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
+          // Show an InfoWindow with the BikeBusGroup name
+          const infoWindow = new google.maps.InfoWindow({
+            content: `<div>${bikeBusGroupName}
+            // link to the page for the corresponding bike/bus group
+            <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
+            </div>`,
+
+          });
+          infoWindow.open(mapRef.current, bikeBusGroupId); 
+          // Redirect to the page for the corresponding bike/bus group
+          history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
+        }
+      };
+      
+      
 
 
     const onPlaceChangedStart = () => {
@@ -413,11 +425,6 @@ const SearchForBikeBus: React.FC = () => {
                         </IonRow>
                     </IonGrid>
                 )}
-                <IonRow>
-                    <div className="bikebus-action-sheet footer-content">
-                        <div className="bikebusname-button-container"></div>
-                    </div>
-                </IonRow>
             </IonContent>
         </IonPage>
     );
