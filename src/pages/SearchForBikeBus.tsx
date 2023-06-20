@@ -228,8 +228,6 @@ const SearchForBikeBus: React.FC = () => {
             });
         }
     }, [user]);
-
-    console.log("User Location", userLocation);
     console.log("Bike Bus Routes", bikeBusRoutes);
 
     useEffect(() => {
@@ -356,7 +354,7 @@ const SearchForBikeBus: React.FC = () => {
                                     height: "100%",
                                 }}
                                 center={mapCenter}
-                                zoom={12}
+                                zoom={14}
                                 options={{
                                     disableDefaultUI: true,
                                     zoomControl: false,
@@ -393,7 +391,7 @@ const SearchForBikeBus: React.FC = () => {
                                         key={route.id}
                                         path={route.pathCoordinates}
                                         options={{
-                                            strokeColor: "blue",
+                                            strokeColor: "#ffd800",
                                             strokeOpacity: 1,
                                             strokeWeight: 3,
                                         }}
