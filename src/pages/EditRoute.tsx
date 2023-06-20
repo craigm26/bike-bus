@@ -340,16 +340,23 @@ const EditRoute: React.FC = () => {
             console.error('No new stop to add to route');
             return;
         }
-
+    
+        // Add a confirm dialog
+        const confirmed = window.confirm("This will delete the existing route and create a new one. Are you sure you want to continue?");
+        if (!confirmed) {
+            // User clicked "Cancel", so we return and don't continue with generating the new route
+            return;
+        }
+    
         if (selectedRoute) {
             // Create a new path with the stops included
             const busStops: google.maps.DirectionsWaypoint[] = selectedRoute.BikeBusStop.map(coord => ({ location: coord, stopover: true }));
-            const pathCoordinates: google.maps.DirectionsWaypoint[] = selectedRoute.pathCoordinates.slice(1, selectedRoute.pathCoordinates.length - 1).map(coord => ({ location: coord, stopover: true }));
-
-            const waypoints = [...busStops, ...pathCoordinates];
-
+            
+            // Not including the old pathCoordinates here
+            const waypoints = [...busStops];
+    
             const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-
+    
             const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
             alert('Route Updated, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
@@ -357,11 +364,10 @@ const EditRoute: React.FC = () => {
             // set the isClicked to true
             setIsClicked(true);
         }
-
+    
         setBikeBusStops(selectedRoute.BikeBusStop);
-
     };
-
+    
     const updateRoute = async (updatedRoute: Route) => {
         const routeRef = doc(db, 'routes', id);
         await updateDoc(routeRef, { 
@@ -369,6 +375,7 @@ const EditRoute: React.FC = () => {
             BikeBusStop: arrayUnion(updatedRoute.BikeBusStop)
         });
     };
+    
 
     const handleDeleteStop = async (index: number) => {
         if (selectedRoute) {
@@ -379,9 +386,12 @@ const EditRoute: React.FC = () => {
                 ...selectedRoute,
                 BikeBusStop: newStops,
             };
-        
+            console.log(newStops);
+            console.log(newRoute);
+
             // Update the route in Firebase here
             await updateRoute(newRoute);
+            alert('Stop deleted, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
             setSelectedStopIndex(null);
         }
     };
@@ -433,11 +443,10 @@ const EditRoute: React.FC = () => {
                             </IonTitle>
                         </IonCol>
                     </IonRow>
-                    <IonList>
-                        <IonItem>
+                    <IonRow>
                             <IonLabel>Route Name:</IonLabel>
                             <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
-                        </IonItem>
+                    </IonRow>
                         <IonItem>
                             <IonLabel>Travel Mode:</IonLabel>
                             <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
@@ -480,7 +489,6 @@ const EditRoute: React.FC = () => {
                                 />
                             </StandaloneSearchBox>
                         </IonItem>
-                    </IonList>
                     <IonRow>
                         <IonCol>
                             {isBikeBus && (
@@ -512,6 +520,7 @@ const EditRoute: React.FC = () => {
                                     <Marker
                                         position={{ lat: startGeo.lat, lng: startGeo.lng }}
                                         title="Start"
+                                        label={"Start"}
                                     />
                                     <Marker
                                         position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
@@ -526,7 +535,7 @@ const EditRoute: React.FC = () => {
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
-                                            label={`${index + 1}`}
+                                            label={`Stop ${index + 1}`}
                                             onClick={() => {
                                                 setSelectedStopIndex(index);
                                             }}
@@ -545,6 +554,7 @@ const EditRoute: React.FC = () => {
                                     <Marker
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
+                                        label={"End"}
                                     />
                                     <Polyline
                                         path={selectedRoute?.pathCoordinates}

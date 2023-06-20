@@ -28,8 +28,8 @@ interface Coordinate {
 }
 
 interface Route {
-    BikeBusStopName: string[];
-    BikeBusStopIds: string[];
+    BikeBusStopName: string[] | null;
+    BikeBusStopIds: string[] | null;
     BikeBusStop: Coordinate[] | null;
     isBikeBus: boolean;
     id: string;
@@ -127,11 +127,9 @@ const UpdateRouteManually: React.FC = () => {
                 endPoint: docSnap.data().endPoint,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
                 pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-                BikeBusStop: (docSnap.data().BikeBusStop || []).map((coord: any) => ({
-                    lat: coord.latitude,
-                    lng: coord.longitude,
-                })),
+                BikeBusStop: docSnap.data()?.BikeBusStop,
             };
+            console.log("routeData", routeData);
             setSelectedRoute(routeData);
             setBikeBusStops(routeData.BikeBusStop);
         }
@@ -360,7 +358,6 @@ const UpdateRouteManually: React.FC = () => {
                                         />
                                     }
                                     <Polyline path={pathCoordinates} />
-
                                     {pathCoordinates.map((coordinate, index) => (
                                         <Marker
                                             position={coordinate}

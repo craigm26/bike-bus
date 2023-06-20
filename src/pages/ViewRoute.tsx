@@ -297,7 +297,6 @@ const ViewRoute: React.FC = () => {
                                             position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
                                             onCloseClick={() => setSelectedMarker(null)}
                                         >
-                                            {/* Content to display in the info window */}
                                             <div>
                                                 <h4>Marker Data</h4>
                                                 <p>Latitude: {selectedMarker.lat}</p>
