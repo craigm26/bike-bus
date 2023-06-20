@@ -19,11 +19,11 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -74,6 +74,7 @@ const EditRoute: React.FC = () => {
     const [routeEndName, setRouteEndName] = useState<string>('');
     const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
     const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
+    const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
     const [bikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
     const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
     const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
@@ -361,8 +362,29 @@ const EditRoute: React.FC = () => {
 
     };
 
+    const updateRoute = async (updatedRoute: Route) => {
+        const routeRef = doc(db, 'routes', id);
+        await updateDoc(routeRef, { 
+            ...updatedRoute,
+            BikeBusStop: arrayUnion(updatedRoute.BikeBusStop)
+        });
+    };
 
-
+    const handleDeleteStop = async (index: number) => {
+        if (selectedRoute) {
+            // Create a new array without the stop to be deleted
+            const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
+        
+            const newRoute: Route = {
+                ...selectedRoute,
+                BikeBusStop: newStops,
+            };
+        
+            // Update the route in Firebase here
+            await updateRoute(newRoute);
+            setSelectedStopIndex(null);
+        }
+    };
 
     const handleRouteSave = async () => {
         if (selectedRoute === null) {
@@ -417,10 +439,6 @@ const EditRoute: React.FC = () => {
                             <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
                         </IonItem>
                         <IonItem>
-                            <IonLabel>Description:</IonLabel>
-                            <IonInput value={selectedRoute?.description} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, description: e.detail.value! })} />
-                        </IonItem>
-                        <IonItem>
                             <IonLabel>Travel Mode:</IonLabel>
                             <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
                                 <IonSelectOption value="WALKING">Walking</IonSelectOption>
@@ -469,7 +487,7 @@ const EditRoute: React.FC = () => {
                                 <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
                             )}
                             {!isClicked && (
-                            <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
+                                <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
                             )}
                             <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
@@ -502,16 +520,27 @@ const EditRoute: React.FC = () => {
                                             console.log("Clicked on new stop");
                                         }}
                                     />
-                                                                        {BikeBusStops?.map((stop, index) => (
+
+                                    {BikeBusStops?.map((stop, index) => (
                                         <Marker
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
                                             label={`${index + 1}`}
                                             onClick={() => {
-                                                console.log(`Clicked on stop ${index + 1}`);
+                                                setSelectedStopIndex(index);
                                             }}
-                                        />
+                                        >
+                                            {selectedStopIndex === index && (
+                                                <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
+                                                    <div>
+                                                        <h3>{`Stop ${index + 1}`}</h3>
+                                                        <p>Some details about the location...</p>
+                                                        <button onClick={() => handleDeleteStop(index)}>Delete Stop</button>
+                                                    </div>
+                                                </InfoWindow>
+                                            )}
+                                        </Marker>
                                     ))}
                                     <Marker
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}

@@ -17,7 +17,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, Polyline, useJsApiLoader, Marker, DrawingManager } from '@react-google-maps/api';
+import { GoogleMap, Polyline, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -28,17 +28,12 @@ interface Coordinate {
 }
 
 interface Route {
-    oldIds: Coordinate | null | undefined;
-    stopPoint: Coordinate | null;
-    BikeBusStopName: string;
-    BikeBusStopId: string;
+    BikeBusStopName: string[];
     BikeBusStopIds: string[];
-    BikeBusStop: Coordinate[];
+    BikeBusStop: Coordinate[] | null;
     isBikeBus: boolean;
-    BikeBusGroupId: string;
     id: string;
-    accountType: string;
-    description: string;
+    BikeBusGroupId: string;
     endPoint: Coordinate;
     endPointAddress: string;
     endPointName: string;
@@ -58,7 +53,6 @@ const UpdateRouteManually: React.FC = () => {
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
-    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
     const polylineRef = useRef<{ paths: Coordinate[] }>({ paths: [] });
@@ -72,6 +66,9 @@ const UpdateRouteManually: React.FC = () => {
         lat: startGeo.lat,
         lng: startGeo.lng,
     });
+    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+    const [pathCoordinates, setPathCoordinates] = useState<Coordinate[]>([]);
+
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
@@ -98,6 +95,20 @@ const UpdateRouteManually: React.FC = () => {
         }
     }
         , [selectedRoute]);
+
+        console.log("selectedRoute.startPoint", selectedRoute?.startPoint);
+        console.log("selectedRoute.endPoint", selectedRoute?.endPoint);
+        console.log("selectedRoute.pathCoordinates", selectedRoute?.pathCoordinates);
+        console.log("selectedRoute.BikeBusStop", selectedRoute?.BikeBusStop);
+        console.log("selectedRoute.BikeBusStopIds", selectedRoute?.BikeBusStopIds);
+
+
+
+    useEffect(() => {
+        if (selectedRoute && selectedRoute.pathCoordinates) {
+            setPathCoordinates(selectedRoute.pathCoordinates);
+        }
+    }, [selectedRoute]);
 
     useEffect(() => {
         if (id) fetchSingleRoute(id);
@@ -174,36 +185,97 @@ const UpdateRouteManually: React.FC = () => {
     }
         , [selectedEndLocation]);
 
-    const handleRouteSave = async () => {
-        if (selectedRoute === null) {
-            console.error("selectedRoute is null");
-            return;
-        }
 
-        const routeRef = doc(db, 'routes', selectedRoute.id);
-        const updatedRoute: Partial<Route> = { ...selectedRoute };
-
-        await updateDoc(routeRef, updatedRoute);
-        alert('Route Updated');
-        history.push(`/ViewRoute/${id}`);
-    };
-
+        const handleRouteSave = async () => {
+            if (selectedRoute === null) {
+                console.error("selectedRoute is null");
+                return;
+            }
+        
+            const routeRef = doc(db, 'routes', selectedRoute.id);
+            const updatedRoute: Partial<Route> = {
+                ...selectedRoute,
+                pathCoordinates,
+            };
+        
+            // Create a skeleton object with all keys of Route but with undefined values.
+            const routeSkeleton: Record<keyof Route, undefined> = {
+                BikeBusStopName: undefined,
+                BikeBusStopIds: undefined,
+                BikeBusStop: undefined,
+                isBikeBus: undefined,
+                BikeBusGroupId: undefined,
+                id: undefined,
+                endPoint: undefined,
+                endPointAddress: undefined,
+                endPointName: undefined,
+                routeCreator: undefined,
+                routeLeader: undefined,
+                routeName: undefined,
+                routeType: undefined,
+                startPoint: undefined,
+                startPointAddress: undefined,
+                startPointName: undefined,
+                travelMode: undefined,
+                pathCoordinates: undefined,
+            };
+        
+            const updatedRouteWithDefaults: Record<keyof Route, string | boolean | Coordinate | string[] | Coordinate[] | null | undefined> = routeSkeleton;
+        
+            (Object.keys(updatedRoute) as (keyof Route)[]).forEach((key) => {
+                let value = updatedRoute[key];
+        
+                if (value === undefined) {
+                    switch (typeof updatedRoute[key]) {
+                        case 'string':
+                            value = '';
+                            break;
+                        case 'boolean':
+                            value = false;
+                            break;
+                        case 'object':
+                            // Check if it's an array
+                            if (Array.isArray(updatedRoute[key])) {
+                                value = [];
+                            } else if(updatedRoute[key] === null){
+                                value = null;
+                            } else {
+                                // Assuming it's Coordinate, fill with default Coordinate
+                                value = {lat: 0, lng: 0};
+                            }
+                            break;
+                        default:
+                            // Throw error for unknown types
+                            throw new Error(`Unexpected type for key ${key}`);
+                    }
+                }
+        
+                updatedRouteWithDefaults[key] = value;
+            });
+        
+            console.log("updatedRouteWithDefaults", updatedRouteWithDefaults);
+        
+            try {
+                await updateDoc(routeRef, updatedRouteWithDefaults);
+                alert('Route Updated');
+                history.push(`/ViewRoute/${id}`);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        
 
     useEffect(() => {
         console.log("Google Maps script loaded: ", isLoaded);
     }, [isLoaded]);
 
-    const [pathCoordinates, setPathCoordinates] = useState([
-        // find the pathCooardinates from the selectedRoute
-        ...(selectedRoute?.pathCoordinates ?? []),
-    ]);
-    
     const handleDragEnd = (index: number) => (e: google.maps.MapMouseEvent) => {
         const newLat = e.latLng?.lat() ?? 0;
         const newLng = e.latLng?.lng() ?? 0;
         setPathCoordinates(prev => prev.map((vertex, i) => i === index ? { lat: newLat, lng: newLng } : vertex));
+        console.log("handleDragEnd", index, newLat, newLng);
     };
-    
+
 
     if (!isLoaded) {
         return <div>Loading...</div>;
@@ -242,8 +314,23 @@ const UpdateRouteManually: React.FC = () => {
                                         mapTypeControl: false,
                                         streetViewControl: false,
                                         fullscreenControl: true,
+                                        zoomControl: true,
                                         disableDoubleClickZoom: true,
                                         disableDefaultUI: true,
+                                        draggable: true,
+                                        keyboardShortcuts: false,
+                                        scaleControl: true,
+                                        zoomControlOptions: {
+                                            position: google.maps.ControlPosition.RIGHT_CENTER,
+                                        },
+
+                                        styles: [
+                                            {
+                                                featureType: 'poi',
+                                                elementType: 'labels',
+                                                stylers: [{ visibility: 'on' }],
+                                            },
+                                        ],
                                     }}
                                 >
                                     <Marker
