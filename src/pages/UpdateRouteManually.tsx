@@ -274,6 +274,19 @@ const UpdateRouteManually: React.FC = () => {
         console.log("handleDragEnd", index, newLat, newLng);
     };
 
+    // delete the existing pathCoordinates in the firestore document and replace it with the new pathCoordinates by invoking a different function
+    const resetPath = () => {
+        if (selectedRoute) {
+            const routeRef = doc(db, 'routes', selectedRoute.id);
+            const updatedRoute: Partial<Route> = {
+                ...selectedRoute,
+                pathCoordinates: [],
+            };
+            updateDoc(routeRef, updatedRoute);
+        }
+    };
+
+
 
     if (!isLoaded) {
         return <div>Loading...</div>;
@@ -334,13 +347,14 @@ const UpdateRouteManually: React.FC = () => {
                                     <Marker
                                         position={{ lat: startGeo.lat, lng: startGeo.lng }}
                                         title="Start"
+                                        label={"Start"}
                                     />
                                     {BikeBusStops?.map((stop, index) => (
                                         <Marker
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
-                                            label={`${index + 1}`}
+                                            label={`Stop ${index + 1}`}
                                             onClick={() => {
                                                 console.log(`Clicked on stop ${index + 1}`);
                                             }}
@@ -349,6 +363,7 @@ const UpdateRouteManually: React.FC = () => {
                                     <Marker
                                         position={{ lat: endGeo.lat, lng: endGeo.lng }}
                                         title="End"
+                                        label={"End"}
                                     />
                                     {
                                         selectedRoute?.pathCoordinates.length > 0 &&

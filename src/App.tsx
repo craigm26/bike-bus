@@ -37,6 +37,7 @@ import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
 import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
+import SearchForBikeBus from './pages/SearchForBikeBus';
 
 
 import '@ionic/react/css/core.css';
@@ -148,6 +149,9 @@ const App: React.FC = () => {
                         </IonItem>
                         <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                           <IonLabel>View BikeBusses</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink='/SearchForBikeBus' routerDirection="none">
+                          <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
                       </IonCard>
                       {accountType === 'App Admin' && 
@@ -278,6 +282,9 @@ const App: React.FC = () => {
                     <React.Fragment>
                       <Route path="/bikebusgrouppage/:groupId">
                         <BikeBusGroupPage />
+                      </Route>
+                      <Route path="/SearchForBikeBus">
+                        <SearchForBikeBus />
                       </Route>
                       <Route path="/viewroute/:id" exact>
                         <ViewRoute />
