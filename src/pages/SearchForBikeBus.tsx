@@ -271,26 +271,26 @@ const SearchForBikeBus: React.FC = () => {
     const handleBikeBusRouteClick = (routeId: string) => {
         const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
         if (bikeBusGroup) {
-          const bikeBusGroupName = bikeBusGroup.BikeBusName;
-          const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
-          const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-          const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-          console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-          // Show an InfoWindow with the BikeBusGroup name
-          const infoWindow = new google.maps.InfoWindow({
-            content: `<div>${bikeBusGroupName}
+            const bikeBusGroupName = bikeBusGroup.BikeBusName;
+            const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
+            const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
+            const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
+            console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
+            // Show an InfoWindow with the BikeBusGroup name
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div>${bikeBusGroupName}
             // link to the page for the corresponding bike/bus group
             <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
             </div>`,
 
-          });
-          infoWindow.open(mapRef.current, bikeBusGroupId); 
-          // Redirect to the page for the corresponding bike/bus group
-          history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
+            });
+            infoWindow.open(mapRef.current, bikeBusGroupId);
+            // Redirect to the page for the corresponding bike/bus group
+            history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
         }
-      };
-      
-      
+    };
+
+
 
 
     const onPlaceChangedStart = () => {
@@ -373,6 +373,32 @@ const SearchForBikeBus: React.FC = () => {
                                     mapTypeControl: false,
                                     disableDoubleClickZoom: true,
                                     maxZoom: 18,
+                                    styles: [
+                                        {
+                                            featureType: "all",
+                                            elementType: "labels",
+                                            stylers: [
+                                                {
+                                                    saturation: -100,
+                                                },
+                                                {
+                                                    lightness: 50,
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            featureType: "road",
+                                            elementType: "geometry",
+                                            stylers: [
+                                                {
+                                                    saturation: -100,
+                                                },
+                                                {
+                                                    lightness: 30,
+                                                },
+                                            ],
+                                        },
+                                    ],
                                 }}
                             >
                                 <IonGrid className="search-container">
@@ -399,17 +425,28 @@ const SearchForBikeBus: React.FC = () => {
                                     </IonRow>
                                 </IonGrid>
                                 {bikeBusRoutes.map((route: any) => (
-                                    <Polyline
-                                        key={route.id}
-                                        path={route.pathCoordinates}
-                                        options={{
-                                            strokeColor: "#ffd800",
-                                            strokeOpacity: 1,
-                                            strokeWeight: 3,
-                                        }}
-                                        onClick={() => handleBikeBusRouteClick(route.id)}
-                                    />
+                                    <React.Fragment key={route.id}>
+                                        <Polyline
+                                            path={route.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#000000", // Border color
+                                                strokeOpacity: 1,
+                                                strokeWeight: 5, // Border thickness
+                                            }}
+                                            onClick={() => handleBikeBusRouteClick(route.id)}
+                                        />
+                                        <Polyline
+                                            path={route.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#ffd800", // Main line color
+                                                strokeOpacity: 1,
+                                                strokeWeight: 3,
+                                            }}
+                                            onClick={() => handleBikeBusRouteClick(route.id)}
+                                        />
+                                    </React.Fragment>
                                 ))}
+
                                 <div>
                                     {user && isAnonymous && userLocation && (
                                         <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />

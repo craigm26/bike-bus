@@ -24,6 +24,7 @@ import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
+import React from 'react';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -340,23 +341,23 @@ const EditRoute: React.FC = () => {
             console.error('No new stop to add to route');
             return;
         }
-    
+
         // Add a confirm dialog
         const confirmed = window.confirm("This will delete the existing route and create a new one. Are you sure you want to continue?");
         if (!confirmed) {
             // User clicked "Cancel", so we return and don't continue with generating the new route
             return;
         }
-    
+
         if (selectedRoute) {
             // Create a new path with the stops included
             const busStops: google.maps.DirectionsWaypoint[] = selectedRoute.BikeBusStop.map(coord => ({ location: coord, stopover: true }));
-            
+
             // Not including the old pathCoordinates here
             const waypoints = [...busStops];
-    
+
             const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-    
+
             const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
             setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
             alert('Route Updated, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
@@ -364,24 +365,24 @@ const EditRoute: React.FC = () => {
             // set the isClicked to true
             setIsClicked(true);
         }
-    
+
         setBikeBusStops(selectedRoute.BikeBusStop);
     };
-    
+
     const updateRoute = async (updatedRoute: Route) => {
         const routeRef = doc(db, 'routes', id);
-        await updateDoc(routeRef, { 
+        await updateDoc(routeRef, {
             ...updatedRoute,
             BikeBusStop: arrayUnion(updatedRoute.BikeBusStop)
         });
     };
-    
+
 
     const handleDeleteStop = async (index: number) => {
         if (selectedRoute) {
             // Create a new array without the stop to be deleted
             const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
-        
+
             const newRoute: Route = {
                 ...selectedRoute,
                 BikeBusStop: newStops,
@@ -444,51 +445,51 @@ const EditRoute: React.FC = () => {
                         </IonCol>
                     </IonRow>
                     <IonRow>
-                            <IonLabel>Route Name:</IonLabel>
-                            <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
+                        <IonLabel>Route Name:</IonLabel>
+                        <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
                     </IonRow>
-                        <IonItem>
-                            <IonLabel>Travel Mode:</IonLabel>
-                            <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
-                                <IonSelectOption value="WALKING">Walking</IonSelectOption>
-                                <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
-                                <IonSelectOption value="CAR">Car</IonSelectOption>
-                            </IonSelect>
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>Start Point:</IonLabel>
-                            <StandaloneSearchBox
-                                onLoad={onLoadStartingLocation}
-                                onPlacesChanged={onPlaceChangedStart}
-                            >
-                                <input
-                                    type="text"
-                                    autoComplete="on"
-                                    placeholder={routeStartFormattedAddress}
-                                    style={{
-                                        width: "250px",
-                                        height: "40px",
-                                    }}
-                                />
-                            </StandaloneSearchBox>
-                        </IonItem>
-                        <IonItem>
-                            <IonLabel>End Point:</IonLabel>
-                            <StandaloneSearchBox
-                                onLoad={onLoadDestinationValue}
-                                onPlacesChanged={onPlaceChangedDestination}
-                            >
-                                <input
-                                    type="text"
-                                    autoComplete="on"
-                                    placeholder={routeEndFormattedAddress}
-                                    style={{
-                                        width: "250px",
-                                        height: "40px",
-                                    }}
-                                />
-                            </StandaloneSearchBox>
-                        </IonItem>
+                    <IonItem>
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
+                            <IonSelectOption value="WALKING">Walking</IonSelectOption>
+                            <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
+                            <IonSelectOption value="CAR">Car</IonSelectOption>
+                        </IonSelect>
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>Start Point:</IonLabel>
+                        <StandaloneSearchBox
+                            onLoad={onLoadStartingLocation}
+                            onPlacesChanged={onPlaceChangedStart}
+                        >
+                            <input
+                                type="text"
+                                autoComplete="on"
+                                placeholder={routeStartFormattedAddress}
+                                style={{
+                                    width: "250px",
+                                    height: "40px",
+                                }}
+                            />
+                        </StandaloneSearchBox>
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>End Point:</IonLabel>
+                        <StandaloneSearchBox
+                            onLoad={onLoadDestinationValue}
+                            onPlacesChanged={onPlaceChangedDestination}
+                        >
+                            <input
+                                type="text"
+                                autoComplete="on"
+                                placeholder={routeEndFormattedAddress}
+                                style={{
+                                    width: "250px",
+                                    height: "40px",
+                                }}
+                            />
+                        </StandaloneSearchBox>
+                    </IonItem>
                     <IonRow>
                         <IonCol>
                             {isBikeBus && (
@@ -515,6 +516,32 @@ const EditRoute: React.FC = () => {
                                         fullscreenControl: true,
                                         disableDoubleClickZoom: true,
                                         disableDefaultUI: true,
+                                        styles: [
+                                            {
+                                                featureType: "all",
+                                                elementType: "labels",
+                                                stylers: [
+                                                    {
+                                                        saturation: -100,
+                                                    },
+                                                    {
+                                                        lightness: 50,
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                featureType: "road",
+                                                elementType: "geometry",
+                                                stylers: [
+                                                    {
+                                                        saturation: -100,
+                                                    },
+                                                    {
+                                                        lightness: 30,
+                                                    },
+                                                ],
+                                            },
+                                        ],
                                     }}
                                 >
                                     <Marker
@@ -556,18 +583,32 @@ const EditRoute: React.FC = () => {
                                         title="End"
                                         label={"End"}
                                     />
-                                    <Polyline
-                                        path={selectedRoute?.pathCoordinates}
-                                        options={{
-                                            strokeColor: "#FF0000",
-                                            strokeOpacity: 1.0,
-                                            strokeWeight: 2,
-                                            geodesic: true,
-                                            draggable: false,
-                                            editable: false,
-                                            visible: true,
-                                        }}
-                                    />
+                                    <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
+                                        <Polyline
+                                            path={selectedRoute?.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#000000",
+                                                strokeOpacity: 1,
+                                                strokeWeight: 10,
+                                                geodesic: true,
+                                                draggable: false,
+                                                editable: false,
+                                                visible: true,
+                                            }}
+                                        />
+                                        <Polyline
+                                            path={selectedRoute?.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#ffd800",
+                                                strokeOpacity: 1,
+                                                strokeWeight: 5,
+                                                geodesic: true,
+                                                draggable: false,
+                                                editable: false,
+                                                visible: true,
+                                            }}
+                                        />
+                                    </React.Fragment>
                                 </GoogleMap>
 
                             </IonCol>

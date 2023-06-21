@@ -19,6 +19,7 @@ import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory, Link } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+import React from 'react';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -212,7 +213,7 @@ const ViewRoute: React.FC = () => {
                         <IonRow>
                             <IonCol>
                                 <IonLabel>
-                                    BikeBus Group: 
+                                    BikeBus Group:
                                     {selectedRoute?.BikeBusName}
 
                                 </IonLabel>
@@ -276,20 +277,60 @@ const ViewRoute: React.FC = () => {
                                         fullscreenControl: true,
                                         disableDoubleClickZoom: true,
                                         disableDefaultUI: true,
+                                        styles: [
+                                            {
+                                                featureType: "all",
+                                                elementType: "labels",
+                                                stylers: [
+                                                    {
+                                                        saturation: -100,
+                                                    },
+                                                    {
+                                                        lightness: 50,
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                featureType: "road",
+                                                elementType: "geometry",
+                                                stylers: [
+                                                    {
+                                                        saturation: -100,
+                                                    },
+                                                    {
+                                                        lightness: 30,
+                                                    },
+                                                ],
+                                            },
+                                        ],
                                     }}
                                 >
-                                    <Polyline
-                                        path={selectedRoute?.pathCoordinates}
-                                        options={{
-                                            strokeColor: "#ffd800",
-                                            strokeOpacity: 1.0,
-                                            strokeWeight: 2,
-                                            geodesic: true,
-                                            draggable: false,
-                                            editable: false,
-                                            visible: true,
-                                        }}
-                                    />
+                                    <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
+                                        <Polyline
+                                            path={selectedRoute?.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#000000",
+                                                strokeOpacity: 1,
+                                                strokeWeight: 10,
+                                                geodesic: true,
+                                                draggable: false,
+                                                editable: false,
+                                                visible: true,
+                                            }}
+                                        />
+                                        <Polyline
+                                            path={selectedRoute?.pathCoordinates}
+                                            options={{
+                                                strokeColor: "#ffd800",
+                                                strokeOpacity: 1,
+                                                strokeWeight: 5,
+                                                geodesic: true,
+                                                draggable: false,
+                                                editable: false,
+                                                visible: true,
+                                            }}
+                                        />
+                                    </React.Fragment>
                                     <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" onClick={() => setSelectedMarker(selectedMarker)} />
                                     <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" label="End" onClick={() => setSelectedMarker(selectedMarker)} />
                                     {selectedMarker && (
