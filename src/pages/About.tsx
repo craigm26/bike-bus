@@ -69,7 +69,7 @@ const About: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
+        <IonHeader>
           <IonToolbar></IonToolbar>
         </IonHeader>
         <IonCard>

@@ -658,6 +658,32 @@ const Map: React.FC = () => {
                   mapTypeControl: false,
                   disableDoubleClickZoom: true,
                   maxZoom: 18,
+                  styles: [
+                    {
+                        featureType: "all",
+                        elementType: "labels",
+                        stylers: [
+                            {
+                                saturation: -100,
+                            },
+                            {
+                                lightness: 50,
+                            },
+                        ],
+                    },
+                    {
+                        featureType: "road",
+                        elementType: "geometry",
+                        stylers: [
+                            {
+                                saturation: -100,
+                            },
+                            {
+                                lightness: 30,
+                            },
+                        ],
+                    },
+                  ],
                 }}
               >
                 <IonGrid className="search-container">
