@@ -1,14 +1,15 @@
 import {
-    IonContent,
-    IonHeader,
-    IonPage,
-    IonButton,
-    IonIcon,
-    IonRow,
-    IonGrid,
-    IonCol,
-    IonToolbar,
-    IonAvatar,
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonButton,
+  IonIcon,
+  IonRow,
+  IonGrid,
+  IonCol,
+  IonToolbar,
+  IonAvatar,
+  IonLabel,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -18,17 +19,17 @@ import { db, rtdb } from "../firebaseConfig";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import {
-    locateOutline,
-    personCircleOutline,
+  locateOutline,
+  personCircleOutline,
 } from "ionicons/icons";
 import {
-    GoogleMap,
-    Marker,
-    useJsApiLoader,
-    LoadScript,
-    Polyline,
-    InfoWindow,
-    Circle
+  GoogleMap,
+  Marker,
+  useJsApiLoader,
+  LoadScript,
+  Polyline,
+  InfoWindow,
+  Circle,
 } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -38,9 +39,10 @@ import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
 import {
-    DocumentData,
-    doc as firestoreDoc,
+  DocumentData,
+  doc as firestoreDoc,
 } from "firebase/firestore";
+
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -49,839 +51,872 @@ const DEFAULT_ACCOUNT_MODES = ["Member"];
 type RouteType = "SCHOOL" | "WORK";
 
 type Point = {
-    lat: number;
-    lng: number;
+  lat: number;
+  lng: number;
 };
 
 type Place = {
-    name: string;
-    formatted_address: string;
-    geometry: {
-        location: {
-            lat(): number;
-            lng(): number;
-        };
+  name: string;
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat(): number;
+      lng(): number;
     };
+  };
 };
 
 const SearchForBikeBus: React.FC = () => {
-    const { user, isAnonymous } = useAuth();
-    const history = useHistory();
-    const [showActionSheet, setShowActionSheet] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [showMap, setShowMap] = useState(false);
-    const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
-    const [username, setUsername] = useState<string>("");
-    const [accountType, setAccountType] = useState<string>("");
-    const [selectedStartLocation, setSelectedStartLocation] = useState<Point>({ lat: 0, lng: 0 });
-    const [selectedEndLocation, setSelectedEndLocation] = useState<Point | null>(null);
-    const headerContext = useContext(HeaderContext);
-    const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
-    const [userLocation, setUserLocation] = useState<Point>({ lat: 0, lng: 0 });
-    const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
-    const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
-    const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
-    const [mapCenter, setMapCenter] = useState<Point>({ lat: 0, lng: 0 });
-    const [mapZoom, setMapZoom] = useState(8);
-    const [getLocationClicked, setGetLocationClicked] = useState(false);
-    const mapRef = React.useRef<google.maps.Map | null>(null);
-    const { avatarUrl } = useAvatar(user?.uid);
-    const [travelMode, setTravelMode] = useState<string>("");
-    const [travelModeSelector, setTravelModeSelector] = useState<string>("BICYCLING");
-    const [distance, setDistance] = useState<string>("");
-    const [duration, setDuration] = useState<string>("");
-    const [arrivalTime, setArrivalTime] = useState<string>("");
-    const [routeStartLocation, setRouteStartLocation] = useState<string>("");
-    const [routeStartName, setRouteStartName] = useState<string>("");
-    const [routeStartStreetName, setRouteStartStreetName] = useState<string>("");
-    const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>("");
-    const [routeType, setRouteType] = useState<RouteType>("SCHOOL");
-    const [pathCoordinates, setPathCoordinates] = useState<Point[]>([]);
-    const [startPointAddress, setStartPointAddress] = useState<string>("");
-    const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>("");
-    const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>("");
-    const [endPointAddress, setEndPointAddress] = useState<string>("");
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
-    const [route, setRoute] = useState<DocumentData | null>(null);
+  const { user, isAnonymous } = useAuth();
+  const history = useHistory();
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
+  const [username, setUsername] = useState<string>("");
+  const [accountType, setAccountType] = useState<string>("");
+  const [selectedStartLocation, setSelectedStartLocation] = useState<Point>({ lat: 0, lng: 0 });
+  const [selectedEndLocation, setSelectedEndLocation] = useState<Point | null>(null);
+  const headerContext = useContext(HeaderContext);
+  const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
+  const [userLocation, setUserLocation] = useState<Point>({ lat: 0, lng: 0 });
+  const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
+  const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
+  const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
+  const [mapCenter, setMapCenter] = useState<Point>({ lat: 0, lng: 0 });
+  const [mapZoom, setMapZoom] = useState(8);
+  const [getLocationClicked, setGetLocationClicked] = useState(false);
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const { avatarUrl } = useAvatar(user?.uid);
+  const [travelMode, setTravelMode] = useState<string>("");
+  const [travelModeSelector, setTravelModeSelector] = useState<string>("BICYCLING");
+  const [distance, setDistance] = useState<string>("");
+  const [duration, setDuration] = useState<string>("");
+  const [arrivalTime, setArrivalTime] = useState<string>("");
+  const [routeStartLocation, setRouteStartLocation] = useState<string>("");
+  const [routeStartName, setRouteStartName] = useState<string>("");
+  const [routeStartStreetName, setRouteStartStreetName] = useState<string>("");
+  const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>("");
+  const [routeType, setRouteType] = useState<RouteType>("SCHOOL");
+  const [pathCoordinates, setPathCoordinates] = useState<Point[]>([]);
+  const [startPointAddress, setStartPointAddress] = useState<string>("");
+  const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>("");
+  const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>("");
+  const [endPointAddress, setEndPointAddress] = useState<string>("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
+  const [route, setRoute] = useState<DocumentData | null>(null);
 
-    const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
+  const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
 
-    useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+  useEffect(() => {
+    if (headerContext) {
+      headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+    }
+  }, [headerContext]);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries,
+  });
+
+  const getLocation = () => {
+    setGetLocationClicked(true);
+    setShowMap(true);
+    setMapCenter(userLocation);
+    watchLocation();
+    onPlaceChangedStart();
+  };
+
+  const watchLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userLocation);
+          setMapCenter(userLocation);
+          // Get user location address
+          const geocoder = new google.maps.Geocoder();
+          const latlng = new google.maps.LatLng(userLocation.lat, userLocation.lng);
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === "OK") {
+              if (results && results[0]) {
+                const userLocationAddress = `${results[0].formatted_address}`;
+                setUserLocationAddress(userLocationAddress);
+                const selectedStartLocation = { lat: userLocation.lat, lng: userLocation.lng };
+                setSelectedStartLocation(selectedStartLocation);
+                setRouteStartFormattedAddress(`${results[0].formatted_address}` ?? "");
+              } else {
+                window.alert("No results found");
+              }
+            } else {
+              window.alert("Geocoder failed due to: " + status);
+            }
+          });
+        },
+        (error) => console.log(error),
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      );
+
+      navigator.geolocation.watchPosition(
+        (position) => {
+          const newMapCenter = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(newMapCenter);
+          if (user) {
+            const positionRef = ref(rtdb, `userLocations/${user.uid}`);
+            set(positionRef, newMapCenter);
+          }
+        },
+        (error) => console.log(error),
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      );
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && getLocationClicked) {
+      watchLocation();
+    }
+  }, [user, getLocationClicked, watchLocation]);
+
+  useEffect(() => {
+    console.log("User Location Address", userLocationAddress);
+  }, [userLocationAddress]);
+
+  useEffect(() => {
+    if (user) {
+      const userRef = firestoreDoc(db, "users", user.uid);
+      const routesRef = collection(db, "routes");
+      const queryObj = query(
+        routesRef,
+        where("isBikeBus", "==", true),
+
+      );
+      getDocs(queryObj)
+        .then((querySnapshot) => {
+          const routes: any[] = [];
+          querySnapshot.forEach((doc) => {
+            const routeData = doc.data();
+            routes.push(routeData);
+          });
+          setBikeBusRoutes(routes);
+        })
+        .catch((error) => {
+          console.log("Error fetching bike/bus routes:", error);
+        });
+
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData) {
+            if (userData.enabledAccountModes) {
+              setEnabledAccountModes(userData.enabledAccountModes);
+            } else {
+              setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+              updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+            }
+            if (userData.username) {
+              setUsername(userData.username);
+            }
+            if (userData.accountType) {
+              setAccountType(userData.accountType);
+            }
+          }
         }
-    }, [headerContext]);
+      });
+    }
+  }, [user]);
+  console.log("Bike Bus Routes", bikeBusRoutes);
 
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-        libraries,
-    });
+  useEffect(() => {
+    if (user && getLocationClicked) {
+      watchLocation();
+    }
+  }, [user, getLocationClicked, watchLocation]);
 
-    const getLocation = () => {
-        setGetLocationClicked(true);
-        setShowMap(true);
-        setMapCenter(userLocation);
-        watchLocation();
-        onPlaceChangedStart();
-    };
+  //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
+  useEffect(() => {
+    if (selectedStartLocation && selectedEndLocation) {
+      setMapCenter({
+        lat: (selectedEndLocation.lat + selectedStartLocation.lat) / 2,
+        lng: (selectedEndLocation.lng + selectedStartLocation.lng) / 2,
+      });
+      setMapZoom(10);
+    } else if (selectedStartLocation) {
+      setMapCenter(selectedStartLocation);
+    } else if (selectedEndLocation) {
+      setMapCenter(selectedEndLocation);
+    }
+  }, [selectedStartLocation, selectedEndLocation]);
 
-    const watchLocation = useCallback(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    setUserLocation(userLocation);
-                    setMapCenter(userLocation);
-                    // Get user location address
-                    const geocoder = new google.maps.Geocoder();
-                    const latlng = new google.maps.LatLng(userLocation.lat, userLocation.lng);
-                    geocoder.geocode({ location: latlng }, (results, status) => {
-                        if (status === "OK") {
-                            if (results && results[0]) {
-                                const userLocationAddress = `${results[0].formatted_address}`;
-                                setUserLocationAddress(userLocationAddress);
-                                const selectedStartLocation = { lat: userLocation.lat, lng: userLocation.lng };
-                                setSelectedStartLocation(selectedStartLocation);
-                                setRouteStartFormattedAddress(`${results[0].formatted_address}` ?? "");
-                            } else {
-                                window.alert("No results found");
-                            }
-                        } else {
-                            window.alert("Geocoder failed due to: " + status);
-                        }
-                    });
-                },
-                (error) => console.log(error),
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-            );
-
-            navigator.geolocation.watchPosition(
-                (position) => {
-                    const newMapCenter = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    setUserLocation(newMapCenter);
-                    if (user) {
-                        const positionRef = ref(rtdb, `userLocations/${user.uid}`);
-                        set(positionRef, newMapCenter);
-                    }
-                },
-                (error) => console.log(error),
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-            );
-        }
-    }, [user]);
-
-    useEffect(() => {
-        if (user && getLocationClicked) {
-            watchLocation();
-        }
-    }, [user, getLocationClicked, watchLocation]);
-
-    useEffect(() => {
-        console.log("User Location Address", userLocationAddress);
-    }, [userLocationAddress]);
-
-    useEffect(() => {
-        if (user) {
-            const userRef = firestoreDoc(db, "users", user.uid);
-            const routesRef = collection(db, "routes");
-            const queryObj = query(
-                routesRef,
-                where("isBikeBus", "==", true),
-
-            );
-            getDocs(queryObj)
-                .then((querySnapshot) => {
-                    const routes: any[] = [];
-                    querySnapshot.forEach((doc) => {
-                        const routeData = doc.data();
-                        routes.push(routeData);
-                    });
-                    setBikeBusRoutes(routes);
-                })
-                .catch((error) => {
-                    console.log("Error fetching bike/bus routes:", error);
-                });
-
-            getDoc(userRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const userData = docSnapshot.data();
-                    if (userData) {
-                        if (userData.enabledAccountModes) {
-                            setEnabledAccountModes(userData.enabledAccountModes);
-                        } else {
-                            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-                        }
-                        if (userData.username) {
-                            setUsername(userData.username);
-                        }
-                        if (userData.accountType) {
-                            setAccountType(userData.accountType);
-                        }
-                    }
-                }
-            });
-        }
-    }, [user]);
-    console.log("Bike Bus Routes", bikeBusRoutes);
-
-    useEffect(() => {
-        if (user && getLocationClicked) {
-            watchLocation();
-        }
-    }, [user, getLocationClicked, watchLocation]);
-
-    //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
-    useEffect(() => {
-        if (selectedStartLocation && selectedEndLocation) {
-            setMapCenter({
-                lat: (selectedEndLocation.lat + selectedStartLocation.lat) / 2,
-                lng: (selectedEndLocation.lng + selectedStartLocation.lng) / 2,
-            });
-            setMapZoom(10);
-        } else if (selectedStartLocation) {
-            setMapCenter(selectedStartLocation);
-        } else if (selectedEndLocation) {
-            setMapCenter(selectedEndLocation);
-        }
-    }, [selectedStartLocation, selectedEndLocation]);
-
-    const avatarElement = user ? (
-        avatarUrl ? (
-            <IonAvatar>
-                <Avatar uid={user.uid} size="extrasmall" />
-            </IonAvatar>
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        )
+  const avatarElement = user ? (
+    avatarUrl ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
     ) : (
-        <IonIcon icon={personCircleOutline} />
-    );
+      <IonIcon icon={personCircleOutline} />
+    )
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
 
-    useEffect(() => {
-        console.log("Google Maps script loaded: ", isLoaded);
-        console.log("Google Maps load error: ", loadError);
-    }, [isLoaded, loadError]);
+  useEffect(() => {
+    console.log("Google Maps script loaded: ", isLoaded);
+    console.log("Google Maps load error: ", loadError);
+  }, [isLoaded, loadError]);
 
-    const handleBikeBusRouteClick = (routeId: string) => {
-        const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
-        if (bikeBusGroup) {
-            const bikeBusGroupName = bikeBusGroup.BikeBusName;
-            const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
-            const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-            const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-            console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-            // Show an InfoWindow with the BikeBusGroup name
-            const infoWindow = new google.maps.InfoWindow({
-                content: `<div>${bikeBusGroupName}
+  const handleBikeBusRouteClick = (routeId: string) => {
+    const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
+    if (bikeBusGroup) {
+      const bikeBusGroupName = bikeBusGroup.BikeBusName;
+      const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
+      const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
+      const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
+      console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
+      // Show an InfoWindow with the BikeBusGroup name
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div>${bikeBusGroupName}
             // link to the page for the corresponding bike/bus group
             <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
             </div>`,
 
-            });
-            infoWindow.open(mapRef.current, bikeBusGroupId);
-            // Redirect to the page for the corresponding bike/bus group
-            history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
+      });
+      infoWindow.open(mapRef.current, bikeBusGroupId);
+      // Redirect to the page for the corresponding bike/bus group
+      history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
+    }
+  };
+
+
+
+
+  const onPlaceChangedStart = () => {
+    console.log("onPlaceChangedStart called");
+    if (autocompleteStart !== null) {
+      const places = autocompleteStart.getPlaces();
+      if (places && places.length > 0) {
+        console.log("Places: ", places);
+        const place = places[0];
+        console.log("Place: ", place);
+        if (place.geometry && place.geometry.location) {
+          setSelectedStartLocation({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          });
+          // define place.address_components
+          const addressComponents = place.address_components;
+          // extract street name
+          const streetName = addressComponents?.find((component) =>
+            component.types.includes("route")
+          )?.long_name;
+
+          setRouteStartStreetName(streetName ?? "");
+          setRouteStartName(`${place.name}` ?? "");
+          setRouteStartFormattedAddress(`${place.formatted_address}` ?? "");
         }
-    };
+      }
+    }
+  };
 
+  const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
+    setAutocompleteStart(ref);
+    onPlaceChangedStart();
 
+    setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
+  };
 
-
-    const onPlaceChangedStart = () => {
-        console.log("onPlaceChangedStart called");
-        if (autocompleteStart !== null) {
-            const places = autocompleteStart.getPlaces();
-            if (places && places.length > 0) {
-                console.log("Places: ", places);
-                const place = places[0];
-                console.log("Place: ", place);
-                if (place.geometry && place.geometry.location) {
-                    setSelectedStartLocation({
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng(),
-                    });
-                    // define place.address_components
-                    const addressComponents = place.address_components;
-                    // extract street name
-                    const streetName = addressComponents?.find((component) =>
-                        component.types.includes("route")
-                    )?.long_name;
-
-                    setRouteStartStreetName(streetName ?? "");
-                    setRouteStartName(`${place.name}` ?? "");
-                    setRouteStartFormattedAddress(`${place.formatted_address}` ?? "");
-                }
-            }
-        }
-    };
-
-    const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
-        setAutocompleteStart(ref);
-        onPlaceChangedStart();
-
-        setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
-    };
-
-    // handleMarkerClick(stop)
-    const handleMarkerClick = (stop: any) => {
-        console.log("handleMarkerClick called");
-        console.log("stop: ", stop);
-        const stopId = stop.id;
-        const stopName = stop.name;
-        const stopRoutes = stop.routes;
-        const stopRoutesArray = stopRoutes?.split(",");
-        const stopRoutesString = stopRoutesArray?.join(", ");
-        console.log("stopRoutesString: ", stopRoutesString);
-        // Show an InfoWindow with the stop name
-        const infoWindow = new google.maps.InfoWindow({
-            content: `<div>${stopName}
+  // handleMarkerClick(stop)
+  const handleMarkerClick = (stop: any) => {
+    console.log("handleMarkerClick called");
+    console.log("stop: ", stop);
+    const stopId = stop.id;
+    const stopName = stop.name;
+    const stopRoutes = stop.routes;
+    const stopRoutesArray = stopRoutes?.split(",");
+    const stopRoutesString = stopRoutesArray?.join(", ");
+    console.log("stopRoutesString: ", stopRoutesString);
+    // Show an InfoWindow with the stop name
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div>${stopName}
             <br>
             Routes: ${stopRoutesString}
             </div>`,
-        });
-        infoWindow.open(mapRef.current, stopId);
-        // show the routes that stop at this stop and then show the next 3 arrival times for each route
-        // get the routes that stop at this stop
-        const stopRoutesArray2 = stopRoutes?.split(",");
-        console.log("stopRoutesArray2: ", stopRoutesArray2);
-        // get the routes that stop at this stop from firebase
+    });
+    infoWindow.open(mapRef.current, stopId);
+    // show the routes that stop at this stop and then show the next 3 arrival times for each route
+    // get the routes that stop at this stop
+    const stopRoutesArray2 = stopRoutes?.split(",");
+    console.log("stopRoutesArray2: ", stopRoutesArray2);
+    // get the routes that stop at this stop from firebase
 
-    };
-
-
-
-    if (!isLoaded) {
-        return <div>Loading...</div>;
-    }
-
-    return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent>
-                {!showMap && (
-                    <>
-                        <IonGrid>
-                            <IonRow className="location-button-container">
-                                <IonCol>
-                                    <IonButton onClick={getLocation}>
-                                        Start Map by retrieving your Current Location
-                                    </IonButton>
-                                </IonCol>
-                            </IonRow>
-                            <IonRow></IonRow>
-                        </IonGrid>
-                    </>
-                )}
-                {showMap && (
-                    <IonGrid fixed={false}>
-                        <IonRow className="map-base">
-                            {bikeBusRoutes.map((route: any) => (
-                                <React.Fragment key={route.id}>
-                                    <GoogleMap
-                                        key={route.id}
-                                        onLoad={(map) => {
-                                            mapRef.current = map;
-                                        }}
-                                        mapContainerStyle={{
-                                            width: "100%",
-                                            height: "100%",
-                                        }}
-                                        center={mapCenter}
-                                        zoom={14}
-                                        options={{
-                                            disableDefaultUI: true,
-                                            zoomControl: false,
-                                            mapTypeControl: false,
-                                            disableDoubleClickZoom: true,
-                                            maxZoom: 18,
-                                            styles: [
-                                                {
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#f5f5f5"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "elementType": "labels.icon",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#616161"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "elementType": "labels.text.stroke",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#f5f5f5"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "administrative",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "administrative.land_parcel",
-                                                  "elementType": "labels",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "administrative.land_parcel",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#bdbdbd"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "administrative.neighborhood",
-                                                  "elementType": "geometry.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "administrative.neighborhood",
-                                                  "elementType": "labels.text",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#eeeeee"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi",
-                                                  "elementType": "labels.text",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#757575"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.business",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "simplified"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.business",
-                                                  "elementType": "labels.text",
-                                                  "stylers": [
-                                                    {
-                                                      "saturation": -65
-                                                    },
-                                                    {
-                                                      "lightness": 50
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#e5e5e5"
-                                                    },
-                                                    {
-                                                      "visibility": "simplified"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "elementType": "geometry.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#27d349"
-                                                    },
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "elementType": "labels",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "elementType": "labels.text",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.park",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#9e9e9e"
-                                                    },
-                                                    {
-                                                      "saturation": 45
-                                                    },
-                                                    {
-                                                      "lightness": -20
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "geometry.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#ffd800"
-                                                    },
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "geometry.stroke",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "labels",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "labels.text",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    },
-                                                    {
-                                                      "weight": 5
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "poi.school",
-                                                  "elementType": "labels.text.stroke",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "on"
-                                                    },
-                                                    {
-                                                      "weight": 3.5
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#ffffff"
-                                                    },
-                                                    {
-                                                      "visibility": "simplified"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road",
-                                                  "elementType": "labels.icon",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road.arterial",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#757575"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road.highway",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#dadada"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road.highway",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#616161"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road.local",
-                                                  "elementType": "labels",
-                                                  "stylers": [
-                                                    {
-                                                      "visibility": "off"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "road.local",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#9e9e9e"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "transit",
-                                                  "elementType": "geometry.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#7ea3ec"
-                                                    },
-                                                    {
-                                                      "saturation": -50
-                                                    },
-                                                    {
-                                                      "lightness": 50
-                                                    },
-                                                    {
-                                                      "visibility": "on"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "water",
-                                                  "elementType": "geometry",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#c9c9c9"
-                                                    }
-                                                  ]
-                                                },
-                                                {
-                                                  "featureType": "water",
-                                                  "elementType": "labels.text.fill",
-                                                  "stylers": [
-                                                    {
-                                                      "color": "#9e9e9e"
-                                                    }
-                                                  ]
-                                                }
-                                              ],
-                                        }}
-                                    >
-                                        <IonGrid className="search-container">
-                                            <IonRow className="current-location">
-                                                <IonButton onClick={getLocation}>
-                                                    <IonIcon icon={locateOutline} />
-                                                </IonButton>
-                                                <IonCol>
-                                                    <StandaloneSearchBox
-                                                        onLoad={onLoadStartingLocation}
-                                                        onPlacesChanged={onPlaceChangedStart}
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            autoComplete="on"
-                                                            placeholder={userLocationAddress}
-                                                            style={{
-                                                                width: "300px",
-                                                                height: "40px",
-                                                            }}
-                                                        />
-                                                    </StandaloneSearchBox>
-                                                </IonCol>
-                                            </IonRow>
-                                        </IonGrid>
-                                        {bikeBusRoutes.map((route: any) => (
-                                            <React.Fragment key={route.id}>
-                                                <Polyline
-                                                    path={route.pathCoordinates}
-                                                    options={{
-                                                        strokeColor: "#000000", // Border color
-                                                        strokeOpacity: 1,
-                                                        strokeWeight: 5, // Border thickness
-                                                    }}
-                                                    onClick={() => handleBikeBusRouteClick(route.id)}
-                                                />
-                                                <Polyline
-                                                    path={route.pathCoordinates}
-                                                    options={{
-                                                        strokeColor: "#ffd800", // Main line color
-                                                        strokeOpacity: 1,
-                                                        strokeWeight: 3,
-                                                    }}
-                                                    onClick={() => handleBikeBusRouteClick(route.id)}
-                                                />
-                                                {route.startPoint && (
-                                                    <React.Fragment key={`${route.id}-start`}>
-                                                        <Marker
-                                                            position={route.startPoint}
-                                                            onClick={() => handleMarkerClick(route.startPoint)}
-                                                            label={"Start"}
-                                                        />
-                                                    </React.Fragment>
-                                                )}
-                                                {route.endPoint && (
-                                                    <React.Fragment key={`${route.id}-end`}>
-                                                        <Marker
-                                                            position={route.endPoint}
-                                                            onClick={() => handleMarkerClick(route.endPoint)}
-                                                            label={"End"}
-                                                        />
-                                                    </React.Fragment>
-                                                )}
-                                                {route.BikeBusStop && route.BikeBusStop.map((stop: any) => (
-                                                    <React.Fragment key={`${route.id}-${stop.id}`}>
-                                                        <Circle
-                                                            center={stop.coordinates}
-                                                            radius={50}
-                                                            onClick={() => handleMarkerClick(stop)}
-                                                            options={{
-                                                                fillColor: "#000000",
-                                                                fillOpacity: 1,
-                                                                strokeColor: "#000000",
-                                                                strokeOpacity: 1,
-                                                                strokeWeight: 1,
-                                                            }}
-                                                        />
-                                                    </React.Fragment>
-                                                ))}
-                                            </React.Fragment>
-                                        ))}
+  };
 
 
-                                        <div>
-                                            {user && isAnonymous && userLocation && (
-                                                <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />
-                                            )}
-                                            {user && !isAnonymous && userLocation && (
-                                                <AvatarMapMarker uid={user.uid} position={userLocation} />
-                                            )}
-                                        </div>
-                                        <div>
-                                            {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                                        </div>
-                                    </GoogleMap>
-                                </React.Fragment>
-                            ))}
-                                </IonRow>
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          {headerContext?.showHeader && <IonHeader></IonHeader>}
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
+        {!showMap && (
+          <>
+            <IonGrid>
+              <IonRow className="location-button-container">
+                <IonCol>
+                  <IonButton onClick={getLocation}>
+                    Start Map by retrieving your Current Location
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+              <IonRow></IonRow>
+            </IonGrid>
+          </>
+        )}
+        {showMap && (
+          <IonGrid fixed={false}>
+            <IonRow className="map-base">
+              {bikeBusRoutes.map((route: any) => (
+                <React.Fragment key={route.id}>
+                  <GoogleMap
+                    key={route.id}
+                    onLoad={(map) => {
+                      mapRef.current = map;
+                    }}
+                    mapContainerStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    center={mapCenter}
+                    zoom={14}
+                    options={{
+                      disableDefaultUI: true,
+                      zoomControl: false,
+                      mapTypeControl: false,
+                      disableDoubleClickZoom: true,
+                      maxZoom: 18,
+                      styles: [
+                        {
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#f5f5f5"
+                            }
+                          ]
+                        },
+                        {
+                          "elementType": "labels.icon",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#616161"
+                            }
+                          ]
+                        },
+                        {
+                          "elementType": "labels.text.stroke",
+                          "stylers": [
+                            {
+                              "color": "#f5f5f5"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "administrative",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "administrative.land_parcel",
+                          "elementType": "labels",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "administrative.land_parcel",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#bdbdbd"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "administrative.neighborhood",
+                          "elementType": "geometry.fill",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "administrative.neighborhood",
+                          "elementType": "labels.text",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#eeeeee"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi",
+                          "elementType": "labels.text",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#757575"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.business",
+                          "stylers": [
+                            {
+                              "visibility": "simplified"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.business",
+                          "elementType": "labels.text",
+                          "stylers": [
+                            {
+                              "saturation": -65
+                            },
+                            {
+                              "lightness": 50
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#e5e5e5"
+                            },
+                            {
+                              "visibility": "simplified"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "elementType": "geometry.fill",
+                          "stylers": [
+                            {
+                              "color": "#27d349"
+                            },
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "elementType": "labels",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "elementType": "labels.text",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.park",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#9e9e9e"
+                            },
+                            {
+                              "saturation": 45
+                            },
+                            {
+                              "lightness": -20
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "geometry.fill",
+                          "stylers": [
+                            {
+                              "color": "#ffd800"
+                            },
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "geometry.stroke",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "labels",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "labels.text",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            },
+                            {
+                              "weight": 5
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "poi.school",
+                          "elementType": "labels.text.stroke",
+                          "stylers": [
+                            {
+                              "visibility": "on"
+                            },
+                            {
+                              "weight": 3.5
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#ffffff"
+                            },
+                            {
+                              "visibility": "simplified"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road",
+                          "elementType": "labels.icon",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road.arterial",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#757575"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road.highway",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#dadada"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road.highway",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#616161"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road.local",
+                          "elementType": "labels",
+                          "stylers": [
+                            {
+                              "visibility": "off"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "road.local",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#9e9e9e"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "transit",
+                          "elementType": "geometry.fill",
+                          "stylers": [
+                            {
+                              "color": "#7ea3ec"
+                            },
+                            {
+                              "saturation": -50
+                            },
+                            {
+                              "lightness": 50
+                            },
+                            {
+                              "visibility": "on"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "water",
+                          "elementType": "geometry",
+                          "stylers": [
+                            {
+                              "color": "#c9c9c9"
+                            }
+                          ]
+                        },
+                        {
+                          "featureType": "water",
+                          "elementType": "labels.text.fill",
+                          "stylers": [
+                            {
+                              "color": "#9e9e9e"
+                            }
+                          ]
+                        }
+                      ],
+                    }}
+                  >
+                    <IonGrid className="search-container">
+                      <IonRow className="current-location">
+                        <IonButton onClick={getLocation}>
+                          <IonIcon icon={locateOutline} />
+                        </IonButton>
+                        <IonCol>
+                          <StandaloneSearchBox
+                            onLoad={onLoadStartingLocation}
+                            onPlacesChanged={onPlaceChangedStart}
+                          >
+                            <input
+                              type="text"
+                              autoComplete="on"
+                              placeholder={userLocationAddress}
+                              style={{
+                                width: "300px",
+                                height: "40px",
+                              }}
+                            />
+                          </StandaloneSearchBox>
+                        </IonCol>
+                      </IonRow>
                     </IonGrid>
-                )}
-            </IonContent>
-        </IonPage>
-    );
+                    {bikeBusRoutes.map((route: any) => (
+                      <React.Fragment key={route.id}>
+                        <Polyline
+                          path={route.pathCoordinates}
+                          options={{
+                            strokeColor: "#000000", // Border color
+                            strokeOpacity: 1,
+                            strokeWeight: 5, // Border thickness
+                          }}
+                          onClick={() => handleBikeBusRouteClick(route.id)}
+                        />
+                        <Polyline
+                          path={route.pathCoordinates}
+                          options={{
+                            strokeColor: "#ffd800", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 3,
+                          }}
+                          onClick={() => handleBikeBusRouteClick(route.id)}
+                        />
+                        {route.startPoint && (
+                          <React.Fragment key={`${route.id}-start`}>
+                            <Circle
+                              center={route.startPoint}
+                              radius={50}
+                              options={{
+                                fillColor: "#000000",
+                                fillOpacity: 1,
+                                strokeColor: "#000000",
+                                strokeOpacity: 1,
+                                strokeWeight: 1,
+                              }}
+                              onClick={() => handleMarkerClick(route.startPoint)}
+                            />
+                            <Marker
+                              position={route.startPoint}
+                              onClick={() => handleMarkerClick(route.startPoint)}
+                              label={{
+                                text: route.BikeBusGroupName,
+                                className: "marker-label",
+                              }}
+                              labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
+                            />
+                          </React.Fragment>
+                        )}
+                        {route.endPoint && (
+                          <React.Fragment key={`${route.id}-end`}>
+                            <Circle
+                              center={route.endPoint}
+                              radius={50}
+                              options={{
+                                fillColor: "#000000",
+                                fillOpacity: 1,
+                                strokeColor: "#000000",
+                                strokeOpacity: 1,
+                                strokeWeight: 1,
+                              }}
+                              onClick={() => handleMarkerClick(route.endPoint)}
+                            />
+                            <Marker
+                              position={route.endPoint}
+                              onClick={() => handleMarkerClick(route.endPoint)}
+                              label={{
+                                text: route.BikeBusGroupName,
+                                className: "marker-label",
+                              }}
+                              labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
+                            />
+                          </React.Fragment>
+                        )}
+                        {route.BikeBusStop &&
+                          route.BikeBusStop.map((stop: any) => (
+                            <React.Fragment key={`${route.id}-${stop.id}`}>
+                              <Circle
+                                center={stop.coordinates}
+                                radius={50}
+                                onClick={() => handleMarkerClick(stop)}
+                                options={{
+                                  fillColor: "#000000",
+                                  fillOpacity: 1,
+                                  strokeColor: "#000000",
+                                  strokeOpacity: 1,
+                                  strokeWeight: 1,
+                                }}
+                              />
+                              <Marker
+                                position={stop.coordinates}
+                                onClick={() => handleMarkerClick(stop)}
+                                label={{
+                                  text: stop.name,
+                                  className: "marker-label",
+                                }}
+                                labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
+                              />
+                            </React.Fragment>
+                          ))}
+                      </React.Fragment>
+                    ))}
+
+                    <div>
+                      {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                    </div>
+                  </GoogleMap>
+                </React.Fragment>
+              ))}
+            </IonRow>
+          </IonGrid>
+        )}
+      </IonContent>
+    </IonPage>
+  );
 };
 
 export default SearchForBikeBus;
