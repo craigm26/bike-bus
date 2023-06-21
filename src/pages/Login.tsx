@@ -87,8 +87,8 @@ const Login: React.FC = () => {
       <IonHeader>
       </IonHeader>
       <IonContent className='login-container'>
-        <IonRow className="welcome-to-bikebus">
-          <IonText color="primary">
+        <IonRow className="welcome-to-bikebus" background-color="primary">
+          <IonText color="secondary">
             <h1>BikeBus</h1>
           </IonText>
         </IonRow>
