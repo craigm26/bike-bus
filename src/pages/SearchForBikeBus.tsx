@@ -843,7 +843,6 @@ const SearchForBikeBus: React.FC = () => {
                             <Marker
                               position={route.startPoint}
                               onClick={() => handleMarkerClick(route.startPoint)}
-                              icon={null}
                             >
                               <InfoWindow>
                                 <div className="marker-label">{route.BikeBusGroupName}</div>
@@ -868,7 +867,6 @@ const SearchForBikeBus: React.FC = () => {
                             <Marker
                               position={route.endPoint}
                               onClick={() => handleMarkerClick(route.endPoint)}
-                              icon={null}
                             >
                               <InfoWindow>
                                 <div className="marker-label">{route.BikeBusGroupName}</div>
@@ -894,7 +892,6 @@ const SearchForBikeBus: React.FC = () => {
                               <Marker
                                 position={stop.coordinates}
                                 onClick={() => handleMarkerClick(stop)}
-                                icon={null}
                               >
                                 <InfoWindow>
                                   <div className="marker-label">{stop.name}</div>
