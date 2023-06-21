@@ -15,7 +15,7 @@ import "./Map.css";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { collection, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import {
     locateOutline,
@@ -26,7 +26,9 @@ import {
     Marker,
     useJsApiLoader,
     LoadScript,
-    Polyline
+    Polyline,
+    InfoWindow,
+    Circle
 } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -101,6 +103,7 @@ const SearchForBikeBus: React.FC = () => {
     const [endPointAddress, setEndPointAddress] = useState<string>("");
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
+    const [route, setRoute] = useState<DocumentData | null>(null);
 
     const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
 
@@ -328,6 +331,34 @@ const SearchForBikeBus: React.FC = () => {
         setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
     };
 
+    // handleMarkerClick(stop)
+    const handleMarkerClick = (stop: any) => {
+        console.log("handleMarkerClick called");
+        console.log("stop: ", stop);
+        const stopId = stop.id;
+        const stopName = stop.name;
+        const stopRoutes = stop.routes;
+        const stopRoutesArray = stopRoutes?.split(",");
+        const stopRoutesString = stopRoutesArray?.join(", ");
+        console.log("stopRoutesString: ", stopRoutesString);
+        // Show an InfoWindow with the stop name
+        const infoWindow = new google.maps.InfoWindow({
+            content: `<div>${stopName}
+            <br>
+            Routes: ${stopRoutesString}
+            </div>`,
+        });
+        infoWindow.open(mapRef.current, stopId);
+        // show the routes that stop at this stop and then show the next 3 arrival times for each route
+        // get the routes that stop at this stop
+        const stopRoutesArray2 = stopRoutes?.split(",");
+        console.log("stopRoutesArray2: ", stopRoutesArray2);
+        // get the routes that stop at this stop from firebase
+
+    };
+
+
+
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
@@ -357,109 +388,495 @@ const SearchForBikeBus: React.FC = () => {
                 {showMap && (
                     <IonGrid fixed={false}>
                         <IonRow className="map-base">
-                            <GoogleMap
-                                onLoad={(map) => {
-                                    mapRef.current = map;
-                                }}
-                                mapContainerStyle={{
-                                    width: "100%",
-                                    height: "100%",
-                                }}
-                                center={mapCenter}
-                                zoom={14}
-                                options={{
-                                    disableDefaultUI: true,
-                                    zoomControl: false,
-                                    mapTypeControl: false,
-                                    disableDoubleClickZoom: true,
-                                    maxZoom: 18,
-                                    styles: [
-                                        {
-                                            featureType: "all",
-                                            elementType: "labels",
-                                            stylers: [
+                            {bikeBusRoutes.map((route: any) => (
+                                <React.Fragment key={route.id}>
+                                    <GoogleMap
+                                        key={route.id}
+                                        onLoad={(map) => {
+                                            mapRef.current = map;
+                                        }}
+                                        mapContainerStyle={{
+                                            width: "100%",
+                                            height: "100%",
+                                        }}
+                                        center={mapCenter}
+                                        zoom={14}
+                                        options={{
+                                            disableDefaultUI: true,
+                                            zoomControl: false,
+                                            mapTypeControl: false,
+                                            disableDoubleClickZoom: true,
+                                            maxZoom: 18,
+                                            styles: [
                                                 {
-                                                    saturation: -100,
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#f5f5f5"
+                                                    }
+                                                  ]
                                                 },
                                                 {
-                                                    lightness: 50,
-                                                },
-                                            ],
-                                        },
-                                        {
-                                            featureType: "road",
-                                            elementType: "geometry",
-                                            stylers: [
-                                                {
-                                                    saturation: -100,
+                                                  "elementType": "labels.icon",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
                                                 },
                                                 {
-                                                    lightness: 30,
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#616161"
+                                                    }
+                                                  ]
                                                 },
-                                            ],
-                                        },
-                                    ],
-                                }}
-                            >
-                                <IonGrid className="search-container">
-                                    <IonRow className="current-location">
-                                        <IonButton onClick={getLocation}>
-                                            <IonIcon icon={locateOutline} />
-                                        </IonButton>
-                                        <IonCol>
-                                            <StandaloneSearchBox
-                                                onLoad={onLoadStartingLocation}
-                                                onPlacesChanged={onPlaceChangedStart}
-                                            >
-                                                <input
-                                                    type="text"
-                                                    autoComplete="on"
-                                                    placeholder={userLocationAddress}
-                                                    style={{
-                                                        width: "300px",
-                                                        height: "40px",
+                                                {
+                                                  "elementType": "labels.text.stroke",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#f5f5f5"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "administrative",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "administrative.land_parcel",
+                                                  "elementType": "labels",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "administrative.land_parcel",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#bdbdbd"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "administrative.neighborhood",
+                                                  "elementType": "geometry.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "administrative.neighborhood",
+                                                  "elementType": "labels.text",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#eeeeee"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi",
+                                                  "elementType": "labels.text",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#757575"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.business",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "simplified"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.business",
+                                                  "elementType": "labels.text",
+                                                  "stylers": [
+                                                    {
+                                                      "saturation": -65
+                                                    },
+                                                    {
+                                                      "lightness": 50
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#e5e5e5"
+                                                    },
+                                                    {
+                                                      "visibility": "simplified"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "elementType": "geometry.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#27d349"
+                                                    },
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "elementType": "labels",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "elementType": "labels.text",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.park",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#9e9e9e"
+                                                    },
+                                                    {
+                                                      "saturation": 45
+                                                    },
+                                                    {
+                                                      "lightness": -20
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "geometry.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#ffd800"
+                                                    },
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "geometry.stroke",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "labels",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "labels.text",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    },
+                                                    {
+                                                      "weight": 5
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "poi.school",
+                                                  "elementType": "labels.text.stroke",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "on"
+                                                    },
+                                                    {
+                                                      "weight": 3.5
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#ffffff"
+                                                    },
+                                                    {
+                                                      "visibility": "simplified"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road",
+                                                  "elementType": "labels.icon",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road.arterial",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#757575"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road.highway",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#dadada"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road.highway",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#616161"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road.local",
+                                                  "elementType": "labels",
+                                                  "stylers": [
+                                                    {
+                                                      "visibility": "off"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "road.local",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#9e9e9e"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "transit",
+                                                  "elementType": "geometry.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#7ea3ec"
+                                                    },
+                                                    {
+                                                      "saturation": -50
+                                                    },
+                                                    {
+                                                      "lightness": 50
+                                                    },
+                                                    {
+                                                      "visibility": "on"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "water",
+                                                  "elementType": "geometry",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#c9c9c9"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "featureType": "water",
+                                                  "elementType": "labels.text.fill",
+                                                  "stylers": [
+                                                    {
+                                                      "color": "#9e9e9e"
+                                                    }
+                                                  ]
+                                                }
+                                              ],
+                                        }}
+                                    >
+                                        <IonGrid className="search-container">
+                                            <IonRow className="current-location">
+                                                <IonButton onClick={getLocation}>
+                                                    <IonIcon icon={locateOutline} />
+                                                </IonButton>
+                                                <IonCol>
+                                                    <StandaloneSearchBox
+                                                        onLoad={onLoadStartingLocation}
+                                                        onPlacesChanged={onPlaceChangedStart}
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            autoComplete="on"
+                                                            placeholder={userLocationAddress}
+                                                            style={{
+                                                                width: "300px",
+                                                                height: "40px",
+                                                            }}
+                                                        />
+                                                    </StandaloneSearchBox>
+                                                </IonCol>
+                                            </IonRow>
+                                        </IonGrid>
+                                        {bikeBusRoutes.map((route: any) => (
+                                            <React.Fragment key={route.id}>
+                                                <Polyline
+                                                    path={route.pathCoordinates}
+                                                    options={{
+                                                        strokeColor: "#000000", // Border color
+                                                        strokeOpacity: 1,
+                                                        strokeWeight: 5, // Border thickness
                                                     }}
+                                                    onClick={() => handleBikeBusRouteClick(route.id)}
                                                 />
-                                            </StandaloneSearchBox>
-                                        </IonCol>
-                                    </IonRow>
-                                </IonGrid>
-                                {bikeBusRoutes.map((route: any) => (
-                                    <React.Fragment key={route.id}>
-                                        <Polyline
-                                            path={route.pathCoordinates}
-                                            options={{
-                                                strokeColor: "#000000", // Border color
-                                                strokeOpacity: 1,
-                                                strokeWeight: 5, // Border thickness
-                                            }}
-                                            onClick={() => handleBikeBusRouteClick(route.id)}
-                                        />
-                                        <Polyline
-                                            path={route.pathCoordinates}
-                                            options={{
-                                                strokeColor: "#ffd800", // Main line color
-                                                strokeOpacity: 1,
-                                                strokeWeight: 3,
-                                            }}
-                                            onClick={() => handleBikeBusRouteClick(route.id)}
-                                        />
-                                    </React.Fragment>
-                                ))}
+                                                <Polyline
+                                                    path={route.pathCoordinates}
+                                                    options={{
+                                                        strokeColor: "#ffd800", // Main line color
+                                                        strokeOpacity: 1,
+                                                        strokeWeight: 3,
+                                                    }}
+                                                    onClick={() => handleBikeBusRouteClick(route.id)}
+                                                />
+                                                {route.startPoint && (
+                                                    <React.Fragment key={`${route.id}-start`}>
+                                                        <Marker
+                                                            position={route.startPoint}
+                                                            onClick={() => handleMarkerClick(route.startPoint)}
+                                                            label={"Start"}
+                                                        />
+                                                    </React.Fragment>
+                                                )}
+                                                {route.endPoint && (
+                                                    <React.Fragment key={`${route.id}-end`}>
+                                                        <Marker
+                                                            position={route.endPoint}
+                                                            onClick={() => handleMarkerClick(route.endPoint)}
+                                                            label={"End"}
+                                                        />
+                                                    </React.Fragment>
+                                                )}
+                                                {route.BikeBusStop && route.BikeBusStop.map((stop: any) => (
+                                                    <React.Fragment key={`${route.id}-${stop.id}`}>
+                                                        <Circle
+                                                            center={stop.coordinates}
+                                                            radius={50}
+                                                            onClick={() => handleMarkerClick(stop)}
+                                                            options={{
+                                                                fillColor: "#000000",
+                                                                fillOpacity: 1,
+                                                                strokeColor: "#000000",
+                                                                strokeOpacity: 1,
+                                                                strokeWeight: 1,
+                                                            }}
+                                                        />
+                                                    </React.Fragment>
+                                                ))}
+                                            </React.Fragment>
+                                        ))}
 
-                                <div>
-                                    {user && isAnonymous && userLocation && (
-                                        <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />
-                                    )}
-                                    {user && !isAnonymous && userLocation && (
-                                        <AvatarMapMarker uid={user.uid} position={userLocation} />
-                                    )}
-                                </div>
-                                <div>
-                                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                                </div>
-                            </GoogleMap>
-                        </IonRow>
+
+                                        <div>
+                                            {user && isAnonymous && userLocation && (
+                                                <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />
+                                            )}
+                                            {user && !isAnonymous && userLocation && (
+                                                <AvatarMapMarker uid={user.uid} position={userLocation} />
+                                            )}
+                                        </div>
+                                        <div>
+                                            {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                                        </div>
+                                    </GoogleMap>
+                                </React.Fragment>
+                            ))}
+                                </IonRow>
                     </IonGrid>
                 )}
             </IonContent>
