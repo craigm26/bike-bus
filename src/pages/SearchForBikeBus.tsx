@@ -843,12 +843,12 @@ const SearchForBikeBus: React.FC = () => {
                             <Marker
                               position={route.startPoint}
                               onClick={() => handleMarkerClick(route.startPoint)}
-                              label={{
-                                text: route.BikeBusGroupName,
-                                className: "marker-label",
-                              }}
-                              labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
-                            />
+                              icon={null}
+                            >
+                              <InfoWindow>
+                                <div className="marker-label">{route.BikeBusGroupName}</div>
+                              </InfoWindow>
+                            </Marker>
                           </React.Fragment>
                         )}
                         {route.endPoint && (
@@ -868,12 +868,12 @@ const SearchForBikeBus: React.FC = () => {
                             <Marker
                               position={route.endPoint}
                               onClick={() => handleMarkerClick(route.endPoint)}
-                              label={{
-                                text: route.BikeBusGroupName,
-                                className: "marker-label",
-                              }}
-                              labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
-                            />
+                              icon={null}
+                            >
+                              <InfoWindow>
+                                <div className="marker-label">{route.BikeBusGroupName}</div>
+                              </InfoWindow>
+                            </Marker>
                           </React.Fragment>
                         )}
                         {route.BikeBusStop &&
@@ -894,12 +894,12 @@ const SearchForBikeBus: React.FC = () => {
                               <Marker
                                 position={stop.coordinates}
                                 onClick={() => handleMarkerClick(stop)}
-                                label={{
-                                  text: stop.name,
-                                  className: "marker-label",
-                                }}
-                                labelAnchor={new window.google.maps.Point(0, -15)} // Adjust the offset
-                              />
+                                icon={null}
+                              >
+                                <InfoWindow>
+                                  <div className="marker-label">{stop.name}</div>
+                                </InfoWindow>
+                              </Marker>
                             </React.Fragment>
                           ))}
                       </React.Fragment>
