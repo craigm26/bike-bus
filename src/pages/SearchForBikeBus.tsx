@@ -806,7 +806,6 @@ const SearchForBikeBus: React.FC = () => {
                         </IonCol>
                       </IonRow>
                     </IonGrid>
-                    {bikeBusRoutes.map((route: any) => (
                       <React.Fragment key={route.id}>
                         <Polyline
                           path={route.pathCoordinates}
@@ -818,89 +817,43 @@ const SearchForBikeBus: React.FC = () => {
                           onClick={() => handleBikeBusRouteClick(route.id)}
                         />
                         <Polyline
+                          // label the polyline with the BikeBusGroupName
                           path={route.pathCoordinates}
                           options={{
                             strokeColor: "#ffd800", // Main line color
                             strokeOpacity: 1,
                             strokeWeight: 3,
                           }}
-                          onClick={() => handleBikeBusRouteClick(route.id)}
                         />
                         {route.startPoint && (
                           <React.Fragment key={`${route.id}-start`}>
-                            <Circle
-                              center={route.startPoint}
-                              radius={50}
-                              options={{
-                                fillColor: "#000000",
-                                fillOpacity: 1,
-                                strokeColor: "#000000",
-                                strokeOpacity: 1,
-                                strokeWeight: 1,
-                              }}
-                              onClick={() => handleMarkerClick(route.startPoint)}
-                            />
                             <Marker
                               position={route.startPoint}
                               onClick={() => handleMarkerClick(route.startPoint)}
                             >
-                              <InfoWindow>
-                                <div className="marker-label">{route.BikeBusGroupName}</div>
-                              </InfoWindow>
                             </Marker>
                           </React.Fragment>
                         )}
                         {route.endPoint && (
                           <React.Fragment key={`${route.id}-end`}>
-                            <Circle
-                              center={route.endPoint}
-                              radius={50}
-                              options={{
-                                fillColor: "#000000",
-                                fillOpacity: 1,
-                                strokeColor: "#000000",
-                                strokeOpacity: 1,
-                                strokeWeight: 1,
-                              }}
-                              onClick={() => handleMarkerClick(route.endPoint)}
-                            />
                             <Marker
                               position={route.endPoint}
                               onClick={() => handleMarkerClick(route.endPoint)}
                             >
-                              <InfoWindow>
-                                <div className="marker-label">{route.BikeBusGroupName}</div>
-                              </InfoWindow>
                             </Marker>
                           </React.Fragment>
                         )}
                         {route.BikeBusStop &&
                           route.BikeBusStop.map((stop: any) => (
                             <React.Fragment key={`${route.id}-${stop.id}`}>
-                              <Circle
-                                center={stop.coordinates}
-                                radius={50}
-                                onClick={() => handleMarkerClick(stop)}
-                                options={{
-                                  fillColor: "#000000",
-                                  fillOpacity: 1,
-                                  strokeColor: "#000000",
-                                  strokeOpacity: 1,
-                                  strokeWeight: 1,
-                                }}
-                              />
                               <Marker
                                 position={stop.coordinates}
                                 onClick={() => handleMarkerClick(stop)}
                               >
-                                <InfoWindow>
-                                  <div className="marker-label">{stop.name}</div>
-                                </InfoWindow>
                               </Marker>
                             </React.Fragment>
                           ))}
                       </React.Fragment>
-                    ))}
 
                     <div>
                       {selectedStartLocation && <Marker position={selectedStartLocation} />}
