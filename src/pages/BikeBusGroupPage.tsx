@@ -49,6 +49,12 @@ const BikeBusGroupPage: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [eventsData, setEventsData] = useState<any[]>([]);
   const [messagesData, setMessagesData] = useState<any[]>([]);
+  const [bulletinBoard, setBulletinBoard] = useState<BulletinBoard>({ Messages: [] });
+  const [eventIds, setEventIds] = useState<string[]>([]);
+  const [eventId, setEventId] = useState<string[]>([]);
+  const [eventData, setEventData] = useState<any[]>([]);
+  const [eventDocs, setEventDocs] = useState<any[]>([]);
+  const [eventDocsData, setEventDocsData] = useState<any[]>([]);
 
 
   const headerContext = useContext(HeaderContext);
@@ -236,52 +242,54 @@ const BikeBusGroupPage: React.FC = () => {
 
   // event is a firestore collection with event documents. We should use the bikebusgorupid to lookup the event documents that belong to the bikebusgroup.
   const fetchEvents = useCallback(async () => {
-    if (groupData?.BikeBusEvents && Array.isArray(groupData.BikeBusEvents)) {
-      const events = groupData.BikeBusEvents.map((event: any) => {
-        return getDoc(event).then((docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const eventData = docSnapshot.data();
-            // Check if eventData exists before spreading
-            return eventData ? {
-              ...eventData,
-              id: docSnapshot.id,
-              groupId: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          } else {
-            console.log("No such document!");
-          }
-        })
-          .catch((error) => {
-            console.log("Error getting event document:", error);
-          });
-      }
-      );
-      const eventsData = await Promise.all(events);
-      setEventsData(eventsData);
+    console.log("fetchEvents called");
+    console.log("groupData", groupData);
+    console.log("groupData.BikeBusEvents", groupData.events);
+    const events = groupData.events?.map((eventRef: any) => {
+      console.log("eventRef", eventRef);
+      return getDoc(eventRef).then((docSnapshot) => {  // pass the whole reference object
+        if (docSnapshot.exists()) {
+          const eventData = docSnapshot.data();
+          console.log(eventData);
+          // Check if eventData exists before spreading
+          return eventData ? {
+            ...eventData,
+            id: docSnapshot.id,
+            groupId: docSnapshot.id,
+          } : { id: docSnapshot.id };
+        } else {
+          console.log("No such document!");
+        }
+      })
+        .catch((error) => {
+          console.log("Error getting event document:", error);
+        });
     }
+    ) || [];
   }
     , [groupData]);
 
-    const fetchBulletinBoard = useCallback(async () => {
-      if (groupData?.bulletinboard) {
-        const bulletinBoardRef = groupData.bulletinboard;
-        const bulletinBoardDoc = await getDoc(bulletinBoardRef);
-    
-        if (bulletinBoardDoc.exists()) {
-          const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
-          const messagesData = bulletinBoardData?.Messages || [];
-          setMessagesData(messagesData);
-        } else {
-          // Handle the case when the bulletin board document doesn't exist
-        }
+  const fetchBulletinBoard = useCallback(async () => {
+    console.log("fetchBulletinBoard called");
+    if (groupData?.bulletinboard) {
+      const bulletinBoardRef = groupData.bulletinboard;
+      const bulletinBoardDoc = await getDoc(bulletinBoardRef);
+
+      if (bulletinBoardDoc.exists()) {
+        const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
+        const messagesData = bulletinBoardData?.Messages || [];
+        setMessagesData(messagesData);
       } else {
-        // Handle the case when the bulletin board reference is missing
+        // Handle the case when the bulletin board document doesn't exist
       }
-    
-      // Move this line inside the fetchBulletinBoard function
-    }, [groupData]);
-    
-    
+    } else {
+      // Handle the case when the bulletin board reference is missing
+    }
+
+    // Move this line inside the fetchBulletinBoard function
+  }, [groupData]);
+
+
 
   useEffect(() => {
     fetchRoutes();
@@ -329,6 +337,22 @@ const BikeBusGroupPage: React.FC = () => {
     await navigator.clipboard.writeText(window.location.href);
     alert('Copied URL to clipboard!');
   };
+
+  // the next event (From the fetchEvents array of startTime) is the event that is closest to the current time. write a function to help determine what the next event is.
+  const nextEvent = () => {
+    const now = new Date();
+    const nextEvent = eventsData?.filter((event) => {
+      return event.startTime > now;
+    }
+    );
+    return nextEvent;
+  };
+
+  // return the document id of the nextEvent and call it nextEventId
+  const nextEventId = nextEvent()?.[0]?.id;
+  
+
+
 
   return (
     <IonPage>
@@ -442,6 +466,10 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonItem>
                 <IonItem>
                   <IonLabel>Next Event:</IonLabel>
+                  <Link to={`/Event/${nextEventId}`}>
+                    <IonButton>{nextEvent()?.map((event) => event?.eventName)}</IonButton>
+                  </Link>
+
                 </IonItem>
                 <IonItem>
                   <IonList>
@@ -454,13 +482,13 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonItem>
               </IonList>
               <IonList>
-              <IonText>BulletinBoard</IonText>
-              {messagesData.map((message, index) => (
-                <IonItem key={index}>
-                  <IonLabel>{message?.message}</IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
+                <IonText>BulletinBoard</IonText>
+                {messagesData.map((message, index) => (
+                  <IonItem key={index}>
+                    <IonLabel>{message?.message}</IonLabel>
+                  </IonItem>
+                ))}
+              </IonList>
             </div>
           </IonCardContent>
         </IonCard>

@@ -38,6 +38,7 @@ import ViewSchedule from './pages/ViewSchedule';
 import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
 import SearchForBikeBus from './pages/SearchForBikeBus';
+import Event from './pages/Event';
 
 
 import '@ionic/react/css/core.css';
@@ -312,6 +313,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route path="/editbikebus/:id" exact>
                         <EditBikeBus />
+                      </Route>
+                      <Route path="/event/:id" exact>
+                        <Event />
                       </Route>
                       <Route exact path="/Profile">
                         <Profile />
