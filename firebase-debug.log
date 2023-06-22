@@ -1,0 +1,197 @@
+[debug] [2023-06-22T18:15:00.244Z] ----------------------------------------------------------------------
+[debug] [2023-06-22T18:15:00.245Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2023-06-22T18:15:00.245Z] CLI Version:   12.4.0
+[debug] [2023-06-22T18:15:00.246Z] Platform:      win32
+[debug] [2023-06-22T18:15:00.246Z] Node Version:  v18.16.0
+[debug] [2023-06-22T18:15:00.246Z] Time:          Thu Jun 22 2023 11:15:00 GMT-0700 (Pacific Daylight Time)
+[debug] [2023-06-22T18:15:00.247Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-06-22T18:15:00.295Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-06-22T18:15:00.296Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2023-06-22T18:15:00.296Z] [iam] checking project bikebus-71dd5 for permissions ["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]
+[debug] [2023-06-22T18:15:00.297Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions [none]
+[debug] [2023-06-22T18:15:00.297Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:00.298Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]}
+[debug] [2023-06-22T18:15:00.525Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions 200
+[debug] [2023-06-22T18:15:00.525Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["cloudconfig.configs.get","cloudconfig.configs.update","cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasedatabase.instances.update","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[debug] [2023-06-22T18:15:00.526Z] [iam] error while checking permissions, command may fail: FirebaseError: Authorization failed. This account is missing the following required permissions on project bikebus-71dd5:
+
+  
+[debug] [2023-06-22T18:15:00.526Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2023-06-22T18:15:00.527Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2023-06-22T18:15:00.941Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2023-06-22T18:15:00.941Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/bikebus-71dd5/serviceAccounts/bikebus-71dd5@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2023-06-22T18:15:00.943Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:01.221Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:01.221Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[debug] [2023-06-22T18:15:01.222Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:01.510Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:01.510Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[info] 
+[info] === Deploying to 'bikebus-71dd5'...
+[info] 
+[info] i  deploying database, storage, firestore, functions, hosting, remoteconfig, extensions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run lint
+[info] Running command: npm --prefix "$RESOURCE_DIR" run build
+[info] +  functions: Finished running predeploy script. 
+[info] Running command: npm run build
+[info] +  hosting: Finished running predeploy script. 
+[info] i  database: checking rules syntax... 
+[debug] [2023-06-22T18:15:40.143Z] >>> [apiv2][query] GET https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb [none]
+[debug] [2023-06-22T18:15:40.505Z] <<< [apiv2][status] GET https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb 200
+[debug] [2023-06-22T18:15:40.505Z] <<< [apiv2][body] GET https://firebasedatabase.googleapis.com/v1beta/projects/bikebus-71dd5/locations/-/instances/bikebus-71dd5-default-rtdb {"name":"projects/787807444789/locations/us-central1/instances/bikebus-71dd5-default-rtdb","project":"projects/787807444789","databaseUrl":"https://bikebus-71dd5-default-rtdb.firebaseio.com","type":"DEFAULT_DATABASE","state":"ACTIVE"}
+[debug] [2023-06-22T18:15:40.507Z] >>> [apiv2][query] PUT https://bikebus-71dd5-default-rtdb.firebaseio.com/.settings/rules.json dryRun=true
+[debug] [2023-06-22T18:15:40.507Z] >>> [apiv2][body] PUT https://bikebus-71dd5-default-rtdb.firebaseio.com/.settings/rules.json "{\r\n  \"rules\": {\r\n    \".read\": \"auth != null\",\r\n    \".write\": \"auth != null\",\r\n    \"userLocations\": {\r\n      \"$uid\": {\r\n        \".write\": \"$uid === auth.uid\"\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+[debug] [2023-06-22T18:15:40.669Z] <<< [apiv2][status] PUT https://bikebus-71dd5-default-rtdb.firebaseio.com/.settings/rules.json 200
+[debug] [2023-06-22T18:15:40.670Z] <<< [apiv2][body] PUT https://bikebus-71dd5-default-rtdb.firebaseio.com/.settings/rules.json {"status":"ok"}
+[info] +  database: rules syntax for database bikebus-71dd5-default-rtdb is valid 
+[debug] [2023-06-22T18:15:40.673Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:40.918Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:40.918Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[info] i  firebase.storage: checking storage.rules for compilation errors... 
+[debug] [2023-06-22T18:15:40.919Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test [none]
+[debug] [2023-06-22T18:15:40.920Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test [omitted]
+[debug] [2023-06-22T18:15:41.073Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test 200
+[debug] [2023-06-22T18:15:41.073Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test {}
+[info] +  firebase.storage: rules file storage.rules compiled successfully 
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2023-06-22T18:15:41.076Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test [none]
+[debug] [2023-06-22T18:15:41.076Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test [omitted]
+[debug] [2023-06-22T18:15:41.214Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test 200
+[debug] [2023-06-22T18:15:41.214Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/bikebus-71dd5:test {}
+[info] +  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2023-06-22T18:15:41.216Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:41.393Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:41.393Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2023-06-22T18:15:41.400Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudfunctions.googleapis.com [none]
+[debug] [2023-06-22T18:15:41.400Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:41.404Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/runtimeconfig.googleapis.com [none]
+[debug] [2023-06-22T18:15:41.404Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:41.407Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudbuild.googleapis.com [none]
+[debug] [2023-06-22T18:15:41.408Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudbuild.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:41.411Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/artifactregistry.googleapis.com [none]
+[debug] [2023-06-22T18:15:41.411Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/artifactregistry.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:41.924Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/runtimeconfig.googleapis.com 200
+[debug] [2023-06-22T18:15:41.924Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2023-06-22T18:15:41.926Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudfunctions.googleapis.com 200
+[debug] [2023-06-22T18:15:41.926Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudfunctions.googleapis.com [omitted]
+[info] +  functions: required API cloudfunctions.googleapis.com is enabled 
+[debug] [2023-06-22T18:15:41.928Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudbuild.googleapis.com 200
+[debug] [2023-06-22T18:15:41.928Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/cloudbuild.googleapis.com [omitted]
+[info] +  functions: required API cloudbuild.googleapis.com is enabled 
+[debug] [2023-06-22T18:15:41.942Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/artifactregistry.googleapis.com 200
+[debug] [2023-06-22T18:15:41.942Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/artifactregistry.googleapis.com [omitted]
+[info] +  artifactregistry: required API artifactregistry.googleapis.com is enabled 
+[debug] [2023-06-22T18:15:41.943Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5/adminSdkConfig [none]
+[debug] [2023-06-22T18:15:42.137Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5/adminSdkConfig 200
+[debug] [2023-06-22T18:15:42.137Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5/adminSdkConfig {"projectId":"bikebus-71dd5","databaseURL":"https://bikebus-71dd5-default-rtdb.firebaseio.com","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"}
+[debug] [2023-06-22T18:15:42.138Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/bikebus-71dd5/configs [none]
+[debug] [2023-06-22T18:15:42.385Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/bikebus-71dd5/configs 200
+[debug] [2023-06-22T18:15:42.385Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/bikebus-71dd5/configs {}
+[debug] [2023-06-22T18:15:42.389Z] Validating nodejs source
+[debug] [2023-06-22T18:15:43.635Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "lint": "eslint --ext .js,.ts .",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "@sendgrid/mail": "^7.7.0",
+    "firebase-admin": "^11.5.0",
+    "firebase-functions": "^4.4.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "eslint": "^8.9.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.25.4",
+    "firebase-functions-test": "^3.0.0",
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2023-06-22T18:15:43.635Z] Building nodejs source
+[debug] [2023-06-22T18:15:43.636Z] Could not find functions.yaml. Must use http discovery
+[debug] [2023-06-22T18:15:43.646Z] Found firebase-functions binary at 'C:\Users\CraigM\source\repos\bike-bus\functions\node_modules\.bin\firebase-functions'
+[debug] [2023-06-22T18:15:43.835Z] Serving at port 8905
+
+[debug] [2023-06-22T18:15:44.065Z] Got response from /__/functions.yaml {"endpoints":{"sendInviteEmail":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.update","eventFilters":{"resource":"projects/bikebus-71dd5/databases/(default)/documents/bikebusgroups/{groupId}"},"retry":false},"labels":{},"entryPoint":"sendInviteEmail"}},"specVersion":"v1alpha1","requiredAPIs":[]}
+[debug] [2023-06-22T18:15:44.075Z] shutdown requested via /__/quitquitquit
+
+[info] i  functions: preparing functions directory for uploading... 
+[info] i  functions: packaged C:\Users\CraigM\source\repos\bike-bus\functions (86.41 KB) for uploading 
+[debug] [2023-06-22T18:15:44.144Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/bikebus-71dd5/locations/-/functions [none]
+[debug] [2023-06-22T18:15:44.619Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/bikebus-71dd5/locations/-/functions 200
+[debug] [2023-06-22T18:15:44.619Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/bikebus-71dd5/locations/-/functions {"functions":[{"name":"projects/bikebus-71dd5/locations/us-central1/functions/sendInviteEmail","eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.update","resource":"projects/bikebus-71dd5/databases/(default)/documents/bikebusgroups/{groupId}","service":"firestore.googleapis.com","failurePolicy":{}},"status":"ACTIVE","entryPoint":"sendInviteEmail","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"bikebus-71dd5@appspot.gserviceaccount.com","updateTime":"2023-06-15T16:45:18.829Z","versionId":"12","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"57e62c74fb9d0793f596fe14bd227d682c0e0e8e"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-866282389045.us-central1.cloudfunctions.appspot.com/c20334c2-2ada-40c9-8e41-9d96e03996c2.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"bikebus-71dd5\",\"databaseURL\":\"https://bikebus-71dd5-default-rtdb.firebaseio.com\",\"storageBucket\":\"bikebus-71dd5.appspot.com\",\"locationId\":\"us-central\"}","GCLOUD_PROJECT":"bikebus-71dd5","EVENTARC_CLOUD_EVENT_SOURCE":"projects/bikebus-71dd5/locations/us-central1/functions/sendInviteEmail"},"runtime":"nodejs16","maxInstances":3000,"ingressSettings":"ALLOW_ALL","buildId":"daa4e4bb-b046-4991-8511-a61d40d76079","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/787807444789/locations/us-central1/builds/daa4e4bb-b046-4991-8511-a61d40d76079","dockerRegistry":"ARTIFACT_REGISTRY"}]}
+[debug] [2023-06-22T18:15:44.621Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/bikebus-71dd5/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2023-06-22T18:15:45.106Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/bikebus-71dd5/locations/-/functions 200
+[debug] [2023-06-22T18:15:45.106Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/bikebus-71dd5/locations/-/functions {}
+[debug] [2023-06-22T18:15:45.121Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:45.332Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:45.332Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[debug] [2023-06-22T18:15:45.340Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/bikebus-71dd5/versions [none]
+[debug] [2023-06-22T18:15:45.340Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/bikebus-71dd5/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2023-06-22T18:15:46.023Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/bikebus-71dd5/versions 200
+[debug] [2023-06-22T18:15:46.024Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/bikebus-71dd5/versions {"name":"projects/787807444789/sites/bikebus-71dd5/versions/d38f09440e9ba8e9","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2023-06-22T18:15:46.025Z] >>> [apiv2][query] GET https://firebaseremoteconfig.googleapis.com/v1/projects/787807444789/remoteConfig 
+[debug] [2023-06-22T18:15:46.453Z] <<< [apiv2][status] GET https://firebaseremoteconfig.googleapis.com/v1/projects/787807444789/remoteConfig 200
+[debug] [2023-06-22T18:15:46.453Z] <<< [apiv2][body] GET https://firebaseremoteconfig.googleapis.com/v1/projects/787807444789/remoteConfig {"version":{"versionNumber":"276","updateTime":"2023-06-22T18:12:20.218700Z","updateUser":{"email":"craigm26@gmail.com"},"updateOrigin":"REST_API","updateType":"INCREMENTAL_UPDATE"}}
+[info] i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled... 
+[debug] [2023-06-22T18:15:46.456Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/firebaseextensions.googleapis.com [none]
+[debug] [2023-06-22T18:15:46.457Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/firebaseextensions.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:46.919Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/firebaseextensions.googleapis.com 200
+[debug] [2023-06-22T18:15:46.920Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/firebaseextensions.googleapis.com [omitted]
+[info] +  extensions: required API firebaseextensions.googleapis.com is enabled 
+[debug] [2023-06-22T18:15:46.921Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-06-22T18:15:46.922Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2023-06-22T18:15:46.922Z] [iam] checking project bikebus-71dd5 for permissions ["firebase.projects.get","firebaseextensions.instances.list"]
+[debug] [2023-06-22T18:15:46.923Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions [none]
+[debug] [2023-06-22T18:15:46.923Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:46.924Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2023-06-22T18:15:47.019Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions 200
+[debug] [2023-06-22T18:15:47.020Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2023-06-22T18:15:47.021Z] >>> [apiv2][query] GET https://firebaseextensions.googleapis.com/v1beta/projects/bikebus-71dd5/instances pageSize=100&pageToken=
+[debug] [2023-06-22T18:15:47.378Z] <<< [apiv2][status] GET https://firebaseextensions.googleapis.com/v1beta/projects/bikebus-71dd5/instances 200
+[debug] [2023-06-22T18:15:47.379Z] <<< [apiv2][body] GET https://firebaseextensions.googleapis.com/v1beta/projects/bikebus-71dd5/instances {}
+[info] i  extensions: ensuring required API compute.googleapis.com is enabled... 
+[debug] [2023-06-22T18:15:47.382Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/compute.googleapis.com [none]
+[debug] [2023-06-22T18:15:47.382Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/compute.googleapis.com x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:48.034Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/compute.googleapis.com 200
+[debug] [2023-06-22T18:15:48.034Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/bikebus-71dd5/services/compute.googleapis.com [omitted]
+[info] +  extensions: required API compute.googleapis.com is enabled 
+[debug] [2023-06-22T18:15:48.035Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2023-06-22T18:15:48.362Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2023-06-22T18:15:48.363Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_47abd771-f97e-4e3f-8991-5857e8d47ee5"}
+[debug] [2023-06-22T18:15:48.363Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:getIamPolicy [none]
+[debug] [2023-06-22T18:15:48.607Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:getIamPolicy 200
+[debug] [2023-06-22T18:15:48.607Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:getIamPolicy {"version":1,"etag":"BwX65TTvrVY=","bindings":[{"role":"roles/artifactregistry.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-artifactregistry.iam.gserviceaccount.com"]},{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:787807444789@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/cloudfunctions.admin","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/cloudfunctions.serviceAgent","members":["serviceAccount:service-787807444789@gcf-admin-robot.iam.gserviceaccount.com"]},{"role":"roles/compute.serviceAgent","members":["serviceAccount:service-787807444789@compute-system.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-787807444789@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/editor","members":["serviceAccount:787807444789-compute@developer.gserviceaccount.com","serviceAccount:787807444789@cloudservices.gserviceaccount.com","serviceAccount:bikebus-71dd5@appspot.gserviceaccount.com"]},{"role":"roles/eventarc.eventReceiver","members":["serviceAccount:787807444789-compute@developer.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:firebase-service-account@firebase-sa-management.iam.gserviceaccount.com","serviceAccount:service-787807444789@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/firebaseappcheck.admin","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/firebaseappcheck.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-firebaseappcheck.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com","serviceAccount:github-action-628375736@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/firebasedatabase.admin","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/firebasehosting.admin","members":["serviceAccount:github-action-628375736@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/firebasemods.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-firebasemods.iam.gserviceaccount.com"]},{"role":"roles/firebaserules.system","members":["serviceAccount:service-787807444789@firebase-rules.iam.gserviceaccount.com"]},{"role":"roles/firebasestorage.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-firebasestorage.iam.gserviceaccount.com"]},{"role":"roles/firestore.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-firestore.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:craigm26@gmail.com"]},{"role":"roles/pubsub.serviceAgent","members":["serviceAccount:service-787807444789@gcp-sa-pubsub.iam.gserviceaccount.com"]},{"role":"roles/run.viewer","members":["serviceAccount:github-action-628375736@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/serviceusage.apiKeysViewer","members":["serviceAccount:github-action-628375736@bikebus-71dd5.iam.gserviceaccount.com"]},{"role":"roles/storage.admin","members":["serviceAccount:firebase-adminsdk-w8v77@bikebus-71dd5.iam.gserviceaccount.com"]}]}
+[debug] [2023-06-22T18:15:48.608Z] Compute Service API Agent IAM policy OK
+[debug] [2023-06-22T18:15:48.608Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-06-22T18:15:48.609Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2023-06-22T18:15:48.609Z] [iam] checking project bikebus-71dd5 for permissions ["firebase.projects.get"]
+[debug] [2023-06-22T18:15:48.609Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions [none]
+[debug] [2023-06-22T18:15:48.610Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2023-06-22T18:15:48.610Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2023-06-22T18:15:48.705Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions 200
+[debug] [2023-06-22T18:15:48.705Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2023-06-22T18:15:48.705Z] Checking if latest AppDeveloper TOS has been accepted by bikebus-71dd5...
+[info] i  extensions: By installing an extension instance onto a Firebase project, you accept the Firebase Extensions User Terms of Service: https://firebase.google.com/terms/extensions/user 
+[debug] [2023-06-22T18:15:48.706Z] >>> [apiv2][query] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/bikebus-71dd5/appdevtos [none]
+[debug] [2023-06-22T18:15:49.155Z] <<< [apiv2][status] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/bikebus-71dd5/appdevtos 200
+[debug] [2023-06-22T18:15:49.156Z] <<< [apiv2][body] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/bikebus-71dd5/appdevtos {"name":"projects/bikebus-71dd5/appdevtos","latestTosVersion":"v1"}
