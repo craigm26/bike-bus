@@ -397,6 +397,25 @@ const EditRoute: React.FC = () => {
     }
   };
 
+  const handleEditStop = async (index: number) => {
+    if (selectedRoute) {
+      // Create a new array without the stop to be deleted
+      const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
+
+      const newRoute: Route = {
+        ...selectedRoute,
+        BikeBusStop: newStops,
+      };
+      console.log(newStops);
+      console.log(newRoute);
+
+      // Update the route in Firebase here
+      await updateRoute(newRoute);
+      alert('Stop deleted, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
+      setSelectedStopIndex(null);
+    }
+  };
+
   const handleRouteSave = async () => {
     if (selectedRoute === null) {
       console.error("selectedRoute is null");
@@ -918,7 +937,7 @@ const EditRoute: React.FC = () => {
                         <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
                           <div>
                             <h3>{`Stop ${index + 1}`}</h3>
-                            <p>Some details about the location...</p>
+                            <button onClick={() => handleEditStop(index)}>Edit Stop</button>
                             <button onClick={() => handleDeleteStop(index)}>Delete Stop</button>
                           </div>
                         </InfoWindow>
