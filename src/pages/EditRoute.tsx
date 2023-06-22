@@ -895,12 +895,6 @@ const EditRoute: React.FC = () => {
                     title="Start"
                     label={"Start"}
                   >
-                    <InfoWindow>
-                      <div>
-                        <h3>End</h3>
-                        <p>Some details about the location...</p>
-                      </div>
-                    </InfoWindow>
                   </Marker>
                   <Marker
                     position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
@@ -936,12 +930,6 @@ const EditRoute: React.FC = () => {
                     title="End"
                     label={"End"}
                   >
-                    <InfoWindow>
-                      <div>
-                        <h3>End</h3>
-                        <p>Some details about the location...</p>
-                      </div>
-                    </InfoWindow>
                   </Marker>
 
 

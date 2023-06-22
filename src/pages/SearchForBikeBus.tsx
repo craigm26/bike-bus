@@ -107,7 +107,9 @@ const SearchForBikeBus: React.FC = () => {
   const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
   const [route, setRoute] = useState<DocumentData | null>(null);
 
-  const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
+  const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
+  const [infoWindow, setInfoWindow] = useState<{isOpen: boolean, content: string, position: {lat: number, lng: number} | null}>
+  ({isOpen: false, content: '', position: null});
 
   useEffect(() => {
     if (headerContext) {
@@ -273,7 +275,7 @@ const SearchForBikeBus: React.FC = () => {
     console.log("Google Maps load error: ", loadError);
   }, [isLoaded, loadError]);
 
-  const handleBikeBusRouteClick = (routeId: string) => {
+  const handleBikeBusRouteClickPolyline = (routeId: string) => {
     const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
     if (bikeBusGroup) {
       const bikeBusGroupName = bikeBusGroup.BikeBusName;
@@ -294,9 +296,6 @@ const SearchForBikeBus: React.FC = () => {
       history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
     }
   };
-
-
-
 
   const onPlaceChangedStart = () => {
     console.log("onPlaceChangedStart called");
@@ -360,6 +359,20 @@ const SearchForBikeBus: React.FC = () => {
   };
 
 
+  const handleBikeBusRouteClick = (route: any) => {
+    // Set content to whatever you want to display inside the InfoWindow
+    const content = `This is the route: ${route.routeName}`;
+    
+    // Set position to the startPoint of the route (or any other point you prefer)
+    const position = route.startPoint;
+  
+    setInfoWindow({isOpen: true, content, position});
+  };
+  
+  const handleCloseClick = () => {
+    setInfoWindow({isOpen: false, content: '', position: null});
+  };
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -390,477 +403,482 @@ const SearchForBikeBus: React.FC = () => {
         {showMap && (
           <IonGrid fixed={false}>
             <IonRow className="map-base">
-              {bikeBusRoutes.map((route: any) => (
-                <React.Fragment key={route.id}>
-                  <GoogleMap
-                    key={route.id}
-                    onLoad={(map) => {
-                      mapRef.current = map;
-                    }}
-                    mapContainerStyle={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    center={mapCenter}
-                    zoom={14}
-                    options={{
-                      disableDefaultUI: true,
-                      zoomControl: false,
-                      mapTypeControl: false,
-                      disableDoubleClickZoom: true,
-                      maxZoom: 18,
-                      styles: [
+              <GoogleMap
+                onLoad={(map) => {
+                  mapRef.current = map;
+                }}
+                mapContainerStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                center={mapCenter}
+                zoom={14}
+                options={{
+                  disableDefaultUI: true,
+                  zoomControl: false,
+                  mapTypeControl: false,
+                  disableDoubleClickZoom: true,
+                  maxZoom: 18,
+                  styles: [
+                    {
+                      "elementType": "geometry",
+                      "stylers": [
                         {
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#f5f5f5"
-                            }
-                          ]
-                        },
-                        {
-                          "elementType": "labels.icon",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#616161"
-                            }
-                          ]
-                        },
-                        {
-                          "elementType": "labels.text.stroke",
-                          "stylers": [
-                            {
-                              "color": "#f5f5f5"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "administrative",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "administrative.land_parcel",
-                          "elementType": "labels",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "administrative.land_parcel",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#bdbdbd"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "administrative.neighborhood",
-                          "elementType": "geometry.fill",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "administrative.neighborhood",
-                          "elementType": "labels.text",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#eeeeee"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi",
-                          "elementType": "labels.text",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#757575"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.business",
-                          "stylers": [
-                            {
-                              "visibility": "simplified"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.business",
-                          "elementType": "labels.text",
-                          "stylers": [
-                            {
-                              "saturation": -65
-                            },
-                            {
-                              "lightness": 50
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#e5e5e5"
-                            },
-                            {
-                              "visibility": "simplified"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "elementType": "geometry.fill",
-                          "stylers": [
-                            {
-                              "color": "#27d349"
-                            },
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "elementType": "labels",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "elementType": "labels.text",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.park",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#9e9e9e"
-                            },
-                            {
-                              "saturation": 45
-                            },
-                            {
-                              "lightness": -20
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "geometry.fill",
-                          "stylers": [
-                            {
-                              "color": "#ffd800"
-                            },
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "geometry.stroke",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "labels",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "labels.text",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            },
-                            {
-                              "weight": 5
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "poi.school",
-                          "elementType": "labels.text.stroke",
-                          "stylers": [
-                            {
-                              "visibility": "on"
-                            },
-                            {
-                              "weight": 3.5
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#ffffff"
-                            },
-                            {
-                              "visibility": "simplified"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road",
-                          "elementType": "labels.icon",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road.arterial",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#757575"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road.highway",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#dadada"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road.highway",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#616161"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road.local",
-                          "elementType": "labels",
-                          "stylers": [
-                            {
-                              "visibility": "off"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "road.local",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#9e9e9e"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "transit",
-                          "elementType": "geometry.fill",
-                          "stylers": [
-                            {
-                              "color": "#7ea3ec"
-                            },
-                            {
-                              "saturation": -50
-                            },
-                            {
-                              "lightness": 50
-                            },
-                            {
-                              "visibility": "on"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "water",
-                          "elementType": "geometry",
-                          "stylers": [
-                            {
-                              "color": "#c9c9c9"
-                            }
-                          ]
-                        },
-                        {
-                          "featureType": "water",
-                          "elementType": "labels.text.fill",
-                          "stylers": [
-                            {
-                              "color": "#9e9e9e"
-                            }
-                          ]
+                          "color": "#f5f5f5"
                         }
-                      ],
-                    }}
-                  >
-                    <IonGrid className="search-container">
-                      <IonRow className="current-location">
-                        <IonButton onClick={getLocation}>
-                          <IonIcon icon={locateOutline} />
-                        </IonButton>
-                        <IonCol>
-                          <StandaloneSearchBox
-                            onLoad={onLoadStartingLocation}
-                            onPlacesChanged={onPlaceChangedStart}
-                          >
-                            <input
-                              type="text"
-                              autoComplete="on"
-                              placeholder={userLocationAddress}
-                              style={{
-                                width: "300px",
-                                height: "40px",
-                              }}
-                            />
-                          </StandaloneSearchBox>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                      <React.Fragment key={route.id}>
-                        <Polyline
-                          path={route.pathCoordinates}
-                          options={{
-                            strokeColor: "#000000", // Border color
-                            strokeOpacity: 1,
-                            strokeWeight: 5, // Border thickness
+                      ]
+                    },
+                    {
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "color": "#f5f5f5"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#bdbdbd"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#eeeeee"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.business",
+                      "stylers": [
+                        {
+                          "visibility": "simplified"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.business",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "saturation": -65
+                        },
+                        {
+                          "lightness": 50
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#e5e5e5"
+                        },
+                        {
+                          "visibility": "simplified"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "color": "#27d349"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        },
+                        {
+                          "saturation": 45
+                        },
+                        {
+                          "lightness": -20
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "color": "#ffd800"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.stroke",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 3.5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#ffffff"
+                        },
+                        {
+                          "visibility": "simplified"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.arterial",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#dadada"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "transit",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "color": "#7ea3ec"
+                        },
+                        {
+                          "saturation": -50
+                        },
+                        {
+                          "lightness": 50
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#c9c9c9"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    }
+                  ],
+                }}
+              >
+                <IonGrid className="search-container">
+                  <IonRow className="current-location">
+                    <IonButton onClick={getLocation}>
+                      <IonIcon icon={locateOutline} />
+                    </IonButton>
+                    <IonCol>
+                      <StandaloneSearchBox
+                        onLoad={onLoadStartingLocation}
+                        onPlacesChanged={onPlaceChangedStart}
+                      >
+                        <input
+                          type="text"
+                          autoComplete="on"
+                          placeholder={userLocationAddress}
+                          style={{
+                            width: "300px",
+                            height: "40px",
                           }}
-                          onClick={() => handleBikeBusRouteClick(route.id)}
                         />
-                        <Polyline
-                          // label the polyline with the BikeBusGroupName
-                          path={route.pathCoordinates}
-                          options={{
-                            strokeColor: "#ffd800", // Main line color
-                            strokeOpacity: 1,
-                            strokeWeight: 3,
-                          }}
-                        />
-                        {route.startPoint && (
-                          <React.Fragment key={`${route.id}-start`}>
-                            <Marker
-                              position={route.startPoint}
-                              onClick={() => handleMarkerClick(route.startPoint)}
-                            >
-                            </Marker>
-                          </React.Fragment>
-                        )}
-                        {route.endPoint && (
-                          <React.Fragment key={`${route.id}-end`}>
-                            <Marker
-                              position={route.endPoint}
-                              onClick={() => handleMarkerClick(route.endPoint)}
-                            >
-                            </Marker>
-                          </React.Fragment>
-                        )}
-                        {route.BikeBusStop &&
-                          route.BikeBusStop.map((stop: any) => (
-                            <React.Fragment key={`${route.id}-${stop.id}`}>
-                              <Marker
-                                position={stop.coordinates}
-                                onClick={() => handleMarkerClick(stop)}
-                              >
-                              </Marker>
-                            </React.Fragment>
-                          ))}
-                      </React.Fragment>
+                      </StandaloneSearchBox>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+                {bikeBusRoutes.map((route: any) => {
+                  const keyPrefix = route.id || route.routeName;
+                  return (
+                    <div key={`${keyPrefix}`}>
+                      <Polyline
+                        key={`${keyPrefix}-border`}
+                        path={route.pathCoordinates}
+                        options={{
+                          strokeColor: "#000000", // Border color
+                          strokeOpacity: 1,
+                          strokeWeight: 5, // Border thickness
+                          clickable: true,
+                        }}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
+                      />
+                      {infoWindow.isOpen && infoWindow.position && (
+                        <InfoWindow
+                          position={infoWindow.position}
+                          onCloseClick={handleCloseClick}
+                        >
+                          <div>
+                            {infoWindow.content}
+                          </div>
+                        </InfoWindow>
+                      )}
 
-                    <div>
-                      {selectedStartLocation && <Marker position={selectedStartLocation} />}
+
+                      <Polyline
+                        key={`${keyPrefix}-main`}
+                        path={route.pathCoordinates}
+                        options={{
+                          strokeColor: "#ffd800", // Main line color
+                          strokeOpacity: 1,
+                          strokeWeight: 3,
+                        }}
+                      />
+                      {route.startPoint && (
+                        <Marker
+                          key={`${keyPrefix}-start`}
+                          label={route.BikeBusName}
+                          position={route.startPoint}
+                          onClick={() => { handleBikeBusRouteClick(route) }}
+                        />
+                      )}
+                      {route.endPoint && (
+                        <Marker
+                          key={`${keyPrefix}-end`}
+                          label={route.BikeBusName}
+                          position={route.endPoint}
+                          onClick={() => { handleBikeBusRouteClick(route) }}
+
+                        />
+                      )}
+
+
                     </div>
-                  </GoogleMap>
-                </React.Fragment>
-              ))}
+                  );
+                })}
+
+                <div>
+                  {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                </div>
+              </GoogleMap >
             </IonRow>
           </IonGrid>
         )}
