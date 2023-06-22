@@ -23,7 +23,7 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams } from "react-router-dom";
 
@@ -32,9 +32,19 @@ interface event {
   route: string;
   time: string;
   leader: string;
-
+  captains: string[];
+  sheepdogs: string[];
+  sprinters: string[];
+  parents: string[];
+  kids: string[];
+  caboose: string[];
   members: string[];
   BikeBusGroup: string;
+}
+
+interface FetchedUserData {
+  username: string;
+  accountType?: string;
 }
 
 
@@ -51,20 +61,27 @@ const Event: React.FC = () => {
   const [role, setRole] = useState('');
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
-
-
-
-  const fetchUser = async (uid: string) => {
-    const userRef = doc(db, 'users', uid);
-    const userSnapshot = await getDoc(userRef);
-    return userSnapshot.data();
-  };
-
-
-  const fetchUsernames = async () => {
-    const promises = eventData.members.map(fetchUser);
-    const users = await Promise.all(promises);
-    setUsernames(users.map(user => user.username));
+  const [members, setMembers] = useState<string[]>([]);
+  const [caboose, setCaboose] = useState<string[]>([]);
+  const [captains, setCaptains] = useState<string[]>([]);
+  const [kids, setKids] = useState<string[]>([]);
+  const [parents, setParents] = useState<string[]>([]);
+  const [sheepdogs, setSheepdogs] = useState<string[]>([]);
+  const [sprinters, setSprinters] = useState<string[]>([]);
+  
+  const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+  
+    let user: FetchedUserData | undefined;
+  
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      user = doc.data() as FetchedUserData;
+    });
+  
+    return user;
   };
 
   useEffect(() => {
@@ -79,11 +96,10 @@ const Event: React.FC = () => {
       if (docSnapshot.exists()) {
         setEventData(docSnapshot.data());
         console.log('Document data:', docSnapshot.data());
-
         // fetch the BikeBusGroup data after the event data has been fetched
         const fetchBikeBusGroup = async () => {
-          const docRef = doc(db, 'BikeBusGroups', docSnapshot.data().BikeBusGroup);
-          const groupDocSnapshot = await getDoc(docRef);
+          console.log('BikeBusGroup:', docSnapshot.data().BikeBusGroup);
+          const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
 
           if (groupDocSnapshot.exists()) {
             setBikeBusGroupData(groupDocSnapshot.data());
@@ -92,7 +108,6 @@ const Event: React.FC = () => {
             console.log(`No document with ID: ${docSnapshot.data().BikeBusGroup}`);
           }
         };
-        fetchUsernames();
         fetchBikeBusGroup();
       } else {
         console.log(`No document with ID: ${id}`);
@@ -100,7 +115,28 @@ const Event: React.FC = () => {
     };
 
     fetchEvent();
-  }, [id, setBikeBusGroupData, setEventData, setUsernames]);
+  }, [id]);
+
+  useEffect(() => {
+    const fetchUsernames = async (role: string[], setRole: Function) => {
+      if (role) {
+        const promises = role.map(fetchUser);
+        const users = await Promise.all(promises);
+        setRole(users.map(user => user?.username));
+      }
+    };
+  
+    if (eventData) {
+      fetchUsernames(eventData.members || [], setMembers);
+      fetchUsernames(eventData.caboose || [], setCaboose);
+      fetchUsernames(eventData.captains || [], setCaptains);
+      fetchUsernames(eventData.kids || [], setKids);
+      fetchUsernames(eventData.parents || [], setParents);
+      fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
+      fetchUsernames(eventData.sprinters || [], setSprinters);
+    }
+  }, [eventData]);
+  
 
 
   const togglePopover = (e: any) => {
@@ -129,8 +165,11 @@ const Event: React.FC = () => {
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
+          if (userData) {
+            setUsername(userData.username);
+            if (userData.accountType) {
+              setaccountType(userData.accountType);
+            }
           }
         }
       });
@@ -155,6 +194,15 @@ const Event: React.FC = () => {
     await setDoc(eventRef, {
       [role]: arrayUnion(username)
     }, { merge: true });
+
+    // check to see if the user is already in the role array as a members, if not, add them to the end of the members array
+    if (role === 'members') {
+      if (!eventData.members.includes(username)) {
+        await setDoc(eventRef, {
+          members: arrayUnion(username)
+        }, { merge: true });
+      }
+    }
 
     // Clear the role selection and hide the modal
     setRole('');
@@ -227,23 +275,45 @@ const Event: React.FC = () => {
           </IonItem>
           <IonItem>
             <IonLabel>Members</IonLabel>
-            {usernames.map((username: string) => (
-              <IonLabel>{username}</IonLabel>
+            {members.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Caboose</IonLabel>
+            {caboose.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Captains</IonLabel>
+            {captains.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Kids</IonLabel>
+            {kids.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
             ))}
           </IonItem>
           <IonItem>
             <IonLabel>Parents</IonLabel>
-            {usernames.map((username: string) => (
-              <IonLabel>{username}</IonLabel>
+            {parents.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
             ))}
           </IonItem>
-
           <IonItem>
+            <IonLabel>Sheepdogs</IonLabel>
+            {sheepdogs.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
           </IonItem>
           <IonItem>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Route:</IonLabel>
+            <IonLabel>Sprinters</IonLabel>
+            {sprinters.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
           </IonItem>
         </IonList>
       </IonContent>
