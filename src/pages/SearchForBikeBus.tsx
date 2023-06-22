@@ -108,8 +108,8 @@ const SearchForBikeBus: React.FC = () => {
   const [route, setRoute] = useState<DocumentData | null>(null);
 
   const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
-  const [infoWindow, setInfoWindow] = useState<{isOpen: boolean, content: string, position: {lat: number, lng: number} | null}>
-  ({isOpen: false, content: '', position: null});
+  const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
+    ({ isOpen: false, content: '', position: null });
 
   useEffect(() => {
     if (headerContext) {
@@ -208,7 +208,9 @@ const SearchForBikeBus: React.FC = () => {
             const routeData = doc.data();
             routes.push(routeData);
           });
+          console.log("BikeBus Routes", routes);
           setBikeBusRoutes(routes);
+          console.log("BikeBus Routes", bikeBusRoutes);
         })
         .catch((error) => {
           console.log("Error fetching bike/bus routes:", error);
@@ -361,16 +363,20 @@ const SearchForBikeBus: React.FC = () => {
 
   const handleBikeBusRouteClick = (route: any) => {
     // Set content to whatever you want to display inside the InfoWindow
-    const content = `This is the route: ${route.routeName}`;
-    
+    const content = `<a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    View ${route.BikeBusName}
+    </a>`
+
+      ;
+
     // Set position to the startPoint of the route (or any other point you prefer)
     const position = route.startPoint;
-  
-    setInfoWindow({isOpen: true, content, position});
+
+    setInfoWindow({ isOpen: true, content, position });
   };
-  
+
   const handleCloseClick = () => {
-    setInfoWindow({isOpen: false, content: '', position: null});
+    setInfoWindow({ isOpen: false, content: '', position: null });
   };
 
 
@@ -825,8 +831,8 @@ const SearchForBikeBus: React.FC = () => {
                         path={route.pathCoordinates}
                         options={{
                           strokeColor: "#000000", // Border color
-                          strokeOpacity: 1,
-                          strokeWeight: 5, // Border thickness
+                          strokeOpacity: .7,
+                          strokeWeight: 3, // Border thickness
                           clickable: true,
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
@@ -836,26 +842,30 @@ const SearchForBikeBus: React.FC = () => {
                           position={infoWindow.position}
                           onCloseClick={handleCloseClick}
                         >
-                          <div>
-                            {infoWindow.content}
-                          </div>
+                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
                         </InfoWindow>
                       )}
-
-
                       <Polyline
                         key={`${keyPrefix}-main`}
                         path={route.pathCoordinates}
                         options={{
                           strokeColor: "#ffd800", // Main line color
                           strokeOpacity: 1,
-                          strokeWeight: 3,
+                          strokeWeight: 2,
                         }}
                       />
+                                            {infoWindow.isOpen && infoWindow.position && (
+                        <InfoWindow
+                          position={infoWindow.position}
+                          onCloseClick={handleCloseClick}
+                        >
+                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                        </InfoWindow>
+                      )}
                       {route.startPoint && (
                         <Marker
                           key={`${keyPrefix}-start`}
-                          label={route.BikeBusName}
+                          label={`Start of ${route.BikeBusName}`}
                           position={route.startPoint}
                           onClick={() => { handleBikeBusRouteClick(route) }}
                         />
@@ -863,7 +873,7 @@ const SearchForBikeBus: React.FC = () => {
                       {route.endPoint && (
                         <Marker
                           key={`${keyPrefix}-end`}
-                          label={route.BikeBusName}
+                          label={`End of ${route.BikeBusName}`}
                           position={route.endPoint}
                           onClick={() => { handleBikeBusRouteClick(route) }}
 
