@@ -39,6 +39,12 @@ import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
 import SearchForBikeBus from './pages/SearchForBikeBus';
 import Event from './pages/Event';
+import DeleteBikeBusStops from './pages/DeleteBikeBusStops';
+import ViewRouteList from './pages/ViewRouteList';
+import EditRoute from './pages/EditRoute';
+import ViewBikeBusList from './pages/ViewBikeBusList';
+import EditBikeBus from './pages/EditBikeBus';
+import EditSchedule from './pages/EditSchedule';
 
 
 import '@ionic/react/css/core.css';
@@ -53,11 +59,7 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
-import ViewRouteList from './pages/ViewRouteList';
-import EditRoute from './pages/EditRoute';
-import ViewBikeBusList from './pages/ViewBikeBusList';
-import EditBikeBus from './pages/EditBikeBus';
-import EditSchedule from './pages/EditSchedule';
+
 
 setupIonicReact();
 
@@ -314,7 +316,7 @@ const App: React.FC = () => {
                       <Route path="/editbikebus/:id" exact>
                         <EditBikeBus />
                       </Route>
-                      <Route path="/event/:id" exact>
+                      <Route path="/event/:id">
                         <Event />
                       </Route>
                       <Route exact path="/Profile">
@@ -350,6 +352,9 @@ const App: React.FC = () => {
                       <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
                       <Route path="/CreateBikeBusStops/:id">
                         <CreateBikeBusStops />
+                      </Route>
+                      <Route path="/DeleteBikeBusStops/:id">
+                        <DeleteBikeBusStops />
                       </Route>
                       <Route exact path="/UpgradeAccountToPremium">
                         <UpgradeAccountToPremium />

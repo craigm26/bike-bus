@@ -17,6 +17,14 @@ interface BulletinBoard {
   Messages: any[];
 }
 
+interface Event {
+  id: string;
+  groupId: string;
+  start?: { seconds: number, nanoseconds: number } | string;
+  startTime: string;  // adjust the type based on your data
+  eventName: string;  // adjust the type based on your data
+}
+
 
 interface BikeBus {
   BikeBusRoutes: string;
@@ -47,7 +55,7 @@ const BikeBusGroupPage: React.FC = () => {
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [eventsData, setEventsData] = useState<any[]>([]);
+  const [eventsData, setEventsData] = useState<Event[]>([]);
   const [messagesData, setMessagesData] = useState<any[]>([]);
   const [bulletinBoard, setBulletinBoard] = useState<BulletinBoard>({ Messages: [] });
   const [eventIds, setEventIds] = useState<string[]>([]);
@@ -55,7 +63,6 @@ const BikeBusGroupPage: React.FC = () => {
   const [eventData, setEventData] = useState<any[]>([]);
   const [eventDocs, setEventDocs] = useState<any[]>([]);
   const [eventDocsData, setEventDocsData] = useState<any[]>([]);
-
 
   const headerContext = useContext(HeaderContext);
 
@@ -245,13 +252,11 @@ const BikeBusGroupPage: React.FC = () => {
     console.log("fetchEvents called");
     console.log("groupData", groupData);
     console.log("groupData.BikeBusEvents", groupData.events);
-    const events = groupData.events?.map((eventRef: any) => {
-      console.log("eventRef", eventRef);
-      return getDoc(eventRef).then((docSnapshot) => {  // pass the whole reference object
+    const events = await Promise.all(
+      groupData.events?.map(async (eventRef: any) => {
+        const docSnapshot = await getDoc(eventRef);
         if (docSnapshot.exists()) {
           const eventData = docSnapshot.data();
-          console.log(eventData);
-          // Check if eventData exists before spreading
           return eventData ? {
             ...eventData,
             id: docSnapshot.id,
@@ -260,14 +265,10 @@ const BikeBusGroupPage: React.FC = () => {
         } else {
           console.log("No such document!");
         }
-      })
-        .catch((error) => {
-          console.log("Error getting event document:", error);
-        });
-    }
-    ) || [];
-  }
-    , [groupData]);
+      }) || []
+    );
+    setEventsData(events);
+  }, [groupData]);
 
   const fetchBulletinBoard = useCallback(async () => {
     console.log("fetchBulletinBoard called");
@@ -295,11 +296,11 @@ const BikeBusGroupPage: React.FC = () => {
     fetchRoutes();
     fetchLeaders();
     fetchMembers();
-    fetchSchedules();
     fetchEvents();
+    fetchSchedules();
     fetchBulletinBoard();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchSchedules, fetchEvents, fetchBulletinBoard]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchSchedules, fetchBulletinBoard]);
 
 
   const joinBikeBus = async () => {
@@ -338,20 +339,38 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
-  // the next event (From the fetchEvents array of startTime) is the event that is closest to the current time. write a function to help determine what the next event is.
-  const nextEvent = () => {
-    const now = new Date();
-    const nextEvent = eventsData?.filter((event) => {
-      return event.startTime > now;
-    }
-    );
-    return nextEvent;
-  };
+  const validEvents = eventsData.filter((event: Event) => event.start && typeof event.start !== 'string');
+  const sortedEvents = validEvents.sort((a: Event, b: Event) => {
+    const aDate = a.start && (typeof a.start === 'string' ? new Date(a.start) : new Date(a.start.seconds * 1000));
+    const bDate = b.start && (typeof b.start === 'string' ? new Date(b.start) : new Date(b.start.seconds * 1000));
+    return aDate && bDate ? aDate.getTime() - bDate.getTime() : 0;
+  });
 
-  // return the document id of the nextEvent and call it nextEventId
-  const nextEventId = nextEvent()?.[0]?.id;
-  
+  console.log("sortedEvents", sortedEvents);
 
+  const nextEvent = sortedEvents.find((event: Event) => {
+    const eventDate = event.start && (typeof event.start === 'string' ? new Date(event.start) : new Date(event.start.seconds * 1000));
+    return eventDate ? eventDate.getTime() > new Date().getTime() : false;
+  });
+
+  console.log("nextEvent", nextEvent);
+
+  const nextEventId = nextEvent?.id;
+  console.log("nextEventId", nextEventId);
+
+// Options to format the time
+const dateTimeOptions: Intl.DateTimeFormatOptions = { 
+  year: 'numeric', 
+  month: 'long', 
+  day: '2-digit', 
+  hour: '2-digit', 
+  minute: '2-digit' 
+};
+
+// make the nextEvent a start time that's nicely formatted for use in the ui 
+const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string' 
+  ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions) 
+  : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
 
 
   return (
@@ -424,6 +443,8 @@ const BikeBusGroupPage: React.FC = () => {
               {isUserLeader && routesData.map((route, index) => (
                 <IonItem key={index}>
                   <IonButton routerLink={`/CreateBikeBusStops/${route.id}`}>Create BikeBusStops</IonButton>
+                  <IonButton routerLink={`/DeleteBikeBusStops/${route.id}`}>Delete BikeBusStops</IonButton>
+
                 </IonItem>
               ))}
               <IonList>
@@ -458,7 +479,6 @@ const BikeBusGroupPage: React.FC = () => {
                           <Link to={`/ViewRoute/${route.id}`}>
                             <IonButton>{route?.routeName}</IonButton>
                           </Link>
-
                         </IonItem>
                       ))}
                     </IonList>
@@ -467,18 +487,15 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonItem>
                   <IonLabel>Next Event:</IonLabel>
                   <Link to={`/Event/${nextEventId}`}>
-                    <IonButton>{nextEvent()?.map((event) => event?.eventName)}</IonButton>
+                    <IonButton>{nextEventTime}</IonButton>
                   </Link>
 
                 </IonItem>
                 <IonItem>
-                  <IonList>
-                    <IonItem>
-                      <Link to={`/ViewSchedule/${groupId}`}>
-                        <IonButton>Schedule</IonButton>
-                      </Link>
-                    </IonItem>
-                  </IonList>
+                  <IonLabel>All Events</IonLabel>
+                  <Link to={`/ViewSchedule/${groupId}`}>
+                    <IonButton>View Schedule</IonButton>
+                  </Link>
                 </IonItem>
               </IonList>
               <IonList>
