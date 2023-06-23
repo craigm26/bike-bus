@@ -310,6 +310,12 @@ const AddSchedule: React.FC = () => {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
+        // add the references to the event documents to the events document in firestore
+    const eventsRef2 = doc(db, 'events', eventId);
+    await updateDoc(eventsRef2, {
+      event: arrayUnion(doc(db, 'event', eventId)),
+    });
+
     history.push(`/bikebusgrouppage/${bikebusgroupId}`);
   };
 

@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal, IonRouterLink } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { getDoc, doc, collection, getDocs, query, where, deleteDoc, addDoc } from 'firebase/firestore';
+import { db, storage, firebase } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+
 
 interface Coordinate {
   lat: number;
@@ -21,9 +22,15 @@ interface Event {
   id: string;
   groupId: string;
   start?: { seconds: number, nanoseconds: number } | string;
-  startTime: string;  // adjust the type based on your data
-  eventName: string;  // adjust the type based on your data
+  startTime: string;
+  eventName: string;
+  BikeBusGroup: FirestoreRef;
 }
+
+interface FirestoreRef {
+  path: string;
+}
+
 
 
 interface BikeBus {
@@ -63,6 +70,8 @@ const BikeBusGroupPage: React.FC = () => {
   const [eventData, setEventData] = useState<any[]>([]);
   const [eventDocs, setEventDocs] = useState<any[]>([]);
   const [eventDocsData, setEventDocsData] = useState<any[]>([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [imageInput, setImageInput] = useState(null);
 
   const headerContext = useContext(HeaderContext);
 
@@ -251,9 +260,9 @@ const BikeBusGroupPage: React.FC = () => {
   const fetchEvents = useCallback(async () => {
     console.log("fetchEvents called");
     console.log("groupData", groupData);
-    console.log("groupData.BikeBusEvents", groupData.events);
+    console.log("groupData.BikeBusEvents", groupData.event);
     const events = await Promise.all(
-      groupData.events?.map(async (eventRef: any) => {
+      groupData.event?.map(async (eventRef: any) => {
         const docSnapshot = await getDoc(eventRef);
         if (docSnapshot.exists()) {
           const eventData = docSnapshot.data();
@@ -269,6 +278,7 @@ const BikeBusGroupPage: React.FC = () => {
     );
     setEventsData(events);
   }, [groupData]);
+
 
   const fetchBulletinBoard = useCallback(async () => {
     console.log("fetchBulletinBoard called");
@@ -290,7 +300,29 @@ const BikeBusGroupPage: React.FC = () => {
     // Move this line inside the fetchBulletinBoard function
   }, [groupData]);
 
+  const fetchMessages = useCallback(async () => {
+    console.log("fetchMessages called");
+    if (groupData?.bulletinboard) {
+      const bulletinBoardRef = groupData.bulletinboard;
+      console.log("bulletinBoardRef", bulletinBoardRef);
+      const bulletinBoardDoc = await getDoc(bulletinBoardRef);
+      console.log("bulletinBoardDoc", bulletinBoardDoc);
 
+      if (bulletinBoardDoc.exists()) {
+        const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
+        const messagesData = bulletinBoardData?.Messages || [];
+        setMessagesData(messagesData);
+        console.log("messagesData", messagesData);
+      } else {
+        // Handle the case when the bulletin board document doesn't exist
+      }
+    } else {
+      // Handle the case when the bulletin board reference is missing
+    }
+
+    // Move this line inside the fetchBulletinBoard function
+  }
+    , [groupData]);
 
   useEffect(() => {
     fetchRoutes();
@@ -299,9 +331,32 @@ const BikeBusGroupPage: React.FC = () => {
     fetchEvents();
     fetchSchedules();
     fetchBulletinBoard();
+    fetchMessages();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchSchedules, fetchBulletinBoard]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchSchedules, fetchBulletinBoard, fetchMessages]);
 
+
+  // when someone inputs a message and clicks the submit button, the message is added to the bulletin board (from the bulletin board document that references the bikebusgroup messages document collection id's)
+  const submitMessage = async () => {
+    if (!user?.uid) {
+      console.error("User is not logged in");
+      return;
+    }
+    console.log("submitMessage called");
+    console.log("groupData", groupData);
+    console.log("groupData.bulletinboard", groupData.bulletinboard);
+    console.log("groupData.bulletinboard.id", groupData.bulletinboard.id);  
+    const bulletinBoardRef = doc(db, 'bulletinboards', groupData.bulletinboard.id);
+    const messagesRef = collection(bulletinBoardRef, 'messages');
+
+    await addDoc(messagesRef, {
+      message: onmessage,
+      user: doc(db, 'users', user.uid),
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    postMessage('');
+  };
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -339,7 +394,12 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
-  const validEvents = eventsData.filter((event: Event) => event.start && typeof event.start !== 'string');
+  const validEvents = eventsData.filter((event: Event) =>
+    event.start &&
+    typeof event.start !== 'string' &&
+    event.BikeBusGroup.path === `bikebusgroups/${groupId}`
+  );
+
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
     const aDate = a.start && (typeof a.start === 'string' ? new Date(a.start) : new Date(a.start.seconds * 1000));
     const bDate = b.start && (typeof b.start === 'string' ? new Date(b.start) : new Date(b.start.seconds * 1000));
@@ -358,19 +418,19 @@ const BikeBusGroupPage: React.FC = () => {
   const nextEventId = nextEvent?.id;
   console.log("nextEventId", nextEventId);
 
-// Options to format the time
-const dateTimeOptions: Intl.DateTimeFormatOptions = { 
-  year: 'numeric', 
-  month: 'long', 
-  day: '2-digit', 
-  hour: '2-digit', 
-  minute: '2-digit' 
-};
+  // Options to format the time
+  const dateTimeOptions: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
 
-// make the nextEvent a start time that's nicely formatted for use in the ui 
-const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string' 
-  ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions) 
-  : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
+  // make the nextEvent a start time that's nicely formatted for use in the ui 
+  const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
+    ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions)
+    : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
 
 
   return (
@@ -500,12 +560,15 @@ const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
               </IonList>
               <IonList>
                 <IonText>BulletinBoard</IonText>
-                {messagesData.map((message, index) => (
-                  <IonItem key={index}>
-                    <IonLabel>{message?.message}</IonLabel>
-                  </IonItem>
-                ))}
               </IonList>
+              <form onSubmit={submitMessage}>
+                <IonInput
+                  value={messageInput}
+                  placeholder="Enter your message"
+                  onIonChange={e => setMessageInput(e.detail.value || '')}
+                />
+                <IonButton expand="full" type="submit">Send</IonButton>
+              </form>
             </div>
           </IonCardContent>
         </IonCard>

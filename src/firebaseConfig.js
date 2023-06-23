@@ -5,6 +5,7 @@ import { getStorage } from '@firebase/storage';
 import { getFirestore } from '@firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import firebase from 'firebase/compat/app';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -35,4 +36,4 @@ const appCheck = initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 
-export { auth, storage, db, appCheck, analytics, rtdb };
+export { auth, storage, db, appCheck, analytics, rtdb, firebase };
