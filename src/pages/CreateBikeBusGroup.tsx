@@ -23,6 +23,7 @@ import {
   IonDatetime,
   IonSelect,
   IonSelectOption,
+  IonTitle,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -202,7 +203,6 @@ const CreateBikeBusGroup: React.FC = () => {
       BikeBusMembers: [doc(db, 'users', user.uid)],
       BikeBusCreator: doc(db, 'users', user.uid),
       // add the schedule to the BikeBus group in firestore as a single document
-      BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
     };
 
 
@@ -294,7 +294,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
     for (const day of eventDays) {
       const eventData = {
-        title: BikeBusName + ' BikeBus on route ' + route.routeName + ' for ' + day,
+        title: BikeBusName + ' for ' + day,
         start: day,
         leader: '',
         members: [],
@@ -322,7 +322,7 @@ const CreateBikeBusGroup: React.FC = () => {
       for (const eventId of eventIds) {
         const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
         await updateDoc(bikeBusGroupRef3, {
-          events: arrayUnion(doc(db, 'event', eventId)),
+          event: arrayUnion(doc(db, 'event', eventId)),
         });
       }
 
@@ -335,12 +335,29 @@ const CreateBikeBusGroup: React.FC = () => {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
+    // add the references to the event documents to the events document in firestore
+    const eventsRef2 = doc(db, 'events', eventId);
+    await updateDoc(eventsRef2, {
+      event: arrayUnion(doc(db, 'event', eventId)),
+    });
+    
+    // create a messages document in the firestore collection "messages" for the bikebusgroup
+    const messagesData = {
+      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      Messages: [],
+    };
+    await addDoc(collection(db, 'messages'), messagesData);
+
+    // get the messages document id
+    const messagesRef = await getDocs(collection(db, 'messages'));
+    const messagesId = messagesRef.docs[messagesRef.docs.length - 1].id;
+    console.log('messagesId:', messagesId);
 
     // create a reference in the bulletinboard collection in firestore for the bikebusgroup
     const bulletinBoardData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
       // make an array of messageIds references in "Messages"
-      Messages: [],
+      Messages: doc(db, 'messages', messagesId)
     }
     await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
 
@@ -461,8 +478,9 @@ const CreateBikeBusGroup: React.FC = () => {
             <IonDatetime
               presentation='time'
               onIonChange={e => {
-                console.log('End Time selected', e.detail.value);
+                console.log('Start Time selected', e.detail.value);
                 setStartTime(e.detail.value as string);
+
               }}
             ></IonDatetime>
             <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
@@ -527,6 +545,8 @@ const CreateBikeBusGroup: React.FC = () => {
             <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
           </IonModal>
           <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
+            <IonTitle>Recurring Days</IonTitle>
+            <IonLabel>The default number of occurring events that are created are constrained to 30 days from the selected start date. After the BikeBus is created, additional schedules can be added.</IonLabel>
             <IonItemGroup>
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                 <IonItem key={day}>
