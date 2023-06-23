@@ -7,10 +7,6 @@ import {
     IonButton,
     IonModal,
     IonTitle,
-    IonCardContent,
-    IonCardHeader,
-    IonCardTitle,
-    IonLabel,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -22,8 +18,6 @@ import { useParams } from 'react-router-dom';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { event } from 'firebase-functions/v1/analytics';
-import { set } from 'firebase/database';
 
 const localizer = momentLocalizer(moment);
 
@@ -59,9 +53,7 @@ const ViewSchedule: React.FC = () => {
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [eventLink, setEventLink] = useState<string>('');
-
-
-
+    const [eventId, setEventId] = useState<string>('');
 
     useEffect(() => {
         const fetchSchedules = async () => {
@@ -184,14 +176,11 @@ const ViewSchedule: React.FC = () => {
             let eventDocs: Event[] = [];
             for (let i = 0; i < bikeBusGroupData.events.length; i++) {
                 const eventDocRef: DocumentReference = bikeBusGroupData.events[i];
+                console.log(eventDocRef);
                 const eventDocSnapshot = await getDoc(eventDocRef);
+                console.log(eventDocSnapshot);
                 const eventData = eventDocSnapshot.data();
-
-                // for each event, create a reference to the /event/{eventDocRef.id} document
-                const eventDocRef2: DocumentReference = doc(db, 'event', eventDocRef.id);
-                const eventDocSnapshot2 = await getDoc(eventDocRef2);
-                const eventData2 = eventDocSnapshot2.data();
-                const eventLink = eventData2?.eventLink;
+                console.log(eventData);
 
             }
 
@@ -204,6 +193,7 @@ const ViewSchedule: React.FC = () => {
     const handleSelectEvent = (event: Event) => {
         setSelectedEvent(event);
         setEvents(events);
+        setShowEventModal(true);
         // make it appear in the Event box of the calendar
         setEventLink(eventLink);
     };
@@ -231,6 +221,17 @@ const ViewSchedule: React.FC = () => {
                 </IonCard>
                 <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
                 <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle></IonTitle>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                        <IonButton routerLink={`/event/${eventId}`}>Edit Event</IonButton>
+                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                    </IonContent>
+                </IonModal>
 
             </IonContent>
         </IonPage>

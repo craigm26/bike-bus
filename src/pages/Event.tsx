@@ -16,6 +16,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonTitle,
+  IonCheckbox,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './About.css';
@@ -58,7 +59,6 @@ const Event: React.FC = () => {
   const [eventData, setEventData] = useState<any>(null);
   const [bikeBusGroupData, setBikeBusGroupData] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-  const [role, setRole] = useState('');
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
   const [members, setMembers] = useState<string[]>([]);
@@ -68,19 +68,21 @@ const Event: React.FC = () => {
   const [parents, setParents] = useState<string[]>([]);
   const [sheepdogs, setSheepdogs] = useState<string[]>([]);
   const [sprinters, setSprinters] = useState<string[]>([]);
-  
+  const [role, setRole] = useState<string[]>([]);
+
+
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('username', '==', username));
     const querySnapshot = await getDocs(q);
-  
+
     let user: FetchedUserData | undefined;
-  
+
     querySnapshot.forEach((doc) => {
       // doc.data() is never undefined for query doc snapshots
       user = doc.data() as FetchedUserData;
     });
-  
+
     return user;
   };
 
@@ -125,7 +127,7 @@ const Event: React.FC = () => {
         setRole(users.map(user => user?.username));
       }
     };
-  
+
     if (eventData) {
       fetchUsernames(eventData.members || [], setMembers);
       fetchUsernames(eventData.caboose || [], setCaboose);
@@ -136,7 +138,7 @@ const Event: React.FC = () => {
       fetchUsernames(eventData.sprinters || [], setSprinters);
     }
   }, [eventData]);
-  
+
 
 
   const togglePopover = (e: any) => {
@@ -178,25 +180,39 @@ const Event: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
+  const handleRoleChange = (value: string) => {
+    if (role.includes(value)) {
+      setRole(prevRole => prevRole.filter(r => r !== value));
+    } else {
+      setRole(prevRole => [...prevRole, value]);
+    }
+  };
+
+
+
+
   const handleRSVP = async () => {
     if (!user || !username) {
       console.log("No user is logged in or username is not loaded yet!");
       return;
     }
 
-    if (!role) {
+    if (!role || role.length === 0) {
       console.log("No role is selected!");
       return;
     }
 
     const eventRef = doc(db, 'event', id);
 
-    await setDoc(eventRef, {
-      [role]: arrayUnion(username)
-    }, { merge: true });
+    // Iterate through roles and add the user to each of them
+    for (let r of role) {
+      await setDoc(eventRef, {
+        [r]: arrayUnion(username)
+      }, { merge: true });
+    }
 
     // check to see if the user is already in the role array as a members, if not, add them to the end of the members array
-    if (role === 'members') {
+    if (!role.includes('members')) {
       if (!eventData.members.includes(username)) {
         await setDoc(eventRef, {
           members: arrayUnion(username)
@@ -205,7 +221,7 @@ const Event: React.FC = () => {
     }
 
     // Clear the role selection and hide the modal
-    setRole('');
+    setRole([]);
     setShowModal(false);
   };
 
@@ -232,9 +248,9 @@ const Event: React.FC = () => {
           <IonToolbar></IonToolbar>
         </IonHeader>
         <IonList>
-          <IonLabel>{eventData?.title}</IonLabel>
+          <IonLabel></IonLabel>
           <IonItem>
-            <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBusGroup</IonButton>
+            <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
           </IonItem>
           <IonItem>
             <IonLabel>{startTime} to {endTime}</IonLabel>
@@ -249,24 +265,47 @@ const Event: React.FC = () => {
               </IonToolbar>
             </IonHeader>
             <IonContent>
-              <IonItem>
-                <IonLabel>Role</IonLabel>
-                <IonSelect value={role} placeholder="Select One" onIonChange={e => setRole(e.detail.value)}>
-                  <IonSelectOption value="caboose">Caboose</IonSelectOption>
-                  <IonSelectOption value="captains">Captains</IonSelectOption>
-                  <IonSelectOption value="parents">Parents</IonSelectOption>
-                  <IonSelectOption value="kids">Kids</IonSelectOption>
-                  <IonSelectOption value="leader">Leader</IonSelectOption>
-                  <IonSelectOption value="members">Members</IonSelectOption>
-                  <IonSelectOption value="sheepdogs">Sheepdogs</IonSelectOption>
-                  <IonSelectOption value="sprinters">Sprinters</IonSelectOption>
-                </IonSelect>
-              </IonItem>
+              <IonList>
+                <IonItem>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Caboose</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Captains</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Parents</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Kids</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Leader</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="members" disabled checked />
+                  <IonLabel>Members</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Sheepdogs</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Sprinters</IonLabel>
+                </IonItem>
+              </IonList>
               <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-              <IonButton onClick={handleRSVP}>RSVP with this Role</IonButton>
+              <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
             </IonContent>
-          </IonModal>
 
+          </IonModal>
           <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
 
           <IonItem>
