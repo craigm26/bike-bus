@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal, IonRouterLink } from '@ionic/react';
+import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, deleteDoc, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
 import { db, storage, firebase } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -7,6 +7,8 @@ import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { personCircleOutline } from 'ionicons/icons';
+import Avatar from '../components/Avatar';
 
 
 interface Coordinate {
@@ -74,9 +76,71 @@ const BikeBusGroupPage: React.FC = () => {
   const [imageInput, setImageInput] = useState(null);
   const [username, setUsername] = useState<string>('');
   const [usernames, setUsernames] = useState<string[]>([]);
+  const [showPopover, setShowPopover] = useState(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>();
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+
 
 
   const headerContext = useContext(HeaderContext);
+
+  const label = user?.username ? user.username : "anonymous";
+
+  const [showFullPage, setShowFullPage] = useState(false); // State to toggle full-page layout
+
+  const loadMoreMessages = () => {
+    // Fetch additional messages from the server or load from a local data source
+    fetchMessages().then((newMessages) => {
+      // Append the newly fetched messages to the existing message list
+      if (newMessages !== undefined) {
+        setMessages((prevState: any[]) => [...prevState, ...newMessages]);
+      }
+    }
+    );
+    // Update the 'messages' state with the loaded messages
+    messagesData.length > messages.length && setMessages(messagesData);
+  };
+
+  const handleScroll = (event: { target: { scrollHeight: number; scrollTop: number; clientHeight: number; }; }) => {
+    const scrollThreshold = 100; // Adjust this value based on your layout and requirements
+
+    // Check if the user has scrolled to the bottom or the specified threshold
+    const scrolledToBottom =
+      event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
+    const scrolledToThreshold = event.target.scrollTop > scrollThreshold;
+
+    if (scrolledToBottom && messagesData.length > messages.length) {
+      // Load more messages only if there are actual messages to load
+      loadMoreMessages();
+    }
+
+    if (scrolledToThreshold) {
+      setShowFullPage(true);
+    }
+  };
+
+
+
+  const avatarElement = user ? (
+    avatarUrl ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
+    ) : (
+      <IonIcon icon={personCircleOutline} />
+    )
+  ) : (
+    <IonIcon icon={personCircleOutline} />
+  );
+
+  const togglePopover = (e: any) => {
+    console.log('togglePopover called');
+    console.log('event:', e);
+    setPopoverEvent(e.nativeEvent);
+    setShowPopover((prevState) => !prevState);
+    console.log('showPopover state:', showPopover);
+  };
 
   useEffect(() => {
     if (user) {
@@ -307,7 +371,7 @@ const BikeBusGroupPage: React.FC = () => {
         });
 
         const resolvedMessages = await Promise.all(messagesPromises);
-        setMessagesData(resolvedMessages);
+        setMessagesData(resolvedMessages || []);
 
       } else {
         // Handle the case when the bulletin board document doesn't exist
@@ -360,6 +424,9 @@ const BikeBusGroupPage: React.FC = () => {
       // Clear the message input field
       setMessageInput('');
       postMessage('');
+
+      fetchMessages();
+
     } catch (error) {
       console.error("Error adding document: ", error);
     }
@@ -440,7 +507,7 @@ const BikeBusGroupPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent fullscreen>
+      <IonContent onIonScroll={handleScroll} fullscreen>
         {headerContext?.showHeader && (
           <IonHeader>
             <IonToolbar>
@@ -578,12 +645,19 @@ const BikeBusGroupPage: React.FC = () => {
                   .map((message, index) => (
                     <IonItem key={index}>
                       <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
-                        {message?.message}: {message?.username}
+                        {message?.message}:
                       </IonLabel>
+                      {username === message?.username && (
+                        <IonButton fill="clear" slot="end">
+                          <IonChip>
+                            {avatarElement}
+                            <IonLabel>{label}</IonLabel>
+                          </IonChip>
+                        </IonButton>
+                      )}
                     </IonItem>
                   ))}
               </IonList>
-
             </div>
           </IonCardContent>
         </IonCard>
