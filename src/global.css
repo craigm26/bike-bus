@@ -228,3 +228,11 @@
   height: 100%;
   width: 100%;
 }
+
+.right-align {
+  text-align: right;
+}
+
+.left-align {
+  text-align: left;
+}

@@ -344,7 +344,9 @@ const CreateBikeBusGroup: React.FC = () => {
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
-      Messages: [],
+      Messages: '',
+      Timestamp: '',
+      user: '',
     };
     await addDoc(collection(db, 'messages'), messagesData);
 
