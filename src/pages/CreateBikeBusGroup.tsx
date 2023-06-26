@@ -357,7 +357,7 @@ const CreateBikeBusGroup: React.FC = () => {
     const bulletinBoardData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
       // make an array of messageIds references in "Messages"
-      Messages: doc(db, 'messages', messagesId)
+      Messages: [],
     }
     await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
 

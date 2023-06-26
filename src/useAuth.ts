@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db, auth as firebaseAuth } from './firebaseConfig';
 import {
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
   signInAnonymously as firebaseSignInAnonymously,
   signOut as firebaseSignOut,
@@ -11,7 +10,8 @@ import {
   createUserWithEmailAndPassword,
   User,
   UserCredential,
-  updateProfile
+  updateProfile,
+  signInWithRedirect
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 
@@ -130,7 +130,7 @@ const useAuth = () => {
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(firebaseAuth, provider);
+      const result = await signInWithRedirect(firebaseAuth, provider);
       return result;
     } catch (error) {
       console.error('Error signing in with Google:', error);
@@ -193,11 +193,6 @@ const useAuth = () => {
       console.error('Error checking and updating account modes:', error);
     }
   };
-  
-
-
-  
-  
 
   return {
     user,

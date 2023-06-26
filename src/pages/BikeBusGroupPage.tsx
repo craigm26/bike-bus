@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonText, IonInput, IonModal, IonRouterLink } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, deleteDoc, addDoc } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, deleteDoc, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
 import { db, storage, firebase } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -97,19 +97,15 @@ const BikeBusGroupPage: React.FC = () => {
 
           if (groupData?.BikeBusLeaders?.some((leaderRef: any) => leaderRef.path === `users/${user?.uid}`)) {
             setIsUserLeader(true);
-            console.log('User is a leader');
           }
 
           if (groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${user?.uid}`)) {
             setIsUserMember(true);
-            console.log('User is a member');
           }
         } else {
-          console.log("No such document!");
         }
       })
       .catch((error) => {
-        console.log("Error getting group document:", error);
       });
   }, [user, groupId]);
 
@@ -130,7 +126,6 @@ const BikeBusGroupPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    console.log(user);
     fetchBikeBus();
   }, [fetchBikeBus, user]);
 
@@ -147,11 +142,9 @@ const BikeBusGroupPage: React.FC = () => {
               id: docSnapshot.id,
             } : { id: docSnapshot.id };
           } else {
-            console.log("No such document!");
           }
         })
           .catch((error) => {
-            console.log("Error getting route document:", error);
           });
       });
       const routesData = await Promise.all(routes);
@@ -171,11 +164,9 @@ const BikeBusGroupPage: React.FC = () => {
               id: docSnapshot.id,
             } : { id: docSnapshot.id };
           } else {
-            console.log("No such document!");
           }
         })
           .catch((error) => {
-            console.log("Error getting leader document:", error);
           });
       }
       );
@@ -186,7 +177,6 @@ const BikeBusGroupPage: React.FC = () => {
 
   const inviteUserByEmail = async () => {
     if (!inviteEmail) {
-      console.error("No email entered");
       return;
     }
 
@@ -213,11 +203,9 @@ const BikeBusGroupPage: React.FC = () => {
               id: docSnapshot.id,
             } : { id: docSnapshot.id };
           } else {
-            console.log("No such document!");
           }
         })
           .catch((error) => {
-            console.log("Error getting member document:", error);
           });
       }
       );
@@ -242,11 +230,9 @@ const BikeBusGroupPage: React.FC = () => {
               groupId: docSnapshot.id,
             } : { id: docSnapshot.id };
           } else {
-            console.log("No such document!");
           }
         })
           .catch((error) => {
-            console.log("Error getting schedule document:", error);
           });
       }
       );
@@ -258,9 +244,6 @@ const BikeBusGroupPage: React.FC = () => {
 
   // event is a firestore collection with event documents. We should use the bikebusgorupid to lookup the event documents that belong to the bikebusgroup.
   const fetchEvents = useCallback(async () => {
-    console.log("fetchEvents called");
-    console.log("groupData", groupData);
-    console.log("groupData.BikeBusEvents", groupData.event);
     const events = await Promise.all(
       groupData.event?.map(async (eventRef: any) => {
         const docSnapshot = await getDoc(eventRef);
@@ -272,7 +255,6 @@ const BikeBusGroupPage: React.FC = () => {
             groupId: docSnapshot.id,
           } : { id: docSnapshot.id };
         } else {
-          console.log("No such document!");
         }
       }) || []
     );
@@ -311,7 +293,17 @@ const BikeBusGroupPage: React.FC = () => {
       if (bulletinBoardDoc.exists()) {
         const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
         const messagesData = bulletinBoardData?.Messages || [];
-        setMessagesData(messagesData);
+
+        const messagesPromises = messagesData.map(async (messageRef: DocumentReference) => {
+          const messageDoc = await getDoc(messageRef);
+          if (messageDoc.exists()) {
+            return messageDoc.data();
+          }
+        });
+
+        const resolvedMessages = await Promise.all(messagesPromises);
+        setMessagesData(resolvedMessages);
+
         console.log("messagesData", messagesData);
       } else {
         // Handle the case when the bulletin board document doesn't exist
@@ -319,10 +311,8 @@ const BikeBusGroupPage: React.FC = () => {
     } else {
       // Handle the case when the bulletin board reference is missing
     }
+  }, [groupData]);
 
-    // Move this line inside the fetchBulletinBoard function
-  }
-    , [groupData]);
 
   useEffect(() => {
     fetchRoutes();
@@ -336,8 +326,9 @@ const BikeBusGroupPage: React.FC = () => {
     , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchSchedules, fetchBulletinBoard, fetchMessages]);
 
 
-  // when someone inputs a message and clicks the submit button, the message is added to the bulletin board (from the bulletin board document that references the bikebusgroup messages document collection id's)
-  const submitMessage = async () => {
+  const submitMessage = async (event: { preventDefault: () => void; }) => {
+    event.preventDefault();
+
     if (!user?.uid) {
       console.error("User is not logged in");
       return;
@@ -345,22 +336,44 @@ const BikeBusGroupPage: React.FC = () => {
     console.log("submitMessage called");
     console.log("groupData", groupData);
     console.log("groupData.bulletinboard", groupData.bulletinboard);
-    console.log("groupData.bulletinboard.id", groupData.bulletinboard.id);  
-    const bulletinBoardRef = doc(db, 'bulletinboards', groupData.bulletinboard.id);
-    const messagesRef = collection(bulletinBoardRef, 'messages');
+    console.log("groupData.bulletinboard.id", groupData.bulletinboard.id);
 
-    await addDoc(messagesRef, {
-      message: onmessage,
+
+
+    // Instead of getting 'bulletinboards' collection, get 'messages' collection directly
+    const messagesRef = collection(db, 'messages');
+    // create a new document in the messages collection
+    const messagesDoc = await addDoc(messagesRef, {
+      message: messageInput,
       user: doc(db, 'users', user.uid),
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      BikeBusGroup: doc(db, 'bikebusgroups', groupId),
+      timestamp: serverTimestamp(),
+      bulletinboard: doc(db, 'bulletinboard', groupData.bulletinboard.id),
     });
+    console.log("messagesDoc", messagesDoc);
+    const messageDoc = messagesDoc.id;
+    console.log("messageDoc", messageDoc);
+    try {
 
-    postMessage('');
+      // update the bulletinboard by adding a docref of the messages document to the bulletinboard Messages array
+      const bulletinBoardRef = doc(db, 'bulletinboard', groupData.bulletinboard.id);
+      await updateDoc(bulletinBoardRef, {
+        Messages: arrayUnion(doc(db, 'messages', messageDoc)) // need to get the id of the messages document that was just created and add it to the array
+      });
+
+
+      // Clear the message input field
+      setMessageInput('');
+      postMessage('');
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
   };
+
+
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
-      console.error("User is not logged in");
       return;
     }
 
@@ -406,17 +419,14 @@ const BikeBusGroupPage: React.FC = () => {
     return aDate && bDate ? aDate.getTime() - bDate.getTime() : 0;
   });
 
-  console.log("sortedEvents", sortedEvents);
 
   const nextEvent = sortedEvents.find((event: Event) => {
     const eventDate = event.start && (typeof event.start === 'string' ? new Date(event.start) : new Date(event.start.seconds * 1000));
     return eventDate ? eventDate.getTime() > new Date().getTime() : false;
   });
 
-  console.log("nextEvent", nextEvent);
 
   const nextEventId = nextEvent?.id;
-  console.log("nextEventId", nextEventId);
 
   // Options to format the time
   const dateTimeOptions: Intl.DateTimeFormatOptions = {
@@ -560,6 +570,11 @@ const BikeBusGroupPage: React.FC = () => {
               </IonList>
               <IonList>
                 <IonText>BulletinBoard</IonText>
+                {messagesData.map((message, index) => (
+                  <IonItem key={index}>
+                    <IonLabel>{message?.message}</IonLabel>
+                  </IonItem>
+                ))}
               </IonList>
               <form onSubmit={submitMessage}>
                 <IonInput

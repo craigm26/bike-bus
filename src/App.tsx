@@ -22,7 +22,7 @@ import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
 import ViewRoute from './pages/ViewRoute';
 import SearchForRoute from './pages/SearchForRoute';
-import SetUsername from './components/set-username';
+import SetUsername from './components/SetUsername';
 import Notifications from './pages/Notifications';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';

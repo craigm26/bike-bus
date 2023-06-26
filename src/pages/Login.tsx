@@ -15,6 +15,8 @@ import { useHistory } from 'react-router-dom';
 import './Login.css';
 import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
+import { getRedirectResult } from '@firebase/auth';
+import { auth as firebaseAuth } from '../firebaseConfig';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,15 +29,6 @@ const Login: React.FC = () => {
   } = useAuth();
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
-
-
-
-  useEffect(() => {
-    if (headerContext) {
-      headerContext.setShowHeader(false);
-    }
-  }, [headerContext]);
-
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -45,12 +38,14 @@ const Login: React.FC = () => {
       const userCredential = await signInWithEmailAndPassword(email, password);
       const user = userCredential?.user;
       if (user && user.uid) {
+        console.log("Starting checkAndUpdateAccountModes");
         await checkAndUpdateAccountModes(user.uid);
+        console.log("Finished checkAndUpdateAccountModes");
       }
       setSuccessMessage('Successfully logged in!');
-      setTimeout(() => {
-        history.push('/Map');
-      }, 2000);
+      console.log("Pushing to /Map");
+      history.push('/Map');
+      console.log("Pushed to /Map");
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
@@ -61,24 +56,92 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleSubmit = async () => {
+    console.log("handleGoogleSubmit");
     try {
       const userCredential = await signInWithGoogle();
       const user = userCredential?.user;
       if (user && user.uid) {
+        console.log("Starting checkAndUpdateAccountModes");
         await checkAndUpdateAccountModes(user.uid);
+        console.log("Finished checkAndUpdateAccountModes");
       }
+      // check to see if user has the account "username" field set with a value. if not, then redirect to the set username page
+      // lookup user in the database
+      // if user exists with the username field not blank, then redirect to the map page
+      // if user does not have the username field filled in, then redirect to the set username page
+      const username = user?.displayName;
+      if (username) {
+        // user has a username, so redirect to the map page
+        console.log("Pushing to /Map");
+        history.push('/Map');
+        console.log("Pushed to /Map");
+      } else {
+        // user does not have a username, so redirect to the set username page
+        console.log("Pushing to /SetUsername");
+        history.push('/SetUsername');
+        console.log("Pushed to /SetUsername");
+      }
+
+
+
       history.push('/Map');
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage("Error logging in with Google: " + error.message);
+        if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
+          // This is a potential COOP error
+          setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
+        } else {
+          setErrorMessage("Error logging in with Google: " + error.message);
+        }
       } else {
         setErrorMessage("Error logging in with Google.");
       }
     }
   };
 
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(firebaseAuth);
+        if (result) {
+          const user = result.user;
+          if (user && user.uid) {
+            console.log("Starting checkAndUpdateAccountModes");
+            await checkAndUpdateAccountModes(user.uid);
+            console.log("Finished checkAndUpdateAccountModes");
 
+            // The same username check and redirect logic as in handleGoogleSubmit
+            const username = user.displayName;
+            if (username) {
+              console.log("Pushing to /Map");
+              history.push('/Map');
+              console.log("Pushed to /Map");
+            } else {
+              console.log("Pushing to /SetUsername");
+              history.push('/SetUsername');
+              console.log("Pushed to /SetUsername");
+            }
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
+            setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
+          } else {
+            setErrorMessage("Error logging in with Google: " + error.message);
+          }
+        } else {
+          setErrorMessage("Error logging in with Google.");
+        }
+      }
+    };
 
+    handleRedirectResult();
+
+    if (headerContext) {
+      headerContext.setShowHeader(false);
+    }
+  }, [headerContext, checkAndUpdateAccountModes, history]);
 
 
 
