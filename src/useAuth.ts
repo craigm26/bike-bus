@@ -15,7 +15,7 @@ import {
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 
-interface UserData {
+interface UserData { 
   uid: string;
   email: string;
   username: string;

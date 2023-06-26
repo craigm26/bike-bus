@@ -228,7 +228,7 @@ const CreateBikeBusStop: React.FC = () => {
                             </IonTitle>
                         </IonCol>
                     </IonRow>
-                    <IonText>Click on the map to select a location and then "save new bikebusstop"</IonText>
+                    <IonText>Click on the map to select a location, make a name for it and then "save new bikebusstop"</IonText>
                     <IonItem>
                         <IonLabel>New BikeBus Stop Name:</IonLabel>
                         <IonInput value={BikeBusStopName} onIonChange={e => setBikeBusStopName(e.detail.value!)} />
