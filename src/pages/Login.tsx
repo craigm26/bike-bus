@@ -24,6 +24,7 @@ const Login: React.FC = () => {
   const {
     signInWithEmailAndPassword,
     signInWithGoogle,
+    signInWithGoogleMobile,
     signInAnonymously,
     checkAndUpdateAccountModes,
   } = useAuth();
@@ -58,37 +59,56 @@ const Login: React.FC = () => {
   const handleGoogleSubmit = async () => {
     console.log("handleGoogleSubmit");
     try {
-      const userCredential = await signInWithGoogle();
-      const user = userCredential?.user;
-      if (user && user.uid) {
-        console.log("Starting checkAndUpdateAccountModes");
-        await checkAndUpdateAccountModes(user.uid);
-        console.log("Finished checkAndUpdateAccountModes");
-      }
-      // check to see if user has the account "username" field set with a value. if not, then redirect to the set username page
-      // lookup user in the database
-      // if user exists with the username field not blank, then redirect to the map page
-      // if user does not have the username field filled in, then redirect to the set username page
-      const username = user?.displayName;
-      if (username) {
-        // user has a username, so redirect to the map page
-        console.log("Pushing to /Map");
-        history.push('/Map');
-        console.log("Pushed to /Map");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Mobile browsers do not support redirect sign-in
+        // so we need to use popup sign-in instead
+        console.log("Starting signInWithGoogle");
+        const userCredential = await signInWithGoogleMobile();
+        console.log("Finished signInWithGoogle");
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          console.log("Starting checkAndUpdateAccountModes");
+          await checkAndUpdateAccountModes(user.uid);
+          console.log("Finished checkAndUpdateAccountModes");
+        }
+        const username = user?.displayName;
+        if (username) {
+          // user has a username, so redirect to the map page
+          console.log("Pushing to /Map");
+          history.push('/Map');
+          console.log("Pushed to /Map");
+        } else {
+          // user does not have a username, so redirect to the set username page
+          console.log("Pushing to /SetUsername");
+          history.push('/SetUsername');
+          console.log("Pushed to /SetUsername");
+        }
       } else {
-        // user does not have a username, so redirect to the set username page
-        console.log("Pushing to /SetUsername");
-        history.push('/SetUsername');
-        console.log("Pushed to /SetUsername");
+        // Desktop browsers support redirect sign-in
+        console.log("Starting signInWithGoogle");
+
+        const userCredential = await signInWithGoogle();
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          await checkAndUpdateAccountModes(user.uid);
+        }
+        const username = user?.displayName;
+        if (username) {
+          // user has a username, so redirect to the map page
+          console.log("Pushing to /Map");
+          history.push('/Map');
+          console.log("Pushed to /Map");
+        } else {
+          // user does not have a username, so redirect to the set username page
+          console.log("Pushing to /SetUsername");
+          history.push('/SetUsername');
+          console.log("Pushed to /SetUsername");
+        }
       }
-
-
-
-      history.push('/Map');
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
-          // This is a potential COOP error
           setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
         } else {
           setErrorMessage("Error logging in with Google: " + error.message);
@@ -98,6 +118,7 @@ const Login: React.FC = () => {
       }
     }
   };
+  
 
   useEffect(() => {
     const handleRedirectResult = async () => {

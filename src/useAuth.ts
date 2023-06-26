@@ -11,7 +11,8 @@ import {
   User,
   UserCredential,
   updateProfile,
-  signInWithRedirect
+  signInWithRedirect,
+  signInWithPopup
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 
@@ -138,6 +139,17 @@ const useAuth = () => {
     }
   };
 
+  const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(firebaseAuth, provider);
+      return result;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      return null;
+    }
+  };
+
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
       const userCredential = await firebaseSignInAnonymously(firebaseAuth);
@@ -202,6 +214,7 @@ const useAuth = () => {
     signInWithEmailAndPassword,
     sendResetEmail,
     signInWithGoogle,
+    signInWithGoogleMobile,
     signInAnonymously,
     signOut,
     error,
