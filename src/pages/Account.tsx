@@ -24,6 +24,7 @@ import { Link } from 'react-router-dom';
 import React from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import { cogOutline, refresh } from 'ionicons/icons';
+import SetUsername from '../components/SetUsername';
 
 interface Group {
     id: string;
@@ -158,6 +159,9 @@ const Account: React.FC = () => {
                     <IonButton className="ion-button-profile" routerLink='/settings'>
                         Settings
                         <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                    </IonButton>
+                    <IonButton routerLink='/SetUsername'>
+                        Set Username
                     </IonButton>
                     <IonCardContent>
                         <IonList>

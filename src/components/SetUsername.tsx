@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonPage, IonInput, IonButton, IonLabel, IonItem } from '@ionic/react';
+import { IonPage, IonInput, IonButton, IonLabel, IonItem, IonContent, IonHeader, IonTitle, IonGrid, IonRow } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { db } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -14,14 +14,20 @@ const SetUsername: React.FC = () => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { username: username });
-      history.push('/Map');
+      history.push('/Account');
     }
   };
 
   return (
-    <IonPage>
+    <IonPage style={{ height: '100%' }}>
+      <IonHeader>
+        <IonTitle>Set Username</IonTitle>
+      </IonHeader>
+      <IonContent style={{ height: '100%' }}>
+      <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <IonRow style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <IonItem>
-          <IonLabel position="floating">@Username</IonLabel>
+          <IonLabel>@Username</IonLabel>
           <IonInput
             type="text"
             value={username}
@@ -31,6 +37,9 @@ const SetUsername: React.FC = () => {
           />
         </IonItem>
       <IonButton onClick={saveUsername}>Save Username</IonButton>
+        </IonRow>
+      </IonGrid>
+      </IonContent>
     </IonPage>
   );
 };
