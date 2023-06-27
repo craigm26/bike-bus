@@ -1,8 +1,28 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Allow read and write access for all documents until August 1, 2023
     match /{document=**} {
-       allow read, write: if request.time < timestamp.date(2023, 8, 1);
+      allow read, write: if request.time < timestamp.date(2023, 8, 1);
+    }
+
+    // Allow read access to user data for members of the bikebusgroup
+    match /users/{userId} {
+      allow read: if isBikeBusGroupMember(userId);
+      // Allow read access to the user's own data within their user document for the username field
+      allow read: if request.auth.uid == userId && resource.data.username == request.auth.token.name;
+
+      // Allow read access to the user's own data for the avatar folder in the storage bucket
+      match /avatars/{userId} {
+        allow read: if request.auth.uid == userId;
+      }
+    }
+
+    // Custom function to check if the user is a member of the bikebusgroup
+    function isBikeBusGroupMember(userId) {
+      // Implement your logic to check if the user is a member of the bikebusgroup by looking in the 'bikebusgroups' reference array field of their user document (accessible via `resource.data`)
+      return exists(/databases/$(database)/documents/bikebusgroups/$(userId));
     }
   }
 }

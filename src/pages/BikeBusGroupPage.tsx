@@ -80,7 +80,8 @@ const BikeBusGroupPage: React.FC = () => {
   const [popoverEvent, setPopoverEvent] = useState<any>();
   const [showEventModal, setShowEventModal] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
-
+  const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
 
   const headerContext = useContext(HeaderContext);
@@ -267,26 +268,51 @@ const BikeBusGroupPage: React.FC = () => {
   const fetchMembers = useCallback(async () => {
     if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
       const members = groupData.BikeBusMembers.map((member: any) => {
-        return getDoc(member).then((docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const memberData = docSnapshot.data();
-            // Check if memberData exists before spreading
-            return memberData ? {
-              ...memberData,
-              id: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          } else {
-          }
-        })
+        return getDoc(member)
+          .then((docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const memberData = docSnapshot.data();
+              return memberData ? {
+                ...memberData,
+                id: docSnapshot.id,
+              } : { id: docSnapshot.id };
+            } else {
+              // Return a placeholder object if the member document doesn't exist
+              return { id: member.id };
+            }
+          })
           .catch((error) => {
+            // Handle the error if necessary
           });
-      }
-      );
+      });
+      console.log(members);
       const membersData = await Promise.all(members);
       setMembersData(membersData);
+      console.log(membersData);
+      console.log(membersData[0]?.username);
+      console.log(membersData[0]?.username?.split('/').pop());
+      // Fetch usernames and avatars for members
+      const usernamesArray = await Promise.all(
+        membersData.map(async (member) => {
+          if (member && member.username) {
+            const userRefId = member.username.split('/').pop();
+            console.log(userRefId);
+            const userRef = doc(db, 'users', userRefId);
+            console.log(userRef);
+            const userSnapshot = await getDoc(userRef);
+            if (userSnapshot.exists()) {
+              const userData = userSnapshot.data();
+              return userData?.username;
+            }
+          }
+          return null;
+        })
+      );
+      setMemberUsernames(usernamesArray);
     }
-  }
-    , [groupData]);
+  }, [groupData]);
+
+
 
 
   // featchSchedules is an array. It should use groupData.BikeBusSchedules to get the schedule document and then make the properties of the schedule document available to the BikeBusGroupPage.tsx
@@ -586,17 +612,47 @@ const BikeBusGroupPage: React.FC = () => {
                     <IonLabel>{users?.username}</IonLabel>
                   </IonItem>
                 ))}
-                <IonList>
-                  {membersData.map((users, index) => (
-                    <IonItem key={index}>
-                      <IonLabel>Members</IonLabel>
-                      <IonLabel>{users?.username}</IonLabel>
-                    </IonItem>
-                  ))}
-                </IonList>
                 <IonItem>
-                  <IonLabel>Description</IonLabel>
-                  <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
+                  <IonLabel>Members</IonLabel>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {membersData.map((user, index) => (
+                      <IonAvatar key={index} style={{ marginRight: '8px' }}>
+                        {user.avatarUrl ? (
+                          <img src={user.avatarUrl} alt="Avatar" />
+                        ) : (
+                          <IonIcon icon={personCircleOutline} />
+                        )}
+                      </IonAvatar>
+                    ))}
+                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear">
+                      {membersData.length > 5 && (
+                        <IonChip>
+                          <IonLabel>{membersData.length}</IonLabel>
+                        </IonChip>
+                      )}
+                    </IonButton>
+                  </div>
+                </IonItem>
+                <IonModal isOpen={showMembersModal}>
+                  <IonHeader>
+                    <IonToolbar>
+                      <IonTitle>Members</IonTitle>
+                    </IonToolbar>
+                  </IonHeader>
+                  <IonContent>
+                    <IonList>
+                      {membersData.map((user, index) => (
+                        <IonItem key={index}>
+                          <IonLabel>{user?.username}</IonLabel>
+                        </IonItem>
+                      ))}
+                    </IonList>
+                    <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                  </IonContent>
+                </IonModal>
+                <IonItem>
+                <IonLabel>Description</IonLabel>
+                <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonLabel>Type</IonLabel>
@@ -630,34 +686,36 @@ const BikeBusGroupPage: React.FC = () => {
                   </Link>
                 </IonItem>
               </IonList>
-              <IonList>
-                <IonTitle>BulletinBoard</IonTitle>
-                <form onSubmit={submitMessage}>
-                  <IonInput
-                    value={messageInput}
-                    placeholder="Enter your message"
-                    onIonChange={e => setMessageInput(e.detail.value || '')}
-                  />
-                  <IonButton expand="full" type="submit">Send Bulletin Board Message</IonButton>
-                </form>
-                {messagesData && messagesData.length > 0 && messagesData
-                  .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp in descending order
-                  .map((message, index) => (
-                    <IonItem key={index}>
-                      <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
-                        {message?.message}:
-                      </IonLabel>
-                      {username === message?.username && (
-                        <IonButton fill="clear" slot="end">
-                          <IonChip>
-                            {avatarElement}
-                            <IonLabel>{label}</IonLabel>
-                          </IonChip>
-                        </IonButton>
-                      )}
-                    </IonItem>
-                  ))}
-              </IonList>
+              {isUserMember && (
+                <IonList>
+                  <IonTitle>BulletinBoard</IonTitle>
+                  <form onSubmit={submitMessage}>
+                    <IonInput
+                      value={messageInput}
+                      placeholder="Enter your message"
+                      onIonChange={e => setMessageInput(e.detail.value || '')}
+                    />
+                    <IonButton expand="full" type="submit">Send Bulletin Board Message</IonButton>
+                  </form>
+                  {messagesData && messagesData.length > 0 && messagesData
+                    .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp in descending order
+                    .map((message, index) => (
+                      <IonItem key={index}>
+                        <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
+                          {message?.message}:
+                        </IonLabel>
+                        {username === message?.username && (
+                          <IonButton fill="clear" slot="end">
+                            <IonChip>
+                              {avatarElement}
+                              <IonLabel>{label}</IonLabel>
+                            </IonChip>
+                          </IonButton>
+                        )}
+                      </IonItem>
+                    ))}
+                </IonList>
+              )}
             </div>
           </IonCardContent>
         </IonCard>
