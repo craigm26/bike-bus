@@ -9,15 +9,14 @@ service cloud.firestore {
 
     // Allow read access to user data for members of the bikebusgroup
     match /users/{userId} {
-      allow read: if isBikeBusGroupMember(userId);
-      // Allow read access to the user's own data within their user document for the username field
-      allow read: if request.auth.uid == userId && resource.data.username == request.auth.token.name;
+      // Check if current user is a member of bikebusgroup
+      function isCurrentUserBikeBusGroupMember() {
+        return exists(/databases/$(database)/documents/bikebusgroups/$(request.auth.uid));
+      }
 
-    // Custom function to check if the user is a member of the bikebusgroup
-    function isBikeBusGroupMember(userId) {
-      // Implement your logic to check if the user is a member of the bikebusgroup by looking in the 'bikebusgroups' reference array field of their user document (accessible via `resource.data`)
-      return exists(/databases/$(database)/documents/bikebusgroups/$(userId));
+      // Allow read access to the user's own data within their user document for the username field
+      // or allow read access if current user is a member of bikebusgroup
+      allow read: if request.auth.uid == userId && resource.data.username == request.auth.token.name || isCurrentUserBikeBusGroupMember();
     }
   }
-}
 }

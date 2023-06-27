@@ -136,11 +136,8 @@ const BikeBusGroupPage: React.FC = () => {
   );
 
   const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
   };
 
   useEffect(() => {
@@ -285,20 +282,14 @@ const BikeBusGroupPage: React.FC = () => {
             // Handle the error if necessary
           });
       });
-      console.log(members);
       const membersData = await Promise.all(members);
       setMembersData(membersData);
-      console.log(membersData);
-      console.log(membersData[0]?.username);
-      console.log(membersData[0]?.username?.split('/').pop());
       // Fetch usernames and avatars for members
       const usernamesArray = await Promise.all(
         membersData.map(async (member) => {
           if (member && member.username) {
             const userRefId = member.username.split('/').pop();
-            console.log(userRefId);
             const userRef = doc(db, 'users', userRefId);
-            console.log(userRef);
             const userSnapshot = await getDoc(userRef);
             if (userSnapshot.exists()) {
               const userData = userSnapshot.data();
@@ -392,7 +383,29 @@ const BikeBusGroupPage: React.FC = () => {
         const messagesPromises = messagesData.map(async (messageRef: DocumentReference) => {
           const messageDoc = await getDoc(messageRef);
           if (messageDoc.exists()) {
-            return messageDoc.data();
+            console.log("messageDoc exists");
+            const messageData = messageDoc.data();
+            console.log("messageData: ", messageData);
+
+            // Make sure the user reference exists
+            if (messageData?.user) {
+              console.log("messageData: ", messageData);
+              const userDoc = await getDoc(messageData.user);
+              const userData = userDoc.data();
+
+              // return combined message data and user data, but also include the userDoc's id
+              return {
+                ...messageData,
+                user: userData ? {
+                  ...userData,
+                  id: userDoc.id,  // Include the document ID here
+                } : null,
+              };
+            } else {
+              console.log("User reference is missing in the message");
+            }
+          } else {
+            console.log("messageDoc does not exist");
           }
         });
 
@@ -406,6 +419,7 @@ const BikeBusGroupPage: React.FC = () => {
       // Handle the case when the bulletin board reference is missing
     }
   }, [groupData]);
+
 
   useEffect(() => {
     fetchRoutes();
@@ -615,19 +629,19 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonItem>
                   <IonLabel>Members</IonLabel>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                    <IonChip>
-                    {membersData.map((user, index) => (
-                      <div style={{ marginRight: '8px' }} key={index}>
-                        <Avatar uid={user.id} size="extrasmall" />
-                      </div>
-                    ))}
-                      {membersData.length > 5 && (
-                        <IonChip>
-                          <IonLabel>{membersData.length}</IonLabel>
-                        </IonChip>
-                      )}
-                    </IonChip>
+                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                      <IonChip>
+                        {membersData.map((user, index) => (
+                          <div style={{ marginRight: '8px' }} key={index}>
+                            <Avatar uid={user.id} size="extrasmall" />
+                          </div>
+                        ))}
+                        {membersData.length > 5 && (
+                          <IonChip>
+                            <IonLabel>{membersData.length}</IonLabel>
+                          </IonChip>
+                        )}
+                      </IonChip>
                     </IonButton>
                   </div>
 
@@ -699,23 +713,26 @@ const BikeBusGroupPage: React.FC = () => {
                   </form>
                   {messagesData && messagesData.length > 0 && messagesData
                     .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp in descending order
-                    .map((message, index) => (
-                      <IonItem key={index}>
-                        <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
-                          {message?.message}:
-                        </IonLabel>
-                        {username === message?.username && (
-                          <IonButton fill="clear" slot="end">
-                            <IonChip>
-                              {avatarElement}
-                              <IonLabel>{label}</IonLabel>
-                            </IonChip>
-                          </IonButton>
-                        )}
-                      </IonItem>
-                    ))}
+                    .map((message, index) => {
+                      console.log(message);
+                      return (
+                        <IonItem key={index}>
+                          {username !== message?.username && (
+                            <Avatar uid={message?.user?.id} size='small' />
+                          )}
+                          <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
+                            {message?.message}
+                          </IonLabel>
+                          {username === message?.username && (
+                            <Avatar uid={message?.user?.id} size='small' />
+                          )}
+                        </IonItem>
+                      );
+                    })}
                 </IonList>
               )}
+
+
             </div>
           </IonCardContent>
         </IonCard>
