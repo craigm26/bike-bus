@@ -702,7 +702,6 @@ const BikeBusGroupPage: React.FC = () => {
               </IonList>
               {isUserMember && (
                 <IonList>
-                  <IonTitle>BulletinBoard</IonTitle>
                   <form onSubmit={submitMessage}>
                     <IonInput
                       value={messageInput}
@@ -718,13 +717,13 @@ const BikeBusGroupPage: React.FC = () => {
                       return (
                         <IonItem key={index}>
                           {username !== message?.username && (
-                            <Avatar uid={message?.user?.id} size='small' />
+                            <Avatar uid={message?.user?.id} size='extrasmall' />
                           )}
                           <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
                             {message?.message}
                           </IonLabel>
                           {username === message?.username && (
-                            <Avatar uid={message?.user?.id} size='small' />
+                            <Avatar uid={message?.user?.id} size='extrasmall' />
                           )}
                         </IonItem>
                       );
