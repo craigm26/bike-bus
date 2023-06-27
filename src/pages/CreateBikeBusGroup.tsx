@@ -178,6 +178,15 @@ const CreateBikeBusGroup: React.FC = () => {
   }
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
+
+    const endDateObj = new Date(endDate);
+  
+    // Create the end timestamp by combining the event date and end time
+    const endTimeObj = new Date(`${endDateObj.toDateString()} ${endTime}`);
+  
+    // Convert the end timestamp to a Firebase Timestamp
+    const endTimestamp = Timestamp.fromDate(endTimeObj);
+
     const scheduleData = {
       startTime: startTime,
       startDateTime: startDateTime,
@@ -296,6 +305,7 @@ const CreateBikeBusGroup: React.FC = () => {
       const eventData = {
         title: BikeBusName + ' for ' + day,
         start: day,
+        end: endTimestamp,
         leader: '',
         members: [],
         kids: [],
@@ -340,7 +350,7 @@ const CreateBikeBusGroup: React.FC = () => {
     await updateDoc(eventsRef2, {
       event: arrayUnion(doc(db, 'event', eventId)),
     });
-    
+
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
