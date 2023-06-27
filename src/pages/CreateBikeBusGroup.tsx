@@ -60,7 +60,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [BikeBusType, setBikeBusType] = useState('');
   const [startDateTime, setStartDateTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('08:00');
+  const [endTime, setEndTime] = useState('08:00');
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);

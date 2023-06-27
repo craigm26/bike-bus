@@ -79,8 +79,8 @@ const ViewSchedule: React.FC = () => {
                 console.log(eventData);
 
                 const event: Event = {
-                    start: eventData?.start.toDate(),
-                    end: new Date(eventData?.endTime),
+                    start: eventData?.start ? eventData?.start.toDate() : new Date(),
+                    end: eventData?.end ? eventData?.end.toDate() : new Date(),
                     title: eventData?.title,
                     route: eventData?.route,
                     schedule: eventData?.schedule,
@@ -99,6 +99,7 @@ const ViewSchedule: React.FC = () => {
                     sprinters: eventData?.sprinters,
                     id: eventDocSnapshot.id,
                 };
+                console.log(event);
                 eventDocs.push(event);
             }
             setEvents(eventDocs);
