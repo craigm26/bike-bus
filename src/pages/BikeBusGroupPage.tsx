@@ -615,23 +615,22 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonItem>
                   <IonLabel>Members</IonLabel>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                    <IonChip>
                     {membersData.map((user, index) => (
-                      <IonAvatar key={index} style={{ marginRight: '8px' }}>
-                        {user.avatarUrl ? (
-                          <img src={user.avatarUrl} alt="Avatar" />
-                        ) : (
-                          <IonIcon icon={personCircleOutline} />
-                        )}
-                      </IonAvatar>
+                      <div style={{ marginRight: '8px' }} key={index}>
+                        <Avatar uid={user.id} size="extrasmall" />
+                      </div>
                     ))}
-                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear">
                       {membersData.length > 5 && (
                         <IonChip>
                           <IonLabel>{membersData.length}</IonLabel>
                         </IonChip>
                       )}
+                    </IonChip>
                     </IonButton>
                   </div>
+
                 </IonItem>
                 <IonModal isOpen={showMembersModal}>
                   <IonHeader>
@@ -643,7 +642,8 @@ const BikeBusGroupPage: React.FC = () => {
                     <IonList>
                       {membersData.map((user, index) => (
                         <IonItem key={index}>
-                          <IonLabel>{user?.username}</IonLabel>
+                          <Avatar uid={user.id} />
+                          <IonLabel> {user?.username}</IonLabel>
                         </IonItem>
                       ))}
                     </IonList>
@@ -651,8 +651,8 @@ const BikeBusGroupPage: React.FC = () => {
                   </IonContent>
                 </IonModal>
                 <IonItem>
-                <IonLabel>Description</IonLabel>
-                <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
+                  <IonLabel>Description</IonLabel>
+                  <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonLabel>Type</IonLabel>
