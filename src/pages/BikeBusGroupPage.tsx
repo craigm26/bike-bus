@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, deleteDoc, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
-import { db, storage, firebase } from '../firebaseConfig';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
+import { getDoc, doc, collection, getDocs, query, where, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
@@ -708,7 +708,7 @@ const BikeBusGroupPage: React.FC = () => {
                       placeholder="Enter your message"
                       onIonChange={e => setMessageInput(e.detail.value || '')}
                     />
-                    <IonButton expand="full" type="submit">Send Bulletin Board Message</IonButton>
+                    <IonButton expand="full" type="submit">Post Bulletin Board Message</IonButton>
                   </form>
                   {messagesData && messagesData.length > 0 && messagesData
                     .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp in descending order
