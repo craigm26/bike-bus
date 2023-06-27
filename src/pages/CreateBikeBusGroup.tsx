@@ -31,7 +31,7 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
-import { personCircleOutline } from 'ionicons/icons';
+import { add, personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 import { useParams } from 'react-router-dom';
@@ -179,14 +179,6 @@ const CreateBikeBusGroup: React.FC = () => {
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
 
-    const endDateObj = new Date(endDate);
-  
-    // Create the end timestamp by combining the event date and end time
-    const endTimeObj = new Date(`${endDateObj.toDateString()} ${endTime}`);
-  
-    // Convert the end timestamp to a Firebase Timestamp
-    const endTimestamp = Timestamp.fromDate(endTimeObj);
-
     const scheduleData = {
       startTime: startTime,
       startDateTime: startDateTime,
@@ -292,6 +284,12 @@ const CreateBikeBusGroup: React.FC = () => {
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
     console.log('eventId:', eventId);
+    console.log('eventsData:', eventsData);
+    console.log('eventsRef:', eventsRef);
+
+    // add the events document to the event collection in firestore
+    const eventRef = doc(db, 'event', eventId);
+    await addDoc(collection(db, 'event'), eventRef);
 
     // add the events document id (as a reference) to the schedule document in firestore
     const scheduleRef3 = doc(db, 'schedules', scheduleId);
@@ -299,13 +297,15 @@ const CreateBikeBusGroup: React.FC = () => {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
+    // expectedDuration is the number of hours and minutes the ride is expected to take. This is used to calculate the end time of the ride. setStartTime minus setEndTime.
+    const expectedDuration = (new Date(startTime).getTime() - new Date(endTime).getTime()) / 1000 / 60 / 60;
+
     // Create event documents based on eventDays
     const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
     for (const day of eventDays) {
       const eventData = {
         title: BikeBusName + ' for ' + day,
         start: day,
-        end: endTimestamp,
         leader: '',
         members: [],
         kids: [],
@@ -315,6 +315,7 @@ const CreateBikeBusGroup: React.FC = () => {
         caboose: [],
         startTime: startTime,
         endTime: endTime,
+        expectedDuration: expectedDuration,
         route: doc(db, 'routes', RouteID),
         BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
         BikeBusStops: [],
@@ -322,10 +323,12 @@ const CreateBikeBusGroup: React.FC = () => {
         StaticMap: '',
         schedule: doc(db, 'schedules', scheduleId),
       };
+      console.log('eventData:', eventData);
 
       await addDoc(collection(db, 'event'), eventData);
       // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
       const eventRef = await getDocs(collection(db, 'event'));
+      console.log('eventRef:', eventRef);
       const eventIds = eventRef.docs.map((doc) => doc.id);
       console.log('eventIds:', eventIds);
 
