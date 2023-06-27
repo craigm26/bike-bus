@@ -182,6 +182,14 @@ const AddSchedule: React.FC = () => {
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
 
+    const endDateObj = new Date(endDate);
+  
+    // Create the end timestamp by combining the event date and end time
+    const endTimeObj = new Date(`${endDateObj.toDateString()} ${endTime}`);
+  
+    // Convert the end timestamp to a Firebase Timestamp
+    const endTimestamp = Timestamp.fromDate(endTimeObj);
+
 
     const scheduleData = {
       startTime: startTime,
@@ -284,6 +292,7 @@ const AddSchedule: React.FC = () => {
       const eventData = {
         title: BikeBusName + ' BikeBus on route ' + route.routeName + ' for ' + day,
         start: day,
+        end: endTimestamp,
         leader: '',
         members: [],
         kids: [],
