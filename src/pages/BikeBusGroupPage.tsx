@@ -334,22 +334,43 @@ const BikeBusGroupPage: React.FC = () => {
 
   // event is a firestore collection with event documents. We should use the bikebusgorupid to lookup the event documents that belong to the bikebusgroup.
   const fetchEvents = useCallback(async () => {
-    const events = await Promise.all(
-      groupData.event?.map(async (eventRef: any) => {
-        const docSnapshot = await getDoc(eventRef);
-        if (docSnapshot.exists()) {
-          const eventData = docSnapshot.data();
-          return eventData ? {
-            ...eventData,
-            id: docSnapshot.id,
-            groupId: docSnapshot.id,
-          } : { id: docSnapshot.id };
-        } else {
-        }
-      }) || []
-    );
-    setEventsData(events);
+    if (groupData && groupData.events) {
+      const events = await Promise.all(
+        groupData.events.map(async (eventRef: any) => {
+          const docSnapshot = await getDoc(eventRef);
+          if (docSnapshot.exists()) {
+            const eventData = docSnapshot.data();
+            return eventData ? {
+              ...eventData,
+              id: docSnapshot.id,
+              groupId: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          }
+        })
+      );
+      setEventsData(events);
+    }
   }, [groupData]);
+
+  const fetchEvent = useCallback(async () => {
+    if (groupData && groupData.event) {
+      const event = await Promise.all(
+        groupData.event.map(async (eventRef: any) => {
+          const docSnapshot = await getDoc(eventRef);
+          if (docSnapshot.exists()) {
+            const eventData = docSnapshot.data();
+            return eventData ? {
+              ...eventData,
+              id: docSnapshot.id,
+              groupId: docSnapshot.id,
+            } : { id: docSnapshot.id };
+          }
+        })
+      );
+      setEventData(event);
+    }
+  }, [groupData]);
+  
 
 
   const fetchBulletinBoard = useCallback(async () => {
@@ -426,12 +447,16 @@ const BikeBusGroupPage: React.FC = () => {
     fetchLeaders();
     fetchMembers();
     fetchEvents();
+    fetchEvent();
     fetchSchedules();
     fetchBulletinBoard();
     fetchMessages();
   }
-    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchSchedules, fetchBulletinBoard, fetchMessages]);
+    , [fetchRoutes, fetchLeaders, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules, fetchBulletinBoard, fetchMessages]);
 
+  console.log("groupData: ", groupData);
+  console.log("eventsData: ", eventsData);
+  console.log("eventData: ", eventData);
 
   const submitMessage = async (event: { preventDefault: () => void; }) => {
     event.preventDefault();
