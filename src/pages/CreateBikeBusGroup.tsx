@@ -40,10 +40,6 @@ import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import { addDoc, collection, Timestamp, doc, getDoc, arrayUnion, updateDoc, getDocs } from 'firebase/firestore';
 import React from 'react';
-import { addMinutes, format } from 'date-fns';
-
-
-
 
 const CreateBikeBusGroup: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -306,9 +302,18 @@ const CreateBikeBusGroup: React.FC = () => {
       }, []),
     };
 
+    // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
+    if (!isRecurring) {
+      eventsData.title = BikeBusName + ' for ' + startDate.split('T')[0];
+      eventsData.start = startDate.split('T')[0];
+      eventsData.end = endDate.split('T')[0];
+    }
 
+    // add the event document to the event collection in firestore
+    const eventsRef5 = await addDoc(collection(db, 'event'), eventsData);
+    const eventId5 = eventsRef5.id;
+    console.log('eventId5:', eventId5);
 
-    // add the events document to the events collection in firestore
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
     console.log('eventId:', eventId);
@@ -363,11 +368,23 @@ const CreateBikeBusGroup: React.FC = () => {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
-    // add the references to the event documents to the events document in firestore
-    const eventsRef2 = doc(db, 'events', eventId);
-    await updateDoc(eventsRef2, {
-      event: arrayUnion(doc(db, 'event', eventId)),
-    });
+    // add the events document to the events collection in firestore and if it was not recurring, use the eventsId5 as the document id
+    if (!isRecurring) {
+      const eventsRef6 = await addDoc(collection(db, 'events'), eventsData);
+      const eventId6 = eventsRef6.id;
+      // update eventsRef6 with the eventId5 id
+      await updateDoc(eventsRef6, {
+        id: eventId5,
+      });
+      console.log('eventId6:', eventId6);
+      updateDoc(scheduleRef3, {
+        event: arrayUnion(doc(db, 'event', eventId6)),
+      });
+      // update the bikebusgroupts event array with the eventId6 id
+      await updateDoc(bikeBusGroupRef2, {
+        event: arrayUnion(doc(db, 'event', eventId6)),
+      });
+    }
 
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
@@ -605,4 +622,3 @@ const CreateBikeBusGroup: React.FC = () => {
 };
 
 export default CreateBikeBusGroup;
-
