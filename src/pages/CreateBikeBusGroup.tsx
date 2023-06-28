@@ -31,7 +31,7 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import Profile from '../components/Profile'; // Import the Profile component
-import { add, personCircleOutline } from 'ionicons/icons';
+import { personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
 import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 import { useParams } from 'react-router-dom';
@@ -40,6 +40,7 @@ import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import { addDoc, collection, Timestamp, doc, getDoc, arrayUnion, updateDoc, getDocs } from 'firebase/firestore';
 import React from 'react';
+import { addMinutes, format } from 'date-fns';
 
 
 
@@ -55,12 +56,12 @@ const CreateBikeBusGroup: React.FC = () => {
   const localizer = momentLocalizer(moment);
   const [BikeBusName, setBikeBusName] = useState('');
   const [BikeBusDescription, setBikeBusDescription] = useState('');
-  const [startTime, setStartTime] = useState('07:00');
+  const [startTime, setStartTime] = useState<string>('07:00');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [BikeBusType, setBikeBusType] = useState('');
   const [startDateTime, setStartDateTime] = useState<string>('');
-  const [endTime, setEndTime] = useState('08:00');
+  const [endTime, setEndTime] = useState<string>('08:00');
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
@@ -71,6 +72,8 @@ const CreateBikeBusGroup: React.FC = () => {
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
   const [BikeBusStopName, setBikeBusStopName] = useState('');
   const [bulletinBoardData, setBulletinBoardData] = useState<any>(null);
+  const [expectedDuration, setExpectedDuration] = useState<number>(0);
+
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -102,10 +105,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
   // format the startTime in am or pm (not 24 hour time)
-  const formattedStartTime = startTime ? new Date(startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
-
-  // format the endTime in am or pm (not 24 hour time)
-  const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+  const formattedStartTime = startTime ? startTime : '';
 
 
   console.log("RouteID: ", RouteID);
@@ -121,6 +121,14 @@ const CreateBikeBusGroup: React.FC = () => {
         const routeData = routeSnapshot.data();
         if (routeData) {
           setRoute(routeData);
+          // Extract the expected duration from the routeData and set it to the expectedDuration state variable
+          const duration = routeData.duration; // Replace 'duration' with the actual field name in the route document
+          setExpectedDuration(duration);
+
+          // Calculate the end time based on the start time and expected duration
+          const startMoment = moment(startTime, 'HH:mm');
+          const endMoment = startMoment.clone().add(duration, 'minutes');
+          setEndTime(endMoment.format('HH:mm'));
         }
       }
     };
@@ -176,15 +184,54 @@ const CreateBikeBusGroup: React.FC = () => {
     // If the user object is null, redirect to the login page
     return <></>;
   }
+
+  function getRecurringDates(startDate: Date, endDate: Date, selectedDays: { [key: string]: boolean }) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const selectedDayIndices = Object.entries(selectedDays)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([day]) => days.indexOf(day));
+    const dates = [];
+
+    for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
+      if (selectedDayIndices.includes(dt.getDay())) {
+        dates.push(new Date(dt));
+      }
+    }
+
+    return dates;
+  }
+
+
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
 
+    console.log('createBikeBusGroupAndSchedule called');
+    console.log('startTime:', startTime);
+
+    // Calculate the end time based on the start time and expected duration
+    const startTimeDate = moment(startTime, 'HH:mm');
+    const endTimeDate = moment(startTimeDate).add(expectedDuration, 'minutes');
+    const endTime = endTimeDate.format('hh:mm a');
+
+    console.log('endTimeDate:', endTimeDate);
+    console.log('endTime:', endTime);
+    console.log('startTimeDate:', startTimeDate);
+
+    // Convert the startTime to a Firestore timestamp
+    const startTimestamp = Timestamp.fromDate(startTimeDate.toDate());
+    // Convert the endTime to a Firestore timestamp
+    const endTimestamp = Timestamp.fromDate(endTimeDate.toDate());
+
+
     const scheduleData = {
       startTime: startTime,
+      startTimeStamp: startTimestamp,
       startDateTime: startDateTime,
       startDate: startDate,
       endDate: endDate,
-      endTime: endTime,
+      endTime: endTimestamp,
       isRecurring: isRecurring,
       selectedDays: selectedDays,
       scheduleCreator: doc(db, 'users', user.uid),
@@ -240,33 +287,14 @@ const CreateBikeBusGroup: React.FC = () => {
       scheduleName: BikeBusName,
     });
 
-
-
-    function getRecurringDates(startDate: Date, endDate: Date, selectedDays: { [key: string]: boolean }) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const selectedDayIndices = Object.entries(selectedDays)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([day]) => days.indexOf(day));
-      const dates = [];
-
-      for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
-        if (selectedDayIndices.includes(dt.getDay())) {
-          dates.push(new Date(dt));
-        }
-      }
-
-      return dates;
-    }
-
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
       title: BikeBusName,
       start: startDate.split('T')[0],
       end: endDate.split('T')[0],
       startTime: startTime,
-      endTime: endTime,
+      startTimeStamp: startTimestamp,
+      endTime: endTimestamp,
       eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
       recurring: isRecurring,
       selectedDays: selectedDays,
@@ -284,21 +312,12 @@ const CreateBikeBusGroup: React.FC = () => {
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
     console.log('eventId:', eventId);
-    console.log('eventsData:', eventsData);
-    console.log('eventsRef:', eventsRef);
-
-    // add the events document to the event collection in firestore
-    const eventRef = doc(db, 'event', eventId);
-    await addDoc(collection(db, 'event'), eventRef);
 
     // add the events document id (as a reference) to the schedule document in firestore
     const scheduleRef3 = doc(db, 'schedules', scheduleId);
     await updateDoc(scheduleRef3, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
-
-    // expectedDuration is the number of hours and minutes the ride is expected to take. This is used to calculate the end time of the ride. setStartTime minus setEndTime.
-    const expectedDuration = (new Date(startTime).getTime() - new Date(endTime).getTime()) / 1000 / 60 / 60;
 
     // Create event documents based on eventDays
     const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
@@ -314,8 +333,8 @@ const CreateBikeBusGroup: React.FC = () => {
         sheepdogs: [],
         caboose: [],
         startTime: startTime,
-        endTime: endTime,
-        expectedDuration: expectedDuration,
+        startTimestamp: startTimestamp,
+        endTime: endTimestamp,
         route: doc(db, 'routes', RouteID),
         BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
         BikeBusStops: [],
@@ -323,12 +342,10 @@ const CreateBikeBusGroup: React.FC = () => {
         StaticMap: '',
         schedule: doc(db, 'schedules', scheduleId),
       };
-      console.log('eventData:', eventData);
 
       await addDoc(collection(db, 'event'), eventData);
       // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
       const eventRef = await getDocs(collection(db, 'event'));
-      console.log('eventRef:', eventRef);
       const eventIds = eventRef.docs.map((doc) => doc.id);
       console.log('eventIds:', eventIds);
 
@@ -338,8 +355,6 @@ const CreateBikeBusGroup: React.FC = () => {
           event: arrayUnion(doc(db, 'event', eventId)),
         });
       }
-
-
     }
 
     // add the references to the event documents to the bikebusgroup document in firestore
@@ -491,30 +506,19 @@ const CreateBikeBusGroup: React.FC = () => {
           <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
           <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
             <IonDatetime
-              presentation='time'
+              presentation="time"
+              value={startTime} // Set the value to the `startTime` string
               onIonChange={e => {
-                console.log('Start Time selected', e.detail.value);
-                setStartTime(e.detail.value as string);
-
+                const selectedTime = e.detail.value as string; // Get the selected time as a string
+                setStartTime(selectedTime); // Update the `startTime` state variable
               }}
-            ></IonDatetime>
+            />
             <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus End Time</IonLabel>
-          <IonLabel>{formattedEndTime}</IonLabel>
-          <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
-          <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
-            <IonDatetime
-              presentation='time'
-              onIonChange={e => {
-                console.log('End Time selected', e.detail.value);
-                setEndTime(e.detail.value as string);
-              }}
-            ></IonDatetime>
-            <IonButton onClick={() => setShowEndTimeModal(false)}>Done</IonButton>
-          </IonModal>
+          <IonLabel>Expected Duration</IonLabel>
+          <IonLabel>{expectedDuration} minutes</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Is Recurring?</IonLabel>
@@ -601,3 +605,4 @@ const CreateBikeBusGroup: React.FC = () => {
 };
 
 export default CreateBikeBusGroup;
+
