@@ -103,6 +103,8 @@ const BikeBusGroupPage: React.FC = () => {
     messagesData.length > messages.length && setMessages(messagesData);
   };
 
+  
+
   const handleScroll = (event: { target: { scrollHeight: number; scrollTop: number; clientHeight: number; }; }) => {
     const scrollThreshold = 100; // Adjust this value based on your layout and requirements
 
@@ -370,7 +372,7 @@ const BikeBusGroupPage: React.FC = () => {
       setEventData(event);
     }
   }, [groupData]);
-  
+
 
 
   const fetchBulletinBoard = useCallback(async () => {
@@ -534,11 +536,23 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
+  console.log(eventsData); // check the original events data
+
+  console.log(groupId); 
+
+ 
+  // convert BikeBusGroup to string (from the url parameter) and assign it to groupId2
+  const groupId2 = groupId.toString();
+  console.log(groupId2); // check the groupId2
+
+
+
   const validEvents = eventsData.filter((event: Event) =>
-    event.start &&
-    typeof event.start !== 'string' &&
-    event.BikeBusGroup.path === `bikebusgroups/${groupId}`
+  event.start 
+  // groupId in the event document should match the groupId
   );
+  console.log(validEvents); // check the filtered valid events
+  
 
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
     const aDate = a.start && (typeof a.start === 'string' ? new Date(a.start) : new Date(a.start.seconds * 1000));
@@ -551,6 +565,9 @@ const BikeBusGroupPage: React.FC = () => {
     const eventDate = event.start && (typeof event.start === 'string' ? new Date(event.start) : new Date(event.start.seconds * 1000));
     return eventDate ? eventDate.getTime() > new Date().getTime() : false;
   });
+
+  
+  console.log(nextEvent); // check the next event
 
 
   const nextEventId = nextEvent?.id;
