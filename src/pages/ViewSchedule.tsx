@@ -46,6 +46,8 @@ const localizer = dateFnsLocalizer({
 })
 
 type Event = {
+    formattedStartDate: Timestamp,
+    formattedEndDate: Timestamp,
     id: string,
     start: Date,
     end: Date,
@@ -56,6 +58,7 @@ type Event = {
     startTimestamp: Timestamp,
     endTime: Timestamp,
     BikeBusGroup: string,
+    BikeBusName: string,
     BikeBusStopTimes: [],
     BikeBusStops: [],
     StaticMap: string,
@@ -80,6 +83,8 @@ const ViewSchedule: React.FC = () => {
     const [eventLink, setEventLink] = useState<string>('');
     const [eventId, setEventId] = useState<string>('');
     const history = useHistory();
+    const [startTime, setStartTime] = useState<string>('');
+    const [endTime, setEndTime] = useState<string>('');
 
 
     useEffect(() => {
@@ -87,35 +92,88 @@ const ViewSchedule: React.FC = () => {
             const eventsSnapshot = await getDocs(collection(db, "event")); // get all event documents
             const eventDocs: Event[] = [];
 
+            // Inside fetchDetailedEvents function
             eventsSnapshot.forEach((docSnapshot) => {
                 const eventData = docSnapshot.data();
+                console.log('Number of events retrieved:', eventsSnapshot.docs.length);
                 if (eventData?.groupId === id) { // only process events related to the current group
+                    const startDate = eventData.start.toDate();
+                    const year = startDate.getFullYear();
+                    const month = startDate.getMonth() + 1; // Months are zero-based in JavaScript
+                    const day = startDate.getDate();
+
+                    // Format the date as MM/DD/YYY and convert it to a firestore timestamp
+                    const formattedStartDate = Timestamp.fromDate(new Date(`${month}/${day}/${year}`));
+
+                    // now we need to get the start time for the event
+                    const startTime = eventData.startTime;
+
+                    // Parse hours and minutes from startTime
+                    const [hours, minutes] = startTime.split(':').map(Number);
+
+                    // Create a new Date object from formattedStartDate and set the hours and minutes
+                    const startEventDate = formattedStartDate.toDate();
+                    startEventDate.setHours(hours, minutes);
+
+                    console.log('eventData.endTime: ', eventData.endTime)
+
+                    // Convert the endTime timestamp to a Date object
+                    const endTimeDate = eventData.endTime.toDate();
+
+                    // Get the hours and minutes from endTime
+                    const endTimeHours = endTimeDate.getHours();
+                    const endTimeMinutes = endTimeDate.getMinutes();
+
+                    // Set the hours and minutes of startEventDate to the hours and minutes of endTime
+                    // Create a new Date object for endEventDate and set the hours and minutes
+                    const endEventDate = new Date(startEventDate);
+                    endEventDate.setHours(endTimeHours, endTimeMinutes);
+
+
+
+                    // convert the endTimeTimeTime to a firestore timestamp
+                    const formattedEndDate = Timestamp.fromDate(endEventDate);
+
                     const event: Event = {
-                        start: new Date(eventData?.startTimestamp?.seconds * 1000),
-                        end: new Date(eventData?.endTime?.seconds * 1000),
-                        title: eventData?.title,
-                        route: eventData?.route,
-                        schedule: eventData?.schedule,
-                        startTime: eventData?.startTime,
-                        endTime: eventData?.endTime,
-                        BikeBusGroup: eventData?.BikeBusGroup,
-                        BikeBusStopTimes: eventData?.BikeBusStopTimes,
-                        BikeBusStops: eventData?.BikeBusStops,
-                        StaticMap: eventData?.StaticMap,
-                        caboose: eventData?.caboose,
-                        captains: eventData?.captains,
-                        kids: eventData?.kids,
-                        leader: eventData?.leader,
-                        members: eventData?.members,
-                        sheepdogs: eventData?.sheepdogs,
-                        sprinters: eventData?.sprinters,
+                        start: startEventDate,
+                        end: formattedEndDate.toDate(),
+                        title: eventData.title,
+                        route: eventData.route,
+                        schedule: eventData.schedule,
+                        startTime: eventData.startTime,
+                        endTime: eventData.endTime,
+                        BikeBusGroup: eventData.BikeBusGroup,
+                        BikeBusName: eventData.BikeBusName,
+                        BikeBusStopTimes: eventData.BikeBusStopTimes,
+                        BikeBusStops: eventData.BikeBusStops,
+                        StaticMap: eventData.StaticMap,
+                        caboose: eventData.caboose,
+                        captains: eventData.captains,
+                        kids: eventData.kids,
+                        leader: eventData.leader,
+                        members: eventData.members,
+                        sheepdogs: eventData.sheepdogs,
+                        sprinters: eventData.sprinters,
                         id: docSnapshot.id,
-                        startTimestamp: eventData?.startTimestamp,
+                        startTimestamp: eventData.startTimestamp,
+                        formattedStartDate: formattedStartDate,
+                        formattedEndDate: formattedEndDate,
                     };
                     eventDocs.push(event);
+                    console.log('eventDocs: ', eventDocs);
                 }
             });
+
             setEvents(eventDocs);
+
+
+            const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const startTime = eventDocs?.[3]?.start ? eventDocs?.[3]?.start?.toLocaleString(undefined, dateOptions) : 'Loading...';
+            console.log(startTime);
+            const endTime = eventDocs?.[3]?.endTime ? new Date(eventDocs?.[3]?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+            console.log(endTime);
+            setStartTime(startTime);
+            setEndTime(endTime);
         };
         fetchDetailedEvents();
     }, [id]);
@@ -127,30 +185,21 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
-
-        console.log(event.id);
-        console.log(event);
-        console.log(event.route);
-        console.log(event.startTimestamp);
+    
+        const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
+        const endTime = event.endTime ? new Date(event.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+        setStartTime(startTime);
+        setEndTime(endTime);
+    
         console.log(event.endTime);
-        console.log(event.title);
     };
-
+    
 
     const handleEditEvent = () => {
         setShowEventModal(false); // Close the modal
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
-
-    // Before the return statement in the ViewSchedule component
-    const eventData: Event | undefined = selectedEvent;
-
-
-    const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-    const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-
-
 
     return (
         <IonPage>
@@ -191,9 +240,9 @@ const ViewSchedule: React.FC = () => {
                                     <IonLabel>{startTime} to {endTime}</IonLabel>
                                 </IonItem>
                                 <IonItem>
-                                    <IonLabel>Routes</IonLabel>
+                                    <IonLabel>Route</IonLabel>
                                     <Link to={`/ViewRoute/${selectedEvent?.route.id}`}>
-                                        <IonButton>{selectedEvent?.routeName}</IonButton>
+                                        <IonButton>View Route</IonButton>
                                     </Link>
                                 </IonItem>
                                 <IonItem>
