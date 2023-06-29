@@ -19,14 +19,31 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { doc, DocumentReference, getDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useHistory } from 'react-router-dom';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { parseISO } from 'date-fns';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
+import format from 'date-fns/format'
+import parse from 'date-fns/parse'
+import startOfWeek from 'date-fns/startOfWeek'
+import getDay from 'date-fns/getDay'
+import enUS from 'date-fns/locale/en-US'
 
-const localizer = momentLocalizer(moment);
+const locales = {
+    'en-US': enUS,
+}
+
+const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek,
+    getDay,
+    locales,
+})
 
 type Event = {
     id: string,
@@ -61,52 +78,45 @@ const ViewSchedule: React.FC = () => {
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [eventLink, setEventLink] = useState<string>('');
     const [eventId, setEventId] = useState<string>('');
+    const history = useHistory();
 
 
     useEffect(() => {
         const fetchDetailedEvents = async () => {
-            const bikeBusGroupDocRef: DocumentReference = doc(db, 'bikebusgroups', id);
-            const bikeBusGroupSnapshot = await getDoc(bikeBusGroupDocRef);
-            const bikeBusGroupData = bikeBusGroupSnapshot.data();
+            const eventsSnapshot = await getDocs(collection(db, "event")); // get all event documents
+            const eventDocs: Event[] = [];
 
-            if (!bikeBusGroupData || !Array.isArray(bikeBusGroupData.event)) return;
-
-            let eventDocs: Event[] = [];
-            for (let i = 0; i < bikeBusGroupData.event.length; i++) {
-                const eventDocRef: DocumentReference = bikeBusGroupData.event[i];
-                const eventDocSnapshot = await getDoc(eventDocRef);
-                const eventData = eventDocSnapshot.data();
-                console.log(eventData);
-
-                const event: Event = {
-                    start: eventData?.start ? eventData?.start.toDate() : new Date(),
-                    end: eventData?.end ? eventData?.end.toDate() : new Date(),
-                    title: eventData?.title,
-                    route: eventData?.route,
-                    schedule: eventData?.schedule,
-                    startTime: eventData?.startTime,
-                    endTime: eventData?.endTime,
-                    BikeBusGroup: eventData?.BikeBusGroup,
-                    BikeBusStopTimes: eventData?.BikeBusStopTimes,
-                    BikeBusStops: eventData?.BikeBusStops,
-                    StaticMap: eventData?.StaticMap,
-                    caboose: eventData?.caboose,
-                    captains: eventData?.captains,
-                    kids: eventData?.kids,
-                    leader: eventData?.leader,
-                    members: eventData?.members,
-                    sheepdogs: eventData?.sheepdogs,
-                    sprinters: eventData?.sprinters,
-                    id: eventDocSnapshot.id,
-                };
-                console.log(event);
-                eventDocs.push(event);
-            }
+            eventsSnapshot.forEach((docSnapshot) => {
+                const eventData = docSnapshot.data();
+                if (eventData?.groupId === id) { // only process events related to the current group
+                    const event: Event = {
+                        start: new Date(eventData?.startTimestamp?.seconds * 1000,),
+                        end: new Date(eventData?.endTime?.seconds * 1000),
+                        title: eventData?.title,
+                        route: eventData?.route,
+                        schedule: eventData?.schedule,
+                        startTime: eventData?.startTime,
+                        endTime: eventData?.endTime,
+                        BikeBusGroup: eventData?.BikeBusGroup,
+                        BikeBusStopTimes: eventData?.BikeBusStopTimes,
+                        BikeBusStops: eventData?.BikeBusStops,
+                        StaticMap: eventData?.StaticMap,
+                        caboose: eventData?.caboose,
+                        captains: eventData?.captains,
+                        kids: eventData?.kids,
+                        leader: eventData?.leader,
+                        members: eventData?.members,
+                        sheepdogs: eventData?.sheepdogs,
+                        sprinters: eventData?.sprinters,
+                        id: docSnapshot.id,
+                    };
+                    eventDocs.push(event);
+                }
+            });
             setEvents(eventDocs);
         };
         fetchDetailedEvents();
-    }, [id]); // removed events from dependency array
-
+    }, [id]);
 
     const handleSelectEvent = (event: Event) => {
         const eventLink = `/event/${event.id}`;
@@ -115,6 +125,19 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
+    
+        console.log(event.id);
+        console.log(event);
+        console.log(event.start);
+        console.log(event.startTime);
+        console.log(event.endTime);
+        console.log(event.title);
+    };
+    
+
+    const handleEditEvent = () => {
+        setShowEventModal(false); // Close the modal
+        history.push(`/event/${eventId}`); // Navigate to the event page
     };
 
 
@@ -135,6 +158,12 @@ const ViewSchedule: React.FC = () => {
                             endAccessor="end"
                             defaultView="agenda"
                             onSelectEvent={handleSelectEvent}
+                            onSelectSlot={(slotInfo) =>
+                                alert(
+                                  `selected slot: \nstart ${slotInfo.start.toLocaleString()} ` +
+                                  `\nend: ${slotInfo.end.toLocaleString()}`
+                                )
+                                }
                         />
                     </div>
                 </IonCard>
@@ -144,13 +173,13 @@ const ViewSchedule: React.FC = () => {
                     <IonContent>
                         <IonCard>
                             <IonCardHeader>
-                                <IonCardTitle>Details for {moment(selectedEvent?.start).format('MM/DD/YYYY')} Event:</IonCardTitle>
+                                <IonCardTitle>Details for insert date and event name here </IonCardTitle>
                                 <IonCardSubtitle>{selectedEvent?.title}</IonCardSubtitle>
                             </IonCardHeader>
                             <IonCardContent>
                                 <IonItem>
                                     <IonLabel>Start Time:</IonLabel>
-                                    <IonText>{moment(selectedEvent?.startTime).format('hh:mm a')}</IonText>
+                                    <IonText>{selectedEvent?.startTime}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Route:</IonLabel>
@@ -162,31 +191,31 @@ const ViewSchedule: React.FC = () => {
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Captains:</IonLabel>
-                                    <IonText>{selectedEvent?.captains}</IonText>
+                                    <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Sheepdogs:</IonLabel>
-                                    <IonText>{selectedEvent?.sheepdogs}</IonText>
+                                    <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Sprinters:</IonLabel>
-                                    <IonText>{selectedEvent?.sprinters}</IonText>
+                                    <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Caboose:</IonLabel>
-                                    <IonText>{selectedEvent?.caboose}</IonText>
+                                    <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Kids:</IonLabel>
-                                    <IonText>{selectedEvent?.kids}</IonText>
+                                    <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Members:</IonLabel>
-                                    <IonText>{selectedEvent?.members}</IonText>
+                                    <IonText>{selectedEvent?.members?.join(', ')}</IonText>
                                 </IonItem>
                             </IonCardContent>
                         </IonCard>
-                        <IonButton routerLink={`/event/${eventId}`}>Edit Event</IonButton>
+                        <IonButton onClick={handleEditEvent}>Edit Event</IonButton>
                         <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
                     </IonContent>
                 </IonModal>
