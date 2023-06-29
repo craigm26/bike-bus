@@ -97,5 +97,5 @@
     "@types/react-big-calendar": "^1.6.4",
     "env-cmd": "^10.1.0"
   },
-  "description": "An Ionic project"
+  "description": "BikeBus, An Ionic project"
 }
