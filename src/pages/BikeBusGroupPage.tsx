@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, addDoc, serverTimestamp, DocumentReference, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -21,6 +21,7 @@ interface BulletinBoard {
 }
 
 interface Event {
+  startTimestamp: Timestamp;
   id: string;
   groupId: string;
   start?: { seconds: number, nanoseconds: number } | string;
@@ -103,7 +104,7 @@ const BikeBusGroupPage: React.FC = () => {
     messagesData.length > messages.length && setMessages(messagesData);
   };
 
-  
+
 
   const handleScroll = (event: { target: { scrollHeight: number; scrollTop: number; clientHeight: number; }; }) => {
     const scrollThreshold = 100; // Adjust this value based on your layout and requirements
@@ -536,39 +537,35 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
-  console.log(eventsData); // check the original events data
+  console.log(eventData); // check the original events data
 
-  console.log(groupId); 
+  console.log(groupId);
 
- 
+
   // convert BikeBusGroup to string (from the url parameter) and assign it to groupId2
   const groupId2 = groupId.toString();
   console.log(groupId2); // check the groupId2
 
 
 
-  const validEvents = eventsData.filter((event: Event) =>
-  event.start 
-  // groupId in the event document should match the groupId
+  const validEvents = eventData.filter((event: Event) =>
+    event.startTimestamp
+    // groupId in the event document should match the groupId
   );
   console.log(validEvents); // check the filtered valid events
-  
 
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
-    const aDate = a.start && (typeof a.start === 'string' ? new Date(a.start) : new Date(a.start.seconds * 1000));
-    const bDate = b.start && (typeof b.start === 'string' ? new Date(b.start) : new Date(b.start.seconds * 1000));
-    return aDate && bDate ? aDate.getTime() - bDate.getTime() : 0;
+    const aDate = a.startTimestamp.toDate();
+    const bDate = b.startTimestamp.toDate();
+    return aDate.getTime() - bDate.getTime();
   });
-
 
   const nextEvent = sortedEvents.find((event: Event) => {
-    const eventDate = event.start && (typeof event.start === 'string' ? new Date(event.start) : new Date(event.start.seconds * 1000));
-    return eventDate ? eventDate.getTime() > new Date().getTime() : false;
+    const eventDate = event.startTimestamp.toDate();
+    return eventDate.getTime() > new Date().getTime();
   });
 
-  
   console.log(nextEvent); // check the next event
-
 
   const nextEventId = nextEvent?.id;
 
@@ -582,9 +579,9 @@ const BikeBusGroupPage: React.FC = () => {
   };
 
   // make the nextEvent a start time that's nicely formatted for use in the ui 
-  const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
-    ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions)
-    : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
+  const nextEventTime = nextEvent?.startTimestamp && (typeof nextEvent.startTimestamp === 'string'
+    ? new Date(nextEvent.startTimestamp).toLocaleString(undefined, dateTimeOptions)
+    : new Date(nextEvent.startTimestamp.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
 
 
   return (

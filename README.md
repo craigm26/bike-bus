@@ -79,5 +79,3 @@ Make it clear which features are part of the free and premium plans. This will h
 Continuously monitor and improve the app based on user feedback and analytics. Iterate on the premium features to ensure they provide significant value to your users and encourage upgrades.
 
 Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app.
-
-
