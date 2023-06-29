@@ -11,10 +11,6 @@ import {
   IonList,
   IonItem,
   IonModal,
-  IonPopover,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
   IonTitle,
   IonCheckbox,
 } from '@ionic/react';
@@ -236,9 +232,13 @@ const Event: React.FC = () => {
   }, [id]);
 
   // Date and time formatting options
+
+  console.log('eventData:', eventData);
+
+
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const startTime = new Date(eventData?.startTime).toLocaleString(undefined, dateOptions);
-  const endTime = new Date(eventData?.endTime).toLocaleString(undefined, dateOptions);
+  const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+  const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
 
 
   return (
