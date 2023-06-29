@@ -260,7 +260,7 @@ const CreateBikeBusGroup: React.FC = () => {
       BikeBusDescription: BikeBusDescription,
       BikeBusType: BikeBusType,
       BikeBusRoutes: [doc(db, 'routes', RouteID)],
-      BikeBusLeaders: [doc(db, 'users', user.uid)],
+      BikeBusLeader: doc(db, 'users', user.uid),
       BikeBusMembers: [doc(db, 'users', user.uid)],
       BikeBusCreator: doc(db, 'users', user.uid),
       // add the schedule to the BikeBus group in firestore as a single document

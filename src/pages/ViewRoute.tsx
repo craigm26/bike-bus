@@ -121,11 +121,11 @@ const ViewRoute: React.FC = () => {
       const routeData = {
         ...docSnap.data() as Route,
         id: docSnap.id,
+        isBikeBus: docSnap.data().isBikeBus,
         startPoint: docSnap.data().startPoint,
         endPoint: docSnap.data().endPoint,
         BikeBusGroupId: docSnap.data().BikeBusGroupId,
         // convert BikeBusGroupId (document reference in firebase) to a string
-        BikeBusGroup: docSnap.data().BikeBusGroupId.id,
         pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
           lat: coord.lat,  // use 'lat' instead of 'latitude'
           lng: coord.lng,  // use 'lng' instead of 'longitude'
@@ -148,12 +148,32 @@ const ViewRoute: React.FC = () => {
       setBikeBusStops(routeData.BikeBusStops);
       setStartGeo(routeData.startPoint);
       setEndGeo(routeData.endPoint);
+      // test if the route is a bikebus
+      if (routeData.isBikeBus) {
+        console.log("This is a bike bus route");
+        console.log(routeData.BikeBusGroupId);
+        // fetch the bikebus group data
+        const docRef = doc(db, 'bikeBusGroups', routeData.BikeBusGroupId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const bikeBusGroupData = {
+            ...docSnap.data() as BikeBusGroup,
+            id: docSnap.id,
+          };
+          setBikeBusGroup(bikeBusGroupData);
+          console.log(bikeBusGroupData);
+        } else {
+          // doc.data() will be undefined in this case
+          console.log("No such document!");
+        }
+      }
+
+
     }
   };
 
-  // if the field isbikeBus is set to true, then make the isBikeBus variable true
-  const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
+  const isBikeBus = selectedRoute?.isBikeBus ?? false;
   useEffect(() => {
     if (headerContext) {
       headerContext.setShowHeader(true);

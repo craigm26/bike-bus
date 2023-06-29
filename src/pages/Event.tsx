@@ -184,9 +184,6 @@ const Event: React.FC = () => {
     }
   };
 
-
-
-
   const handleRSVP = async () => {
     if (!user || !username) {
       console.log("No user is logged in or username is not loaded yet!");
@@ -241,6 +238,40 @@ const Event: React.FC = () => {
   const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
 
 
+  // Check to see if the user is the event leader
+  const isEventLeader = user && eventData?.leader === username;
+  console.log('isEventLeader:', isEventLeader);
+  console.log('eventData?.leader:', eventData?.leader);
+  console.log('user?.username:', user?.username);
+  console.log('username:', username);
+
+  // Check to see if the event is active
+  const isEventActive = eventData?.status === 'active';
+
+  // create a function to toggle the event status between active and inactive
+  const toggleEventStatus = async (status: string) => {
+    const eventRef = doc(db, 'event', id);
+    await setDoc(eventRef, {
+      status: status
+    }, { merge: true });
+  };
+
+  const toggleStartEvent = () => {
+    toggleEventStatus('active');
+  };
+
+  const toggleEndEvent = () => {
+    toggleEventStatus('inactive');
+  };
+
+  const toggleJoinEvent = () => {
+    const eventRef = doc(db, 'event', id);
+    setDoc(eventRef, {
+      JoinedMembers: arrayUnion(username)
+    }, { merge: true });
+  };
+
+
   return (
     <IonPage>
       <IonContent fullscreen>
@@ -248,16 +279,22 @@ const Event: React.FC = () => {
           <IonToolbar></IonToolbar>
         </IonHeader>
         <IonList>
-          <IonLabel></IonLabel>
-          <IonItem>
-            <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
-          </IonItem>
+          <IonLabel>{eventData?.BikeBusName}</IonLabel>
           <IonItem>
             <IonLabel>{startTime} to {endTime}</IonLabel>
           </IonItem>
           <IonItem>
-            <IonLabel>Roles in the BikeBus</IonLabel>
+            {isEventLeader && (
+              <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+            )}
+            {isEventLeader && (
+              <IonButton onClick={toggleEndEvent}>End BikeBus Event</IonButton>
+            )}
+            {!isEventLeader && isEventActive && (
+              <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
+            )}
           </IonItem>
+          <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
           <IonModal isOpen={showModal}>
             <IonHeader>
               <IonToolbar>
@@ -306,8 +343,9 @@ const Event: React.FC = () => {
             </IonContent>
 
           </IonModal>
-          <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
-
+          <IonItem>
+            <IonLabel>Roles in the BikeBus</IonLabel>
+          </IonItem>
           <IonItem>
             <IonLabel>Leader</IonLabel>
             {eventData?.leader}
@@ -355,6 +393,7 @@ const Event: React.FC = () => {
             ))}
           </IonItem>
         </IonList>
+        <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
       </IonContent>
     </IonPage >
   );
