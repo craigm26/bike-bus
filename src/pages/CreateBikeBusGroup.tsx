@@ -69,6 +69,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [BikeBusStopName, setBikeBusStopName] = useState('');
   const [bulletinBoardData, setBulletinBoardData] = useState<any>(null);
   const [expectedDuration, setExpectedDuration] = useState<number>(0);
+  const eventIds: string[] = [];
 
 
 
@@ -83,7 +84,6 @@ const CreateBikeBusGroup: React.FC = () => {
   });
 
   const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
-  const eventIds = []; // Create an array to store the new event IDs
 
   // when the setStartDate is called, set the setEndDate to 30 days from that date - only if the recurring option is set to Yes
   useEffect(() => {
@@ -133,7 +133,7 @@ const CreateBikeBusGroup: React.FC = () => {
       }
     };
     fetchRoute();
-  }, [RouteID]);
+  }, [RouteID, startTime]);
 
 
   const togglePopover = (e: any) => {
@@ -193,15 +193,25 @@ const CreateBikeBusGroup: React.FC = () => {
       .filter(([_, isSelected]) => isSelected)
       .map(([day]) => days.indexOf(day));
     const dates = [];
-
-    for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
-      if (selectedDayIndices.includes(dt.getDay())) {
-        dates.push(new Date(dt));
+  
+    // Check if all selectedDays values are false (i.e., recurring option is 'no')
+    const isRecurring = selectedDayIndices.length > 0;
+  
+    if (!isRecurring) {
+      // If not recurring, return only the start date
+      return [start];
+    } else {
+      // If recurring, return all matching dates between start and end
+      for (let dt = start; dt <= end; dt.setDate(dt.getDate() + 1)) {
+        if (selectedDayIndices.includes(dt.getDay())) {
+          dates.push(new Date(dt));
+        }
       }
     }
-
+  
     return dates;
   }
+  
 
 
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
@@ -211,7 +221,7 @@ const CreateBikeBusGroup: React.FC = () => {
     console.log('startTime:', startTime);
 
     // Calculate the end time based on the start time and expected duration
-    const startTimeDate = moment(startTime, 'HH:mm');
+    const startTimeDate = moment(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm');
     const endTimeDate = moment(startTimeDate).add(expectedDuration, 'minutes');
     const endTime = endTimeDate.format('hh:mm a');
 
@@ -224,14 +234,15 @@ const CreateBikeBusGroup: React.FC = () => {
     // Convert the endTime to a Firestore timestamp
     const endTimestamp = Timestamp.fromDate(endTimeDate.toDate());
 
-
     const scheduleData = {
       startTime: startTime,
       startTimeStamp: startTimestamp,
       startDateTime: startDateTime,
       startDate: startDate,
       endDate: endDate,
-      endTime: endTimestamp,
+      expectedDuration: expectedDuration,
+      endTime: endTime,  // This should be a string, not a Firestore timestamp
+      endTimeStamp: endTimestamp,  // Add this line to store the endTime as a Firestore timestamp
       isRecurring: isRecurring,
       selectedDays: selectedDays,
       scheduleCreator: doc(db, 'users', user.uid),
@@ -240,6 +251,8 @@ const CreateBikeBusGroup: React.FC = () => {
     const scheduleRef = await addDoc(collection(db, 'schedules'), scheduleData);
     const scheduleId = scheduleRef.id;
     console.log('scheduleId:', scheduleId);
+
+
 
     // create a new BikeBus group in firestore with the schedule id
     const bikeBusData = {
@@ -295,8 +308,10 @@ const CreateBikeBusGroup: React.FC = () => {
       startTime: startTime,
       startTimeStamp: startTimestamp,
       endTime: endTimestamp,
+      duration: expectedDuration,
       eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
       recurring: isRecurring,
+      groupId: bikebusgroupId,
       selectedDays: selectedDays,
       schedule: doc(db, 'schedules', scheduleId),
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
@@ -306,21 +321,10 @@ const CreateBikeBusGroup: React.FC = () => {
       }, []),
     };
 
-    // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
-    if (!isRecurring) {
-      eventsData.title = BikeBusName + ' for ' + startDate.split('T')[0];
-      eventsData.start = startDate.split('T')[0];
-      eventsData.end = endDate.split('T')[0];
-    }
-
-    // add the event document to the event collection in firestore
-    // const eventsRef5 = await addDoc(collection(db, 'event'), eventsData);
-    // const eventId5 = eventsRef5.id;
-    // console.log('eventId5:', eventId5);
-
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
     console.log('eventId:', eventId);
+
 
     // add the events document id (as a reference) to the schedule document in firestore
     const scheduleRef3 = doc(db, 'schedules', scheduleId);
@@ -341,9 +345,11 @@ const CreateBikeBusGroup: React.FC = () => {
         captains: [],
         sheepdogs: [],
         caboose: [],
+        duration: expectedDuration,
         startTime: startTime,
         startTimestamp: startTimestamp,
         endTime: endTimestamp,
+        groupId: bikebusgroupId,
         route: doc(db, 'routes', RouteID),
         BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
         BikeBusStops: [],
@@ -352,10 +358,47 @@ const CreateBikeBusGroup: React.FC = () => {
         schedule: doc(db, 'schedules', scheduleId),
       };
 
-      // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
-      const eventRef = await getDocs(collection(db, 'event'));
-      const eventIds = eventRef.docs.map((doc) => doc.id);
-      console.log('eventIds:', eventIds);
+      // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
+      if (!isRecurring) {
+        // make a new document the event collection in firestore with the eventsData for the single event
+        const eventsRef = await addDoc(collection(db, 'event'), eventData);
+        const eventId = eventsRef.id;
+        console.log('eventId:', eventId);
+        // update the event document in firestore with the eventData
+        const eventRef = doc(db, 'event', eventId);
+        await updateDoc(eventRef, {
+          title: BikeBusName + ' for ' + day,
+          start: day,
+          leader: '',
+          members: [],
+          kids: [],
+          sprinters: [],
+          captains: [],
+          sheepdogs: [],
+          caboose: [],
+          duration: expectedDuration,
+          groupId: bikebusgroupId,
+          startTime: startTime,
+          startTimestamp: startTimestamp,
+          endTime: endTimestamp,
+          route: doc(db, 'routes', RouteID),
+          BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+          BikeBusStops: [],
+          BikeBusStopTimes: [],
+          StaticMap: '',
+          schedule: doc(db, 'schedules', scheduleId),
+        });
+       // save the event document id to the bikebusgroup document in firestore as an array of references called event
+        const bikeBusGroupRef2 = doc(db, 'bikebusgroups', bikebusgroupId);
+        await updateDoc(bikeBusGroupRef2, {
+          event: arrayUnion(doc(db, 'event', eventId)),
+        });
+      } else {
+        // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
+        const eventRef = await getDocs(collection(db, 'event'));
+        const eventIds = eventRef.docs.map((doc) => doc.id);
+        console.log('eventIds:', eventIds);
+      }
 
 
       // Add new event to Firestore and store the returned id
@@ -363,17 +406,19 @@ const CreateBikeBusGroup: React.FC = () => {
       const eventId = eventDocRef.id;
       eventIds.push(eventId); // Add the new id to the array
 
-      // Add the new event id to the bikebusgroup document
-      const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
-      await updateDoc(bikeBusGroupRef3, {
-        event: arrayUnion(doc(db, 'event', eventId)),
-      });
-
-      for (const eventId of eventIds) {
+      if (!isRecurring) {
+        // Add the new event id to the bikebusgroup document
         const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
         await updateDoc(bikeBusGroupRef3, {
           event: arrayUnion(doc(db, 'event', eventId)),
         });
+      } else {
+        for (const eventId of eventIds) {
+          const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+          await updateDoc(bikeBusGroupRef3, {
+            event: arrayUnion(doc(db, 'event', eventId)),
+          });
+        }
       }
     }
 
@@ -382,24 +427,6 @@ const CreateBikeBusGroup: React.FC = () => {
     await updateDoc(bikeBusGroupRef2, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
-
-    // add the events document to the events collection in firestore and if it was not recurring, use the eventsId5 as the document id
-    if (!isRecurring) {
-      const eventsRef6 = await addDoc(collection(db, 'events'), eventsData);
-      const eventId6 = eventsRef6.id;
-      // update eventsRef6 with the eventId5 id
-      await updateDoc(eventsRef6, {
-        id: eventId,
-      });
-      console.log('eventId6:', eventId6);
-      updateDoc(scheduleRef3, {
-        event: arrayUnion(doc(db, 'event', eventId6)),
-      });
-      // update the bikebusgroupts event array with the eventId6 id
-      await updateDoc(bikeBusGroupRef2, {
-        event: arrayUnion(doc(db, 'event', eventId6)),
-      });
-    }
 
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
