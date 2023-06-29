@@ -303,6 +303,7 @@ const CreateBikeBusGroup: React.FC = () => {
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
       title: BikeBusName,
+      BikeBusName: BikeBusName,
       start: startDate.split('T')[0],
       end: endDate.split('T')[0],
       startTime: startTime,
@@ -337,6 +338,7 @@ const CreateBikeBusGroup: React.FC = () => {
     for (const day of eventDays) {
       const eventData = {
         title: BikeBusName + ' for ' + day,
+        BikeBusName: BikeBusName,
         start: day,
         leader: '',
         members: [],
@@ -368,6 +370,7 @@ const CreateBikeBusGroup: React.FC = () => {
         const eventRef = doc(db, 'event', eventId);
         await updateDoc(eventRef, {
           title: BikeBusName + ' for ' + day,
+          BikeBusName: BikeBusName,
           start: day,
           leader: '',
           members: [],

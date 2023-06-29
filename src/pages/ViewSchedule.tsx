@@ -19,9 +19,9 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { collection, getDocs } from 'firebase/firestore';
+import { Timestamp, collection, getDocs } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useHistory } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -53,7 +53,8 @@ type Event = {
     route: string,
     schedule: string,
     startTime: string,
-    endTime: string,
+    startTimestamp: Timestamp,
+    endTime: Timestamp,
     BikeBusGroup: string,
     BikeBusStopTimes: [],
     BikeBusStops: [],
@@ -90,7 +91,7 @@ const ViewSchedule: React.FC = () => {
                 const eventData = docSnapshot.data();
                 if (eventData?.groupId === id) { // only process events related to the current group
                     const event: Event = {
-                        start: new Date(eventData?.startTimestamp?.seconds * 1000,),
+                        start: new Date(eventData?.startTimestamp?.seconds * 1000),
                         end: new Date(eventData?.endTime?.seconds * 1000),
                         title: eventData?.title,
                         route: eventData?.route,
@@ -109,6 +110,7 @@ const ViewSchedule: React.FC = () => {
                         sheepdogs: eventData?.sheepdogs,
                         sprinters: eventData?.sprinters,
                         id: docSnapshot.id,
+                        startTimestamp: eventData?.startTimestamp,
                     };
                     eventDocs.push(event);
                 }
@@ -125,20 +127,29 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
-    
+
         console.log(event.id);
         console.log(event);
-        console.log(event.start);
-        console.log(event.startTime);
+        console.log(event.route);
+        console.log(event.startTimestamp);
         console.log(event.endTime);
         console.log(event.title);
     };
-    
+
 
     const handleEditEvent = () => {
         setShowEventModal(false); // Close the modal
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
+
+    // Before the return statement in the ViewSchedule component
+    const eventData: Event | undefined = selectedEvent;
+
+
+    const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+    const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+
 
 
     return (
@@ -160,10 +171,10 @@ const ViewSchedule: React.FC = () => {
                             onSelectEvent={handleSelectEvent}
                             onSelectSlot={(slotInfo) =>
                                 alert(
-                                  `selected slot: \nstart ${slotInfo.start.toLocaleString()} ` +
-                                  `\nend: ${slotInfo.end.toLocaleString()}`
+                                    `selected slot: \nstart ${slotInfo.start.toLocaleString()} ` +
+                                    `\nend: ${slotInfo.end.toLocaleString()}`
                                 )
-                                }
+                            }
                         />
                     </div>
                 </IonCard>
@@ -173,17 +184,17 @@ const ViewSchedule: React.FC = () => {
                     <IonContent>
                         <IonCard>
                             <IonCardHeader>
-                                <IonCardTitle>Details for insert date and event name here </IonCardTitle>
-                                <IonCardSubtitle>{selectedEvent?.title}</IonCardSubtitle>
+                                <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
                             </IonCardHeader>
                             <IonCardContent>
                                 <IonItem>
-                                    <IonLabel>Start Time:</IonLabel>
-                                    <IonText>{selectedEvent?.startTime}</IonText>
+                                    <IonLabel>{startTime} to {endTime}</IonLabel>
                                 </IonItem>
                                 <IonItem>
-                                    <IonLabel>Route:</IonLabel>
-                                    <IonText>{selectedEvent?.route}</IonText>
+                                    <IonLabel>Routes</IonLabel>
+                                    <Link to={`/ViewRoute/${selectedEvent?.route.id}`}>
+                                        <IonButton>{selectedEvent?.routeName}</IonButton>
+                                    </Link>
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Leader:</IonLabel>
@@ -220,8 +231,8 @@ const ViewSchedule: React.FC = () => {
                     </IonContent>
                 </IonModal>
 
-            </IonContent>
-        </IonPage>
+            </IonContent >
+        </IonPage >
     );
 };
 

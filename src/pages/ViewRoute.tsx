@@ -14,7 +14,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { DocumentReference, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory, Link } from 'react-router-dom';
@@ -48,7 +48,7 @@ interface Route {
   BikeBusStop: Coordinate[];
   id: string;
   BikeBusStationsIds: string[];
-  BikeBusGroupId: string;
+  BikeBusGroupId: DocumentReference;
   accountType: string;
   description: string;
   endPoint: Coordinate;
@@ -101,6 +101,7 @@ const ViewRoute: React.FC = () => {
   const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
   const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
+  const [BikeBusGroupId, setBikeBusGroupId] = useState<string>('');
 
 
   const containerMapStyle = {
@@ -123,6 +124,8 @@ const ViewRoute: React.FC = () => {
         startPoint: docSnap.data().startPoint,
         endPoint: docSnap.data().endPoint,
         BikeBusGroupId: docSnap.data().BikeBusGroupId,
+        // convert BikeBusGroupId (document reference in firebase) to a string
+        BikeBusGroup: docSnap.data().BikeBusGroupId.id,
         pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
           lat: coord.lat,  // use 'lat' instead of 'latitude'
           lng: coord.lng,  // use 'lng' instead of 'longitude'
@@ -137,6 +140,10 @@ const ViewRoute: React.FC = () => {
         })),
       };
       setSelectedRoute(routeData);
+      setBikeBusGroupId(routeData.BikeBusGroupId);
+      console.log(routeData);
+      console.log(routeData.BikeBusGroupId);
+      // setBikeBusGroup(routeData.BikeBusGroupId); is a document reference. Convert it to a string
       setPath(routeData.pathCoordinates);
       setBikeBusStops(routeData.BikeBusStops);
       setStartGeo(routeData.startPoint);
@@ -257,6 +264,9 @@ const ViewRoute: React.FC = () => {
                 <IonButton onClick={deleteRoute}>Delete Route</IonButton>
               )}
               <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
+              {isBikeBus && (
+                <IonButton routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroupId?.id}`}>Go to BikeBus</IonButton>
+              )}
             </IonCol>
           </IonRow>
           {!isBikeBus && (
