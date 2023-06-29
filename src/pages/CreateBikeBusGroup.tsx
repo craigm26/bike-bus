@@ -71,6 +71,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [expectedDuration, setExpectedDuration] = useState<number>(0);
 
 
+
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
     Tuesday: false,
@@ -80,6 +81,9 @@ const CreateBikeBusGroup: React.FC = () => {
     Saturday: false,
     Sunday: false
   });
+
+  const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
+  const eventIds = []; // Create an array to store the new event IDs
 
   // when the setStartDate is called, set the setEndDate to 30 days from that date - only if the recurring option is set to Yes
   useEffect(() => {
@@ -310,9 +314,9 @@ const CreateBikeBusGroup: React.FC = () => {
     }
 
     // add the event document to the event collection in firestore
-    const eventsRef5 = await addDoc(collection(db, 'event'), eventsData);
-    const eventId5 = eventsRef5.id;
-    console.log('eventId5:', eventId5);
+    // const eventsRef5 = await addDoc(collection(db, 'event'), eventsData);
+    // const eventId5 = eventsRef5.id;
+    // console.log('eventId5:', eventId5);
 
     const eventsRef = await addDoc(collection(db, 'events'), eventsData);
     const eventId = eventsRef.id;
@@ -348,11 +352,22 @@ const CreateBikeBusGroup: React.FC = () => {
         schedule: doc(db, 'schedules', scheduleId),
       };
 
-      await addDoc(collection(db, 'event'), eventData);
       // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
       const eventRef = await getDocs(collection(db, 'event'));
       const eventIds = eventRef.docs.map((doc) => doc.id);
       console.log('eventIds:', eventIds);
+
+
+      // Add new event to Firestore and store the returned id
+      const eventDocRef = await addDoc(collection(db, 'event'), eventData);
+      const eventId = eventDocRef.id;
+      eventIds.push(eventId); // Add the new id to the array
+
+      // Add the new event id to the bikebusgroup document
+      const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+      await updateDoc(bikeBusGroupRef3, {
+        event: arrayUnion(doc(db, 'event', eventId)),
+      });
 
       for (const eventId of eventIds) {
         const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
@@ -374,7 +389,7 @@ const CreateBikeBusGroup: React.FC = () => {
       const eventId6 = eventsRef6.id;
       // update eventsRef6 with the eventId5 id
       await updateDoc(eventsRef6, {
-        id: eventId5,
+        id: eventId,
       });
       console.log('eventId6:', eventId6);
       updateDoc(scheduleRef3, {
