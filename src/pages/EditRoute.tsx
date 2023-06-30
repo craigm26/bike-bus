@@ -473,6 +473,7 @@ const EditRoute: React.FC = () => {
               <IonSelectOption value="WALKING">Walking</IonSelectOption>
               <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
               <IonSelectOption value="CAR">Car</IonSelectOption>
+              <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
             </IonSelect>
           </IonItem>
           <IonItem>
@@ -937,8 +938,6 @@ const EditRoute: React.FC = () => {
                         <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
                           <div>
                             <h3>{`Stop ${index + 1}`}</h3>
-                            <button onClick={() => handleEditStop(index)}>Edit Stop</button>
-                            <button onClick={() => handleDeleteStop(index)}>Delete Stop</button>
                           </div>
                         </InfoWindow>
                       )}

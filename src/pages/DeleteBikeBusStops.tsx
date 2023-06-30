@@ -22,7 +22,7 @@ import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection } from '
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import { add } from 'ionicons/icons';
 import { set } from 'firebase/database';
 
@@ -58,6 +58,9 @@ const DeleteBikeBusStops: React.FC = () => {
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
+    const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
+    const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
+    const [selectedStopName, setSelectedStopName] = useState<string | null>(null);
     const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
@@ -69,7 +72,7 @@ const DeleteBikeBusStops: React.FC = () => {
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    const [newStopName, setNewStopName] = useState<string>('');
+    const [deletedStopName, setdeletedStopName] = useState<string>('');
     const [BikeBusStopName, setBikeBusStopName] = useState<string>('');
     const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
 
@@ -138,17 +141,17 @@ const DeleteBikeBusStops: React.FC = () => {
 
     const onMapClick = (event: google.maps.MapMouseEvent) => {
         if (event.latLng) {
-            const newStop: Coordinate = {
+            const deletedStop: Coordinate = {
                 lat: event.latLng.lat(),
                 lng: event.latLng.lng(),
             };
-            setBikeBusStops(prevStops => [...prevStops, newStop]);
+            setBikeBusStops(prevStops => [...prevStops, deletedStop]);
         }
     };
 
-    const addNewStop = async (newStop: Coordinate): Promise<string | null> => {
+    const adddeletedStop = async (deletedStop: Coordinate): Promise<string | null> => {
         try {
-            const docRef = await addDoc(collection(db, 'bikebusstops'), newStop);
+            const docRef = await addDoc(collection(db, 'bikebusstops'), deletedStop);
             return docRef.id;
             // set docRef.id as the new stop's id
         } catch (e) {
@@ -157,8 +160,8 @@ const DeleteBikeBusStops: React.FC = () => {
         return null;
     };
 
-    const updateBikeBusStops = async (newStopId: string) => {
-        const bikeBusStopRef = doc(db, 'bikebusstops', newStopId);
+    const updateBikeBusStops = async (deletedStopId: string) => {
+        const bikeBusStopRef = doc(db, 'bikebusstops', deletedStopId);
 
         // Get the bikebusgroup's id from the selected route
         const bikeBusGroupId = selectedRoute?.BikeBusGroupId || '';
@@ -173,43 +176,44 @@ const DeleteBikeBusStops: React.FC = () => {
         });
     };
 
+    const handleDeleteStop = async (index: number) => {
+        if (selectedRoute) {
+            // Create a new array without the stop to be deleted
+            const deletedStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
+      
+            const newRoute: Route = {
+              ...selectedRoute,
+              BikeBusStop: deletedStops,
+            };
+    
+            // Update the route in Firebase here
+            await updateRoute(newRoute, selectedRoute.BikeBusStopIds[index]);
+            setSelectedStopIndex(null);
+        }
+    };    
 
 
-    const updateRoute = async (newRoute: Route, newStopId: string) => {
+    const updateRoute = async (newRoute: Route, deletedStopId: string) => {
         const routeRef = doc(db, 'routes', id);
-        const lastBikeBusStopName = BikeBusStopName[BikeBusStopName.length - 1] || "";
+    
+        const updatedBikeBusStopIds = newRoute.BikeBusStopIds.filter(id => id !== "/bikebusstops/" + deletedStopId);
+        const updatedBikeBusStop = newRoute.BikeBusStop.filter((_, index) => newRoute.BikeBusStopIds[index] !== "/bikebusstops/" + deletedStopId);
+    
         await updateDoc(routeRef, {
             ...newRoute,
-            BikeBusStopName: arrayUnion(lastBikeBusStopName),
-            BikeBusStopIds: arrayUnion("/bikebusstops/" + newStopId),
-            BikeBusStop: arrayUnion(...BikeBusStops)
+            BikeBusStopIds: updatedBikeBusStopIds,
+            BikeBusStop: updatedBikeBusStop
         });
     };
+    
+    
+    
 
 
 
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
-
-
-    const onSaveStopButtonClick = async () => {
-        if (selectedRoute && BikeBusStops.length > 0) {
-            const newStop = BikeBusStops[BikeBusStops.length - 1];
-            const newStopId = await addNewStop(newStop);
-            if (newStopId) {
-                const newStops: Coordinate[] = [...selectedRoute.BikeBusStop, newStop];
-                const newRoute: Route = {
-                    ...selectedRoute,
-                    BikeBusStop: newStops as Coordinate[],
-                };
-                await updateRoute(newRoute, newStopId);
-                await updateBikeBusStops(newStopId);
-                alert('BikeBusStop added successfully!');
-                history.push(`/EditRoute/${id}`);
-            }
-        }
-    };
 
 
     return (
@@ -244,17 +248,402 @@ const DeleteBikeBusStops: React.FC = () => {
                             fullscreenControl: true,
                             disableDoubleClickZoom: true,
                             disableDefaultUI: true,
+                            styles: [
+                                {
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#f5f5f5"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "labels.icon",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#616161"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "labels.text.stroke",
+                                    "stylers": [
+                                        {
+                                            "color": "#f5f5f5"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "administrative",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "administrative.land_parcel",
+                                    "elementType": "labels",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "administrative.land_parcel",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#bdbdbd"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "administrative.neighborhood",
+                                    "elementType": "geometry.fill",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "administrative.neighborhood",
+                                    "elementType": "labels.text",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#eeeeee"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi",
+                                    "elementType": "labels.text",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#757575"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.business",
+                                    "stylers": [
+                                        {
+                                            "visibility": "simplified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.business",
+                                    "elementType": "labels.text",
+                                    "stylers": [
+                                        {
+                                            "saturation": -65
+                                        },
+                                        {
+                                            "lightness": 50
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#e5e5e5"
+                                        },
+                                        {
+                                            "visibility": "simplified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "elementType": "geometry.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#27d349"
+                                        },
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "elementType": "labels",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "elementType": "labels.text",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.park",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#9e9e9e"
+                                        },
+                                        {
+                                            "saturation": 45
+                                        },
+                                        {
+                                            "lightness": -20
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "geometry.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#ffd800"
+                                        },
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "geometry.stroke",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "labels",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "labels.text",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        },
+                                        {
+                                            "weight": 5
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "poi.school",
+                                    "elementType": "labels.text.stroke",
+                                    "stylers": [
+                                        {
+                                            "visibility": "on"
+                                        },
+                                        {
+                                            "weight": 3.5
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#ffffff"
+                                        },
+                                        {
+                                            "visibility": "simplified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road",
+                                    "elementType": "labels.icon",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road.arterial",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#757575"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road.highway",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#dadada"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road.highway",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#616161"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road.local",
+                                    "elementType": "labels",
+                                    "stylers": [
+                                        {
+                                            "visibility": "off"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "road.local",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#9e9e9e"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "transit",
+                                    "elementType": "geometry.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#7ea3ec"
+                                        },
+                                        {
+                                            "saturation": -50
+                                        },
+                                        {
+                                            "lightness": 50
+                                        },
+                                        {
+                                            "visibility": "on"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "water",
+                                    "elementType": "geometry",
+                                    "stylers": [
+                                        {
+                                            "color": "#c9c9c9"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "featureType": "water",
+                                    "elementType": "labels.text.fill",
+                                    "stylers": [
+                                        {
+                                            "color": "#9e9e9e"
+                                        }
+                                    ]
+                                }
+                            ],
                         }}
                         onClick={onMapClick}
                     >
                         <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
                         <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
-                        {BikeBusStops && BikeBusStops.map((stop, index) => (
+                        {BikeBusStops?.map((stop, index) => (
                             <Marker
                                 key={index}
-                                position={{ lat: stop.lat, lng: stop.lng }}
+                                position={stop}
                                 title={`Stop ${index + 1}`}
-                            />
+                                label={`${index + 1}`}
+                                onClick={() => {
+                                    setSelectedStopIndex(index);
+                                }}
+                            >
+                                {selectedStopIndex === index && (
+                                    <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
+                                        <div>
+                                            <h3>{`Stop ${index + 1}`}</h3>
+                                            <button onClick={() => handleDeleteStop(index)}>Delete Stop</button>
+                                        </div>
+                                    </InfoWindow>
+                                )}
+                            </Marker>
                         ))}
 
                         <Polyline

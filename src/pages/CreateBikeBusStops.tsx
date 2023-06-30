@@ -248,6 +248,378 @@ const CreateBikeBusStop: React.FC = () => {
                             fullscreenControl: true,
                             disableDoubleClickZoom: true,
                             disableDefaultUI: true,
+                            styles: [
+                                {
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#f5f5f5"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "elementType": "labels.icon",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#616161"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "elementType": "labels.text.stroke",
+                                  "stylers": [
+                                    {
+                                      "color": "#f5f5f5"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "administrative",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "administrative.land_parcel",
+                                  "elementType": "labels",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "administrative.land_parcel",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#bdbdbd"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "administrative.neighborhood",
+                                  "elementType": "geometry.fill",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "administrative.neighborhood",
+                                  "elementType": "labels.text",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#eeeeee"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi",
+                                  "elementType": "labels.text",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#757575"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.business",
+                                  "stylers": [
+                                    {
+                                      "visibility": "simplified"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.business",
+                                  "elementType": "labels.text",
+                                  "stylers": [
+                                    {
+                                      "saturation": -65
+                                    },
+                                    {
+                                      "lightness": 50
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#e5e5e5"
+                                    },
+                                    {
+                                      "visibility": "simplified"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "elementType": "geometry.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#27d349"
+                                    },
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "elementType": "labels",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "elementType": "labels.text",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.park",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#9e9e9e"
+                                    },
+                                    {
+                                      "saturation": 45
+                                    },
+                                    {
+                                      "lightness": -20
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "geometry.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#ffd800"
+                                    },
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "geometry.stroke",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "labels",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "labels.text",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    },
+                                    {
+                                      "weight": 5
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "poi.school",
+                                  "elementType": "labels.text.stroke",
+                                  "stylers": [
+                                    {
+                                      "visibility": "on"
+                                    },
+                                    {
+                                      "weight": 3.5
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#ffffff"
+                                    },
+                                    {
+                                      "visibility": "simplified"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road",
+                                  "elementType": "labels.icon",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road.arterial",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#757575"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road.highway",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#dadada"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road.highway",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#616161"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road.local",
+                                  "elementType": "labels",
+                                  "stylers": [
+                                    {
+                                      "visibility": "off"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "road.local",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#9e9e9e"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "transit",
+                                  "elementType": "geometry.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#7ea3ec"
+                                    },
+                                    {
+                                      "saturation": -50
+                                    },
+                                    {
+                                      "lightness": 50
+                                    },
+                                    {
+                                      "visibility": "on"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "water",
+                                  "elementType": "geometry",
+                                  "stylers": [
+                                    {
+                                      "color": "#c9c9c9"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "featureType": "water",
+                                  "elementType": "labels.text.fill",
+                                  "stylers": [
+                                    {
+                                      "color": "#9e9e9e"
+                                    }
+                                  ]
+                                }
+                              ],
                         }}
                         onClick={onMapClick}
                     >
