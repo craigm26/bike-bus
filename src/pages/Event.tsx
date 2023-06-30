@@ -14,7 +14,7 @@ import {
   IonTitle,
   IonCheckbox,
 } from '@ionic/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -24,6 +24,7 @@ import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs
 import { db } from '../firebaseConfig';
 import { useParams } from "react-router-dom";
 import { useHistory } from 'react-router-dom';
+import { create } from 'domain';
 
 interface event {
   title: string;
@@ -240,78 +241,113 @@ const Event: React.FC = () => {
 
   const history = useHistory();
 
-  const toggleStartEvent = async () => {  // Make sure this function is async
-    toggleEventStatus('active');
-    // create a new document in the document collection "trips" with the event id in the field eventId. This will be used to track the trip data for the event
-    const tripsRef = collection(db, 'trips');
-    const docRef = await addDoc(tripsRef, {
-      eventId: id,
-      leader: eventData?.leader,
-      members: eventData?.members,
-      caboose: eventData?.caboose || [],
-      captains: eventData?.captains  || [],
-      kids: eventData?.kids || [],
-      parents: eventData?.parents || [],
-      sheepdogs: eventData?.sheepdogs || [],
-      sprinters: eventData?.sprinters || [],
-      startTimestamp: eventData?.startTimestamp,
-      endTimestamp: eventData?.endTime || null,
-      status: eventData?.status,
-      BikeBusName: eventData?.BikeBusName,
-      route: eventData?.route,
-      groupId: eventData?.groupId,
-      groupSize: '',      
-      tripLeader: eventData?.leader || [],
-      tripMembers: eventData?.members || [],
-      tripCaboose: eventData?.caboose || [],
-      tripCaptains: eventData?.captains || [],
-      tripKids: eventData?.kids || [],
-      tripParents: eventData?.parents || [],
-      tripSheepdogs: eventData?.sheepdogs || [],
-      tripSprinters: eventData?.sprinters || [],
-      tripStartTimestamp: eventData?.startTimestamp,
-      tripEndTimestamp: eventData?.endTime || null,
-      tripStatus: eventData?.status,
-      tripBikeBusName: eventData?.BikeBusName,
-      tripRoute: eventData?.route,
-      tripGroupId: eventData?.groupId,
-      tripGroupSize: '',
-      tripCheckInLeader: '',
-      tripCheckInMembers: '',
-      tripCheckInCaboose: '',
-      tripCheckInCaptains: '',
-      tripCheckInKids: '',
-      tripCheckInParents: '',
-      tripCheckInSheepdogs: '',
-      tripCheckInSprinters: '',
-      tripCheckInStartTimestamp: '',
-      tripCheckInEndTimestamp: '',
-      tripCheckInStatus: '',
-      tripCheckInBikeBusName: '',
-      tripCheckInRoute: '',
-      tripCheckInGroupId: '',
-      tripCheckInGroupSize: '',
-      tripEndTripLeader: '',
-      tripEndTripMembers: '',
-      tripEndTripCaboose: '',
-      tripEndTripCaptains: '',
-      tripEndTripKids: '',
-      tripEndTripParents: '',
-      tripEndTripSheepdogs: '',
-      tripEndTripSprinters: '',
-      tripEndTripStartTimestamp: '',
-      tripEndTripEndTimestamp: '',
-      tripEndTripStatus: '',
-      tripEndTripBikeBusName: '',
-      tripEndTripRoute: '',
-      tripEndTripGroupId: '',
-      tripEndTripGroupSize: '',
-    });
-    // now we're going to use the trip document id to redirect to the trip page for this event
-    const eventDataId = docRef.id;
-    history.push(`/trips/${eventDataId}`);
+  const toggleStartEvent = () => (
+    toggleEventStatus('active')
+  );
 
-  };
+
+
+
+  // create a async function to get the users' current time and date and measure that against the event start time and date
+  const checkEventTime = useCallback(() => {
+    // get the current time and date
+    const now = new Date();
+    // get the event start time and date
+    const eventStart = eventData?.startTimestamp?.toDate();
+    // check to see if the event start time and date is before the current time and date and within 30 minutes of the current time and date
+    if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 30 * 60000)) {
+      // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active
+      toggleStartEvent();
+      // and trigger the createTrip function
+      // build a function to create a new trip document in the trips collection
+      const createTrip = async () => {
+        const tripsRef = collection(db, 'trips');
+        const docRef = await addDoc(tripsRef, {
+          eventId: id,
+          leader: eventData?.leader,
+          members: eventData?.members,
+          caboose: eventData?.caboose || [],
+          captains: eventData?.captains || [],
+          kids: eventData?.kids || [],
+          parents: eventData?.parents || [],
+          sheepdogs: eventData?.sheepdogs || [],
+          sprinters: eventData?.sprinters || [],
+          startTimestamp: eventData?.startTimestamp,
+          endTimestamp: eventData?.endTime || null,
+          status: eventData?.status,
+          BikeBusName: eventData?.BikeBusName,
+          route: eventData?.route,
+          groupId: eventData?.groupId,
+          groupSize: '',
+          tripLeader: eventData?.leader || [],
+          tripMembers: eventData?.members || [],
+          tripCaboose: eventData?.caboose || [],
+          tripCaptains: eventData?.captains || [],
+          tripKids: eventData?.kids || [],
+          tripParents: eventData?.parents || [],
+          tripSheepdogs: eventData?.sheepdogs || [],
+          tripSprinters: eventData?.sprinters || [],
+          tripStartTimestamp: eventData?.startTimestamp,
+          tripEndTimestamp: eventData?.endTime || null,
+          tripStatus: eventData?.status,
+          tripBikeBusName: eventData?.BikeBusName,
+          tripRoute: eventData?.route,
+          tripGroupId: eventData?.groupId,
+          tripGroupSize: '',
+          tripCheckInLeader: '',
+          tripCheckInMembers: '',
+          tripCheckInCaboose: '',
+          tripCheckInCaptains: '',
+          tripCheckInKids: '',
+          tripCheckInParents: '',
+          tripCheckInSheepdogs: '',
+          tripCheckInSprinters: '',
+          tripCheckInStartTimestamp: '',
+          tripCheckInEndTimestamp: '',
+          tripCheckInStatus: '',
+          tripCheckInBikeBusName: '',
+          tripCheckInRoute: '',
+          tripCheckInGroupId: '',
+          tripCheckInGroupSize: '',
+          tripEndTripLeader: '',
+          tripEndTripMembers: '',
+          tripEndTripCaboose: '',
+          tripEndTripCaptains: '',
+          tripEndTripKids: '',
+          tripEndTripParents: '',
+          tripEndTripSheepdogs: '',
+          tripEndTripSprinters: '',
+          tripEndTripStartTimestamp: '',
+          tripEndTripEndTimestamp: '',
+          tripEndTripStatus: '',
+          tripEndTripBikeBusName: '',
+          tripEndTripRoute: '',
+          tripEndTripGroupId: '',
+          tripEndTripGroupSize: '',
+        });
+        // now we're going to use the trip document id to redirect to the trip page for this event
+        const eventDataId = docRef.id;
+        history.push(`/trips/${eventDataId}`);
+      };
+    }
+  }, [eventData?.BikeBusName, eventData?.caboose, eventData?.captains, eventData?.endTime, eventData?.groupId, eventData?.kids, eventData?.leader, eventData?.members, eventData?.parents, eventData?.route, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.status, history, id, toggleStartEvent]);
+
+  // when page loads, do the checkEventTime function
+  useEffect(() => {
+    checkEventTime();
+    // check the event time every 30 seconds
+    const interval = setInterval(() => {
+      checkEventTime();
+    }
+      , 30000);
+
+    // when the page unloads, clear the interval
+    return () => clearInterval(interval);
+
+  }, [checkEventTime]);
+
+
+
 
   const toggleEndEvent = () => {
     toggleEventStatus('inactive');
@@ -340,16 +376,17 @@ const Event: React.FC = () => {
             <IonLabel>{startTime} to {endTime}</IonLabel>
           </IonItem>
           <IonItem>
-            {isEventLeader && (
+            {isEventLeader && !isEventActive && (
               <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
             )}
-            {isEventLeader && (
+            {isEventLeader && isEventActive && (
               <IonButton onClick={toggleEndEvent}>End BikeBus Event</IonButton>
             )}
             {!isEventLeader && isEventActive && (
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
             )}
           </IonItem>
+
           <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
           <IonModal isOpen={showModal}>
             <IonHeader>
@@ -359,7 +396,7 @@ const Event: React.FC = () => {
             </IonHeader>
             <IonContent>
               <IonList>
-              <IonItem>
+                <IonItem>
                   <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
                   <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
                 </IonItem>
