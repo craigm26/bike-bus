@@ -45,6 +45,7 @@ import EditRoute from './pages/EditRoute';
 import ViewBikeBusList from './pages/ViewBikeBusList';
 import EditBikeBus from './pages/EditBikeBus';
 import EditSchedule from './pages/EditSchedule';
+import Trip from './pages/Trip';
 
 
 import '@ionic/react/css/core.css';
@@ -373,6 +374,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/about">
                         <About />
+                      </Route>
+                      <Route exact path="/trips/:eventDataId">
+                        <Trip />
                       </Route>
                       <Route exact path="/settings">
                         <Settings />

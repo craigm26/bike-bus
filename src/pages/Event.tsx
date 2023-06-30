@@ -20,9 +20,10 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams } from "react-router-dom";
+import { useHistory } from 'react-router-dom';
 
 interface event {
   title: string;
@@ -237,8 +238,79 @@ const Event: React.FC = () => {
     }, { merge: true });
   };
 
-  const toggleStartEvent = () => {
+  const history = useHistory();
+
+  const toggleStartEvent = async () => {  // Make sure this function is async
     toggleEventStatus('active');
+    // create a new document in the document collection "trips" with the event id in the field eventId. This will be used to track the trip data for the event
+    const tripsRef = collection(db, 'trips');
+    const docRef = await addDoc(tripsRef, {
+      eventId: id,
+      leader: eventData?.leader,
+      members: eventData?.members,
+      caboose: eventData?.caboose || [],
+      captains: eventData?.captains  || [],
+      kids: eventData?.kids || [],
+      parents: eventData?.parents || [],
+      sheepdogs: eventData?.sheepdogs || [],
+      sprinters: eventData?.sprinters || [],
+      startTimestamp: eventData?.startTimestamp,
+      endTimestamp: eventData?.endTime || null,
+      status: eventData?.status,
+      BikeBusName: eventData?.BikeBusName,
+      route: eventData?.route,
+      groupId: eventData?.groupId,
+      groupSize: '',      
+      tripLeader: eventData?.leader || [],
+      tripMembers: eventData?.members || [],
+      tripCaboose: eventData?.caboose || [],
+      tripCaptains: eventData?.captains || [],
+      tripKids: eventData?.kids || [],
+      tripParents: eventData?.parents || [],
+      tripSheepdogs: eventData?.sheepdogs || [],
+      tripSprinters: eventData?.sprinters || [],
+      tripStartTimestamp: eventData?.startTimestamp,
+      tripEndTimestamp: eventData?.endTime || null,
+      tripStatus: eventData?.status,
+      tripBikeBusName: eventData?.BikeBusName,
+      tripRoute: eventData?.route,
+      tripGroupId: eventData?.groupId,
+      tripGroupSize: '',
+      tripCheckInLeader: '',
+      tripCheckInMembers: '',
+      tripCheckInCaboose: '',
+      tripCheckInCaptains: '',
+      tripCheckInKids: '',
+      tripCheckInParents: '',
+      tripCheckInSheepdogs: '',
+      tripCheckInSprinters: '',
+      tripCheckInStartTimestamp: '',
+      tripCheckInEndTimestamp: '',
+      tripCheckInStatus: '',
+      tripCheckInBikeBusName: '',
+      tripCheckInRoute: '',
+      tripCheckInGroupId: '',
+      tripCheckInGroupSize: '',
+      tripEndTripLeader: '',
+      tripEndTripMembers: '',
+      tripEndTripCaboose: '',
+      tripEndTripCaptains: '',
+      tripEndTripKids: '',
+      tripEndTripParents: '',
+      tripEndTripSheepdogs: '',
+      tripEndTripSprinters: '',
+      tripEndTripStartTimestamp: '',
+      tripEndTripEndTimestamp: '',
+      tripEndTripStatus: '',
+      tripEndTripBikeBusName: '',
+      tripEndTripRoute: '',
+      tripEndTripGroupId: '',
+      tripEndTripGroupSize: '',
+    });
+    // now we're going to use the trip document id to redirect to the trip page for this event
+    const eventDataId = docRef.id;
+    history.push(`/trips/${eventDataId}`);
+
   };
 
   const toggleEndEvent = () => {
@@ -250,6 +322,9 @@ const Event: React.FC = () => {
     setDoc(eventRef, {
       JoinedMembers: arrayUnion(username)
     }, { merge: true });
+    // find any other of user's ids in the event add them to the appropriate role arrays
+
+    // record the check in time for the user, if they are a parent, check in the kids too 
   };
 
 
