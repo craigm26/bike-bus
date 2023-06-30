@@ -16,7 +16,7 @@ import {
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './About.css';
-import useAuth from '../useAuth'; 
+import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
@@ -65,6 +65,7 @@ const Event: React.FC = () => {
   const [sheepdogs, setSheepdogs] = useState<string[]>([]);
   const [sprinters, setSprinters] = useState<string[]>([]);
   const [role, setRole] = useState<string[]>([]);
+  const [leader, setLeader] = useState<string>('');
 
 
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
@@ -84,31 +85,21 @@ const Event: React.FC = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
-      console.log('fetchEvent called');
-      console.log('id:', id);
       const docRef = doc(db, 'event', id);
-      console.log('docRef:', docRef);
       const docSnapshot = await getDoc(docRef);
-      console.log('docSnapshot:', docSnapshot);
 
       if (docSnapshot.exists()) {
         setEventData(docSnapshot.data());
-        console.log('Document data:', docSnapshot.data());
         // fetch the BikeBusGroup data after the event data has been fetched
         const fetchBikeBusGroup = async () => {
-          console.log('BikeBusGroup:', docSnapshot.data().BikeBusGroup);
           const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
-
           if (groupDocSnapshot.exists()) {
             setBikeBusGroupData(groupDocSnapshot.data());
-            console.log('Group data:', groupDocSnapshot.data());
           } else {
-            console.log(`No document with ID: ${docSnapshot.data().BikeBusGroup}`);
           }
         };
         fetchBikeBusGroup();
       } else {
-        console.log(`No document with ID: ${id}`);
       }
     };
 
@@ -124,7 +115,9 @@ const Event: React.FC = () => {
       }
     };
 
+
     if (eventData) {
+      fetchUsernames(eventData.leader || '', setLeader);
       fetchUsernames(eventData.members || [], setMembers);
       fetchUsernames(eventData.caboose || [], setCaboose);
       fetchUsernames(eventData.captains || [], setCaptains);
@@ -135,14 +128,9 @@ const Event: React.FC = () => {
     }
   }, [eventData]);
 
-
-
   const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
   };
 
   const avatarElement = user ? (
@@ -230,20 +218,13 @@ const Event: React.FC = () => {
 
   // Date and time formatting options
 
-  console.log('eventData:', eventData);
-
-
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
 
 
-  // Check to see if the user is the event leader
-  const isEventLeader = user && eventData?.leader === username;
-  console.log('isEventLeader:', isEventLeader);
-  console.log('eventData?.leader:', eventData?.leader);
-  console.log('user?.username:', user?.username);
-  console.log('username:', username);
+  // Check to see if the user is the event leader (a single string) in the eventData?.leader array
+  const isEventLeader = username && eventData?.leader.includes(username);
 
   // Check to see if the event is active
   const isEventActive = eventData?.status === 'active';
@@ -303,39 +284,37 @@ const Event: React.FC = () => {
             </IonHeader>
             <IonContent>
               <IonList>
-                <IonItem>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Caboose</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Captains</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Parents</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Kids</IonLabel>
-                </IonItem>
-                <IonItem>
+              <IonItem>
                   <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Leader</IonLabel>
+                  <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonCheckbox slot="start" value="members" disabled checked />
-                  <IonLabel>Members</IonLabel>
+                  <IonLabel>Members: Everyone is considered a member of the BikeBus when they join the BikeBus or make an RSVP to an Event.</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Sheepdogs</IonLabel>
+                  <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Sprinters</IonLabel>
+                  <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Kids: Be safe and have fun!</IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
+                  <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
                 </IonItem>
               </IonList>
               <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
@@ -357,26 +336,8 @@ const Event: React.FC = () => {
             ))}
           </IonItem>
           <IonItem>
-            <IonLabel>Caboose</IonLabel>
-            {caboose.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
             <IonLabel>Captains</IonLabel>
             {captains.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Kids</IonLabel>
-            {kids.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Parents</IonLabel>
-            {parents.map((username: string, index: number) => (
               <IonLabel key={index}>{username}</IonLabel>
             ))}
           </IonItem>
@@ -389,6 +350,24 @@ const Event: React.FC = () => {
           <IonItem>
             <IonLabel>Sprinters</IonLabel>
             {sprinters.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Parents</IonLabel>
+            {parents.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Kids</IonLabel>
+            {kids.map((username: string, index: number) => (
+              <IonLabel key={index}>{username}</IonLabel>
+            ))}
+          </IonItem>
+          <IonItem>
+            <IonLabel>Caboose</IonLabel>
+            {caboose.map((username: string, index: number) => (
               <IonLabel key={index}>{username}</IonLabel>
             ))}
           </IonItem>
