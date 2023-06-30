@@ -148,6 +148,8 @@ const ViewRouteList: React.FC = () => {
 
     // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
     const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
+    // test the condition:
+    console.log(isUserLeader);
 
 
     return (
@@ -158,7 +160,7 @@ const ViewRouteList: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                {routes.length === 0 ? (
+                {routes.length === 0 && !isUserLeader ? (
                     <IonCard>
                         <IonCardHeader>
                             <IonCardTitle>Creating a Route</IonCardTitle>
