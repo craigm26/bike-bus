@@ -1,4 +1,3 @@
-// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
@@ -69,6 +68,7 @@ const Event: React.FC = () => {
   const [sprinters, setSprinters] = useState<string[]>([]);
   const [role, setRole] = useState<string[]>([]);
   const [leader, setLeader] = useState<string>('');
+  const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
 
 
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
@@ -123,6 +123,7 @@ const Event: React.FC = () => {
         tripGroupId: eventData?.groupId,
         tripGroupSize: '',
         tripCheckInLeader: eventData?.leader,
+        currentLocationOfLeader: '',
         tripCheckInMembers: '',
         tripCheckInCaboose: '',
         tripCheckInCaptains: '',
@@ -156,14 +157,25 @@ const Event: React.FC = () => {
         tripEndTripGroupSize: '',
       });
       console.log('Document written with ID: ', docRef.id);
-    }, [eventData, id]);
+      const tripRefid = docRef.id;
+      // set this as the current trip for the leader and refer this id to the tripId field in the user document and bikebusgroup document
+      const userRef = doc(db, 'users', eventData?.leader);
+      await updateDoc(userRef, {
+        tripId: tripRefid,
+      });
+      const groupRef = doc(db, 'bikebusgroup', eventData?.groupId);
+      await updateDoc(groupRef, {
+        tripId: tripRefid,
+      });
+      // also update the event document to have the tripId
+      const eventRef = doc(db, 'event', id);
+      await updateDoc(eventRef, {
+        tripId: tripRefid,
+      });
+      // redirect to the trip page with the trip id being the "tripId" parameter
+      history.push(`/trip/${tripRefid}`);
 
-    useEffect(() => {
-      if (eventData?.status === 'active') {
-        createTrip();
-        history.push(`/trips/${id}`);
-      }
-    }, [createTrip, eventData, history, id]);
+    }, [eventData?.BikeBusName, eventData?.caboose, eventData?.captains, eventData?.endTime, eventData?.groupId, eventData?.kids, eventData?.leader, eventData?.members, eventData?.parents, eventData?.route, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.status, history, id]);
 
     useEffect(() => {
       const fetchEvent = async () => {
@@ -185,13 +197,6 @@ const Event: React.FC = () => {
       };
       fetchEvent();
     }, [id]);
-
-  useEffect(() => {
-    if (eventData?.status === 'active') {
-      createTrip();
-      history.push(`/trips/${id}`);
-    }
-  }, [createTrip, eventData, history, id]);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -335,22 +340,25 @@ const Event: React.FC = () => {
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
 
-  // Check to see if the event is active
-  const isEventActive = eventData?.status === 'active';
+  // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
+  const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
 
-  // create a function to toggle the event status between active and inactive
   const toggleEventStatus = useCallback(async (status: string) => {
-    const eventRef = doc(db, 'event', id);
-    await setDoc(eventRef, {
+    const docRef = doc(db, 'event', id);
+    await setDoc(docRef, {
       status: status
     }, { merge: true });
-  }
-    , [id]);
+    if (status === 'active') {
+      setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
+      createTrip();
+    }
+  }, []); 
 
   const toggleStartEvent = useCallback(() => (
     toggleEventStatus('active')
   ), [toggleEventStatus]);
 
+  // in case the leader forgets to manually start the BikeBus, 
   // create a async function to get the users' current time and date and measure that against the event start time and date
   const checkEventTime = useCallback(() => {
     // get the current time and date
@@ -358,9 +366,13 @@ const Event: React.FC = () => {
     // get the event start time and date
     const eventStart = eventData?.startTimestamp?.toDate();
     // check to see if the event start time and date is before the current time and date and within 30 minutes of the current time and date
-    if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 30 * 60000)) {
-      // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active
-      toggleStartEvent();
+    if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 15 * 60000)) {
+      // show the join bikebus button
+      setShowJoinBikeBus(true);
+      // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active when it's the eventData?.startTimestamp
+      if(eventData?.startTimestamp) {
+        toggleStartEvent();
+      }
       // and trigger the createTrip function
       // build a function to create a new trip document in the trips collection
     }
@@ -397,7 +409,6 @@ const Event: React.FC = () => {
     // record the check in time for the user, if they are a parent, check in the kids too 
   };
 
-
   return (
     <IonPage>
       <IonContent fullscreen>
@@ -410,13 +421,13 @@ const Event: React.FC = () => {
             <IonLabel>{startTime} to {endTime}</IonLabel>
           </IonItem>
           <IonItem>
-            {isEventLeader && !isEventActive && (
+            {isEventLeader && !isEventOpenActive && (
               <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
             )}
-            {isEventLeader && isEventActive && (
+            {isEventLeader && isEventOpenActive && (
               <IonButton onClick={toggleEndEvent}>End BikeBus Event</IonButton>
             )}
-            {!isEventLeader && isEventActive && (
+            {!isEventLeader && isEventOpenActive && (
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
             )}
           </IonItem>
