@@ -150,79 +150,97 @@ const Event: React.FC = () => {
     }, [user]);
 
     const createTrip = useCallback(async () => {
-      const tripsRef = collection(db, 'trips');
-      const docRef = await addDoc(tripsRef, {
-        eventId: id,
-        leader: user?.uid || '',
-        members: eventData?.members || [],
-        caboose: eventData?.caboose || [],
-        captains: eventData?.captains || [],
-        kids: eventData?.kids || [],
-        parents: eventData?.parents || [],
-        sheepdogs: eventData?.sheepdogs || [],
-        sprinters: eventData?.sprinters || [],
-        startTimestamp: eventData?.startTimestamp || '' ,
-        endTimestamp: eventData?.endTime || null,
-        status: eventData?.status || 'active',
-        BikeBusName: eventData?.BikeBusName,
-        route: eventData?.route,
-        groupId: eventData?.groupId,
-        groupSize: '',
-        tripLeader: eventData?.leader || [],
-        tripMembers: eventData?.members || [],
-        tripCaboose: eventData?.caboose || [],
-        tripCaptains: eventData?.captains || [],
-        tripKids: eventData?.kids || [],
-        tripParents: eventData?.parents || [],
-        tripSheepdogs: eventData?.sheepdogs || [],
-        tripSprinters: eventData?.sprinters || [],
-        tripStartTimestamp: eventData?.startTimestamp || '' ,
-        tripEndTimestamp: eventData?.endTime || null,
-        tripStatus: eventData?.status,
-        tripBikeBusName: eventData?.BikeBusName || '',
-        tripRoute: eventData?.route,
-        tripGroupId: eventData?.groupId,
-        tripGroupSize: '',
-        tripCheckInLeader: eventData?.leader,
-        currentLocationOfLeader: '',
-        tripCheckInMembers: '',
-        tripCheckInCaboose: '',
-        tripCheckInCaptains: '',
-        tripCheckInKids: '',
-        tripCheckInParents: '',
-        tripCheckInSheepdogs: '',
-        tripCheckInSprinters: '',
-        // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
-        tripCheckInStartTimestamp: serverTimestamp(),
-        // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
-        tripCheckInEndTimestamp: '',
-        tripCheckInStatus: '',
-        tripCheckInBikeBusName: '',
-        tripCheckInRoute: eventData?.route,
-        tripCheckInGroupId: eventData?.groupId,
-        tripCheckInGroupSize: '',
-        tripEndTripLeader: '',
-        tripEndTripMembers: '',
-        tripEndTripCaboose: '',
-        tripEndTripCaptains: '',
-        tripEndTripKids: '',
-        tripEndTripParents: '',
-        tripEndTripSheepdogs: '',
-        tripEndTripSprinters: '',
-        tripEndTripStartTimestamp: '',
-        tripEndTripEndTimestamp: '',
-        tripEndTripStatus: '',
-        tripEndTripBikeBusName: '',
-        tripEndTripRoute: '',
-        tripEndTripGroupId: '',
-        tripEndTripGroupSize: '',
-      });
-      console.log('Document written with ID: ', docRef.id);
-      const tripRefid = docRef.id;
-      // redirect to the trip page with the trip id being the "tripId" parameter
-      history.push(`/trips/${tripRefid}`);
+      // get the event data from the event document and set it as eventData
+      const docRef = doc(db, 'event', id);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        setEventData(docSnapshot.data());
+      }
+      // ensure that the eventData is ready and available before continuing
+      if (eventData) {
+        const tripsRef = collection(db, 'trips');
+        const docRef = await addDoc(tripsRef, {
+          // wait until all of the values are set in the trip document before continuing
+          // check to see if the trip document has been created and the values for event have been saved
+          eventId: id,
+          leader: user?.uid || '',
+          members: eventData?.members || [],
+          caboose: eventData?.caboose || [],
+          captains: eventData?.captains || [],
+          kids: eventData?.kids || [],
+          parents: eventData?.parents || [],
+          sheepdogs: eventData?.sheepdogs || [],
+          sprinters: eventData?.sprinters || [],
+          startTimestamp: eventData?.startTimestamp || '' ,
+          endTimestamp: eventData?.endTime || null,
+          status: eventData?.status || 'active',
+          BikeBusName: eventData?.BikeBusName || '',
+          route: eventData?.route || '',
+          groupId: eventData?.groupId || '',
+          groupSize: '',
+          tripLeader: eventData?.leader || [],
+          tripMembers: eventData?.members || [],
+          tripCaboose: eventData?.caboose || [],
+          tripCaptains: eventData?.captains || [],
+          tripKids: eventData?.kids || [],
+          tripParents: eventData?.parents || [],
+          tripSheepdogs: eventData?.sheepdogs || [],
+          tripSprinters: eventData?.sprinters || [],
+          tripStartTimestamp: eventData?.startTimestamp || '' ,
+          tripEndTimestamp: eventData?.endTime || null,
+          tripStatus: eventData?.status || 'active',
+          tripBikeBusName: eventData?.BikeBusName || '',
+          tripRoute: eventData?.route || '',
+          tripGroupId: eventData?.groupId || '',
+          tripGroupSize: '',
+          tripCheckInLeader: eventData?.leader || '',
+          currentLocationOfLeader: '',
+          tripCheckInMembers: '',
+          tripCheckInCaboose: '',
+          tripCheckInCaptains: '',
+          tripCheckInKids: '',
+          tripCheckInParents: '',
+          tripCheckInSheepdogs: '',
+          tripCheckInSprinters: '',
+          // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
+          tripCheckInStartTimestamp: serverTimestamp(),
+          // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
+          tripCheckInEndTimestamp: '',
+          tripCheckInStatus: '',
+          tripCheckInBikeBusName: '',
+          tripCheckInRoute: eventData?.route || '',
+          tripCheckInGroupId: eventData?.groupId || '',
+          tripCheckInGroupSize: '',
+          tripEndTripLeader: '',
+          tripEndTripMembers: '',
+          tripEndTripCaboose: '',
+          tripEndTripCaptains: '',
+          tripEndTripKids: '',
+          tripEndTripParents: '',
+          tripEndTripSheepdogs: '',
+          tripEndTripSprinters: '',
+          tripEndTripStartTimestamp: '',
+          tripEndTripEndTimestamp: '',
+          tripEndTripStatus: '',
+          tripEndTripBikeBusName: '',
+          tripEndTripRoute: '',
+          tripEndTripGroupId: '',
+          tripEndTripGroupSize: '',
+        });
+        console.log('Document written with ID: ', docRef.id);
+        
+        const tripRefid = docRef.id;
+        // save that trip id to the event document as tripId
+        const eventRef = doc(db, 'event', id);
+        await updateDoc(eventRef, {
+          tripId: tripRefid
+        });
+        // redirect to the trip page with the trip id being the "tripId" parameter
+        history.push(`/trips/${tripRefid}`);
+      }
 
-    }, [eventData?.BikeBusName, eventData?.caboose, eventData?.captains, eventData?.endTime, eventData?.groupId, eventData?.kids, eventData?.leader, eventData?.members, eventData?.parents, eventData?.route, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.status, history, id, user?.uid]);
+
+    }, [eventData, history, id, user?.uid]);
 
 
 
@@ -309,19 +327,39 @@ const Event: React.FC = () => {
   // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
   const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
 
+  const setShowStartBikeBus = (value: boolean) => {
+    setShowJoinBikeBus(value);
+    console.log('setShowJoinBikeBus is ', value);
+  };
+
   const toggleEventStatus = useCallback(async (status: string) => {
     const docRef = doc(db, 'event', id);
     await setDoc(docRef, {
       status: status
     }, { merge: true });
+    // check to see if the event already has the status of active, if not, set the status to active and trigger the createTrip function
+    if (status === '') {
+      setEventData((prevEventData: any) => ({ ...prevEventData, status: '' }));
+      setShowStartBikeBus(true);
+      console.log('setShowStartBikeBus is true!');
+      setShowJoinBikeBus(false);
+      console.log('setShowJoinBikeBus is false!');
+    } else
     if (status === 'active') {
       setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
       createTrip();
+      setShowJoinBikeBus(true);
+      console.log('setShowJoinBikeBus is true!');
+      setShowStartBikeBus(false);
+      console.log('setShowStartBikeBus is false!');
     }
   }, []); 
 
+  // if toggleEventStatus is equal to active, then set the is eventActive to true
+
   const toggleStartEvent = useCallback(() => (
-    toggleEventStatus('active')
+    toggleEventStatus('active'),
+    console.log('toggleStartEvent is active!')
   ), [toggleEventStatus]);
 
   // in case the leader forgets to manually start the BikeBus, 
@@ -334,7 +372,9 @@ const Event: React.FC = () => {
     // check to see if the event start time and date is before the current time and date and within 30 minutes of the current time and date
     if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 15 * 60000)) {
       // show the join bikebus button
+      console.log('The event is active!');
       setShowJoinBikeBus(true);
+      console.log('setShowJoinBikeBus is true!');
       // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active when it's the eventData?.startTimestamp
       if(eventData?.startTimestamp) {
         toggleStartEvent();
@@ -385,6 +425,9 @@ const Event: React.FC = () => {
             )}
             {!isEventLeader && isEventOpenActive && (
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
+            )}
+            {isEventLeader && isEventOpenActive && (
+            <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
             )}
           </IonItem>
           <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
