@@ -156,13 +156,29 @@ const Event: React.FC = () => {
       if (docSnapshot.exists()) {
         setEventData(docSnapshot.data());
       }
+      // get the routeId from the eventData
+      const routeId = eventData?.routeId;
+      // get the routeId document from the routes collection
+      const routeRef = doc(db, 'routes', routeId);
+      const routeSnapshot = await getDoc(routeRef);
+      // get the route data from the route document and set it as routeData
+      const routeData = routeSnapshot.data();
+      // get the groupId from the eventData
+      const groupId = eventData?.groupId;
+      // get the groupId document from the groups collection
+      const groupRef = doc(db, 'groups', groupId);
+      const groupSnapshot = await getDoc(groupRef);
+      // get the group data from the group document and set it as groupData
+      const groupData = groupSnapshot.data();
       // ensure that the eventData is ready and available before continuing
-      if (eventData) {
+      if (eventData && routeData && groupData) {
         const tripsRef = collection(db, 'trips');
         const docRef = await addDoc(tripsRef, {
           // wait until all of the values are set in the trip document before continuing
           // check to see if the trip document has been created and the values for event have been saved
+          mycurrentlocation: '',
           eventId: id,
+          BikeBusStops: routeData?.BikeBusStops || [],
           leader: user?.uid || '',
           members: eventData?.members || [],
           caboose: eventData?.caboose || [],
