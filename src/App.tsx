@@ -375,7 +375,7 @@ const App: React.FC = () => {
                       <Route exact path="/about">
                         <About />
                       </Route>
-                      <Route exact path="/trips/:eventDataId">
+                      <Route exact path="/trips/:tripDataId">
                         <Trip />
                       </Route>
                       <Route exact path="/settings">
