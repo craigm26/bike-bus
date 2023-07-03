@@ -71,6 +71,29 @@ const Event: React.FC = () => {
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
 
 
+  useEffect(() => {
+    const fetchUsernames = async (role: string[], setRole: Function) => {
+      if (role) {
+        const promises = role.map(fetchUser);
+        const users = await Promise.all(promises);
+        setRole(users.map(user => user?.username));
+      }
+    };
+
+
+    if (eventData) {
+      fetchUsernames(eventData.leader || '', setLeader);
+      fetchUsernames(eventData.members || [], setMembers);
+      fetchUsernames(eventData.caboose || [], setCaboose);
+      fetchUsernames(eventData.captains || [], setCaptains);
+      fetchUsernames(eventData.kids || [], setKids);
+      fetchUsernames(eventData.parents || [], setParents);
+      fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
+      fetchUsernames(eventData.sprinters || [], setSprinters);
+    }
+  }, [eventData]);
+
+
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('username', '==', username));
@@ -88,21 +111,59 @@ const Event: React.FC = () => {
 
     const history = useHistory();
 
+    useEffect(() => {
+      const fetchEvent = async () => {
+        const docRef = doc(db, 'event', id);
+        const docSnapshot = await getDoc(docRef);
+
+        if (docSnapshot.exists()) {
+          setEventData(docSnapshot.data());
+          // fetch the BikeBusGroup data after the event data has been fetched
+          const fetchBikeBusGroup = async () => {
+            const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
+            if (groupDocSnapshot.exists()) {
+              setBikeBusGroupData(groupDocSnapshot.data());
+            } else {
+            }
+          };
+          fetchBikeBusGroup();
+        }
+      };
+      fetchEvent();
+    }, [id]);
+
+    useEffect(() => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        getDoc(userRef).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const userData = docSnapshot.data();
+            if (userData) {
+              setUsername(userData.username);
+              if (userData.accountType) {
+                setaccountType(userData.accountType);
+              }
+            }
+          }
+        });
+      }
+    }, [user]);
+
     const createTrip = useCallback(async () => {
       const tripsRef = collection(db, 'trips');
       const docRef = await addDoc(tripsRef, {
         eventId: id,
-        leader: eventData?.leader,
-        members: eventData?.members,
+        leader: user?.uid || '',
+        members: eventData?.members || [],
         caboose: eventData?.caboose || [],
         captains: eventData?.captains || [],
         kids: eventData?.kids || [],
         parents: eventData?.parents || [],
         sheepdogs: eventData?.sheepdogs || [],
         sprinters: eventData?.sprinters || [],
-        startTimestamp: eventData?.startTimestamp,
+        startTimestamp: eventData?.startTimestamp || '' ,
         endTimestamp: eventData?.endTime || null,
-        status: eventData?.status,
+        status: eventData?.status || 'active',
         BikeBusName: eventData?.BikeBusName,
         route: eventData?.route,
         groupId: eventData?.groupId,
@@ -115,10 +176,10 @@ const Event: React.FC = () => {
         tripParents: eventData?.parents || [],
         tripSheepdogs: eventData?.sheepdogs || [],
         tripSprinters: eventData?.sprinters || [],
-        tripStartTimestamp: eventData?.startTimestamp,
+        tripStartTimestamp: eventData?.startTimestamp || '' ,
         tripEndTimestamp: eventData?.endTime || null,
         tripStatus: eventData?.status,
-        tripBikeBusName: eventData?.BikeBusName,
+        tripBikeBusName: eventData?.BikeBusName || '',
         tripRoute: eventData?.route,
         tripGroupId: eventData?.groupId,
         tripGroupSize: '',
@@ -158,90 +219,12 @@ const Event: React.FC = () => {
       });
       console.log('Document written with ID: ', docRef.id);
       const tripRefid = docRef.id;
-      // set this as the current trip for the leader and refer this id to the tripId field in the user document and bikebusgroup document
-      const userRef = doc(db, 'users', eventData?.leader);
-      await updateDoc(userRef, {
-        tripId: tripRefid,
-      });
-      const groupRef = doc(db, 'bikebusgroup', eventData?.groupId);
-      await updateDoc(groupRef, {
-        tripId: tripRefid,
-      });
-      // also update the event document to have the tripId
-      const eventRef = doc(db, 'event', id);
-      await updateDoc(eventRef, {
-        tripId: tripRefid,
-      });
       // redirect to the trip page with the trip id being the "tripId" parameter
-      history.push(`/trip/${tripRefid}`);
+      history.push(`/trips/${tripRefid}`);
 
-    }, [eventData?.BikeBusName, eventData?.caboose, eventData?.captains, eventData?.endTime, eventData?.groupId, eventData?.kids, eventData?.leader, eventData?.members, eventData?.parents, eventData?.route, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.status, history, id]);
-
-    useEffect(() => {
-      const fetchEvent = async () => {
-        const docRef = doc(db, 'event', id);
-        const docSnapshot = await getDoc(docRef);
-
-        if (docSnapshot.exists()) {
-          setEventData(docSnapshot.data());
-          // fetch the BikeBusGroup data after the event data has been fetched
-          const fetchBikeBusGroup = async () => {
-            const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
-            if (groupDocSnapshot.exists()) {
-              setBikeBusGroupData(groupDocSnapshot.data());
-            } else {
-            }
-          };
-          fetchBikeBusGroup();
-        }
-      };
-      fetchEvent();
-    }, [id]);
-
-  useEffect(() => {
-    const fetchEvent = async () => {
-      const docRef = doc(db, 'event', id);
-      const docSnapshot = await getDoc(docRef);
-
-      if (docSnapshot.exists()) {
-        setEventData(docSnapshot.data());
-        // fetch the BikeBusGroup data after the event data has been fetched
-        const fetchBikeBusGroup = async () => {
-          const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
-          if (groupDocSnapshot.exists()) {
-            setBikeBusGroupData(groupDocSnapshot.data());
-          } else {
-          }
-        };
-        fetchBikeBusGroup();
-      } else {
-      }
-    };
-
-    fetchEvent();
-  }, [id]);
-
-  useEffect(() => {
-    const fetchUsernames = async (role: string[], setRole: Function) => {
-      if (role) {
-        const promises = role.map(fetchUser);
-        const users = await Promise.all(promises);
-        setRole(users.map(user => user?.username));
-      }
-    };
+    }, [eventData?.BikeBusName, eventData?.caboose, eventData?.captains, eventData?.endTime, eventData?.groupId, eventData?.kids, eventData?.leader, eventData?.members, eventData?.parents, eventData?.route, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.status, history, id, user?.uid]);
 
 
-    if (eventData) {
-      fetchUsernames(eventData.leader || '', setLeader);
-      fetchUsernames(eventData.members || [], setMembers);
-      fetchUsernames(eventData.caboose || [], setCaboose);
-      fetchUsernames(eventData.captains || [], setCaptains);
-      fetchUsernames(eventData.kids || [], setKids);
-      fetchUsernames(eventData.parents || [], setParents);
-      fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
-      fetchUsernames(eventData.sprinters || [], setSprinters);
-    }
-  }, [eventData]);
 
   const togglePopover = (e: any) => {
     setPopoverEvent(e.nativeEvent);
@@ -259,23 +242,6 @@ const Event: React.FC = () => {
   ) : (
     <IonIcon icon={personCircleOutline} />
   );
-
-  useEffect(() => {
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData) {
-            setUsername(userData.username);
-            if (userData.accountType) {
-              setaccountType(userData.accountType);
-            }
-          }
-        }
-      });
-    }
-  }, [user]);
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -378,13 +344,6 @@ const Event: React.FC = () => {
     }
   }, [eventData?.startTimestamp, toggleStartEvent]);
 
-  const toggleEndEvent = useCallback(() => (
-    toggleEventStatus('inactive'),
-    console.log('Event is inactive!'),
-    // if the event is inactive, push to the home page
-    history.push('/')
-  ), [history, toggleEventStatus]);
-
   // when page loads, do the checkEventTime function
   useEffect(() => {
     checkEventTime();
@@ -423,9 +382,6 @@ const Event: React.FC = () => {
           <IonItem>
             {isEventLeader && !isEventOpenActive && (
               <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-            )}
-            {isEventLeader && isEventOpenActive && (
-              <IonButton onClick={toggleEndEvent}>End BikeBus Event</IonButton>
             )}
             {!isEventLeader && isEventOpenActive && (
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>

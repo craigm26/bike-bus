@@ -200,13 +200,6 @@ const Map: React.FC = () => {
   }, [user, getLocationClicked, watchLocation]);
 
 
-
-  useEffect(() => {
-    console.log("MapCenter Location: ", mapCenter);
-    console.log("User Location: ", userLocation)
-    console.log("User Location Address", userLocationAddress)
-  }, [mapCenter, userLocation, userLocationAddress]);
-
   useEffect(() => {
     if (user) {
       const userRef = doc(db, "users", user.uid);
@@ -267,8 +260,6 @@ const Map: React.FC = () => {
   );
 
   useEffect(() => {
-    console.log("Google Maps script loaded: ", isLoaded);
-    console.log("Google Maps load error: ", loadError);
   }, [isLoaded, loadError]);
 
 
@@ -300,9 +291,6 @@ const Map: React.FC = () => {
           setRouteStartStreetName(streetName ?? '');
           setRouteStartName(`${place.name}` ?? '');
           setRouteStartFormattedAddress(`${place.formatted_address}` ?? '');
-          // need to set startPointAddress to the address of the selected start point
-          // need to set startPointName to the name of the selected start point
-
         }
       }
     }
@@ -317,19 +305,11 @@ const Map: React.FC = () => {
     setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
   };
 
-  console.log("Selected Start Location: ", selectedStartLocation);
-  console.log("Route Start Name: ", routeStartStreetName);
-  console.log("Selected End Location: ", selectedEndLocation);
-  console.log("Route Start Name: ", routeStartName);
-  console.log("Route Start Formatted Address: ", routeStartFormattedAddress);
-
   const onPlaceChangedDestination = () => {
-    console.log("onPlaceChangedDestination called");
     if (autocompleteEnd !== null) {
       const places = autocompleteEnd.getPlaces();
       if (places && places.length > 0) {
         const place = places[0];
-        console.log("Place: ", place);
         if (place.geometry && place.geometry.location) {
           setSelectedEndLocation({
             lat: place.geometry.location.lat(),
@@ -353,10 +333,6 @@ const Map: React.FC = () => {
       }
     }
   };
-
-  console.log("Route End Name: ", routeEndName);
-  console.log("Route End Street Name: ", routeEndStreetName)
-  console.log("Route End Formatted Address: ", routeEndFormattedAddress);
 
   interface LatLng {
     latitude: number;
