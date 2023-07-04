@@ -19,7 +19,7 @@ import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams } from "react-router-dom";
 import { useHistory } from 'react-router-dom';
@@ -46,6 +46,34 @@ interface FetchedUserData {
   accountType?: string;
 }
 
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
+interface RouteData {
+  BikeBusName: string;
+  BikeBusStopName: string[];
+  BikeBusStop: Coordinate[];
+  id: string;
+  BikeBusStationsIds: string[];
+  BikeBusGroupId: DocumentReference;
+  accountType: string;
+  description: string;
+  endPoint: Coordinate;
+  routeCreator: string;
+  routeLeader: string;
+  routeName: string;
+  routeType: string;
+  startPoint: Coordinate;
+  startPointName: string;
+  endPointName: string;
+  startPointAddress: string;
+  endPointAddress: string;
+  travelMode: string;
+  pathCoordinates: Coordinate[];
+  isBikeBus: boolean;
+}
+
 
 const Event: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -69,6 +97,11 @@ const Event: React.FC = () => {
   const [role, setRole] = useState<string[]>([]);
   const [leader, setLeader] = useState<string>('');
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
+  const [routeId, setRouteId] = useState<string>('');
+  const [groupId, setGroupId] = useState<string>('');
+  const [routeData, setRouteData] = useState<any>(null);
+  const [groupData, setGroupData] = useState<any>(null);
+  const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
 
 
   useEffect(() => {
@@ -104,159 +137,182 @@ const Event: React.FC = () => {
     querySnapshot.forEach((doc) => {
       // doc.data() is never undefined for query doc snapshots
       user = doc.data() as FetchedUserData;
-      });
+    });
 
-      return user;
-    };
+    return user;
+  };
 
-    const history = useHistory();
+  const history = useHistory();
 
-    useEffect(() => {
-      const fetchEvent = async () => {
-        const docRef = doc(db, 'event', id);
-        const docSnapshot = await getDoc(docRef);
-
-        if (docSnapshot.exists()) {
-          setEventData(docSnapshot.data());
-          // fetch the BikeBusGroup data after the event data has been fetched
-          const fetchBikeBusGroup = async () => {
-            const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
-            if (groupDocSnapshot.exists()) {
-              setBikeBusGroupData(groupDocSnapshot.data());
-            } else {
-            }
-          };
-          fetchBikeBusGroup();
-        }
-      };
-      fetchEvent();
-    }, [id]);
-
-    useEffect(() => {
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        getDoc(userRef).then((docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const userData = docSnapshot.data();
-            if (userData) {
-              setUsername(userData.username);
-              if (userData.accountType) {
-                setaccountType(userData.accountType);
-              }
-            }
-          }
-        });
-      }
-    }, [user]);
-
-    const createTrip = useCallback(async () => {
-      // get the event data from the event document and set it as eventData
+  useEffect(() => {
+    const fetchEvent = async () => {
       const docRef = doc(db, 'event', id);
       const docSnapshot = await getDoc(docRef);
+
       if (docSnapshot.exists()) {
         setEventData(docSnapshot.data());
+        // fetch the BikeBusGroup data after the event data has been fetched
+        const fetchBikeBusGroup = async () => {
+          const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
+          if (groupDocSnapshot.exists()) {
+            setBikeBusGroupData(groupDocSnapshot.data());
+          } else {
+          }
+        };
+        fetchBikeBusGroup();
       }
-      // get the routeId from the eventData
-      const routeId = eventData?.routeId;
-      // get the routeId document from the routes collection
-      const routeRef = doc(db, 'routes', routeId);
-      const routeSnapshot = await getDoc(routeRef);
-      // get the route data from the route document and set it as routeData
-      const routeData = routeSnapshot.data();
-      // get the groupId from the eventData
-      const groupId = eventData?.groupId;
-      // get the groupId document from the groups collection
-      const groupRef = doc(db, 'groups', groupId);
-      const groupSnapshot = await getDoc(groupRef);
-      // get the group data from the group document and set it as groupData
-      const groupData = groupSnapshot.data();
-      // ensure that the eventData is ready and available before continuing
-      if (eventData && routeData && groupData) {
-        const tripsRef = collection(db, 'trips');
-        const docRef = await addDoc(tripsRef, {
-          // wait until all of the values are set in the trip document before continuing
-          // check to see if the trip document has been created and the values for event have been saved
-          mycurrentlocation: '',
-          eventId: id,
-          BikeBusStops: routeData?.BikeBusStops || [],
-          leader: user?.uid || '',
-          members: eventData?.members || [],
-          caboose: eventData?.caboose || [],
-          captains: eventData?.captains || [],
-          kids: eventData?.kids || [],
-          parents: eventData?.parents || [],
-          sheepdogs: eventData?.sheepdogs || [],
-          sprinters: eventData?.sprinters || [],
-          startTimestamp: eventData?.startTimestamp || '' ,
-          endTimestamp: eventData?.endTime || null,
-          status: eventData?.status || 'active',
-          BikeBusName: eventData?.BikeBusName || '',
-          route: eventData?.route || '',
-          groupId: eventData?.groupId || '',
-          groupSize: '',
-          tripLeader: eventData?.leader || [],
-          tripMembers: eventData?.members || [],
-          tripCaboose: eventData?.caboose || [],
-          tripCaptains: eventData?.captains || [],
-          tripKids: eventData?.kids || [],
-          tripParents: eventData?.parents || [],
-          tripSheepdogs: eventData?.sheepdogs || [],
-          tripSprinters: eventData?.sprinters || [],
-          tripStartTimestamp: eventData?.startTimestamp || '' ,
-          tripEndTimestamp: eventData?.endTime || null,
-          tripStatus: eventData?.status || 'active',
-          tripBikeBusName: eventData?.BikeBusName || '',
-          tripRoute: eventData?.route || '',
-          tripGroupId: eventData?.groupId || '',
-          tripGroupSize: '',
-          tripCheckInLeader: eventData?.leader || '',
-          currentLocationOfLeader: '',
-          tripCheckInMembers: '',
-          tripCheckInCaboose: '',
-          tripCheckInCaptains: '',
-          tripCheckInKids: '',
-          tripCheckInParents: '',
-          tripCheckInSheepdogs: '',
-          tripCheckInSprinters: '',
-          // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
-          tripCheckInStartTimestamp: serverTimestamp(),
-          // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
-          tripCheckInEndTimestamp: '',
-          tripCheckInStatus: '',
-          tripCheckInBikeBusName: '',
-          tripCheckInRoute: eventData?.route || '',
-          tripCheckInGroupId: eventData?.groupId || '',
-          tripCheckInGroupSize: '',
-          tripEndTripLeader: '',
-          tripEndTripMembers: '',
-          tripEndTripCaboose: '',
-          tripEndTripCaptains: '',
-          tripEndTripKids: '',
-          tripEndTripParents: '',
-          tripEndTripSheepdogs: '',
-          tripEndTripSprinters: '',
-          tripEndTripStartTimestamp: '',
-          tripEndTripEndTimestamp: '',
-          tripEndTripStatus: '',
-          tripEndTripBikeBusName: '',
-          tripEndTripRoute: '',
-          tripEndTripGroupId: '',
-          tripEndTripGroupSize: '',
-        });
-        console.log('Document written with ID: ', docRef.id);
-        
-        const tripRefid = docRef.id;
-        // save that trip id to the event document as tripId
-        const eventRef = doc(db, 'event', id);
-        await updateDoc(eventRef, {
-          tripId: tripRefid
-        });
-        // redirect to the trip page with the trip id being the "tripId" parameter
-        history.push(`/trips/${tripRefid}`);
-      }
+    };
+    fetchEvent();
+  }, [id]);
+
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData) {
+            setUsername(userData.username);
+            if (userData.accountType) {
+              setaccountType(userData.accountType);
+            }
+          }
+        }
+      });
+    }
+  }, [user]);
+
+  function isRouteData(data: unknown): data is RouteData {
+    return !!(data && typeof data === 'object' && 'BikeBusName' in data);
+  }
 
 
-    }, [eventData, history, id, user?.uid]);
+  const createTrip = useCallback(async () => {
+
+    console.log('createTrip is running!');
+    let routeData: RouteData | undefined;
+    let groupData;
+
+    const docRefEvent = doc(db, 'event', id);
+    const docEventsnapshot = await getDoc(docRefEvent);
+    console.log('docEventsnapshot is ', docEventsnapshot);
+
+    if (docEventsnapshot.exists()) {
+      const eventDataForCreateTrip = docEventsnapshot.data();
+      if (eventDataForCreateTrip) {
+        const groupRef = eventDataForCreateTrip?.BikeBusGroup;
+        const docSnapshotgroup = await getDoc(groupRef);
+
+        if (docSnapshotgroup.exists()) {
+          groupData = docSnapshotgroup.data();
+        }
+        console.log('groupData is ', groupData);
+
+        const routeRef = eventDataForCreateTrip?.route;
+        const docSnapshotroute = await getDoc(routeRef);
+        console.log('docSnapshotroute is ', docSnapshotroute);
+        console.log('routeRef is ', routeRef);
+
+        if (docSnapshotroute.exists()) {
+          const data = docSnapshotroute.data();
+          console.log('route data before type check:', data);
+          if (isRouteData(data)) {
+            routeData = data as RouteData;
+          }
+          console.log('routeData is ', routeData);
+        }
+
+        if (routeData && groupData) {
+          console.log('routeData is ', routeData);
+          console.log('groupData is ', groupData);
+          const tripsRef = collection(db, 'trips');
+          const docRef = await addDoc(tripsRef, {
+            // wait until all of the values are set in the trip document before continuing
+            // check to see if the trip document has been created and the values for event have been saved
+            mycurrentlocation: '',
+            eventId: id,
+            BikeBusStops: routeData?.BikeBusStop || [],
+            leader: user?.uid || '',
+            members: eventData?.members || [],
+            caboose: eventData?.caboose || [],
+            captains: eventData?.captains || [],
+            kids: eventData?.kids || [],
+            parents: eventData?.parents || [],
+            sheepdogs: eventData?.sheepdogs || [],
+            sprinters: eventData?.sprinters || [],
+            startTimestamp: eventData?.startTimestamp || '',
+            endTimestamp: eventData?.endTime || null,
+            status: eventData?.status || 'active',
+            BikeBusName: eventData?.BikeBusName || '',
+            route: eventData?.route || '',
+            groupId: eventData?.groupId || '',
+            groupSize: '',
+            tripLeader: eventData?.leader || [],
+            tripMembers: eventData?.members || [],
+            tripCaboose: eventData?.caboose || [],
+            tripCaptains: eventData?.captains || [],
+            tripKids: eventData?.kids || [],
+            tripParents: eventData?.parents || [],
+            tripSheepdogs: eventData?.sheepdogs || [],
+            tripSprinters: eventData?.sprinters || [],
+            tripStartTimestamp: eventData?.startTimestamp || '',
+            tripEndTimestamp: eventData?.endTime || null,
+            tripStatus: eventData?.status || 'active',
+            tripBikeBusName: eventData?.BikeBusName || '',
+            tripRoute: eventData?.route || '',
+            tripGroupId: eventData?.groupId || '',
+            tripGroupSize: '',
+            tripCheckInLeader: eventData?.leader || '',
+            currentLocationOfLeader: '',
+            tripCheckInMembers: '',
+            tripCheckInCaboose: '',
+            tripCheckInCaptains: '',
+            tripCheckInKids: '',
+            tripCheckInParents: '',
+            tripCheckInSheepdogs: '',
+            tripCheckInSprinters: '',
+            // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
+            tripCheckInStartTimestamp: serverTimestamp(),
+            // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
+            tripCheckInEndTimestamp: '',
+            tripCheckInStatus: '',
+            tripCheckInBikeBusName: '',
+            tripCheckInRoute: eventData?.route || '',
+            tripCheckInGroupId: eventData?.groupId || '',
+            tripCheckInGroupSize: '',
+            tripEndTripLeader: '',
+            tripEndTripMembers: '',
+            tripEndTripCaboose: '',
+            tripEndTripCaptains: '',
+            tripEndTripKids: '',
+            tripEndTripParents: '',
+            tripEndTripSheepdogs: '',
+            tripEndTripSprinters: '',
+            tripEndTripStartTimestamp: '',
+            tripEndTripEndTimestamp: '',
+            tripEndTripStatus: '',
+            tripEndTripBikeBusName: '',
+            tripEndTripRoute: '',
+            tripEndTripGroupId: '',
+            tripEndTripGroupSize: '',
+          });
+          console.log('Document written with ID: ', docRef.id);
+
+          const tripRefid = docRef.id;
+          // save that trip id to the event document as tripId
+          const eventRef = doc(db, 'event', id);
+          await updateDoc(eventRef, {
+            tripId: tripRefid
+          });
+          // redirect to the trip page with the trip id being the "tripId" parameter
+          history.push(`/trips/${tripRefid}`);
+        }
+      } else {
+        // doc.data() will be undefined in this case
+        console.log('No such document!');
+      }
+    }
+  }, [id, user?.uid, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, eventData?.leader, history]);
 
 
 
@@ -354,22 +410,22 @@ const Event: React.FC = () => {
       status: status
     }, { merge: true });
     // check to see if the event already has the status of active, if not, set the status to active and trigger the createTrip function
-    if (status === '') {
+    if (status === '' || status === 'inactive') {
       setEventData((prevEventData: any) => ({ ...prevEventData, status: '' }));
       setShowStartBikeBus(true);
       console.log('setShowStartBikeBus is true!');
       setShowJoinBikeBus(false);
       console.log('setShowJoinBikeBus is false!');
     } else
-    if (status === 'active') {
-      setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
-      createTrip();
-      setShowJoinBikeBus(true);
-      console.log('setShowJoinBikeBus is true!');
-      setShowStartBikeBus(false);
-      console.log('setShowStartBikeBus is false!');
-    }
-  }, []); 
+      if (status === 'active') {
+        setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
+        createTrip();
+        //setShowJoinBikeBus(true);
+        //console.log('setShowJoinBikeBus is true!');
+        //setShowStartBikeBus(false);
+        //console.log('setShowStartBikeBus is false!');
+      }
+  }, [createTrip, id]);
 
   // if toggleEventStatus is equal to active, then set the is eventActive to true
 
@@ -392,7 +448,7 @@ const Event: React.FC = () => {
       setShowJoinBikeBus(true);
       console.log('setShowJoinBikeBus is true!');
       // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active when it's the eventData?.startTimestamp
-      if(eventData?.startTimestamp) {
+      if (eventData?.startTimestamp) {
         toggleStartEvent();
       }
       // and trigger the createTrip function
@@ -443,7 +499,7 @@ const Event: React.FC = () => {
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
             )}
             {isEventLeader && isEventOpenActive && (
-            <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
+              <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
             )}
           </IonItem>
           <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>

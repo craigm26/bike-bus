@@ -337,8 +337,6 @@ const Trip: React.FC = () => {
   console.log('selectedRoute', selectedRoute)
 
 
-
-
   return (
     <IonPage style={{ height: '100%' }}>
       <IonHeader>
