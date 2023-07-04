@@ -99,6 +99,7 @@ interface RouteData {
   BikeBusName: string;
   BikeBusStopName: string[];
   BikeBusStop: Coordinate[];
+  BikeBusStops: Coordinate[];
   BikeBusStationsIds: string[];
   BikeBusGroupId: DocumentReference;
   id: string;
@@ -297,26 +298,46 @@ const Trip: React.FC = () => {
               if (eventData) {
                 console.log('eventData:', eventData);
                 const selectedRouteRef = eventData?.route;
-                console.log('selectedRouteRef:', selectedRouteRef);
+                getDoc(selectedRouteRef).then((routeSnapshot) => {
                 if (selectedRouteRef) {
                   getDoc(selectedRouteRef).then((routeSnapshot) => {
                     if (routeSnapshot.exists()) {
-                      const selectedRoute = routeSnapshot.data() as RouteData;
-                      console.log('selectedRoute:', selectedRoute);
-                      console.log('selectedRoute.startPoint:', selectedRoute.startPoint);
-                      console.log('selectedRoute.endPoint:', selectedRoute.endPoint);
-                      console.log('selectedRoute.pathCoordinates:', selectedRoute.pathCoordinates);
-                      setMapCenter({
-                        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-                        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
-                      });
-                      setStartGeo(selectedRoute.startPoint);
-                      setEndGeo(selectedRoute.endPoint);
-                      setSelectedRoute(selectedRoute);
-                    }
-                  }).catch((error) => {
+                      const routeData = {
+                        ...routeSnapshot.data() as Route,
+                        id: routeSnapshot.id,
+                        startPoint: routeSnapshot.data().startPoint,
+                        endPoint: routeSnapshot.data().endPoint,
+                        BikeBusGroupId: routeSnapshot.data().BikeBusGroupId,
+                        // convert BikeBusGroupId (document reference in firebase) to a string
+                        pathCoordinates: (routeSnapshot.data().pathCoordinates || []).map((coord: any) => ({
+                          lat: coord.lat,  // use 'lat' instead of 'latitude'
+                          lng: coord.lng,  // use 'lng' instead of 'longitude'
+                        })),
+                        BikeBusStationsIds: (routeSnapshot.data().BikeBusStationsIds || []).map((coord: any) => ({
+                          lat: coord.lat,  // use 'lat' instead of 'latitude'
+                          lng: coord.lng,  // use 'lng' instead of 'longitude'
+                        })),
+                        BikeBusStops: (routeSnapshot.data().BikeBusStop || []).map((coord: any) => ({
+                          lat: coord.lat,  // use 'lat' instead of 'latitude'
+                          lng: coord.lng,  // use 'lng' instead of 'longitude'
+                        })),
+                      };
+                      setSelectedRoute(routeData);
+                      setBikeBusGroupId(routeData.BikeBusGroupId);
+                      console.log(routeData);
+                      console.log(routeData.BikeBusGroupId);
+                      // setBikeBusGroup(routeData.BikeBusGroupId); is a document reference. Convert it to a string
+                      setPath(routeData.pathCoordinates);
+                      setBikeBusStops(routeData.BikeBusStops);
+                      setStartGeo(routeData.startPoint);
+                      setEndGeo(routeData.endPoint);
+                  }
+                }
+                  ).catch((error) => {
                     console.error("Error fetching route data: ", error);
+
                   });
+
                 }
               }
               
@@ -352,7 +373,7 @@ const Trip: React.FC = () => {
                 <GoogleMap
                   mapContainerStyle={containerMapStyle}
                   center={mapCenter}
-                  zoom={12}
+                  zoom={13}
                   options={{
                     mapTypeControl: false,
                     streetViewControl: false,
