@@ -198,6 +198,16 @@ const BikeBusGroupPage: React.FC = () => {
     const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
       ...doc.data() as BikeBus,
       id: doc.id,
+      BikeBusName: doc.data().BikeBusName,
+      BikeBusType: doc.data().BikeBusType,
+      BikeBusDescription: doc.data().BikeBusDescription,
+      BikeBusRoutes: doc.data().BikeBusRoutes,
+      BikeBusMembers: doc.data().BikeBusMembers,
+      BikeBusSchedules: doc.data().BikeBusSchedules,
+      BikeBusLeader: doc.data().BikeBusLeader,
+      BikeBusCreator: doc.data().BikeBusCreator,
+      events: doc.data().events,
+      event: doc.data().event,      
     }));
     setBikeBus(BikeBusData);
   }, [user]);
@@ -640,8 +650,8 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonItem>
                   <IonLabel>Leader</IonLabel>
                   <IonChip>
-                    <div style={{ marginRight: '8px' }}>
-                      <IonLabel>{user?.username}</IonLabel>
+                  <div style={{ marginRight: '8px' }}>
+                    <Avatar uid={groupData?.BikeBusLeader?.id} size="extrasmall" />
                     </div>
                   </IonChip>
                 </IonItem>
