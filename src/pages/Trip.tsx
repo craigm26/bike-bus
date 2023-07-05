@@ -28,6 +28,7 @@ import { getDatabase, ref, onValue, serverTimestamp } from 'firebase/database';
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { get } from 'http';
 import { event } from 'firebase-functions/v1/analytics';
+import { hi } from 'date-fns/locale';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -349,8 +350,9 @@ const Trip: React.FC = () => {
 
   const endTripAndCheckOutAll = async () => {
     const tripsRef = doc(db, 'trips', tripDataId);
+    console.log('tripsRef:', tripsRef);
     await setDoc(tripsRef, { status: 'ended' }, { merge: true });
-
+    console.log('eventData.id:', eventData.id);
     const eventDataRef = doc(db, 'event', eventData.id);
     await setDoc(eventDataRef, { status: 'ended' }, { merge: true });
 
@@ -467,6 +469,8 @@ const Trip: React.FC = () => {
     }
 
     // and then navigate to the Event Summary page
+    const eventSummaryUrl = `/eventsummary/${eventData.id}`;
+    history.push(eventSummaryUrl);
 
   };
 
