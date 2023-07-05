@@ -25,6 +25,7 @@ import { useParams, useHistory, Link } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
+import AvatarMapMarker from "../components/AvatarMapMarker";
 import { get } from 'http';
 
 
@@ -160,6 +161,7 @@ const Trip: React.FC = () => {
   const [leader, setLeader] = useState<string>('');
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
+  const [userLocation, setUserLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
 
   let { tripDataId } = useParams<RouteParams>();
 
@@ -269,7 +271,7 @@ const Trip: React.FC = () => {
             setLeaderAvatarUrl(leaderAvatar.username);
           }
         }
-      
+
 
 
       } catch (error) {
@@ -282,6 +284,28 @@ const Trip: React.FC = () => {
       const extractedUID = selectedRoute.routeLeader.split('/').pop() || '';
       setLeaderUID(extractedUID);
     }
+
+    // get the user location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userLocation);
+        },
+        (error) => {
+          console.error(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    }
+
 
     if (leaderUID) {
       const rtdb = getDatabase();
@@ -317,7 +341,7 @@ const Trip: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
-      // Check to see if the user is the setLeaderUID
+  // Check to see if the user is the setLeaderUID
   const isEventLeader = user?.uid === leaderUID;
 
   const checkIn = async () => {
@@ -351,7 +375,7 @@ const Trip: React.FC = () => {
                   <GoogleMap
                     mapContainerStyle={containerMapStyle}
                     center={leaderLocation}
-                    zoom={13}
+                    zoom={15}
                     options={{
                       mapTypeControl: false,
                       streetViewControl: false,
@@ -741,39 +765,41 @@ const Trip: React.FC = () => {
                       position={{ lat: endGeo.lat, lng: endGeo.lng }}
                       title="End"
                     />
-                  </GoogleMap>
-                  <Polyline
-                    path={selectedRoute.pathCoordinates}
-                    options={{
-                      strokeColor: "#ffd800",
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2,
-                      geodesic: true,
-                      draggable: false,
-                      editable: false,
-                      visible: true,
-                    }}
-                  />
-                  {BikeBusStops?.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={stop}
-                      title={`Stop ${index + 1}`}
-                      label={`${index + 1}`}
-                      onClick={() => {
-                        setSelectedStopIndex(index);
+                    <Polyline
+                      path={selectedRoute.pathCoordinates}
+                      options={{
+                        strokeColor: "#ffd800",
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2,
+                        geodesic: true,
+                        draggable: false,
+                        editable: false,
+                        visible: true,
                       }}
-                    >
-                      {selectedStopIndex === index && (
-                        <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
-                          <div>
-                            <h3>{`Stop ${index + 1}`}</h3>
-                            <p>Some details about the location...</p>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </Marker>
-                  ))}
+                    />
+                    {BikeBusStops?.map((stop, index) => (
+                      <Marker
+                        key={index}
+                        position={stop}
+                        title={`Stop ${index + 1}`}
+                        label={`${index + 1}`}
+                        onClick={() => {
+                          setSelectedStopIndex(index);
+                        }}
+                      >
+                        {selectedStopIndex === index && (
+                          <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
+                            <div>
+                              <h3>{`Stop ${index + 1}`}</h3>
+                              <p>Some details about the location...</p>
+                            </div>
+                          </InfoWindow>
+                        )}
+                      </Marker>
+                    ))}
+                    {user && <AvatarMapMarker uid={leaderUID} position={leaderLocation} />}
+                    {user && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                  </GoogleMap>
                   {isEventLeader && (
                     <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
                       <IonButton onClick={endTripAndCheckInAll}>End Trip</IonButton>

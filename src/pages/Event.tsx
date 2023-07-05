@@ -372,6 +372,15 @@ const Event: React.FC = () => {
       }
     }
 
+    // if the role "choice" is only set to members, then add the user to the members array if they aren't already in it. It's a valid response.
+    if (role.length === 1 && role.includes('members')) {
+      if (!eventData.members.includes(username)) {
+        await setDoc(eventRef, {
+          members: arrayUnion(username)
+        }, { merge: true });
+      }
+    }
+
     // Clear the role selection and hide the modal
     setRole([]);
     setShowModal(false);
@@ -397,7 +406,7 @@ const Event: React.FC = () => {
   const isEventLeader = username && eventData?.leader.includes(username);
 
   // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
-  const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
+  //const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
 
   const setShowStartBikeBus = (value: boolean) => {
     setShowJoinBikeBus(value);
@@ -492,13 +501,13 @@ const Event: React.FC = () => {
             <IonLabel>{startTime} to {endTime}</IonLabel>
           </IonItem>
           <IonItem>
-            {isEventLeader && !isEventOpenActive && (
+            {isEventLeader && (
               <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
             )}
-            {!isEventLeader && isEventOpenActive && (
+            {!isEventLeader && (
               <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
             )}
-            {isEventLeader && isEventOpenActive && (
+            {isEventLeader && (
               <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
             )}
           </IonItem>
@@ -517,7 +526,7 @@ const Event: React.FC = () => {
                 </IonItem>
                 <IonItem>
                   <IonCheckbox slot="start" value="members" disabled checked />
-                  <IonLabel>Members: Everyone is considered a member of the BikeBus when they join the BikeBus or make an RSVP to an Event.</IonLabel>
+                  <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
