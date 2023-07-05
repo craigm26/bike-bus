@@ -18,15 +18,16 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, DocumentSnapshot, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { DocumentReference, DocumentSnapshot, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
 import { useParams, useHistory, Link } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { getDatabase, ref, onValue, serverTimestamp } from 'firebase/database';
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { get } from 'http';
+import { event } from 'firebase-functions/v1/analytics';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -344,17 +345,128 @@ const Trip: React.FC = () => {
   // Check to see if the user is the setLeaderUID
   const isEventLeader = user?.uid === leaderUID;
 
-  const checkIn = async () => {
-    // check in the user by setting the user status to "checkedin" in the firestore database "event" collection
 
-    // and then navigate back to the Trip page
+
+  const endTripAndCheckOutAll = async () => {
+    const tripsRef = doc(db, 'trips', tripDataId);
+    await setDoc(tripsRef, { status: 'ended' }, { merge: true });
+
+    const eventDataRef = doc(db, 'event', eventData.id);
+    await setDoc(eventDataRef, { status: 'ended' }, { merge: true });
+
+
+    // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+    const eventRef = doc(db, 'event', eventData.id);
+    setDoc(eventRef, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    // find any other of user's ids in the event add them to the appropriate role arrays
+    // if the user is a parent in the eventData field parents, add them to the parents array
+    if (eventData?.parents) {
+      setDoc(eventRef, {
+        tripCheckOutParents: arrayUnion(username),
+        tripCheckOutParentsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.kids) {
+      setDoc(eventRef, {
+        tripCheckOutKids: arrayUnion(username),
+        tripCheckOutKidsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.sheepdogs) {
+      setDoc(eventRef, {
+        tripCheckOutSheepdogs: arrayUnion(username),
+        tripCheckOutSheepdogsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.sprinters) {
+      setDoc(eventRef, {
+        tripCheckOutSprinters: arrayUnion(username),
+        tripCheckOutSprintersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.captains) {
+      setDoc(eventRef, {
+        tripCheckOutCaptains: arrayUnion(username),
+        tripCheckOutCaptainsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.caboose) {
+      setDoc(eventRef, {
+        tripCheckOutCaboose: arrayUnion(username),
+        tripCheckOutCabooseTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.members) {
+      setDoc(eventRef, {
+        tripCheckOutMembers: arrayUnion(username),
+        tripCheckOutMembersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+
+    // and then navigate to the Event Summary page
 
   };
 
-  const endTripAndCheckInAll = async () => {
-    // end the trip by setting the trip status to "ended" in the firestore database "trips" collection
-    // and then check in all the users in the trip by setting their status to "checkedin" in the firestore database "event" collection
-    // and then navigate to the Trip Summary page
+  const endTripAndCheckOut = async () => {
+    const tripsRef = doc(db, 'trips', tripDataId);
+    await setDoc(tripsRef, { status: 'ended' }, { merge: true });
+
+    const eventDataRef = doc(db, 'event', eventData.id);
+    await setDoc(eventDataRef, { status: 'ended' }, { merge: true });
+
+    // for the individual user, check them out of the event by setting their timestamp to serverTimestamp
+    const eventRef = doc(db, 'event', eventData.id);
+    setDoc(eventRef, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    // find any other of user's ids in the event add them to the appropriate role arrays
+    // if the user is a parent in the eventData field parents, add them to the parents array
+    if (eventData?.parents.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutParents: arrayUnion(username),
+        tripCheckOutParentsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.kids.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutKids: arrayUnion(username),
+        tripCheckOutKidsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.sheepdogs.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutSheepdogs: arrayUnion(username),
+        tripCheckOutSheepdogsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.sprinters.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutSprinters: arrayUnion(username),
+        tripCheckOutSprintersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.captains.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutCaptains: arrayUnion(username),
+        tripCheckOutCaptainsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.caboose.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutCaboose: arrayUnion(username),
+        tripCheckOutCabooseTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    if (eventData?.members.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckOutMembers: arrayUnion(username),
+        tripCheckOutMembersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+
+    // and then navigate to the Event Summary page
 
   };
 
@@ -802,12 +914,12 @@ const Trip: React.FC = () => {
                   </GoogleMap>
                   {isEventLeader && (
                     <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                      <IonButton onClick={endTripAndCheckInAll}>End Trip</IonButton>
+                      <IonButton onClick={endTripAndCheckOutAll}>End Trip</IonButton>
                     </div>
                   )}
                   {!isEventLeader && (
                     <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                      <IonButton onClick={checkIn}>Check In</IonButton>
+                      <IonButton onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
                     </div>
                   )}
                 </>
