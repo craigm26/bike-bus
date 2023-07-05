@@ -229,7 +229,6 @@ const Event: React.FC = () => {
           const docRef = await addDoc(tripsRef, {
             // wait until all of the values are set in the trip document before continuing
             // check to see if the trip document has been created and the values for event have been saved
-            mycurrentlocation: '',
             eventId: id,
             BikeBusStops: routeData?.BikeBusStop || [],
             leader: user?.uid || '',
@@ -263,32 +262,46 @@ const Event: React.FC = () => {
             tripGroupId: eventData?.groupId || '',
             tripGroupSize: '',
             tripCheckInLeader: eventData?.leader || '',
-            currentLocationOfLeader: '',
+            tripcheckInLeaderTimeStamp: serverTimestamp(),
             tripCheckInMembers: '',
+            tripCheckInMembersTimeStamp: '',
             tripCheckInCaboose: '',
+            tripCheckInCabooseTimeStamp: '',
             tripCheckInCaptains: '',
+            tripCheckInCaptainsTimeStamp: '',
             tripCheckInKids: '',
+            tripCheckInKidsTimeStamp: '',
             tripCheckInParents: '',
+            tripCheckInParentsTimeStamp: '',
             tripCheckInSheepdogs: '',
+            tripCheckInSheepdogsTimeStamp: '',
             tripCheckInSprinters: '',
+            tripCheckInSprintersTimeStamp: '',
             // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
             tripCheckInStartTimestamp: serverTimestamp(),
             // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
             tripCheckInEndTimestamp: '',
             tripCheckInStatus: '',
-            tripCheckInBikeBusName: '',
+            tripCheckInBikeBusName: eventData?.BikeBusName || '',
             tripCheckInRoute: eventData?.route || '',
             tripCheckInGroupId: eventData?.groupId || '',
             tripCheckInGroupSize: '',
             tripEndTripLeader: '',
+            tripEndTripLeaderTimeStamp: '',
             tripEndTripMembers: '',
+            tripEndTripMembersTimeStamp: '',
             tripEndTripCaboose: '',
+            tripEndTripCabooseTimeStamp: '',
             tripEndTripCaptains: '',
+            tripEndTripCaptainsTimeStamp: '',
             tripEndTripKids: '',
+            tripEndTripKidsTimeStamp: '',
             tripEndTripParents: '',
+            tripEndTripParentsTimeStamp: '',
             tripEndTripSheepdogs: '',
+            tripEndTripSheepdogsTimeStamp: '',
             tripEndTripSprinters: '',
-            tripEndTripStartTimestamp: '',
+            tripEndTripSprintersTimeStamp: '',
             tripEndTripEndTimestamp: '',
             tripEndTripStatus: '',
             tripEndTripBikeBusName: '',
@@ -408,6 +421,9 @@ const Event: React.FC = () => {
   // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
   //const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
 
+  // Check to see if the event field of the eventData document is set to 'active'
+  const isEventActive = eventData?.status === 'active';
+
   const setShowStartBikeBus = (value: boolean) => {
     setShowJoinBikeBus(value);
     console.log('setShowJoinBikeBus is ', value);
@@ -485,8 +501,64 @@ const Event: React.FC = () => {
       JoinedMembers: arrayUnion(username)
     }, { merge: true });
     // find any other of user's ids in the event add them to the appropriate role arrays
-
-    // record the check in time for the user, if they are a parent, check in the kids too 
+    // if the user is a parent in the eventData field parents, add them to the parents array
+    if (eventData?.parents.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInParents: arrayUnion(username),
+        tripCheckInParentsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the kids array
+    if (eventData?.kids.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInKids: arrayUnion(username),
+        tripCheckInKidsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the captains array
+    if (eventData?.captains.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInCaptains: arrayUnion(username),
+        tripCheckInCaptainsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the sheepdogs array
+    if (eventData?.sheepdogs.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInSheepdogs: arrayUnion(username),
+        tripCheckInSheepdogsTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the sprinters array
+    if (eventData?.sprinters.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInSprinters: arrayUnion(username),
+        tripCheckInSprintersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the caboose array
+    if (eventData?.caboose.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInCaboose: arrayUnion(username),
+        tripCheckInCabooseTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the members array
+    if (eventData?.members.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInMembers: arrayUnion(username),
+        tripCheckInMembersTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // do the same as parents to the leader array
+    if (eventData?.leader.includes(username)) {
+      setDoc(eventRef, {
+        tripCheckInLeader: arrayUnion(username),
+        tripCheckInLeaderTimeStamp: serverTimestamp()
+      }, { merge: true });
+    }
+    // re-direct users to the trip page
+    history.push(`/trips/${eventData?.tripId}`);
   };
 
   return (
@@ -504,10 +576,10 @@ const Event: React.FC = () => {
             {isEventLeader && (
               <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
             )}
-            {!isEventLeader && (
-              <IonButton onClick={toggleJoinEvent}>Join BikeBus Event!</IonButton>
+            {!isEventLeader && isEventActive && (
+              <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
             )}
-            {isEventLeader && (
+            {isEventLeader && isEventActive && (
               <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
             )}
           </IonItem>
