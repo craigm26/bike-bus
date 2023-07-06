@@ -685,9 +685,11 @@ const Event: React.FC = () => {
             <IonLabel>Members</IonLabel>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                {membersId.slice(0, 5).map((uid, index) => (
+                {membersId.slice(0, 5).map((member, index) => (
                   <IonChip key={index}>
-                    <Avatar uid={user?.uid} size="extrasmall" />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar uid={member?.uid} size="extrasmall" />
+                    </div>
                   </IonChip>
                 ))}
                 {membersId.length > 5 && (
@@ -706,9 +708,9 @@ const Event: React.FC = () => {
             </IonHeader>
             <IonContent>
               <IonList>
-                {membersId.map((uid, index) => (
+                {membersId.map((member, index) => (
                   <IonItem key={index}>
-                    <Avatar uid={user?.uid} />
+                    <Avatar uid={member?.uid} />
                     <IonLabel>{username}</IonLabel>
                   </IonItem>
                 ))}
