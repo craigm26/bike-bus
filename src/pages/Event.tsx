@@ -12,6 +12,7 @@ import {
   IonModal,
   IonTitle,
   IonCheckbox,
+  IonChip,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
@@ -41,9 +42,15 @@ interface event {
   BikeBusGroup: string;
 }
 
+interface FirestoreRef {
+  path: string;
+}
+
 interface FetchedUserData {
   username: string;
   accountType?: string;
+  id: string;
+  uid?: string;
 }
 
 interface Coordinate {
@@ -78,6 +85,7 @@ interface RouteData {
 const Event: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
+  const [members, setMembers] = useState<string[]>([]);
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -87,7 +95,7 @@ const Event: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
-  const [members, setMembers] = useState<string[]>([]);
+
   const [caboose, setCaboose] = useState<string[]>([]);
   const [captains, setCaptains] = useState<string[]>([]);
   const [kids, setKids] = useState<string[]>([]);
@@ -102,6 +110,17 @@ const Event: React.FC = () => {
   const [routeData, setRouteData] = useState<any>(null);
   const [groupData, setGroupData] = useState<any>(null);
   const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [leadersId, setLeadersId] = useState<FetchedUserData[]>([]);
+  const [membersId, setMembersId] = useState<FetchedUserData[]>([]);
+  const [cabooseId, setCabooseId] = useState<FetchedUserData[]>([]);
+  const [captainsId, setCaptainsId] = useState<FetchedUserData[]>([]);
+  const [kidsId, setKidsId] = useState<FetchedUserData[]>([]);
+  const [parentsId, setParentsId] = useState<FetchedUserData[]>([]);
+  const [sheepdogsId, setSheepdogsId] = useState<FetchedUserData[]>([]);
+  const [sprintersId, setSprintersId] = useState<FetchedUserData[]>([]);
+
+  
 
 
   useEffect(() => {
@@ -124,6 +143,25 @@ const Event: React.FC = () => {
       fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
       fetchUsernames(eventData.sprinters || [], setSprinters);
     }
+
+    const fetchUserids = async (role: string[], setRole: Function) => {
+      if (role) {
+        const promises = role.map(fetchUser);
+        const users = await Promise.all(promises);
+        setRole(users);
+      }
+    }
+
+    if (eventData) {
+      fetchUserids(eventData.leader || '', setLeadersId);
+      fetchUserids(eventData.members || '', setMembersId);
+      fetchUserids(eventData.caboose || '', setCabooseId);
+      fetchUserids(eventData.captains || '', setCaptainsId);
+      fetchUserids(eventData.kids || '', setKidsId);
+      fetchUserids(eventData.parents || '', setParentsId);
+      fetchUserids(eventData.sheepdogs || '', setSheepdogsId);
+      fetchUserids(eventData.sprinters || '', setSprintersId);
+    }
   }, [eventData]);
 
 
@@ -136,7 +174,12 @@ const Event: React.FC = () => {
 
     querySnapshot.forEach((doc) => {
       // doc.data() is never undefined for query doc snapshots
-      user = doc.data() as FetchedUserData;
+      // make the id property the same as the in-page uid property
+
+      user = { id: doc.id, uid: doc.data().uid, ...doc.data() } as FetchedUserData; // Include the document's ID and uid
+      // make the uid property the same as the user id property:
+      user.uid = user.id;
+
     });
 
     return user;
@@ -391,6 +434,7 @@ const Event: React.FC = () => {
         await setDoc(eventRef, {
           members: arrayUnion(username)
         }, { merge: true });
+        console.log('members is ', eventData.members);
       }
     }
 
@@ -639,10 +683,40 @@ const Event: React.FC = () => {
           </IonItem>
           <IonItem>
             <IonLabel>Members</IonLabel>
-            {members.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                {membersId.slice(0, 5).map((uid, index) => (
+                  <IonChip key={index}>
+                    <Avatar uid={user?.uid} size="extrasmall" />
+                  </IonChip>
+                ))}
+                {membersId.length > 5 && (
+                  <IonChip>
+                    <IonLabel>{membersId.length}</IonLabel>
+                  </IonChip>
+                )}
+              </IonButton>
+            </div>
           </IonItem>
+          <IonModal isOpen={showMembersModal}>
+            <IonHeader>
+              <IonToolbar>
+                <IonTitle>Members</IonTitle>
+              </IonToolbar>
+            </IonHeader>
+            <IonContent>
+              <IonList>
+                {membersId.map((uid, index) => (
+                  <IonItem key={index}>
+                    <Avatar uid={user?.uid} />
+                    <IonLabel>{username}</IonLabel>
+                  </IonItem>
+                ))}
+              </IonList>
+              <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+            </IonContent>
+          </IonModal>
+
           <IonItem>
             <IonLabel>Captains</IonLabel>
             {captains.map((username: string, index: number) => (
