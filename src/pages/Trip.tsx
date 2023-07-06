@@ -351,57 +351,64 @@ const Trip: React.FC = () => {
   const endTripAndCheckOutAll = async () => {
     const tripsRef = doc(db, 'trips', tripDataId);
     console.log('tripsRef:', tripsRef);
-    await setDoc(tripsRef, { status: 'ended' }, { merge: true });
-    console.log('eventData.id:', eventData.id);
-    const eventDataRef = doc(db, 'event', eventData.id);
-    await setDoc(eventDataRef, { status: 'ended' }, { merge: true });
+    console.log('tripDataId:', tripDataId)
+    // how would you set tripDataId to be a DocumentReference? (firestore doc id)
+    const tripDataIdDoc = doc(db, 'trips', tripDataId);
+    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended' }, { merge: true });
+    // get the eventDataId from the tripDataId
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    const tripData = tripSnapshot.data();
+    const eventDataId = tripData?.eventId;
+    console.log('eventDataId:', eventDataId);
+    // how would you set eventDataId to be a DocumentReference? (firestore doc id)
+    const eventDataIdDoc = doc(db, 'event', eventDataId);
+    await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
 
 
     // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
-    const eventRef = doc(db, 'event', eventData.id);
-    setDoc(eventRef, {
+    setDoc(eventDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
     }, { merge: true });
     // find any other of user's ids in the event add them to the appropriate role arrays
     // if the user is a parent in the eventData field parents, add them to the parents array
-    if (eventData?.parents) {
-      setDoc(eventRef, {
+    if (eventDataId?.parents) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutParents: arrayUnion(username),
         tripCheckOutParentsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.kids) {
-      setDoc(eventRef, {
+    if (eventDataId?.kids) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutKids: arrayUnion(username),
         tripCheckOutKidsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.sheepdogs) {
-      setDoc(eventRef, {
+    if (eventDataId?.sheepdogs) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutSheepdogs: arrayUnion(username),
         tripCheckOutSheepdogsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.sprinters) {
-      setDoc(eventRef, {
+    if (eventDataId?.sprinters) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutSprinters: arrayUnion(username),
         tripCheckOutSprintersTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.captains) {
-      setDoc(eventRef, {
+    if (eventDataId?.captains) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutCaptains: arrayUnion(username),
         tripCheckOutCaptainsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.caboose) {
-      setDoc(eventRef, {
+    if (eventDataId?.caboose) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutCaboose: arrayUnion(username),
         tripCheckOutCabooseTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.members) {
-      setDoc(eventRef, {
+    if (eventDataId?.members) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutMembers: arrayUnion(username),
         tripCheckOutMembersTimeStamp: serverTimestamp()
       }, { merge: true });
@@ -413,56 +420,64 @@ const Trip: React.FC = () => {
 
   const endTripAndCheckOut = async () => {
     const tripsRef = doc(db, 'trips', tripDataId);
-    await setDoc(tripsRef, { status: 'ended' }, { merge: true });
-
-    const eventDataRef = doc(db, 'event', eventData.id);
-    await setDoc(eventDataRef, { status: 'ended' }, { merge: true });
+    console.log('tripsRef:', tripsRef);
+    console.log('tripDataId:', tripDataId)
+    // how would you set tripDataId to be a DocumentReference? (firestore doc id)
+    const tripDataIdDoc = doc(db, 'trips', tripDataId);
+    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended' }, { merge: true });
+    // get the eventDataId from the tripDataId
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    const tripData = tripSnapshot.data();
+    const eventDataId = tripData?.eventId;
+    console.log('eventDataId:', eventDataId);
+    // how would you set eventDataId to be a DocumentReference? (firestore doc id)
+    const eventDataIdDoc = doc(db, 'event', eventDataId);
+    await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
 
     // for the individual user, check them out of the event by setting their timestamp to serverTimestamp
-    const eventRef = doc(db, 'event', eventData.id);
-    setDoc(eventRef, {
+    setDoc(eventDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
     }, { merge: true });
     // find any other of user's ids in the event add them to the appropriate role arrays
     // if the user is a parent in the eventData field parents, add them to the parents array
-    if (eventData?.parents.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.parents.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutParents: arrayUnion(username),
         tripCheckOutParentsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.kids.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.kids.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutKids: arrayUnion(username),
         tripCheckOutKidsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.sheepdogs.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.sheepdogs.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutSheepdogs: arrayUnion(username),
         tripCheckOutSheepdogsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.sprinters.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.sprinters.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutSprinters: arrayUnion(username),
         tripCheckOutSprintersTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.captains.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.captains.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutCaptains: arrayUnion(username),
         tripCheckOutCaptainsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.caboose.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.caboose.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutCaboose: arrayUnion(username),
         tripCheckOutCabooseTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    if (eventData?.members.includes(username)) {
-      setDoc(eventRef, {
+    if (eventDataId?.members.includes(username)) {
+      setDoc(eventDataIdDoc, {
         tripCheckOutMembers: arrayUnion(username),
         tripCheckOutMembersTimeStamp: serverTimestamp()
       }, { merge: true });
