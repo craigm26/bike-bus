@@ -431,65 +431,7 @@ import {
               <IonLabel>{startTime} to {endTime}</IonLabel>
             </IonItem>
             <IonItem>
-              {isEventLeader && (
-                <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-              )}
-              {!isEventLeader && isEventActive && (
-                <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
-              )}
-              {isEventLeader && isEventActive && (
-                <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
-              )}
-            </IonItem>
-            <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
-            <IonModal isOpen={showModal}>
-              <IonHeader>
-                <IonToolbar>
-                  <IonTitle>Select a Role</IonTitle>
-                </IonToolbar>
-              </IonHeader>
-              <IonContent>
-                <IonList>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="members" disabled checked />
-                    <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Kids: Be safe and have fun!</IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
-                    <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
-                  </IonItem>
-                </IonList>
-                <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-                <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
-              </IonContent>
-  
-            </IonModal>
-            <IonItem>
-              <IonLabel>Roles in the BikeBus</IonLabel>
+              <IonLabel>BikeBus Members who checked in:</IonLabel>
             </IonItem>
             <IonItem>
               <IonLabel>Leader</IonLabel>
