@@ -421,14 +421,13 @@ const Trip: React.FC = () => {
 
   const endTripAndCheckOut = async () => {
     const tripDataIdDoc = doc(db, 'trips', tripDataId);
-    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended' }, { merge: true });
 
     const tripSnapshot = await getDoc(tripDataIdDoc);
     const tripData = tripSnapshot.data();
     const eventDataId = tripData?.eventId;
 
     const eventDataIdDoc = doc(db, 'event', eventDataId);
-    await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
+    
 
     await setDoc(tripDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
@@ -475,11 +474,12 @@ const Trip: React.FC = () => {
         tripCheckOutMembers: arrayUnion(username),
         tripCheckOutMembersTimeStamp: serverTimestamp()
       }, { merge: true });
+      console.log('members', tripData?.members)
+      console.log('username', username)
+      console.log('tripCheckOutMembers', tripData?.tripCheckOutMembers)
+      console.log('tripCheckOutMembersTimeStamp', tripData?.tripCheckOutMembersTimeStamp)
     }
 
-    // and then navigate to the Event Summary page
-    console.log(eventDataId)
-    console.log(eventDataIdDoc)
     const eventSummaryUrl = `/eventsummary/${eventDataId}`;
     history.push(eventSummaryUrl);
 
