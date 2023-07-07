@@ -115,32 +115,40 @@ const App: React.FC = () => {
 
   }, [user, accountType]);
 
-  // useEffect to fetch the event document from Firestore
   useEffect(() => {
     if (fetchedGroups && fetchedGroups.length > 0) {
       const fetchEventStatuses = async () => {
-        const newEventStatuses: Record<string, string> = {}; // Explicitly set type to Record<string, string>
-  
+        const newEventStatuses: Record<string, string> = {};
+
         for (const group of fetchedGroups) {
           if (group.event && group.event.length > 0) {
             for (const eventRef of group.event) {
-              const eventDocSnap = await eventRef.get();
-  
-              if (eventDocSnap.exists()) {
-                newEventStatuses[eventDocSnap.id] = eventDocSnap.data().status;
+              // Ensure eventRef is a DocumentReference before calling .get()
+              if (typeof eventRef.get === 'function') {
+                const eventDocSnap = await eventRef.get();
+            
+                if (eventDocSnap.exists()) {
+                  newEventStatuses[eventDocSnap.id] = eventDocSnap.data().status;
+                } else {
+                  console.log("No such document!");
+                }
               } else {
-                console.log("No such document!");
+                console.log("Invalid eventRef:", eventRef);
               }
-            }
+            }           
+            
           }
         }
-  
+
         setEventStatuses(newEventStatuses);
       };
-  
+
       fetchEventStatuses();
     }
   }, [fetchedGroups]);
+
+
+
 
 
   const avatarElement = user ? (
@@ -471,27 +479,27 @@ const App: React.FC = () => {
                       <p>Loading groups...</p>
                     )}
                     {fetchedGroups && fetchedGroups.length > 1 && (
-                    <IonButton onClick={() => setShowModal(true)}>More Groups</IonButton>
-                  )}
-                  <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                    <IonList>
-                      {fetchedGroups.map((group: any) => (
-                        <IonItem key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                          <IonLabel>{group.BikeBusName}</IonLabel>
-                        </IonItem>
-                      ))}
-                    </IonList>
-                    <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-                  </IonModal>
-                </div>
+                      <IonButton onClick={() => setShowModal(true)}>More Groups</IonButton>
+                    )}
+                    <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                      <IonList>
+                        {fetchedGroups.map((group: any) => (
+                          <IonItem key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                            <IonLabel>{group.BikeBusName}</IonLabel>
+                          </IonItem>
+                        ))}
+                      </IonList>
+                      <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
+                    </IonModal>
+                  </div>
                 </div>
               )}
-          </React.Fragment>
+            </React.Fragment>
 
-        </RouteProvider>
+          </RouteProvider>
 
-      </IonReactRouter>
-    </HeaderContext.Provider>
+        </IonReactRouter>
+      </HeaderContext.Provider>
     </IonApp >
   );
 };
