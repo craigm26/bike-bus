@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Route, Redirect, useParams } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc } from 'firebase/firestore';
@@ -47,6 +47,8 @@ import EditBikeBus from './pages/EditBikeBus';
 import EditSchedule from './pages/EditSchedule';
 import Trip from './pages/Trip';
 import EventSummary from './pages/EventSummary';
+import { BikeBusGroupProvider, useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
+import useEvent from "./components/BikeBusGroup/useEvent";
 
 
 import '@ionic/react/css/core.css';
@@ -84,6 +86,11 @@ const App: React.FC = () => {
   const [groupData, setGroupData] = useState<any>(null);
   const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
+  const { fetchedGroups } = useBikeBusGroupContext();
+  const [showModal, setShowModal] = useState(false);
+  const [eventStatuses, setEventStatuses] = useState<Record<string, string>>({});
+  const { fetchedEvents } = useEvent();
+
 
   useEffect(() => {
     if (user !== undefined) {
@@ -105,8 +112,36 @@ const App: React.FC = () => {
         }
       });
     }
- 
+
   }, [user, accountType]);
+
+  // useEffect to fetch the event document from Firestore
+  useEffect(() => {
+    if (fetchedGroups && fetchedGroups.length > 0) {
+      const fetchEventStatuses = async () => {
+        const newEventStatuses: Record<string, string> = {}; // Explicitly set type to Record<string, string>
+  
+        for (const group of fetchedGroups) {
+          if (group.event && group.event.length > 0) {
+            for (const eventRef of group.event) {
+              const eventDocSnap = await eventRef.get();
+  
+              if (eventDocSnap.exists()) {
+                newEventStatuses[eventDocSnap.id] = eventDocSnap.data().status;
+              } else {
+                console.log("No such document!");
+              }
+            }
+          }
+        }
+  
+        setEventStatuses(newEventStatuses);
+      };
+  
+      fetchEventStatuses();
+    }
+  }, [fetchedGroups]);
+
 
   const avatarElement = user ? (
     avatarUrl ? (
@@ -159,82 +194,82 @@ const App: React.FC = () => {
                           <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
                       </IonCard>
-                      {accountType === 'App Admin' && 
-                      <IonCard>
-                        <IonLabel>Premium User Functions</IonLabel>
-                        <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
-                          <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/AddAKid' routerDirection="none">
-                          <IonLabel>Add a Kid -Converts to Parent Account</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/CheckInKid' routerDirection="none">
-                          <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
-                        </IonItem>
-                      </IonCard> }
-                      {accountType === 'App Admin' && 
-                      <IonCard>
-                        <IonLabel>BikeBus Leader Functions</IonLabel>
-                        <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
-                          <IonLabel>Check In a Kid to a BikeBus</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/EndBikeBusGroupRide' routerDirection="none">
-                          <IonLabel>Finish a BikeBusGroup ride - end ride for all</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
-                          <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/CreateBikeBusStops' routerDirection="none">
-                          <IonLabel>Create BikeBusStops</IonLabel>
-                        </IonItem>
-                      </IonCard>}
-                      {accountType === 'App Admin' && 
-                      <IonCard>
-                        <IonLabel>Org Admin Functions</IonLabel>
-                        <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
-                          <IonLabel>Update BikeBusGroups</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/UpdateBikeBusStations' routerDirection="none">
-                          <IonLabel>Update BikeBusStations</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/UpdateRoutes' routerDirection="none">
-                          <IonLabel>Update Associated Routes</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
-                          <IonLabel>Update Organization</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/DataAnalytics' routerDirection="none">
-                          <IonLabel>Data Analytics</IonLabel>
-                        </IonItem>
-                      </IonCard> }
-                      {accountType === 'App Admin' && 
-                      <IonCard>
-                        <IonLabel>App Admin Functions</IonLabel>
-                        <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
-                          <IonLabel>TODO: View BikeBusStations</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
-                          <IonLabel>TODO: Upgrade Account to Premium</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/CreateOrganization" routerDirection="none">
-                          <IonLabel>Create Organization</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/UpdateUsers" routerDirection="none">
-                          <IonLabel>Update Users' Data</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/UpdateOrganizationalData" routerDirection="none">
-                          <IonLabel>Update Organizational Data</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/UpdateBikeBusGroupData" routerDirection="none">
-                          <IonLabel>Update BikeBusGroup Data</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/UpdateRouteData" routerDirection="none">
-                          <IonLabel>Update Route Data</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
-                          <IonLabel>Update BikeBusStation Data</IonLabel>
-                        </IonItem>
-                      </IonCard>}
+                      {accountType === 'App Admin' &&
+                        <IonCard>
+                          <IonLabel>Premium User Functions</IonLabel>
+                          <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
+                            <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/AddAKid' routerDirection="none">
+                            <IonLabel>Add a Kid -Converts to Parent Account</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/CheckInKid' routerDirection="none">
+                            <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
+                          </IonItem>
+                        </IonCard>}
+                      {accountType === 'App Admin' &&
+                        <IonCard>
+                          <IonLabel>BikeBus Leader Functions</IonLabel>
+                          <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
+                            <IonLabel>Check In a Kid to a BikeBus</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/EndBikeBusGroupRide' routerDirection="none">
+                            <IonLabel>Finish a BikeBusGroup ride - end ride for all</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
+                            <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/CreateBikeBusStops' routerDirection="none">
+                            <IonLabel>Create BikeBusStops</IonLabel>
+                          </IonItem>
+                        </IonCard>}
+                      {accountType === 'App Admin' &&
+                        <IonCard>
+                          <IonLabel>Org Admin Functions</IonLabel>
+                          <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
+                            <IonLabel>Update BikeBusGroups</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/UpdateBikeBusStations' routerDirection="none">
+                            <IonLabel>Update BikeBusStations</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/UpdateRoutes' routerDirection="none">
+                            <IonLabel>Update Associated Routes</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
+                            <IonLabel>Update Organization</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/DataAnalytics' routerDirection="none">
+                            <IonLabel>Data Analytics</IonLabel>
+                          </IonItem>
+                        </IonCard>}
+                      {accountType === 'App Admin' &&
+                        <IonCard>
+                          <IonLabel>App Admin Functions</IonLabel>
+                          <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
+                            <IonLabel>TODO: View BikeBusStations</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
+                            <IonLabel>TODO: Upgrade Account to Premium</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/CreateOrganization" routerDirection="none">
+                            <IonLabel>Create Organization</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/UpdateUsers" routerDirection="none">
+                            <IonLabel>Update Users' Data</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/UpdateOrganizationalData" routerDirection="none">
+                            <IonLabel>Update Organizational Data</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/UpdateBikeBusGroupData" routerDirection="none">
+                            <IonLabel>Update BikeBusGroup Data</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/UpdateRouteData" routerDirection="none">
+                            <IonLabel>Update Route Data</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
+                            <IonLabel>Update BikeBusStation Data</IonLabel>
+                          </IonItem>
+                        </IonCard>}
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>About</IonLabel>
                       </IonItem>
@@ -398,21 +433,65 @@ const App: React.FC = () => {
                   </IonRouterOutlet>
                 </IonContent>
               </IonPage>
-              <div className='bikebus-footer'>
-                <div className='map-button-container footer-content'>
-                  <IonFab vertical="bottom" horizontal="start" slot="fixed">
-                    <IonFabButton routerLink="/Map" routerDirection="none">
-                      <IonIcon icon={mapOutline} />
-                    </IonFabButton>
-                  </IonFab>
+              {user && (
+                <div className='bikebus-footer'>
+                  <div className='map-button-container footer-content'>
+                    <IonFab vertical="bottom" horizontal="start" slot="fixed">
+                      <IonFabButton routerLink="/Map" routerDirection="none">
+                        <IonIcon icon={mapOutline} />
+                      </IonFabButton>
+                    </IonFab>
+                  </div>
+                  <div className="bikebusname-button-container">
+                    {fetchedGroups ? (
+                      fetchedGroups.map((group: any) => (
+                        group.event && group.event.length > 0 && eventStatuses[group.event[0].id] === "active" ? (
+                          <IonButton
+                            shape="round"
+                            size="large"
+                            key={group.id}
+                            routerLink={`/eventpage/${group.id}`} // replace with the correct routerLink for the event page
+                            routerDirection="none"
+                          >
+                            <IonText className="BikeBusFont">Event Page</IonText>
+                          </IonButton>
+                        ) : (
+                          <IonButton
+                            shape="round"
+                            size="large"
+                            key={group.id}
+                            routerLink={`/bikebusgrouppage/${group.id}`}
+                            routerDirection="none"
+                          >
+                            <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
+                          </IonButton>
+                        )
+                      ))
+                    ) : (
+                      <p>Loading groups...</p>
+                    )}
+                    {fetchedGroups && fetchedGroups.length > 1 && (
+                    <IonButton onClick={() => setShowModal(true)}>More Groups</IonButton>
+                  )}
+                  <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                    <IonList>
+                      {fetchedGroups.map((group: any) => (
+                        <IonItem key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
+                          <IonLabel>{group.BikeBusName}</IonLabel>
+                        </IonItem>
+                      ))}
+                    </IonList>
+                    <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
+                  </IonModal>
                 </div>
-              </div>
-            </React.Fragment>
+                </div>
+              )}
+          </React.Fragment>
 
-          </RouteProvider>
+        </RouteProvider>
 
-        </IonReactRouter>
-      </HeaderContext.Provider>
+      </IonReactRouter>
+    </HeaderContext.Provider>
     </IonApp >
   );
 };

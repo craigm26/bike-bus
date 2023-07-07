@@ -4,23 +4,25 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
+import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup';
+
 import './global.css';
 import * as functions from "firebase-functions";
-
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <React.StrictMode>
       <AuthProvider>
-        <App />
+        <BikeBusGroupProvider>
+          <App />
+        </BikeBusGroupProvider>
       </AuthProvider>
     </React.StrictMode>
   );
 } else {
   console.error('Error: Could not find the root element to mount the app.');
 }
-
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
