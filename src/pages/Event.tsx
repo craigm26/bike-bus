@@ -119,8 +119,9 @@ const Event: React.FC = () => {
   const [parentsId, setParentsId] = useState<FetchedUserData[]>([]);
   const [sheepdogsId, setSheepdogsId] = useState<FetchedUserData[]>([]);
   const [sprintersId, setSprintersId] = useState<FetchedUserData[]>([]);
+  const [tripRefid, setTripRefid] = useState<string>('');
 
-  
+
 
 
   useEffect(() => {
@@ -355,6 +356,7 @@ const Event: React.FC = () => {
           console.log('Document written with ID: ', docRef.id);
 
           const tripRefid = docRef.id;
+          setTripRefid(tripRefid);
           // save that trip id to the event document as tripId
           const eventRef = doc(db, 'event', id);
           await updateDoc(eventRef, {
@@ -406,6 +408,8 @@ const Event: React.FC = () => {
     }
 
     if (!role || role.length === 0) {
+      // set the role to members if no role is selected
+      setRole(['members']);
       console.log("No role is selected!");
       return;
     }
@@ -540,63 +544,70 @@ const Event: React.FC = () => {
   }, [checkEventTime]);
 
   const toggleJoinEvent = () => {
-    const eventRef = doc(db, 'event', id);
-    setDoc(eventRef, {
+    console.log('toggleJoinEvent is running!');
+    console.log('eventData is ', eventData);
+    console.log('eventData?.tripId is ', eventData?.tripId);
+    const tripsRef = doc(db, 'trips', eventData?.tripId);
+    console.log('tripsRef is ', tripsRef);
+    setDoc(tripsRef, {
       JoinedMembers: arrayUnion(username)
     }, { merge: true });
     // find any other of user's ids in the event add them to the appropriate role arrays
     // if the user is a parent in the eventData field parents, add them to the parents array
-    if (eventData?.parents.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.parents) && eventData?.parents.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInParents: arrayUnion(username),
         tripCheckInParentsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the kids array
-    if (eventData?.kids.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.kids) && eventData?.kids.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInKids: arrayUnion(username),
         tripCheckInKidsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the captains array
-    if (eventData?.captains.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.captains) && eventData?.captains.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInCaptains: arrayUnion(username),
         tripCheckInCaptainsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the sheepdogs array
-    if (eventData?.sheepdogs.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.sheepdogs) && eventData?.sheepdogs.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInSheepdogs: arrayUnion(username),
         tripCheckInSheepdogsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the sprinters array
-    if (eventData?.sprinters.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.sprinters) && eventData?.sprinters.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInSprinters: arrayUnion(username),
         tripCheckInSprintersTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the caboose array
-    if (eventData?.caboose.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.caboose) && eventData?.caboose.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInCaboose: arrayUnion(username),
         tripCheckInCabooseTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the members array
-    if (eventData?.members.includes(username)) {
-      setDoc(eventRef, {
+    if (Array.isArray(eventData?.members) && eventData?.members.includes(username)) {
+      setDoc(tripsRef, {
         tripCheckInMembers: arrayUnion(username),
         tripCheckInMembersTimeStamp: serverTimestamp()
       }, { merge: true });
+      console.log('members is ', eventData.members);
+      console.log('tripCheckInMembers is ', eventData.tripCheckInMembers);
+      console.log('tripCheckInMembersTimeStamp is ', eventData.tripCheckInMembersTimeStamp);
     }
     // do the same as parents to the leader array
     if (eventData?.leader.includes(username)) {
-      setDoc(eventRef, {
+      setDoc(tripsRef, {
         tripCheckInLeader: arrayUnion(username),
         tripCheckInLeaderTimeStamp: serverTimestamp()
       }, { merge: true });
@@ -688,7 +699,7 @@ const Event: React.FC = () => {
                 {membersId.slice(0, 5).map((member, index) => (
                   <IonChip key={index}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar uid={member?.uid} size="extrasmall" />
+                      <Avatar uid={member?.uid} size="extrasmall" />
                     </div>
                   </IonChip>
                 ))}
