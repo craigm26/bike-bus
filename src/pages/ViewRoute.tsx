@@ -180,6 +180,15 @@ const ViewRoute: React.FC = () => {
     }
   }, [headerContext]);
 
+  useEffect(() => {
+    if (selectedRoute) {
+      setMapCenter({
+        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+      });
+    }
+  }
+    , [selectedRoute]);
 
   useEffect(() => {
     if (user) {
