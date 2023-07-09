@@ -1,37 +1,43 @@
+// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
   IonPage,
   IonToolbar,
-  IonMenuButton,
-  IonButtons,
-  IonButton,
-  IonLabel,
-  IonText,
-  IonChip,
   IonAvatar,
-  IonPopover,
   IonIcon,
+  IonTitle,
+  IonLabel,
+  IonButton,
+  IonInput,
+  IonItem,
 } from '@ionic/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
-import AccountModeSelector from '../components/AccountModeSelector';
-import { useHistory } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
+import { collection, addDoc } from "firebase/firestore";
+
+
 
 const CreateOrganization: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
+  const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const history = useHistory();
+  const [orgName, setOrgName] = useState("");
+  const [orgDescription, setOrgDescription] = useState("");
+  const [orgType, setOrgType] = useState("");
+  const [orgLocation, setOrgLocation] = useState("");
+  const [orgWebsite, setOrgWebsite] = useState("");
+  const [orgEmail, setOrgEmail] = useState("");
+  const [orgPhoneNumber, setOrgPhoneNumber] = useState("");
+  const [orgContactName, setOrgContactName] = useState("");
 
   const togglePopover = (e: any) => {
     console.log('togglePopover called');
@@ -53,112 +59,108 @@ const CreateOrganization: React.FC = () => {
     <IonIcon icon={personCircleOutline} />
   );
 
-  const label = user?.username ? user.username : 'anonymous';
-
-  const [accountMode, setAccountMode] = useState<string[]>([]);
-
-
-
-  // Form state
-  const [orgName, setOrgName] = useState('');
-  const [ownerName, setOwnerName] = useState('');
-  const [ownerEmail, setOwnerEmail] = useState('');
-  const [ownerUsername, setOwnerUsername] = useState('');
-  const [geolocation, setGeolocation] = useState('');
-
-  const requestOrg = async () => {
-    try {
-      // Create the organization in Firebase Storage
-      // You can call the API or service to create the organization and return the organization data
-      // For now, just use a hard-coded organization object
-      const orgData = {
-        uid: 'org1', // Replace with actual UID from Firebase
-        orgName: orgName,
-        orgOwnerAccount: user?.uid,
-        orgOwnerUsername: ownerUsername,
-        orgOwnerEmail: ownerEmail,
-        accountMode: accountMode,
-        geolocationPosition: geolocation, // Replace with actual geolocation data
-        bikeBusLocationIdentifier: '',
-        orgIdentifier: '',
-        orgLeaders: [user?.uid],
-        orgMembers: [user?.uid],
-      };
-
-      // Create a new document in the "organizations" collection with the organization's information
-      const orgCollectionRef = collection(db, 'organizations');
-      const newOrgData = {
-        ...orgData,
-        orgRoutes: [],
-      };
-      await addDoc(orgCollectionRef, newOrgData);
-
-      // Redirect the user to the home page
-      history.push('/Map');
-    } catch (error) {
-      console.error('Error requesting organization:', error);
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.accountType) {
+            setaccountType(userData.accountType);
+          }
+        }
+      });
     }
+  }, [user]);
+
+  const label = user?.username ? user.username : "anonymous";
+
+  // Form submission handler
+  const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // Add a new document in collection "organizations"
+    const newOrg = await addDoc(collection(db, "organizations"), {
+      NameOfOrg: orgName,
+      OrganizationType: orgType,
+      // ... rest of the fields
+    });
+
+    console.log("New organization created with ID: ", newOrg.id);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    requestOrg();
-  };
 
   return (
     <IonPage>
       <IonContent fullscreen>
+        <IonHeader>
+          <IonToolbar></IonToolbar>
+        </IonHeader>
+        <IonTitle>
+          <h1>Create Organization</h1>
+        </IonTitle>
         <IonHeader collapse="condense">
           <IonToolbar></IonToolbar>
         </IonHeader>
-        <form onSubmit={handleFormSubmit}>
-          <label>
-            Name of the organization:
-            <input
-              type="text"
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-            />
-          </label>
-          <label>
-            Name of the owner:
-            <input
-              type="text"
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-            />
-          </label>
-          <label>
-            E-mail of the owner:
-            <input
-              type="email"
-              value={ownerEmail}
-              onChange={(e) => setOwnerEmail(e.target.value)}
-            />
-          </label>
-          <label>
-            UserName of the owner:
-            <input
-              type="text"
-              value={ownerUsername}
-              onChange={(e) => setOwnerUsername(e.target.value)}
-            />
-          </label>
-          <label>
-            Geolocation of the organization:
-            <input
-              type="text"
-              value={geolocation}
-              onChange={(e) => setGeolocation(e.target.value)}
-            />
-          </label>
-          <button type="submit">Submit</button>
-        </form>
-        <IonText>An e-mail will be sent to the Application Administrator for approval.</IonText>
-        <IonText>Once approved, the organization will be created.</IonText>
-        {/* Add logic for sending email to App Admin and handling approval */}
+        <IonContent>
+          <div className="ion-padding">
+            <p>
+              <strong>Account Type:</strong> {accountType}
+            </p>
+            <p>
+              <strong>Username:</strong> {label}
+            </p>
+            <p>
+              <strong>Email:</strong> {user?.email}
+            </p>
+            <p>
+              <strong>UID:</strong> {user?.uid}
+            </p>
+          </div>
+          {accountType === "appAdmin" || accountType === "orgAdmin" ? (
+            <><p>You cannot create an organization.</p><IonButton>Request Organization Account</IonButton></>
+          ) : (
+            <form onSubmit={submitForm}>
+              <IonItem>
+                <IonLabel>Organization Name:</IonLabel>
+                <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Description:</IonLabel>
+                <IonInput value={orgDescription} onIonChange={e => setOrgDescription(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Type:</IonLabel>
+                <IonInput value={orgType} onIonChange={e => setOrgType(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Location:</IonLabel>
+                <IonInput value={orgLocation} onIonChange={e => setOrgLocation(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Website:</IonLabel>
+                <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Email:</IonLabel>
+                <IonInput value={orgEmail} onIonChange={e => setOrgEmail(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Phone Number:</IonLabel>
+                <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Organization Contact Name:</IonLabel>
+                <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} />
+              </IonItem>
+              <br />
+              <IonButton expand="full" type="submit">Create Organization</IonButton>
+            </form>
+          )}
+
+        </IonContent>
       </IonContent>
-    </IonPage>
+    </IonPage >
   );
 };
 

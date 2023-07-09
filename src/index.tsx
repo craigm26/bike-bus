@@ -9,6 +9,8 @@ import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup'
 import './global.css';
 import * as functions from "firebase-functions";
 
+// put in a provider for OrganizationContext, EventContext and TripContext
+
 const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
