@@ -4,10 +4,11 @@ import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, 
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import { db, rtdb } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
-
+import { DataSnapshot } from '@firebase/database';
+import { ref, get } from "firebase/database";
 
 import Map from './pages/Map';
 import Login from './pages/Login';
@@ -47,8 +48,9 @@ import EditBikeBus from './pages/EditBikeBus';
 import EditSchedule from './pages/EditSchedule';
 import Trip from './pages/Trip';
 import EventSummary from './pages/EventSummary';
-import { BikeBusGroupProvider, useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
+import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
 import useEvent from "./components/BikeBusGroup/useEvent";
+import { User } from '@firebase/auth';
 
 
 import '@ionic/react/css/core.css';
@@ -63,7 +65,6 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
-
 
 setupIonicReact();
 
@@ -90,7 +91,8 @@ const App: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [eventStatuses, setEventStatuses] = useState<Record<string, string>>({});
   const { fetchedEvents } = useEvent();
-
+  const [relevantEvents, setRelevantEvents] = useState<any[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<any>(null);
 
   useEffect(() => {
     if (user !== undefined) {
@@ -115,40 +117,107 @@ const App: React.FC = () => {
 
   }, [user, accountType]);
 
-  useEffect(() => {
-    if (fetchedGroups && fetchedGroups.length > 0) {
-      const fetchEventStatuses = async () => {
-        const newEventStatuses: Record<string, string> = {};
+  const getUserLocation = async () => {
+    if (!user) return null;
+    const userLocationRef = ref(rtdb, `userLocations/${user.uid}`);
+    const snapshot = await get(userLocationRef);
+    return snapshot.val();
+  };
 
-        for (const group of fetchedGroups) {
-          if (group.event && group.event.length > 0) {
-            for (const eventRef of group.event) {
-              // Ensure eventRef is a DocumentReference before calling .get()
-              if (typeof eventRef.get === 'function') {
-                const eventDocSnap = await eventRef.get();
-            
-                if (eventDocSnap.exists()) {
-                  newEventStatuses[eventDocSnap.id] = eventDocSnap.data().status;
-                } else {
-                  console.log("No such document!");
-                }
-              } else {
-                console.log("Invalid eventRef:", eventRef);
-              }
-            }           
-            
+  const getUserGroups = async () => {
+    if (!user) return [];
+    const userRef = doc(db, 'users', user.uid);
+    const docSnapshot = await getDoc(userRef);
+    if (docSnapshot.exists()) {
+      const userData = docSnapshot.data();
+      return userData ? userData.groups : [];
+    }
+    return [];
+  };
+
+
+
+  // Helper function to calculate the distance between two lat/long points
+  function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2 - lat1);
+    var dLon = deg2rad(lon2 - lon1);
+    var a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+      ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c; // Distance in km
+    return d * 0.621371; // Convert to miles
+  }
+
+  function deg2rad(deg: any) {
+    return deg * (Math.PI / 180)
+  }
+
+  // Function to check if an event is within the required distance and if the event belongs to a group the user is part of
+  async function isEventRelevant(event: any) {
+    const userLocation = await getUserLocation(); // Get the user's location
+    console.log('userLocation:', userLocation);
+    const userGroups = await getUserGroups(); // Get the groups the user is part of
+
+    if (userLocation) {
+      console.log('userLocation:', userLocation);
+      const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng);
+
+      if (eventDistance <= 5) {
+        return true;
+      }
+      // if eventDistance is greater than 5, show the next event in my bikebusgroup
+      else {
+        const group = fetchedGroups.find((group: any) => group.event && group.event.length > 0 && group.event[0].id === event.id);
+
+        if (group) {
+          const groupEvents = group.event;
+          const groupEventIndex = groupEvents.findIndex((groupEvent: any) => groupEvent.id === event.id);
+
+          if (groupEventIndex !== -1 && groupEventIndex < groupEvents.length - 1) {
+            const nextEvent = groupEvents[groupEventIndex + 1];
+            const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
+
+            if (nextEventDistance <= 5) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    for (const group of userGroups) {
+      if (group.event.id === event.id) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+
+  useEffect(() => {
+    if (fetchedEvents && fetchedEvents.length > 0) {
+      const fetchRelevantEvents = async () => {
+        const relevantEvents = [];
+
+        for (const event of fetchedEvents) {
+          const eventIsRelevant = await isEventRelevant(event);
+
+          if (eventIsRelevant) {
+            relevantEvents.push(event);
           }
         }
 
-        setEventStatuses(newEventStatuses);
+        setRelevantEvents(relevantEvents);
       };
 
-      fetchEventStatuses();
+      fetchRelevantEvents();
     }
-  }, [fetchedGroups]);
-
-
-
+  }, [fetchedEvents]);
 
 
   const avatarElement = user ? (
@@ -201,6 +270,9 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/SearchForBikeBus' routerDirection="none">
                           <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
+                        <IonItem button routerLink="/CreateOrganization" routerDirection="none">
+                            <IonLabel>Create Organization</IonLabel>
+                          </IonItem>
                       </IonCard>
                       {accountType === 'App Admin' &&
                         <IonCard>
@@ -258,9 +330,6 @@ const App: React.FC = () => {
                           </IonItem>
                           <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
                             <IonLabel>TODO: Upgrade Account to Premium</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/CreateOrganization" routerDirection="none">
-                            <IonLabel>Create Organization</IonLabel>
                           </IonItem>
                           <IonItem button routerLink="/UpdateUsers" routerDirection="none">
                             <IonLabel>Update Users' Data</IonLabel>

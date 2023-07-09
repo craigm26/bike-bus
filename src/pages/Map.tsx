@@ -225,12 +225,6 @@ const Map: React.FC = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (user && getLocationClicked) {
-      watchLocation();
-    }
-  }, [user, getLocationClicked, watchLocation]);
-
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
     if (selectedStartLocation && selectedEndLocation) {
@@ -1113,12 +1107,6 @@ const Map: React.FC = () => {
             </IonRow>
           </IonGrid>
         )}
-        <IonRow>
-          <div className="bikebus-action-sheet footer-content">
-            <div className="bikebusname-button-container">
-            </div>
-          </div>
-        </IonRow>
 
       </IonContent>
     </IonPage >
