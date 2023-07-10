@@ -3,7 +3,7 @@ import { Route, Redirect, useParams } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, Timestamp } from 'firebase/firestore';
 import { db, rtdb } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
@@ -70,8 +70,27 @@ setupIonicReact();
 
 type Group = {
   id: number;
+  BikeBusRoutes: any[];
   BikeBusName: string;
+  event: {
+    id: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
 }
+
+type Coordinate = {
+  lat: number;
+  lng: number;
+};
+
+type GRoute = {
+  startPoint: Coordinate;
+  endPoint: Coordinate;
+  [key: string]: any;
+}
+
+
 
 
 
@@ -99,6 +118,17 @@ const App: React.FC = () => {
       setLoading(false);
     }
   }, [user]);
+
+  function formatDate(timestamp: Timestamp) {
+    const dateObject = timestamp.toDate(); // Converts Firestore timestamp to JavaScript Date
+    return dateObject.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
+  }
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -130,12 +160,48 @@ const App: React.FC = () => {
     const docSnapshot = await getDoc(userRef);
     if (docSnapshot.exists()) {
       const userData = docSnapshot.data();
-      return userData ? userData.groups : [];
+      if (userData && userData.bikebusgroups) {
+        const groupRefs = userData.bikebusgroups; // getting the group document references
+        const groups = [];
+        for (let i = 0; i < groupRefs.length; i++) {
+          const groupSnapshot = await getDoc(groupRefs[i]);
+          if (groupSnapshot.exists()) {
+            groups.push(groupSnapshot.data());
+          }
+        }
+        return groups; // return fetched group data
+      }
     }
     return [];
   };
 
+  const getRoute = async () => {
+    if (!user) return null;
+    const userRef = doc(db, 'users', user.uid);
+    const docSnapshot = await getDoc(userRef);
+    if (docSnapshot.exists()) {
+      const userData = docSnapshot.data();
+      if (userData && userData.bikebusgroups) {
+        const groupRefs = userData.bikebusgroups; // getting the group document references
+        const groups = [];
+        for (let i = 0; i < groupRefs.length; i++) {
+          const groupSnapshot = await getDoc(groupRefs[i]);
 
+          if (groupSnapshot.exists()) {
+            const groupData = groupSnapshot.data() as Group;  // Add type assertion here
+            if (groupData && groupData.BikeBusRoutes) {
+              const routeRef = groupData.BikeBusRoutes[0];
+              const routeSnapshot = await getDoc(routeRef);
+              if (routeSnapshot.exists()) {
+                return routeSnapshot.data() as GRoute;
+              }
+            }
+          }
+        }
+      }
+    }
+    return null;
+  };
 
   // Helper function to calculate the distance between two lat/long points
   function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
@@ -159,12 +225,13 @@ const App: React.FC = () => {
   // Function to check if an event is within the required distance and if the event belongs to a group the user is part of
   async function isEventRelevant(event: any) {
     const userLocation = await getUserLocation(); // Get the user's location
-    console.log('userLocation:', userLocation);
     const userGroups = await getUserGroups(); // Get the groups the user is part of
+    const groupRoute = await getRoute() as GRoute | null;
+    // event.location doesn't exist, so we can't calculate distance. We need to get the route associated with the event and calculate distance from the user's location to the route
 
-    if (userLocation) {
-      console.log('userLocation:', userLocation);
-      const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng);
+
+    if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
+      const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
 
       if (eventDistance <= 5) {
         return true;
@@ -179,24 +246,28 @@ const App: React.FC = () => {
 
           if (groupEventIndex !== -1 && groupEventIndex < groupEvents.length - 1) {
             const nextEvent = groupEvents[groupEventIndex + 1];
-            const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
+            if (nextEvent && nextEvent.location) {
+              const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
 
-            if (nextEventDistance <= 5) {
-              return true;
+              if (nextEventDistance <= 10) {
+                return true;
+              }
             }
           }
         }
       }
     }
 
-    for (const group of userGroups) {
+    for (const group of userGroups as Group[]) {
       if (group.event.id === event.id) {
         return true;
       }
     }
 
+
     return false;
   }
+
 
 
   useEffect(() => {
@@ -218,6 +289,18 @@ const App: React.FC = () => {
       fetchRelevantEvents();
     }
   }, [fetchedEvents]);
+
+  const getUpcomingEvent = () => {
+    if (!relevantEvents || relevantEvents.length === 0) return null;
+
+    // Make sure to replace 'eventDate' with the actual property name that holds the event's date
+    const sortedEvents = [...relevantEvents].sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+
+    // Now, the first event in sortedEvents is the upcoming event
+    const upcomingEvent = sortedEvents[0];
+
+    return upcomingEvent;
+  };
 
 
   const avatarElement = user ? (
@@ -271,8 +354,8 @@ const App: React.FC = () => {
                           <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
                         <IonItem button routerLink="/CreateOrganization" routerDirection="none">
-                            <IonLabel>Create Organization</IonLabel>
-                          </IonItem>
+                          <IonLabel>Create Organization</IonLabel>
+                        </IonItem>
                       </IonCard>
                       {accountType === 'App Admin' &&
                         <IonCard>
@@ -521,45 +604,24 @@ const App: React.FC = () => {
                   </div>
                   <div className="bikebusname-button-container">
                     {fetchedGroups ? (
-                      fetchedGroups.map((group: any) => (
-                        group.event && group.event.length > 0 && eventStatuses[group.event[0].id] === "active" ? (
+                      fetchedGroups.map((group: any) => {
+                        const upcomingEvent = getUpcomingEvent();
+                        return (
                           <IonButton
                             shape="round"
                             size="large"
                             key={group.id}
-                            routerLink={`/eventpage/${group.id}`} // replace with the correct routerLink for the event page
+                            routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${group.id}`}
                             routerDirection="none"
                           >
-                            <IonText className="BikeBusFont">Event Page</IonText>
-                          </IonButton>
-                        ) : (
-                          <IonButton
-                            shape="round"
-                            size="large"
-                            key={group.id}
-                            routerLink={`/bikebusgrouppage/${group.id}`}
-                            routerDirection="none"
-                          >
-                            <IonText className="BikeBusFont">{group.BikeBusName}</IonText>
-                          </IonButton>
-                        )
-                      ))
+                            <IonText className="BikeBusFont">
+                              {upcomingEvent ? `${group.BikeBusName} ${formatDate(upcomingEvent.startTimestamp)}` : group.BikeBusName}
+                            </IonText>                          </IonButton>
+                        );
+                      })
                     ) : (
                       <p>Loading groups...</p>
                     )}
-                    {fetchedGroups && fetchedGroups.length > 1 && (
-                      <IonButton onClick={() => setShowModal(true)}>More Groups</IonButton>
-                    )}
-                    <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                      <IonList>
-                        {fetchedGroups.map((group: any) => (
-                          <IonItem key={group.id} routerLink={`/bikebusgrouppage/${group.id}`} routerDirection="none">
-                            <IonLabel>{group.BikeBusName}</IonLabel>
-                          </IonItem>
-                        ))}
-                      </IonList>
-                      <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-                    </IonModal>
                   </div>
                 </div>
               )}
