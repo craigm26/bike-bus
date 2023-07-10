@@ -5,8 +5,10 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
 import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup';
+import { EventProvider } from './components/BikeBusGroup/EventContext';
 
-import './global.css';
+import './global.css'
+
 import * as functions from "firebase-functions";
 
 // put in a provider for OrganizationContext, EventContext and TripContext
@@ -17,7 +19,9 @@ if (rootElement) {
     <React.StrictMode>
       <AuthProvider>
         <BikeBusGroupProvider>
+          <EventProvider>
           <App />
+          </EventProvider>
         </BikeBusGroupProvider>
       </AuthProvider>
     </React.StrictMode>
