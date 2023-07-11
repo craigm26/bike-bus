@@ -9,6 +9,12 @@
   font-family: 'Indie-Flower', sans-serif;
 }
 
+.EventTimeFont {
+  font-size: .8em;
+  font-family: 'Indie-Flower', sans-serif;
+  display: block; 
+}
+
 .login-container {
   display: flex;
   justify-content: center;
