@@ -14,23 +14,46 @@ import {
   IonSelect,
   IonSelectOption,
   IonCard,
+  IonCol,
+  IonGrid,
+  IonRow,
 } from '@ionic/react';
 import { useEffect, useRef, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
+import { locateOutline, personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from "firebase/firestore";
-import { GoogleMap, useLoadScript, useJsApiLoader, Marker, Polyline, InfoWindow, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, useJsApiLoader, Marker, Polyline, InfoWindow, Autocomplete, StandaloneSearchBox } from '@react-google-maps/api';
+import React from "react";
 import { is } from 'date-fns/locale';
 import { set } from 'date-fns';
 import './CreateOrganization.css'
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
+const DEFAULT_ACCOUNT_MODES = ["Member"];
+
+type RouteType = "SCHOOL" | "WORK";
+
+type Point = {
+  lat: number;
+  lng: number;
+};
+
+type Place = {
+  name: string;
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat(): number;
+      lng(): number;
+    };
+  };
+};
 
 interface Coordinate {
   lat: number;
@@ -45,7 +68,6 @@ const CreateOrganization: React.FC = () => {
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
     libraries,
   });
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -67,9 +89,17 @@ const CreateOrganization: React.FC = () => {
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [enabledAccountModes, setAccountMode] = useState<string[]>([]);
-
-
-
+  const [showMap, setShowMap] = useState(false);
+  const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
+  const [getLocationClicked, setGetLocationClicked] = useState(false);
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const [mapCenter, setMapCenter] = useState<Point>({ lat: 0, lng: 0 });
+  const [userLocation, setUserLocation] = useState<Point>({ lat: 0, lng: 0 });
+  const [selectedStartLocation, setSelectedStartLocation] = useState<Point>({ lat: 0, lng: 0 });
+  const [routeStartName, setRouteStartName] = useState<string>("");
+  const [routeStartStreetName, setRouteStartStreetName] = useState<string>("");
+  const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>("");
+  const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
 
   // Update the useEffect to also update the marker position
   useEffect(() => {
@@ -101,6 +131,49 @@ const CreateOrganization: React.FC = () => {
   const handleMapLoad = (map: google.maps.Map) => {
     setMapInstance(map);
   };
+
+  const getLocation = () => {
+    setGetLocationClicked(true);
+    setShowMap(true);
+    setMapCenter(userLocation);
+    onPlaceChangedStart();
+  };
+
+  const onPlaceChangedStart = () => {
+    console.log("onPlaceChangedStart called");
+    if (autocompleteStart !== null) {
+      const places = autocompleteStart.getPlaces();
+      if (places && places.length > 0) {
+        console.log("Places: ", places);
+        const place = places[0];
+        console.log("Place: ", place);
+        if (place.geometry && place.geometry.location) {
+          setSelectedStartLocation({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          });
+          // define place.address_components
+          const addressComponents = place.address_components;
+          // extract street name
+          const streetName = addressComponents?.find((component) =>
+            component.types.includes("route")
+          )?.long_name;
+
+          setRouteStartStreetName(streetName ?? "");
+          setRouteStartName(`${place.name}` ?? "");
+          setRouteStartFormattedAddress(`${place.formatted_address}` ?? "");
+        }
+      }
+    }
+  };
+
+  const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
+    setAutocompleteStart(ref);
+    onPlaceChangedStart();
+
+    setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
+  };
+
 
   // Update the updateSchools function
   const updateSchools = (newSchool: string) => {
@@ -203,10 +276,14 @@ const CreateOrganization: React.FC = () => {
             </p>
           </div>
           {enabledAccountModes.includes('Org Admin') ? (
-            <><p>You cannot create an organization.</p><IonButton>Request Organization Account</IonButton></>
+            <>
+              <p>Welcome to the BikeBus App "create an organization" feature. Please let me know if you have any questions at <a href="mailto:craigm26@gmail.com">craigm26@gmail.com</a></p>
+            </>
           )
+
             : (
-              <p>You do not have permission to create an organization.</p>
+              <p>You do not have permission to create an organization.
+                <IonButton>Request Organization Account</IonButton></p>
             )}
 
           {
@@ -226,15 +303,6 @@ const CreateOrganization: React.FC = () => {
                     <IonSelectOption value="club">Club</IonSelectOption>
                   </IonSelect>
                 </IonItem>
-                {orgType === "schooldistrict" && (
-                  <IonItem>
-                    <IonLabel>School District:</IonLabel>
-                    <IonInput value={schoolDistrict} onIonChange={e => setSchoolDistrict(e.detail.value!)} />
-                    <IonLabel>Add schools by name:</IonLabel>
-                    <IonInput value={school} onIonChange={e => setSchool(e.detail.value!)} />
-                    <IonButton onClick={() => updateSchools(school)}>Add School</IonButton>
-                  </IonItem>
-                )}
                 <IonItem>
                   <IonLabel>Website:</IonLabel>
                   <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} />
@@ -251,53 +319,488 @@ const CreateOrganization: React.FC = () => {
                   <IonLabel>Contact Name:</IonLabel>
                   <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} />
                 </IonItem>
-                <IonItem className='createOrganizationMap'>
-                  {isLoaded ? (
-                    <GoogleMap
-                      mapContainerStyle={containerMapStyle}
-                      center={mapCenter}
-                      zoom={18}
-                      options={{
-                        disableDefaultUI: true,
-                        zoomControl: true,
-                        scrollwheel: true,
-                        disableDoubleClickZoom: true,
-                        mapTypeControl: true,
-                        streetViewControl: true,
-                        fullscreenControl: true,
-                      }}
-                    >
-                      <Autocomplete
-                        onLoad={(autocomplete) => setAutocomplete(autocomplete)}
-                        onPlaceChanged={() => {
-                          if (autocomplete !== null) {
-                            const place = autocomplete.getPlace();
-                            setOrgLocation(place.geometry.location); // Update the location state here
-                          } else {
-                            console.log('Autocomplete is not loaded yet!');
-                          }
-                        }}
-                      >
-                        <input
-                          ref={autocompleteInputRef}
-                          type="text"
-                          placeholder="Search location"
-                        />
-                      </Autocomplete>
-
-                      {markers.map((marker, i) => <Marker key={i} position={marker.getPosition() as google.maps.LatLng} />)}
-                      {markerPosition && <Marker position={markerPosition} />}
-                    </GoogleMap>
-                  ) : (
-                    <p>Loading maps</p>
-                  )}
-                </IonItem>
-
-                <br />
                 <IonButton expand="full" type="submit">Create Organization</IonButton>
               </form>
             )
           }
+          {!showMap && enabledAccountModes.includes('Org Admin') && (
+            <>
+              <IonGrid>
+                <IonRow className="location-button-container">
+                  <IonCol>
+                    <IonButton onClick={getLocation}>
+                      Start Map by retrieving your Current Location
+                    </IonButton>
+                  </IonCol>
+                </IonRow>
+                <IonRow></IonRow>
+              </IonGrid>
+            </>
+          )}
+          {showMap && enabledAccountModes.includes('Org Admin') && (
+            <IonGrid fixed={false}>
+              <IonRow className="map-base">
+                <GoogleMap
+                  onLoad={(map) => {
+                    mapRef.current = map;
+                  }}
+                  mapContainerStyle={containerMapStyle}
+                  center={mapCenter}
+                  zoom={18}
+                  options={{
+                    disableDefaultUI: true,
+                    zoomControl: false,
+                    mapTypeControl: false,
+                    disableDoubleClickZoom: true,
+                    maxZoom: 18,
+                    styles: [
+                      {
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#f5f5f5"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.icon",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#616161"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.text.stroke",
+                        "stylers": [
+                          {
+                            "color": "#f5f5f5"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.land_parcel",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.land_parcel",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#bdbdbd"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.neighborhood",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.neighborhood",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#eeeeee"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#757575"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.business",
+                        "stylers": [
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.business",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "saturation": -65
+                          },
+                          {
+                            "lightness": 50
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#e5e5e5"
+                          },
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#27d349"
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          },
+                          {
+                            "saturation": 45
+                          },
+                          {
+                            "lightness": -20
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#ffd800"
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "geometry.stroke",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          },
+                          {
+                            "weight": 5
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text.stroke",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          },
+                          {
+                            "weight": 3.5
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#ffffff"
+                          },
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road",
+                        "elementType": "labels.icon",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.arterial",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#757575"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.highway",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#dadada"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.highway",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#616161"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.local",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.local",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "transit",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#7ea3ec"
+                          },
+                          {
+                            "saturation": -50
+                          },
+                          {
+                            "lightness": 50
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "water",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#c9c9c9"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "water",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          }
+                        ]
+                      }
+                    ],
+                  }}
+                >
+                  <Autocomplete
+                    onLoad={(autocomplete) => setAutocomplete(autocomplete)}
+                    onPlaceChanged={() => {
+                      if (autocomplete !== null) {
+                        const place = autocomplete.getPlace();
+                        setOrgLocation(place.geometry.location); // Update the location state here
+                      } else {
+                        console.log('Autocomplete is not loaded yet!');
+                      }
+                    }}
+                  >
+                    <input
+                      ref={autocompleteInputRef}
+                      type="text"
+                      placeholder={userLocationAddress}
+                    />
+                  </Autocomplete>
+
+                  {markers.map((marker, i) => <Marker key={i} position={marker.getPosition() as google.maps.LatLng} />)}
+                  {markerPosition && <Marker position={markerPosition} />}
+                  <IonGrid className="search-container">
+                    <IonRow className="current-location">
+                      <IonButton onClick={getLocation}>
+                        <IonIcon icon={locateOutline} />
+                      </IonButton>
+                      <IonCol>
+                        <StandaloneSearchBox
+                          onLoad={onLoadStartingLocation}
+                          onPlacesChanged={onPlaceChangedStart}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder={userLocationAddress}
+                            style={{
+                              width: "300px",
+                              height: "40px",
+                            }}
+                          />
+                        </StandaloneSearchBox>
+                      </IonCol>
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
+                        {orgType === "schooldistrict" && (
+                          <IonItem>
+                            <IonLabel>Add School District:</IonLabel>
+                            <IonInput value={schoolDistrict} onIonChange={e => setSchoolDistrict(e.detail.value!)} />
+                            <IonButton onClick={() => updateSchools(schoolDistrict)}>Add School District</IonButton>
+                          </IonItem>
+                        )}
+                        {orgType === "schooldistrict" && (
+                          <IonItem>
+                            <IonLabel>Add schools by name:</IonLabel>
+                            <IonInput value={school} onIonChange={e => setSchool(e.detail.value!)} />
+                            <IonButton onClick={() => updateSchools(school)}>Add School</IonButton>
+                          </IonItem>
+                        )}
+                        {orgType !== "schooldistrict" && (
+                          <IonItem>
+                            <IonLabel>Location:</IonLabel>
+                            <IonInput value={orgLocation} onIonChange={e => setOrgLocation(e.detail.value!)} />
+                          </IonItem>
+                        )}
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                  <div>
+                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                  </div>
+                </GoogleMap >
+              </IonRow>
+            </IonGrid>
+          )}
         </IonContent>
       </IonContent>
     </IonPage >
