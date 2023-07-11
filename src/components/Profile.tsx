@@ -98,8 +98,8 @@ const Profile: React.FC = () => {
               <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp">
                 SignUp to Add Avatar
               </IonButton>
-              <IonButton className="ion-button-profile" fill="solid" routerLink="/SignIn"> 
-                LogIn
+              <IonButton className="ion-button-profile" fill="solid" routerLink="/Login"> 
+                Login to Account
               </IonButton>
               <Logout />
             </>
