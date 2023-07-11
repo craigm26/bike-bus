@@ -587,7 +587,7 @@ const App: React.FC = () => {
                         <Welcome />
                       </Route>
                       <Route exact path="/">
-                        <Redirect to="/Login" />
+                        <Redirect to="/Map" />
                       </Route>
                     </React.Fragment>
                   </IonRouterOutlet>
@@ -614,11 +614,18 @@ const App: React.FC = () => {
                             routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${group.id}`}
                             routerDirection="none"
                           >
-                            <IonText className="BikeBusFont">
-                              {upcomingEvent ? `${group.BikeBusName} ${formatDate(upcomingEvent.startTimestamp)}` : group.BikeBusName}
-                            </IonText>                          </IonButton>
+                            <IonLabel className="BikeBusFont" text-wrap>
+                              {group.BikeBusName}
+                              {upcomingEvent && (
+                                <IonText className="EventTimeFont">
+                                  {formatDate(upcomingEvent.startTimestamp)}
+                                </IonText>
+                              )}
+                            </IonLabel>
+                          </IonButton>
                         );
                       })
+
                     ) : (
                       <p>Loading groups...</p>
                     )}
