@@ -1,4 +1,3 @@
-// src/pages/BikeBusMember.tsx
 import {
   IonContent,
   IonHeader,
@@ -56,16 +55,6 @@ const CreateOrganization: React.FC = () => {
   const [orgEmail, setOrgEmail] = useState("");
   const [orgPhoneNumber, setOrgPhoneNumber] = useState("");
   const [orgContactName, setOrgContactName] = useState("");
-  const [schoolDistrict, setSchoolDistrict] = useState("");
-  const [school, setSchool] = useState("");
-  const [autocomplete, setAutocomplete] = useState<any>(null);
-  const autocompleteInputRef = useRef(null);
-  const [autocompleteInput, setAutocompleteInput] = useState<any>(null);
-  const [markerPosition, setMarkerPosition] = useState<Coordinate | null>(null);
-  const [schoolArray, setSchoolArray] = useState<Coordinate[]>([]);
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [enabledAccountModes, setAccountMode] = useState<string[]>([]);
   const [newOrgId, setNewOrgId] = useState<string>('');
 
 
@@ -185,19 +174,6 @@ const CreateOrganization: React.FC = () => {
               <strong>Email:</strong> {user?.email}
             </p>
           </div>
-          {enabledAccountModes.includes('Org Admin') ? (
-            <>
-              <p>Welcome to the BikeBus App "create an organization" feature. Please let me know if you have any questions at <a href="mailto:craigm26@gmail.com">craigm26@gmail.com</a></p>
-            </>
-          )
-
-            : (
-              <p>You do not have permission to create an organization.
-                <IonButton>Request Organization Account</IonButton></p>
-            )}
-
-          {
-            enabledAccountModes.includes('Org Admin') && (
               <form onSubmit={submitForm}>
                 <IonItem>
                   <IonLabel>Name of Organization:</IonLabel>
@@ -231,8 +207,6 @@ const CreateOrganization: React.FC = () => {
                 </IonItem>
                 <IonButton expand="full" type="submit">Create Organization</IonButton>
               </form>
-            )
-          }
         </IonContent>
       </IonContent>
     </IonPage >
