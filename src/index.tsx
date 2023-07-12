@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './AuthContext';
 import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup';
 import { EventProvider } from './components/BikeBusGroup/EventContext';
+import { OrganizationProvider } from './components/Organizations/useOrganization';
 
 import './global.css'
 
@@ -18,11 +19,13 @@ if (rootElement) {
   createRoot(rootElement).render(
     <React.StrictMode>
       <AuthProvider>
-        <BikeBusGroupProvider>
-          <EventProvider>
-          <App />
-          </EventProvider>
-        </BikeBusGroupProvider>
+        <OrganizationProvider>
+          <BikeBusGroupProvider>
+            <EventProvider>
+              <App />
+            </EventProvider>
+          </BikeBusGroupProvider>
+        </OrganizationProvider>
       </AuthProvider>
     </React.StrictMode>
   );
