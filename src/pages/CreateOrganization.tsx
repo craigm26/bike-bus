@@ -55,6 +55,7 @@ const CreateOrganization: React.FC = () => {
   const [orgEmail, setOrgEmail] = useState("");
   const [orgPhoneNumber, setOrgPhoneNumber] = useState("");
   const [orgContactName, setOrgContactName] = useState("");
+  const [enabledAccountModes, setAccountMode] = useState<string[]>([]);
   const [newOrgId, setNewOrgId] = useState<string>('');
 
 
