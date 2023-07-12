@@ -120,9 +120,30 @@ const CreateOrganization: React.FC = () => {
       ContactName: orgContactName,
       Description: orgDescription,
       Location: '',
-      SchoolDistrict: '',
-      School: '',
-      CreatedBy: user?.uid,
+      MailingAddress: '',
+      SchoolDistrictName: '',
+      SchoolDistrictLocation: '',
+      SchoolNames: [''],
+      SchoolLocations: [''],
+      OrganizationCreator: user?.uid,
+      // any user who has one role in the OrganizationMembers array will be able to view certain parts of the ViewOrganization page
+      OrganizationMembers: [user?.uid],
+      // admins can delete users, change user roles, and change organization settings
+      OrganizationAdmins: [user?.uid],
+      // managers can create events, create schedules, create bike bus groups, create routes, and create trips while assign employees to routes, bike bus groups, events, and trips
+      OrganizationManagers: [''],
+      // employees can view schedules, view events, view routes, view trips and accept assignments
+      OrganizationEmployees: [''],
+      // volunteers can view schedules, view events, and view routes and accept assignments
+      OrganizationVolunteers: [''],
+      Schedules: [''],
+      Events: [''],
+      Event: [''],
+      BulletinBoards: [''],
+      Trips: [''],
+      Routes: [''],
+      BikeBusGroups: [''],
+      Messages: [''],
       CreatedOn: new Date(),
       LastUpdatedBy: user?.uid,
       LastUpdatedOn: new Date(),
