@@ -26,7 +26,7 @@ interface Coordinate {
 
 interface Organization {
     id: string;
-    OrganizationName: string;
+    NameOfOrg: string;
     accountType: string;
     description: string;
     OrganizationCreator: string;
@@ -68,7 +68,7 @@ const ViewOrganizationList: React.FC = () => {
         }
 
         const OrganizationCollection = collection(db, 'organizations');
-        const q = query(OrganizationCollection, where('OrganizationMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
+        const q = query(OrganizationCollection, where('OrganizationMembers', 'array-contains', `${user?.uid}`));
         console.log('Query:', q);
         const querySnapshot = await getDocs(q);
 
@@ -101,9 +101,9 @@ const ViewOrganizationList: React.FC = () => {
                 <IonCard>
                     <IonList>
                         {Organization.map((Organization) => (
-                            <IonItem key="id">
-                                <IonLabel>{Organization.OrganizationName}</IonLabel>
-                                <IonButton routerLink={`/ViewOrganization/${Organization.id}`}>View BikeBus</IonButton>
+                            <IonItem key={Organization.id}>
+                                <IonLabel>{Organization.NameOfOrg}</IonLabel>
+                                <IonButton routerLink={`/ViewOrganization/${Organization.id}`}>View Organization</IonButton>
                             </IonItem>
                         ))}
                     </IonList>

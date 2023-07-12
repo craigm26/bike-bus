@@ -19,7 +19,7 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from "firebase/firestore";
 import { useJsApiLoader } from '@react-google-maps/api';
@@ -144,12 +144,31 @@ const CreateOrganization: React.FC = () => {
     return newOrgId;
   };
 
-  
+  // add the new organization to the user's organization list
+  const addOrganizationToUser = async () => {
+    if (!user) return;
+    const userRef = doc(db, 'users', user?.uid);
+    const docSnapshot = await getDoc(userRef);
+    if (docSnapshot.exists()) {
+      const userData = docSnapshot.data();
+      if (userData && userData.organizations) {
+        const userOrganizations = userData.organizations;
+        userOrganizations.push(newOrgId);
+        await updateDoc(userRef, {
+          organizations: userOrganizations,
+        });
+      }
+    }
+  };
+
+
+
   // Form submission handler
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       await createOrganization();
+      await addOrganizationToUser();
       history.push('/OrganizationProfile/' + newOrgId);
     }
     catch (error) {
@@ -175,39 +194,39 @@ const CreateOrganization: React.FC = () => {
               <strong>Email:</strong> {user?.email}
             </p>
           </div>
-              <form onSubmit={submitForm}>
-                <IonItem>
-                  <IonLabel>Name of Organization:</IonLabel>
-                  <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required/>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Type:</IonLabel>
-                  <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)} >
-                    <IonSelectOption value="school">School</IonSelectOption>
-                    <IonSelectOption value="schooldistrict">School District</IonSelectOption>
-                    <IonSelectOption value="work">Work</IonSelectOption>
-                    <IonSelectOption value="social">Social</IonSelectOption>
-                    <IonSelectOption value="club">Club</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Website:</IonLabel>
-                  <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} required />
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Email:</IonLabel>
-                  <IonInput value={orgEmail} onIonChange={e => setOrgEmail(e.detail.value!)} required />
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Phone Number:</IonLabel>
-                  <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} required />
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Contact Name:</IonLabel>
-                  <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} required />
-                </IonItem>
-                <IonButton expand="full" type="submit">Create Organization</IonButton>
-              </form>
+          <form onSubmit={submitForm}>
+            <IonItem>
+              <IonLabel>Name of Organization:</IonLabel>
+              <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Type:</IonLabel>
+              <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)} >
+                <IonSelectOption value="school">School</IonSelectOption>
+                <IonSelectOption value="schooldistrict">School District</IonSelectOption>
+                <IonSelectOption value="work">Work</IonSelectOption>
+                <IonSelectOption value="social">Social</IonSelectOption>
+                <IonSelectOption value="club">Club</IonSelectOption>
+              </IonSelect>
+            </IonItem>
+            <IonItem>
+              <IonLabel>Website:</IonLabel>
+              <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} required />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Email:</IonLabel>
+              <IonInput value={orgEmail} onIonChange={e => setOrgEmail(e.detail.value!)} required />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Phone Number:</IonLabel>
+              <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} required />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Contact Name:</IonLabel>
+              <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} required />
+            </IonItem>
+            <IonButton expand="full" type="submit">Create Organization</IonButton>
+          </form>
         </IonContent>
       </IonContent>
     </IonPage >
