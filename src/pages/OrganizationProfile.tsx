@@ -43,6 +43,7 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
+import { get } from "http";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -77,6 +78,41 @@ type Organization = {
     bikeBusGroups: string[];
     bikeBusGroupIds: string[];
     bikeBusGroupNames: string[];
+    NameOfOrg: string;
+    OrganizationType: string;
+    Website: string;
+    Email: string;
+    PhoneNumber: string;
+    ContactName: string;
+    Description: string;
+    Location: '',
+    MailingAddress: '',
+    SchoolDistrictName: '',
+    SchoolDistrictLocation: '',
+    SchoolNames: [''],
+    SchoolLocations: [''],
+    OrganizationCreator: string;
+    // any user who has one role in the OrganizationMembers array will be able to view certain parts of the ViewOrganization page
+    OrganizationMembers: string[],
+    // admins can delete users, change user roles, and change organization settings
+    OrganizationAdmins: string[],
+    // managers can create events, create schedules, create bike bus groups, create routes, and create trips while assign employees to routes, bike bus groups, events, and trips
+    OrganizationManagers: string[],
+    // employees can view schedules, view events, view routes, view trips and accept assignments
+    OrganizationEmployees: string[],
+    // volunteers can view schedules, view events, and view routes and accept assignments
+    OrganizationVolunteers: string[],
+    Schedules: string[],
+    Events: string[],
+    Event: string[],
+    BulletinBoards: string[],
+    Trips: string[],
+    Routes: string[],
+    BikeBusGroups: string[],
+    Messages: string[],
+    CreatedOn: Date,
+    LastUpdatedBy: string
+    LastUpdatedOn: Date,
 };
 
 const OrganizationProfile: React.FC = () => {
@@ -129,6 +165,9 @@ const OrganizationProfile: React.FC = () => {
     const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
     const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
         ({ isOpen: false, content: '', position: null });
+
+    // the purpose of this page is to display the organization's profile for the admin to view and edit. This is the main page for the admin to view and edit the organization's profile.
+
 
     useEffect(() => {
         if (headerContext) {
@@ -234,6 +273,47 @@ const OrganizationProfile: React.FC = () => {
                 .catch((error) => {
                     console.log("Error fetching bike/bus routes:", error);
                 });
+
+            // let's get the bikebusgroups from firebase by using the Organization doc for the current organization - BikeBusGroups as a document reference
+            const organizationRef = firestoreDoc(db, "organizations", id);
+            getDoc(organizationRef).then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const organizationData = docSnapshot.data();
+                    if (organizationData) {
+                        if (organizationData.bikeBusGroups) {
+                            const bikeBusGroupIds = organizationData.bikeBusGroups;
+                            console.log("bikeBusGroupIds: ", bikeBusGroupIds);
+                            const bikeBusGroupIdsArray = bikeBusGroupIds?.split(",");
+                            console.log("bikeBusGroupIdsArray: ", bikeBusGroupIdsArray);
+                            const bikeBusGroupIdsArray2 = bikeBusGroupIdsArray?.map((bikeBusGroupId: string) => {
+                                return bikeBusGroupId.trim();
+                            });
+                            console.log("bikeBusGroupIdsArray2: ", bikeBusGroupIdsArray2);
+                            const bikeBusGroupIdsArray3 = bikeBusGroupIdsArray2?.map((bikeBusGroupId: string) => {
+                                return firestoreDoc(db, "bikeBusGroups", bikeBusGroupId);
+                            });
+                            console.log("bikeBusGroupIdsArray3: ", bikeBusGroupIdsArray3);
+                            Promise.all(bikeBusGroupIdsArray3).then((bikeBusGroupDocs) => {
+                                console.log("bikeBusGroupDocs: ", bikeBusGroupDocs);
+                                const bikeBusGroups: any[] = [];
+                                bikeBusGroupDocs.forEach((bikeBusGroupDoc) => {
+                                    const bikeBusGroupData = bikeBusGroupDoc.data();
+                                    bikeBusGroups.push(bikeBusGroupData);
+                                });
+                                console.log("bikeBusGroups: ", bikeBusGroups);
+                                const bikeBusGroupNames = bikeBusGroups.map((bikeBusGroup) => {
+                                    return bikeBusGroup.BikeBusName;
+                                });
+                                console.log("bikeBusGroupNames: ", bikeBusGroupNames);
+                                setBikeBusRoutes(bikeBusGroups);
+                                console.log("Bike Bus Routes", bikeBusRoutes);
+                            });
+                        }
+                    }
+                }
+            });
+        
+
 
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
