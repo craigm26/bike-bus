@@ -48,9 +48,12 @@ import EditBikeBus from './pages/EditBikeBus';
 import EditSchedule from './pages/EditSchedule';
 import Trip from './pages/Trip';
 import EventSummary from './pages/EventSummary';
+import OrganizationProfile from './pages/OrganizationProfile';
+import ViewOrganization from './pages/ViewOrganization';
+import ViewOrganizationList from './pages/ViewOrganizationList';
 import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
+import { useOrganizationContext } from "./components/Organizations/useOrganization";
 import useEvent from "./components/BikeBusGroup/useEvent";
-import { User } from '@firebase/auth';
 
 
 import '@ionic/react/css/core.css';
@@ -353,6 +356,9 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/SearchForBikeBus' routerDirection="none">
                           <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
+                        <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
+                          <IonLabel>View Organizations</IonLabel>
+                        </IonItem>
                         <IonItem button routerLink="/CreateOrganization" routerDirection="none">
                           <IonLabel>Create Organization</IonLabel>
                         </IonItem>
@@ -542,6 +548,15 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/CreateOrganization">
                         <CreateOrganization />
+                      </Route>
+                      <Route exact path="/OrganizationProfile/:id">
+                        <OrganizationProfile />
+                      </Route>
+                      <Route exact path="/ViewOrganization/:id">
+                        <ViewOrganization />
+                      </Route>
+                      <Route exact path="/ViewOrganizationList">
+                        <ViewOrganizationList />
                       </Route>
                       <Route exact path="/CreateRoute">
                         <CreateRoute />
