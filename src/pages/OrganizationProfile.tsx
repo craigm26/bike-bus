@@ -250,6 +250,12 @@ const OrganizationProfile: React.FC = () => {
         console.log("User Location Address", userLocationAddress);
     }, [userLocationAddress]);
 
+
+    // the id of the url param is the id of the collection document for the organization
+    // get the document data
+    const [Organization, setOrganization] = useState<Organization | null>(null);
+
+
     useEffect(() => {
         if (user) {
             const userRef = firestoreDoc(db, "users", user.uid);
@@ -312,7 +318,7 @@ const OrganizationProfile: React.FC = () => {
                     }
                 }
             });
-        
+
 
 
             getDoc(userRef).then((docSnapshot) => {
@@ -506,7 +512,7 @@ const OrganizationProfile: React.FC = () => {
 
     function addSchool(school: string) {
         setSchools(prevSchools => [...prevSchools, school]);
-      }
+    }
 
 
     if (!isLoaded) {
@@ -521,6 +527,41 @@ const OrganizationProfile: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
+                <IonGrid>
+                    <IonRow>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Name: {Organization?.NameOfOrg}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Website: {Organization?.Website}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Email: {Organization?.Email}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Phone Number: {Organization?.PhoneNumber}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+
                 {!showMap && (
                     <>
                         <IonGrid>
