@@ -12,6 +12,8 @@ import {
     IonLabel,
     IonInput,
     IonItem,
+    IonTitle,
+    IonModal,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -25,17 +27,9 @@ import {
     personCircleOutline,
     school,
 } from "ionicons/icons";
-import {
-    GoogleMap,
-    Marker,
-    useJsApiLoader,
-    Polyline,
-    InfoWindow,
-} from "@react-google-maps/api";
-import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
-import AvatarMapMarker from "../components/AvatarMapMarker";
+
+
 import { HeaderContext } from "../components/HeaderContext";
-import { StandaloneSearchBox } from "@react-google-maps/api";
 import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
@@ -45,7 +39,6 @@ import {
 } from "firebase/firestore";
 import { get } from "http";
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
@@ -75,9 +68,9 @@ type Organization = {
     schoolDistrict: string;
     schools: string[];
     bikeBusRoutes: string[];
-    bikeBusGroups: string[];
-    bikeBusGroupIds: string[];
-    bikeBusGroupNames: string[];
+    BikeBusGroups: string[];
+    BikeBusGroupIds: string[];
+    BikeBusGroupNames: string[];
     NameOfOrg: string;
     OrganizationType: string;
     Website: string;
@@ -108,7 +101,6 @@ type Organization = {
     BulletinBoards: string[],
     Trips: string[],
     Routes: string[],
-    BikeBusGroups: string[],
     Messages: string[],
     CreatedOn: Date,
     LastUpdatedBy: string
@@ -170,88 +162,6 @@ const ViewOrganization: React.FC = () => {
     // the purpose of this page is to display the organization's profile for the admin to view and edit. This is the main page for the admin to view and edit the organization's profile.
 
 
-    useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
-        }
-    }, [headerContext]);
-
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-        libraries,
-    });
-
-    const getLocation = () => {
-        setGetLocationClicked(true);
-        setShowMap(true);
-        setMapCenter(userLocation);
-        watchLocation();
-        onPlaceChangedStart();
-    };
-
-    const watchLocation = useCallback(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    setUserLocation(userLocation);
-                    setMapCenter(userLocation);
-                    // Get user location address
-                    const geocoder = new google.maps.Geocoder();
-                    const latlng = new google.maps.LatLng(userLocation.lat, userLocation.lng);
-                    geocoder.geocode({ location: latlng }, (results, status) => {
-                        if (status === "OK") {
-                            if (results && results[0]) {
-                                const userLocationAddress = `${results[0].formatted_address}`;
-                                setUserLocationAddress(userLocationAddress);
-                                const selectedStartLocation = { lat: userLocation.lat, lng: userLocation.lng };
-                                setSelectedStartLocation(selectedStartLocation);
-                                setRouteStartFormattedAddress(`${results[0].formatted_address}` ?? "");
-                            } else {
-                                window.alert("No results found");
-                            }
-                        } else {
-                            window.alert("Geocoder failed due to: " + status);
-                        }
-                    });
-                },
-                (error) => console.log(error),
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-            );
-
-            navigator.geolocation.watchPosition(
-                (position) => {
-                    const newMapCenter = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    setUserLocation(newMapCenter);
-                    if (user) {
-                        const positionRef = ref(rtdb, `userLocations/${user.uid}`);
-                        set(positionRef, newMapCenter);
-                    }
-                },
-                (error) => console.log(error),
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-            );
-        }
-    }, [user]);
-
-    useEffect(() => {
-        if (user && getLocationClicked) {
-            watchLocation();
-        }
-    }, [user, getLocationClicked, watchLocation]);
-
-    useEffect(() => {
-        console.log("User Location Address", userLocationAddress);
-    }, [userLocationAddress]);
-
-
     // the id of the url param is the id of the collection document for the organization
     // get the document data
     const [Organization, setOrganization] = useState<Organization | null>(null);
@@ -261,11 +171,56 @@ const ViewOrganization: React.FC = () => {
         if (user) {
             const userRef = firestoreDoc(db, "users", user.uid);
             const routesRef = collection(db, "routes");
+            const BikeBusGroupsRef = collection(db, "BikeBusGroups");
             const queryObj = query(
                 routesRef,
                 where("isBikeBus", "==", true),
 
             );
+
+            const BikeBusGroupsLeaderQueryObj = query(
+                BikeBusGroupsRef,
+                // where the logged in user is a leader of the BikeBusGroup
+                where("BikeBusGroupLeader", "==", user.uid),
+            );
+
+            // now get the documents where BikeBusGroupLeader is equal to the logged in user's uid
+            getDocs(BikeBusGroupsLeaderQueryObj)
+                .then((querySnapshot) => {
+                    const BikeBusGroups: any[] = [];
+                    querySnapshot.forEach((doc) => {
+                        const BikeBusGroupData = doc.data();
+                        BikeBusGroups.push(BikeBusGroupData);
+                    });
+                    setBikeBusRoutes(BikeBusGroups);
+                })
+                .catch((error) => {
+                });
+
+            const BikeBusGroupsMemberQueryObj = query(
+                BikeBusGroupsRef,
+                // where the logged in user is a member of the BikeBusGroup
+                where("BikeBusGroupMembers", "array-contains", user.uid),
+            );
+
+            // now get the documents where the BikeBusGroup member is equal to the logged in user's uid
+            getDocs(BikeBusGroupsMemberQueryObj)
+                .then((querySnapshot) => {
+                    const BikeBusGroups: any[] = [];
+                    querySnapshot.forEach((doc) => {
+                        const BikeBusGroupData = doc.data();
+                        BikeBusGroups.push(BikeBusGroupData);
+                    });
+                    setBikeBusRoutes(BikeBusGroups);
+                })
+                .catch((error) => {
+                });
+
+
+
+
+
+
             getDocs(queryObj)
                 .then((querySnapshot) => {
                     const routes: any[] = [];
@@ -273,54 +228,27 @@ const ViewOrganization: React.FC = () => {
                         const routeData = doc.data();
                         routes.push(routeData);
                     });
-                    console.log("BikeBus Routes", routes);
                     setBikeBusRoutes(routes);
-                    console.log("BikeBus Routes", bikeBusRoutes);
                 })
                 .catch((error) => {
-                    console.log("Error fetching bike/bus routes:", error);
                 });
 
-            // let's get the bikebusgroups from firebase by using the Organization doc for the current organization - BikeBusGroups as a document reference
             const organizationRef = firestoreDoc(db, "organizations", id);
             getDoc(organizationRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const organizationData = docSnapshot.data();
                     if (organizationData) {
-                        if (organizationData.bikeBusGroups) {
-                            const bikeBusGroupIds = organizationData.bikeBusGroups;
-                            console.log("bikeBusGroupIds: ", bikeBusGroupIds);
-                            const bikeBusGroupIdsArray = bikeBusGroupIds?.split(",");
-                            console.log("bikeBusGroupIdsArray: ", bikeBusGroupIdsArray);
-                            const bikeBusGroupIdsArray2 = bikeBusGroupIdsArray?.map((bikeBusGroupId: string) => {
-                                return bikeBusGroupId.trim();
-                            });
-                            console.log("bikeBusGroupIdsArray2: ", bikeBusGroupIdsArray2);
-                            const bikeBusGroupIdsArray3 = bikeBusGroupIdsArray2?.map((bikeBusGroupId: string) => {
-                                return firestoreDoc(db, "bikeBusGroups", bikeBusGroupId);
-                            });
-                            console.log("bikeBusGroupIdsArray3: ", bikeBusGroupIdsArray3);
-                            Promise.all(bikeBusGroupIdsArray3).then((bikeBusGroupDocs) => {
-                                console.log("bikeBusGroupDocs: ", bikeBusGroupDocs);
-                                const bikeBusGroups: any[] = [];
-                                bikeBusGroupDocs.forEach((bikeBusGroupDoc) => {
-                                    const bikeBusGroupData = bikeBusGroupDoc.data();
-                                    bikeBusGroups.push(bikeBusGroupData);
-                                });
-                                console.log("bikeBusGroups: ", bikeBusGroups);
-                                const bikeBusGroupNames = bikeBusGroups.map((bikeBusGroup) => {
-                                    return bikeBusGroup.BikeBusName;
-                                });
-                                console.log("bikeBusGroupNames: ", bikeBusGroupNames);
-                                setBikeBusRoutes(bikeBusGroups);
-                                console.log("Bike Bus Routes", bikeBusRoutes);
-                            });
-                        }
+                        // let's get information from the document like the name, type, website and so on
+                        setOrganization(organizationData as Organization);
+                        setOrgType(organizationData.OrganizationType);
+                        setOrgLocation(organizationData.Location);
+                        setSchoolDistrict(organizationData.SchoolDistrictName);
+                        setSchools(organizationData.SchoolNames);
+                        setSchool(organizationData.SchoolNames[0]);
+
                     }
                 }
             });
-
-
 
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
@@ -342,29 +270,7 @@ const ViewOrganization: React.FC = () => {
                 }
             });
         }
-    }, [user]);
-    console.log("Bike Bus Routes", bikeBusRoutes);
-
-    useEffect(() => {
-        if (user && getLocationClicked) {
-            watchLocation();
-        }
-    }, [user, getLocationClicked, watchLocation]);
-
-    //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
-    useEffect(() => {
-        if (selectedStartLocation && selectedEndLocation) {
-            setMapCenter({
-                lat: (selectedEndLocation.lat + selectedStartLocation.lat) / 2,
-                lng: (selectedEndLocation.lng + selectedStartLocation.lng) / 2,
-            });
-            setMapZoom(10);
-        } else if (selectedStartLocation) {
-            setMapCenter(selectedStartLocation);
-        } else if (selectedEndLocation) {
-            setMapCenter(selectedEndLocation);
-        }
-    }, [selectedStartLocation, selectedEndLocation]);
+    }, [bikeBusRoutes, id, user]);
 
     const avatarElement = user ? (
         avatarUrl ? (
@@ -378,133 +284,24 @@ const ViewOrganization: React.FC = () => {
         <IonIcon icon={personCircleOutline} />
     );
 
-    useEffect(() => {
-        console.log("Google Maps script loaded: ", isLoaded);
-        console.log("Google Maps load error: ", loadError);
-    }, [isLoaded, loadError]);
-
-    const handleBikeBusRouteClickPolyline = (routeId: string) => {
-        const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
-        if (bikeBusGroup) {
-            const bikeBusGroupName = bikeBusGroup.BikeBusName;
-            const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
-            const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-            const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-            console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-            // Show an InfoWindow with the BikeBusGroup name
-            const infoWindow = new google.maps.InfoWindow({
-                content: `<div>${bikeBusGroupName}
-              // link to the page for the corresponding bike/bus group
-              <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
-              </div>`,
-
-            });
-            infoWindow.open(mapRef.current, bikeBusGroupId);
-            // Redirect to the page for the corresponding bike/bus group
-            history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
-        }
+    const setShowBikeBusGroupAddModal = (show: boolean) => {
+        setShowBikeBusGroupAddModal(show);
     };
 
-    const onPlaceChangedStart = () => {
-        console.log("onPlaceChangedStart called");
-        if (autocompleteStart !== null) {
-            const places = autocompleteStart.getPlaces();
-            if (places && places.length > 0) {
-                console.log("Places: ", places);
-                const place = places[0];
-                console.log("Place: ", place);
-                if (place.geometry && place.geometry.location) {
-                    setSelectedStartLocation({
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng(),
-                    });
-                    // define place.address_components
-                    const addressComponents = place.address_components;
-                    // extract street name
-                    const streetName = addressComponents?.find((component) =>
-                        component.types.includes("route")
-                    )?.long_name;
-
-                    setRouteStartStreetName(streetName ?? "");
-                    setRouteStartName(`${place.name}` ?? "");
-                    setRouteStartFormattedAddress(`${place.formatted_address}` ?? "");
-                }
-            }
-        }
+    const showBikeBusGroupAddModal = () => {
+        setShowBikeBusGroupAddModal(true);
     };
 
-    const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
-        setAutocompleteStart(ref);
-        onPlaceChangedStart();
+    function updateOrgType(orgType: string) {
+        updateOrgType(orgType);
+        console.log("updateOrgType: ", updateOrgType);
+    }
 
-        setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
-    };
+    function updateOrgLocation(orgLocation: string) {
+        updateOrgLocation(orgLocation);
+        console.log("updateOrgLocation: ", updateOrgLocation);
+    }
 
-    // handleMarkerClick(stop)
-    const handleMarkerClick = (stop: any) => {
-        console.log("handleMarkerClick called");
-        console.log("stop: ", stop);
-        const stopId = stop.id;
-        const stopName = stop.name;
-        const stopRoutes = stop.routes;
-        const stopRoutesArray = stopRoutes?.split(",");
-        const stopRoutesString = stopRoutesArray?.join(", ");
-        console.log("stopRoutesString: ", stopRoutesString);
-        // Show an InfoWindow with the stop name
-        const infoWindow = new google.maps.InfoWindow({
-            content: `<div>${stopName}
-              <br>
-              Routes: ${stopRoutesString}
-              </div>`,
-        });
-        infoWindow.open(mapRef.current, stopId);
-        // show the routes that stop at this stop and then show the next 3 arrival times for each route
-        // get the routes that stop at this stop
-        const stopRoutesArray2 = stopRoutes?.split(",");
-        console.log("stopRoutesArray2: ", stopRoutesArray2);
-        // get the routes that stop at this stop from firebase
-
-    };
-
-
-    const handleBikeBusRouteClick = (route: any) => {
-        // Set content to whatever you want to display inside the InfoWindow
-        const content = `<a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
-      View ${route.BikeBusName}
-      </a>`
-
-            ;
-
-        // Set position to the startPoint of the route (or any other point you prefer)
-        const position = route.startPoint;
-
-        setInfoWindow({ isOpen: true, content, position });
-    };
-
-    const handleCloseClick = () => {
-        setInfoWindow({ isOpen: false, content: '', position: null });
-    };
-
-    const handleBikeBusRouteClickMarker = (routeId: string) => {
-        const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
-        if (bikeBusGroup) {
-            const bikeBusGroupName = bikeBusGroup.BikeBusName;
-            const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
-            const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-            const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-            console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-            // Show an InfoWindow with the BikeBusGroup name
-            const infoWindow = new google.maps.InfoWindow({
-                content: `<div>${bikeBusGroupName}
-                // link to the page for the corresponding bike/bus group
-                <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
-                </div>`,
-            });
-            infoWindow.open(mapRef.current, bikeBusGroupId);
-            // Redirect to the page for the corresponding bike/bus group
-            history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
-        }
-    };
 
     function updateSchoolDistrict(schoolDistrict: string) {
         updateSchoolDistrict(schoolDistrict);
@@ -515,11 +312,6 @@ const ViewOrganization: React.FC = () => {
         setSchools(prevSchools => [...prevSchools, school]);
     }
 
-
-    if (!isLoaded) {
-        return <div>Loading...</div>;
-    }
-
     return (
         <IonPage>
             <IonHeader>
@@ -527,14 +319,14 @@ const ViewOrganization: React.FC = () => {
                     {headerContext?.showHeader && <IonHeader></IonHeader>}
                 </IonToolbar>
             </IonHeader>
-            <IonContent>
+            <IonContent fullscreen>
                 <IonGrid>
                     <IonRow>
                         <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Name: {Organization?.NameOfOrg}</IonLabel>
-                            </IonItem>
+                            <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                         </IonCol>
+                    </IonRow>
+                    <IonRow>
                         <IonCol>
                             <IonItem>
                                 <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
@@ -542,22 +334,33 @@ const ViewOrganization: React.FC = () => {
                         </IonCol>
                         <IonCol>
                             <IonItem>
-                                <IonLabel position="stacked">Website: {Organization?.Website}</IonLabel>
+                                <IonLabel position="stacked">Website: <a href="{Organization?.Website}">{Organization?.NameOfOrg}</a></IonLabel>
                             </IonItem>
                         </IonCol>
                         <IonCol>
                             <IonItem>
-                                <IonLabel position="stacked">Email: {Organization?.Email}</IonLabel>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Phone Number: {Organization?.PhoneNumber}</IonLabel>
+                                <IonLabel position="stacked">Email: <a href="mailto:{Organization?.Email}">{Organization?.Email}</a></IonLabel>
                             </IonItem>
                         </IonCol>
                         <IonCol>
                             <IonItem>
                                 <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">BikeBusGroups: {Organization?.BikeBusGroups}</IonLabel>
+                                <IonModal >
+                                    <IonButton onClick={() => setShowBikeBusGroupAddModal(false)}>Close Modal</IonButton>
+                                    <IonButton onClick={() => setShowBikeBusGroupAddModal(false)}>Add BikeBusGroup</IonButton>
+                                </IonModal>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonButton>Organization Map</IonButton>
                             </IonItem>
                         </IonCol>
                     </IonRow>

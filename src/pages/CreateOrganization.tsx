@@ -188,14 +188,6 @@ const CreateOrganization: React.FC = () => {
           <h1>Create Organization</h1>
         </IonTitle>
         <IonContent className="ion-flex-grow">
-          <div className="ion-padding">
-            <p>
-              <strong>Account Type:</strong> {accountType}
-            </p>
-            <p>
-              <strong>Email:</strong> {user?.email}
-            </p>
-          </div>
           <form onSubmit={submitForm}>
             <IonItem>
               <IonLabel>Name of Organization:</IonLabel>
@@ -204,11 +196,11 @@ const CreateOrganization: React.FC = () => {
             <IonItem>
               <IonLabel>Type:</IonLabel>
               <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)} >
-                <IonSelectOption value="school">School</IonSelectOption>
-                <IonSelectOption value="schooldistrict">School District</IonSelectOption>
-                <IonSelectOption value="work">Work</IonSelectOption>
-                <IonSelectOption value="social">Social</IonSelectOption>
-                <IonSelectOption value="club">Club</IonSelectOption>
+                <IonSelectOption value="School">School</IonSelectOption>
+                <IonSelectOption value="School District">School District</IonSelectOption>
+                <IonSelectOption value="Work">Work</IonSelectOption>
+                <IonSelectOption value="Social">Social</IonSelectOption>
+                <IonSelectOption value="Club">Club</IonSelectOption>
               </IonSelect>
             </IonItem>
             <IonItem>
@@ -217,11 +209,11 @@ const CreateOrganization: React.FC = () => {
             </IonItem>
             <IonItem>
               <IonLabel>Email:</IonLabel>
-              <IonInput value={orgEmail} onIonChange={e => setOrgEmail(e.detail.value!)} required />
+              <IonInput value={user?.email} onIonChange={e => setOrgEmail(e.detail.value!)} readonly required />
             </IonItem>
             <IonItem>
               <IonLabel>Phone Number:</IonLabel>
-              <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} required />
+              <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} />
             </IonItem>
             <IonItem>
               <IonLabel>Contact Name:</IonLabel>
