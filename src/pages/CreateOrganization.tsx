@@ -126,6 +126,8 @@ const CreateOrganization: React.FC = () => {
       OrganizationEmployees: [''],
       // volunteers can view schedules, view events, and view routes and accept assignments
       OrganizationVolunteers: [''],
+      Schools: [''],
+      SchoolDistrict: [''],
       Schedules: [''],
       Events: [''],
       Event: [''],
