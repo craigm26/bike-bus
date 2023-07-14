@@ -27,6 +27,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { get } from 'http';
 
 const localizer = momentLocalizer(moment);
 
@@ -250,7 +251,12 @@ const AddSchedule: React.FC = () => {
 
 
 
-    // create a new BikeBus group in firestore with the schedule id
+    // get the bikebusgroup document from firestore
+    const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
+    const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
+    const bikeBusGroupData = bikeBusGroupSnapshot.data();
+    console.log('bikeBusGroupData:', bikeBusGroupData);
+
     const bikeBusData = {
       BikeBusName: BikeBusName,
       BikeBusDescription: BikeBusDescription,
@@ -259,16 +265,12 @@ const AddSchedule: React.FC = () => {
       BikeBusLeader: doc(db, 'users', user.uid),
       BikeBusMembers: [doc(db, 'users', user.uid)],
       BikeBusCreator: doc(db, 'users', user.uid),
-      // add the schedule to the BikeBus group in firestore as a single document
-    };
+      BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
+      BikeBusStops: [],
+      BikeBusStopTimes: [],
+        };
 
 
-    const bikeBusRef = await addDoc(collection(db, 'bikebusgroups'), bikeBusData);
-    const bikebusgroupId = bikeBusRef.id;
-    console.log('bikebusgroupId:', bikebusgroupId);
-
-    // add the schedule document to the bikebus group in firestore
-    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikebusgroupId);
     await updateDoc(bikeBusGroupRef, {
       BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleId)),
     });
@@ -276,22 +278,13 @@ const AddSchedule: React.FC = () => {
     // add the bikebusgroupid to the routes collection in the firestore document for the route
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
-      BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
-      BikeBusName: BikeBusName,
-      isBikeBus: true,
       ScheduleId: doc(db, 'schedules', scheduleId),
-    });
-
-    // add the bikebus group to the user's bikebusgroups array in firestore
-    const userRef = doc(db, 'users', user.uid);
-    await updateDoc(userRef, {
-      bikebusgroups: arrayUnion(doc(db, 'bikebusgroups', bikebusgroupId)),
     });
 
     // add the bikebusgroup document id to the schedule document in firestore
     const scheduleRef2 = doc(db, 'schedules', scheduleId);
     await updateDoc(scheduleRef2, {
-      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      BikeBusGroup: bikeBusGroupRef,
       // update the schedule name in firestore to match the bikebus name
       scheduleName: BikeBusName,
     });
@@ -308,10 +301,10 @@ const AddSchedule: React.FC = () => {
       duration: expectedDuration,
       eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
       recurring: isRecurring,
-      groupId: bikebusgroupId,
+      groupId: bikeBusGroupRef,
       selectedDays: selectedDays,
       schedule: doc(db, 'schedules', scheduleId),
-      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+      BikeBusGroup:  bikeBusGroupRef,
       status: '',
       days: Object.entries(selectedDays).reduce<number[]>((acc, [day, isSelected]) => {
         if (isSelected) acc.push(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day));
@@ -348,9 +341,9 @@ const AddSchedule: React.FC = () => {
         startTime: startTime,
         startTimestamp: startTimestamp,
         endTime: endTimestamp,
-        groupId: bikebusgroupId,
+        groupId: bikeBusGroupRef,
         route: doc(db, 'routes', RouteID),
-        BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+        BikeBusGroup:  bikeBusGroupRef,
         BikeBusStops: [],
         BikeBusStopTimes: [],
         StaticMap: '',
@@ -378,12 +371,12 @@ const AddSchedule: React.FC = () => {
           sheepdogs: [],
           caboose: [],
           duration: expectedDuration,
-          groupId: bikebusgroupId,
+          groupId: bikeBusGroupRef,
           startTime: startTime,
           startTimestamp: startTimestamp,
           endTime: endTimestamp,
           route: doc(db, 'routes', RouteID),
-          BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
+          BikeBusGroup: bikeBusGroupRef,
           BikeBusStops: [],
           BikeBusStopTimes: [],
           StaticMap: '',
@@ -391,7 +384,7 @@ const AddSchedule: React.FC = () => {
           status: '',
         });
        // save the event document id to the bikebusgroup document in firestore as an array of references called event
-        const bikeBusGroupRef2 = doc(db, 'bikebusgroups', bikebusgroupId);
+        const bikeBusGroupRef2 =  bikeBusGroupRef;
         await updateDoc(bikeBusGroupRef2, {
           event: arrayUnion(doc(db, 'event', eventId)),
         });
@@ -410,13 +403,13 @@ const AddSchedule: React.FC = () => {
 
       if (!isRecurring) {
         // Add the new event id to the bikebusgroup document
-        const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+        const bikeBusGroupRef3 = bikeBusGroupRef
         await updateDoc(bikeBusGroupRef3, {
           event: arrayUnion(doc(db, 'event', eventId)),
         });
       } else {
         for (const eventId of eventIds) {
-          const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
+          const bikeBusGroupRef3 = bikeBusGroupRef;
           await updateDoc(bikeBusGroupRef3, {
             event: arrayUnion(doc(db, 'event', eventId)),
           });
@@ -425,45 +418,14 @@ const AddSchedule: React.FC = () => {
     }
 
     // add the references to the event documents to the bikebusgroup document in firestore
-    const bikeBusGroupRef2 = doc(db, 'bikebusgroups', bikebusgroupId);
+    const bikeBusGroupRef2 =  bikeBusGroupRef
     await updateDoc(bikeBusGroupRef2, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
 
-    // create a messages document in the firestore collection "messages" for the bikebusgroup
-    const messagesData = {
-      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
-      Messages: '',
-      Timestamp: '',
-      user: '',
-    };
-    await addDoc(collection(db, 'messages'), messagesData);
 
-    // get the messages document id
-    const messagesRef = await getDocs(collection(db, 'messages'));
-    const messagesId = messagesRef.docs[messagesRef.docs.length - 1].id;
-    console.log('messagesId:', messagesId);
 
-    // create a reference in the bulletinboard collection in firestore for the bikebusgroup
-    const bulletinBoardData = {
-      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
-      // make an array of messageIds references in "Messages"
-      Messages: [],
-    }
-    await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
-
-    // get the bulletinboard document id
-    const bulletinBoardRef = await getDocs(collection(db, 'bulletinboard'));
-    const bulletinBoardId = bulletinBoardRef.docs[bulletinBoardRef.docs.length - 1].id;
-    console.log('bulletinBoardId:', bulletinBoardId);
-
-    // add the bulletinboard reference to the bikebusgroup document in firestore
-    const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
-    await updateDoc(bikeBusGroupRef3, {
-      bulletinboard: doc(db, 'bulletinboard', bulletinBoardId),
-    });
-
-    history.push(`/bikebusgrouppage/${bikebusgroupId}`);
+    history.push(`/bikebusgrouppage/${bikeBusGroupRef}`);
   };
 
 
