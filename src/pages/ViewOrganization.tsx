@@ -43,6 +43,7 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
+import { get } from "http";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -77,6 +78,41 @@ type Organization = {
     bikeBusGroups: string[];
     bikeBusGroupIds: string[];
     bikeBusGroupNames: string[];
+    NameOfOrg: string;
+    OrganizationType: string;
+    Website: string;
+    Email: string;
+    PhoneNumber: string;
+    ContactName: string;
+    Description: string;
+    Location: '',
+    MailingAddress: '',
+    SchoolDistrictName: '',
+    SchoolDistrictLocation: '',
+    SchoolNames: [''],
+    SchoolLocations: [''],
+    OrganizationCreator: string;
+    // any user who has one role in the OrganizationMembers array will be able to view certain parts of the ViewOrganization page
+    OrganizationMembers: string[],
+    // admins can delete users, change user roles, and change organization settings
+    OrganizationAdmins: string[],
+    // managers can create events, create schedules, create bike bus groups, create routes, and create trips while assign employees to routes, bike bus groups, events, and trips
+    OrganizationManagers: string[],
+    // employees can view schedules, view events, view routes, view trips and accept assignments
+    OrganizationEmployees: string[],
+    // volunteers can view schedules, view events, and view routes and accept assignments
+    OrganizationVolunteers: string[],
+    Schedules: string[],
+    Events: string[],
+    Event: string[],
+    BulletinBoards: string[],
+    Trips: string[],
+    Routes: string[],
+    BikeBusGroups: string[],
+    Messages: string[],
+    CreatedOn: Date,
+    LastUpdatedBy: string
+    LastUpdatedOn: Date,
 };
 
 const ViewOrganization: React.FC = () => {
@@ -126,9 +162,13 @@ const ViewOrganization: React.FC = () => {
     const [school, setSchool] = useState<string>("");
     const [schools, setSchools] = useState<string[]>([]);
 
+
     const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
     const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
         ({ isOpen: false, content: '', position: null });
+
+    // the purpose of this page is to display the organization's profile for the admin to view and edit. This is the main page for the admin to view and edit the organization's profile.
+
 
     useEffect(() => {
         if (headerContext) {
@@ -211,6 +251,12 @@ const ViewOrganization: React.FC = () => {
         console.log("User Location Address", userLocationAddress);
     }, [userLocationAddress]);
 
+
+    // the id of the url param is the id of the collection document for the organization
+    // get the document data
+    const [Organization, setOrganization] = useState<Organization | null>(null);
+
+
     useEffect(() => {
         if (user) {
             const userRef = firestoreDoc(db, "users", user.uid);
@@ -234,6 +280,47 @@ const ViewOrganization: React.FC = () => {
                 .catch((error) => {
                     console.log("Error fetching bike/bus routes:", error);
                 });
+
+            // let's get the bikebusgroups from firebase by using the Organization doc for the current organization - BikeBusGroups as a document reference
+            const organizationRef = firestoreDoc(db, "organizations", id);
+            getDoc(organizationRef).then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const organizationData = docSnapshot.data();
+                    if (organizationData) {
+                        if (organizationData.bikeBusGroups) {
+                            const bikeBusGroupIds = organizationData.bikeBusGroups;
+                            console.log("bikeBusGroupIds: ", bikeBusGroupIds);
+                            const bikeBusGroupIdsArray = bikeBusGroupIds?.split(",");
+                            console.log("bikeBusGroupIdsArray: ", bikeBusGroupIdsArray);
+                            const bikeBusGroupIdsArray2 = bikeBusGroupIdsArray?.map((bikeBusGroupId: string) => {
+                                return bikeBusGroupId.trim();
+                            });
+                            console.log("bikeBusGroupIdsArray2: ", bikeBusGroupIdsArray2);
+                            const bikeBusGroupIdsArray3 = bikeBusGroupIdsArray2?.map((bikeBusGroupId: string) => {
+                                return firestoreDoc(db, "bikeBusGroups", bikeBusGroupId);
+                            });
+                            console.log("bikeBusGroupIdsArray3: ", bikeBusGroupIdsArray3);
+                            Promise.all(bikeBusGroupIdsArray3).then((bikeBusGroupDocs) => {
+                                console.log("bikeBusGroupDocs: ", bikeBusGroupDocs);
+                                const bikeBusGroups: any[] = [];
+                                bikeBusGroupDocs.forEach((bikeBusGroupDoc) => {
+                                    const bikeBusGroupData = bikeBusGroupDoc.data();
+                                    bikeBusGroups.push(bikeBusGroupData);
+                                });
+                                console.log("bikeBusGroups: ", bikeBusGroups);
+                                const bikeBusGroupNames = bikeBusGroups.map((bikeBusGroup) => {
+                                    return bikeBusGroup.BikeBusName;
+                                });
+                                console.log("bikeBusGroupNames: ", bikeBusGroupNames);
+                                setBikeBusRoutes(bikeBusGroups);
+                                console.log("Bike Bus Routes", bikeBusRoutes);
+                            });
+                        }
+                    }
+                }
+            });
+
+
 
             getDoc(userRef).then((docSnapshot) => {
                 if (docSnapshot.exists()) {
@@ -426,7 +513,7 @@ const ViewOrganization: React.FC = () => {
 
     function addSchool(school: string) {
         setSchools(prevSchools => [...prevSchools, school]);
-      }
+    }
 
 
     if (!isLoaded) {
@@ -441,530 +528,40 @@ const ViewOrganization: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                {!showMap && (
-                    <>
-                        <IonGrid>
-                            <IonRow className="location-button-container">
-                                <IonCol>
-                                    <IonButton onClick={getLocation}>
-                                        Start Map by retrieving your Current Location
-                                    </IonButton>
-                                </IonCol>
-                            </IonRow>
-                            <IonRow></IonRow>
-                        </IonGrid>
-                    </>
-                )}
-                {showMap && (
-                    <IonGrid fixed={false}>
-                        <IonRow className="map-base">
-                            <GoogleMap
-                                onLoad={(map) => {
-                                    mapRef.current = map;
-                                }}
-                                mapContainerStyle={{
-                                    width: "100%",
-                                    height: "100%",
-                                }}
-                                center={mapCenter}
-                                zoom={14}
-                                options={{
-                                    disableDefaultUI: true,
-                                    zoomControl: false,
-                                    mapTypeControl: false,
-                                    disableDoubleClickZoom: true,
-                                    maxZoom: 18,
-                                    styles: [
-                                        {
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#f5f5f5"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "elementType": "labels.icon",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#616161"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "elementType": "labels.text.stroke",
-                                            "stylers": [
-                                                {
-                                                    "color": "#f5f5f5"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "administrative",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "administrative.land_parcel",
-                                            "elementType": "labels",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "administrative.land_parcel",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#bdbdbd"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "administrative.neighborhood",
-                                            "elementType": "geometry.fill",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "administrative.neighborhood",
-                                            "elementType": "labels.text",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#eeeeee"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi",
-                                            "elementType": "labels.text",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#757575"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.business",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "simplified"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.business",
-                                            "elementType": "labels.text",
-                                            "stylers": [
-                                                {
-                                                    "saturation": -65
-                                                },
-                                                {
-                                                    "lightness": 50
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#e5e5e5"
-                                                },
-                                                {
-                                                    "visibility": "simplified"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "elementType": "geometry.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#27d349"
-                                                },
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "elementType": "labels",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "elementType": "labels.text",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.park",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#9e9e9e"
-                                                },
-                                                {
-                                                    "saturation": 45
-                                                },
-                                                {
-                                                    "lightness": -20
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "geometry.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#ffd800"
-                                                },
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "geometry.stroke",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "labels",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "labels.text",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                },
-                                                {
-                                                    "weight": 5
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "poi.school",
-                                            "elementType": "labels.text.stroke",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "on"
-                                                },
-                                                {
-                                                    "weight": 3.5
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#ffffff"
-                                                },
-                                                {
-                                                    "visibility": "simplified"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road",
-                                            "elementType": "labels.icon",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road.arterial",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#757575"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road.highway",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#dadada"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road.highway",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#616161"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road.local",
-                                            "elementType": "labels",
-                                            "stylers": [
-                                                {
-                                                    "visibility": "off"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "road.local",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#9e9e9e"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "transit",
-                                            "elementType": "geometry.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#7ea3ec"
-                                                },
-                                                {
-                                                    "saturation": -50
-                                                },
-                                                {
-                                                    "lightness": 50
-                                                },
-                                                {
-                                                    "visibility": "on"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "water",
-                                            "elementType": "geometry",
-                                            "stylers": [
-                                                {
-                                                    "color": "#c9c9c9"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "featureType": "water",
-                                            "elementType": "labels.text.fill",
-                                            "stylers": [
-                                                {
-                                                    "color": "#9e9e9e"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                }}
-                            >
-                                <IonGrid className="search-container">
-                                    <IonRow className="current-location">
-                                        <IonButton onClick={getLocation}>
-                                            <IonIcon icon={locateOutline} />
-                                        </IonButton>
-                                        <IonCol>
-                                            <StandaloneSearchBox
-                                                onLoad={onLoadStartingLocation}
-                                                onPlacesChanged={onPlaceChangedStart}
-                                            >
-                                                <input
-                                                    type="text"
-                                                    autoComplete="on"
-                                                    placeholder={userLocationAddress}
-                                                    style={{
-                                                        width: "300px",
-                                                        height: "40px",
-                                                    }}
-                                                />
-                                            </StandaloneSearchBox>
-                                        </IonCol>
-                                    </IonRow>
-                                    <IonRow>
-                                        <IonCol>
-                                            {orgType === "schooldistrict" && (
-                                                <IonItem>
-                                                    <IonLabel>Add School District:</IonLabel>
-                                                    <IonInput value={schoolDistrict} onIonChange={e => setSchoolDistrict(e.detail.value?.toString()!)} />
-                                                    <IonButton onClick={() => updateSchoolDistrict(schoolDistrict)}>Add School</IonButton>
-                                                </IonItem>
-                                            )}
-                                            {orgType === "schooldistrict" && (
-                                                <IonItem>
-                                                    <IonLabel>Add schools by name:</IonLabel>
-                                                    <IonInput value={school} onIonChange={e => setSchool(e.detail.value?.toString()!)} />
-                                                    <IonButton onClick={() => addSchool(school)}>Add School</IonButton>
-                                                </IonItem>
-                                            )}
-                                            {orgType !== "schooldistrict" && (
-                                                <IonItem>
-                                                    <IonLabel>Location:</IonLabel>
-                                                    <IonInput value={orgLocation} onIonChange={e => setOrgLocation(e.detail.value!)} />
-                                                </IonItem>
-                                            )}
-                                        </IonCol>
-                                    </IonRow>
-                                </IonGrid>
-                                {bikeBusRoutes.map((route: any) => {
-                                    const keyPrefix = route.id || route.routeName;
-                                    return (
-                                        <div key={`${keyPrefix}`}>
-                                            <Polyline
-                                                key={`${keyPrefix}-border`}
-                                                path={route.pathCoordinates}
-                                                options={{
-                                                    strokeColor: "#000000", // Border color
-                                                    strokeOpacity: .7,
-                                                    strokeWeight: 3, // Border thickness
-                                                    clickable: true,
-                                                }}
-                                                onClick={() => { handleBikeBusRouteClick(route) }}
-                                            />
-                                            {infoWindow.isOpen && infoWindow.position && (
-                                                <InfoWindow
-                                                    position={infoWindow.position}
-                                                    onCloseClick={handleCloseClick}
-                                                >
-                                                    <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                                                </InfoWindow>
-                                            )}
-                                            <Polyline
-                                                key={`${keyPrefix}-main`}
-                                                path={route.pathCoordinates}
-                                                options={{
-                                                    strokeColor: "#ffd800", // Main line color
-                                                    strokeOpacity: 1,
-                                                    strokeWeight: 2,
-                                                }}
-                                            />
-                                            {infoWindow.isOpen && infoWindow.position && (
-                                                <InfoWindow
-                                                    position={infoWindow.position}
-                                                    onCloseClick={handleCloseClick}
-                                                >
-                                                    <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                                                </InfoWindow>
-                                            )}
-                                            {route.startPoint && (
-                                                <Marker
-                                                    key={`${keyPrefix}-start`}
-                                                    label={`Start of ${route.BikeBusName}`}
-                                                    position={route.startPoint}
-                                                    onClick={() => { handleBikeBusRouteClick(route) }}
-                                                />
-                                            )}
-                                            {route.endPoint && (
-                                                <Marker
-                                                    key={`${keyPrefix}-end`}
-                                                    label={`End of ${route.BikeBusName}`}
-                                                    position={route.endPoint}
-                                                    onClick={() => { handleBikeBusRouteClick(route) }}
-
-                                                />
-                                            )}
-
-
-                                        </div>
-                                    );
-                                })}
-
-                                <div>
-                                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                                </div>
-                            </GoogleMap >
-                        </IonRow>
-                    </IonGrid>
-                )}
+                <IonGrid>
+                    <IonRow>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Name: {Organization?.NameOfOrg}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Website: {Organization?.Website}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Email: {Organization?.Email}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Phone Number: {Organization?.PhoneNumber}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem>
+                                <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
             </IonContent>
         </IonPage>
     );
