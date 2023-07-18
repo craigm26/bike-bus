@@ -86,7 +86,6 @@ const BikeBusGroupPage: React.FC = () => {
   const [leaderAvatar, setLeaderAvatar] = useState<string>('');
   const [showMembersModal, setShowMembersModal] = useState(false);
 
-
   const headerContext = useContext(HeaderContext);
 
   const label = user?.username ? user.username : "anonymous";
@@ -207,7 +206,7 @@ const BikeBusGroupPage: React.FC = () => {
       BikeBusLeader: doc.data().BikeBusLeader,
       BikeBusCreator: doc.data().BikeBusCreator,
       events: doc.data().events,
-      event: doc.data().event,      
+      event: doc.data().event,
     }));
     setBikeBus(BikeBusData);
   }, [user]);
@@ -315,8 +314,6 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }
     , [leaderData]);
-
-
 
 
   // featchSchedules is an array. It should use groupData.BikeBusSchedules to get the schedule document and then make the properties of the schedule document available to the BikeBusGroupPage.tsx
@@ -459,6 +456,7 @@ const BikeBusGroupPage: React.FC = () => {
     fetchSchedules();
     fetchBulletinBoard();
     fetchMessages();
+    
   }
     , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules, fetchBulletinBoard, fetchMessages]);
 
@@ -538,10 +536,24 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
+
+  // we need to ensure we have the eventData before we can use it. If it's just one event, that's acceptable too.
+  useEffect(() => {
+    if (eventIds.length > 0) {
+      const eventDocs = eventIds.map((eventId: string) => doc(db, 'events', eventId));
+      setEventDocs(eventDocs);
+    }
+  }
+    , [eventIds]);
+
+  console.log(eventDocs);
+
   const validEvents = eventData.filter((event: Event) =>
     event.startTimestamp
-    // groupId in the event document should match the groupId
   );
+
+  console.log(validEvents);
+
 
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
     const aDate = a.startTimestamp.toDate();
@@ -650,8 +662,8 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonItem>
                   <IonLabel>Leader</IonLabel>
                   <IonChip>
-                  <div style={{ marginRight: '8px' }}>
-                    <Avatar uid={groupData?.BikeBusLeader?.id} size="extrasmall" />
+                    <div style={{ marginRight: '8px' }}>
+                      <Avatar uid={groupData?.BikeBusLeader?.id} size="extrasmall" />
                     </div>
                   </IonChip>
                 </IonItem>
@@ -716,11 +728,9 @@ const BikeBusGroupPage: React.FC = () => {
                   )}
                 </IonItem>
                 <IonItem>
-                  <IonLabel>Next Event:</IonLabel>
-                  <Link to={`/Event/${nextEventId}`}>
+                  <><IonLabel>Next Event:</IonLabel><Link to={`/Event/${nextEventId}`}>
                     <IonButton>{nextEventTime}</IonButton>
-                  </Link>
-
+                  </Link></>
                 </IonItem>
                 <IonItem>
                   <IonLabel>All Events</IonLabel>
