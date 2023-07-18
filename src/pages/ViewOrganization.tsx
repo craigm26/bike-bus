@@ -314,57 +314,107 @@ const ViewOrganization: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen>
-                <IonGrid>
-                    <IonRow>
-                        <IonCol>
-                            <IonTitle>{Organization?.NameOfOrg}</IonTitle>
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Website: <a href="{Organization?.Website}">{Organization?.NameOfOrg}</a></IonLabel>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Email: <a href="mailto:{Organization?.Email}">{Organization?.Email}</a></IonLabel>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
-                            </IonItem>
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonItem>
-                                <IonLabel position="stacked">BikeBusGroups: {Organization?.BikeBusGroups}</IonLabel>
-                                <IonModal >
-                                    <IonButton onClick={() => setShowBikeBusGroupAddModal(false)}>Close Modal</IonButton>
-                                    <IonButton onClick={() => setShowBikeBusGroupAddModal(false)}>Add BikeBusGroup</IonButton>
-                                </IonModal>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem>
-                                <IonButton>Organization Map</IonButton>
-                            </IonItem>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+            <IonContent fullscreen className="ion-flex ion-flex-direction-column">
+                <IonHeader>
+                    <IonToolbar>
+                        {headerContext?.showHeader && <IonHeader></IonHeader>}
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent className="ion-flex-grow">
+                    <IonGrid>
+                        <IonRow>
+                            <IonCol>
+                                <IonTitle>{Organization?.NameOfOrg}</IonTitle>
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonButton>Send Invite</IonButton>
+                            <IonButton>Add Staff</IonButton>
+                            <IonButton>Map</IonButton>
+                            <IonButton>Schedules</IonButton>
+                            <IonButton>View Timesheets</IonButton>
+                            <IonButton>Add BikeBusGroup</IonButton>
+                            <IonButton>Add Schools</IonButton>
+                            <IonButton>Add Routes</IonButton>
+                            <IonButton>Reports</IonButton>
+                            <IonButton>Collated BulletinBoard</IonButton>
+                        </IonRow>
+                        <IonRow>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Website: <a href="{Organization?.Website}">{Organization?.NameOfOrg}</a></IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Email: <a href="mailto:{Organization?.Email}">{Organization?.Email}</a></IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">BikeBusGroups: {Organization?.BikeBusGroups}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Schools: {Organization?.schools}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">School District: {Organization?.SchoolDistrictName}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Location: {Organization?.Location}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Mailing Address: {Organization?.MailingAddress}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Organization Administrators: {Organization?.OrganizationAdmins}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Organization Managers: {Organization?.OrganizationManagers}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Organization Employees: {Organization?.OrganizationEmployees}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Organization Volunteers: {Organization?.OrganizationVolunteers}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+
+                            </IonCol>
+
+
+                        </IonRow>
+                    </IonGrid>
+                </IonContent>
             </IonContent>
         </IonPage>
     );
