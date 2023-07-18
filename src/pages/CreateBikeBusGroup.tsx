@@ -619,20 +619,6 @@ const CreateBikeBusGroup: React.FC = () => {
             <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
           </IonModal>
           <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
-            <IonItemGroup>
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                <IonItem key={day}>
-                  <IonLabel>{day}</IonLabel>
-                  <IonCheckbox
-                    checked={selectedDays[day]}
-                    onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
-                  />
-                </IonItem>
-              ))}
-            </IonItemGroup>
-            <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
-          </IonModal>
-          <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
             <IonTitle>Recurring Days</IonTitle>
             <IonLabel>The default number of occurring events that are created are constrained to 30 days from the selected start date. After the BikeBus is created, additional schedules can be added.</IonLabel>
             <IonItemGroup>

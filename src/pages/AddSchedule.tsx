@@ -52,7 +52,6 @@ const AddSchedule: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [BikeBusType, setBikeBusType] = useState('');
   const [startDateTime, setStartDateTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('08:00');
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
@@ -62,7 +61,8 @@ const AddSchedule: React.FC = () => {
   const [isRecurring, setIsRecurring] = useState('no');
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
   const [bulletinBoardData, setBulletinBoardData] = useState<any>(null);
-  const [expectedDuration, setExpectedDuration] = useState<number>(0);
+  const [expectedDuration, setExpectedDuration] = useState<any>(0);
+  const [duration, setDuration] = useState<number>(0);
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
 
@@ -78,7 +78,9 @@ const AddSchedule: React.FC = () => {
 
   // when user loads the page, the Picker for choosing a route will be shown as a dropdown menu. The routes are populated from the bikebusgroup document in the database
   const [routes, setRoutes] = useState<any[]>([]);
+  const [routesData, setRoutesData] = useState<any[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
+  const [selectedRoutes, setSelectedRoutes] = useState<any[]>([]);
   const [showRoutePicker, setShowRoutePicker] = useState<boolean>(false);
   const [showRoutePickerModal, setShowRoutePickerModal] = useState<boolean>(false);
   const [RouteID, setRouteID] = useState<string>('');
@@ -87,47 +89,6 @@ const AddSchedule: React.FC = () => {
   // when user loads the page, the Picker for choosing a route will be shown as a dropdown menu. The routes are populated from the bikebusgroup document in the database
   // grab the id from the url and get the bikebusgroup document from the database
   const [bikeBusGroup, setBikeBusGroup] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchBikeBusGroup = async () => {
-      const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
-      const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
-      if (bikeBusGroupSnapshot.exists()) {
-        const bikeBusGroupData = bikeBusGroupSnapshot.data();
-        if (bikeBusGroupData) {
-          setBikeBusGroup(bikeBusGroupData);
-          // get the routes from the bikebusgroup document
-          const routes = bikeBusGroupData.routes;
-          if (routes) {
-            setRoutes(routes);
-          }
-        }
-      }
-    };
-    fetchBikeBusGroup();
-    // get the routes data from the database - use the routes from the bikebusgroup document as the identifiers
-    const fetchRoutes = async () => {
-      const routesRef = collection(db, 'routes');
-      const routesSnapshot = await getDocs(routesRef);
-      const routesData = routesSnapshot.docs.map(doc => doc.data());
-      setRoutes(routesData);
-    }
-    fetchRoutes();
-  }
-    , [bikeBusGroup, id, routes]);
-
-  // when the setStartDate is called, set the setEndDate to 30 days from that date - only if the recurring option is set to Yes
-  useEffect(() => {
-    if (startDate && isRecurring === 'yes') {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + 30);
-      setEndDate(date.toISOString());
-    } else {  // if the recurring option is set to No, set the setEndDate to the same date as the setStartDate
-      if (startDate && isRecurring === 'no') {
-        setEndDate(startDate);
-      }
-    }
-  }, [startDate, isRecurring]);
 
   // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
@@ -138,8 +99,22 @@ const AddSchedule: React.FC = () => {
   // format the startTime in am or pm (not 24 hour time)
   const formattedStartTime = startTime ? new Date(startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
+
+  // get the duration from the routes document in the database
+
+  console.log('expectedDuration:', expectedDuration);
+
+  // add the expectedDuration to the startTime to get the endTime
+  const endTimeDate = formattedStartTime ? moment(formattedStartTime, 'hh:mm a').add(expectedDuration, 'minutes') : '';
+  console.log('endTimeDate:', endTimeDate);
+  // convert the endTimeDate to a string
+  const endTime = endTimeDate.toString();
+
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+  console.log('formattedEndTime:', formattedEndTime);
+
+
 
   const history = useHistory();
 
@@ -152,18 +127,72 @@ const AddSchedule: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
+    const fetchBikeBusGroupAndRoutes = async () => {
+      const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
+      const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
+
+      // if the document exists, get the document from bikebusgroups collection in firestore
+      if (bikeBusGroupSnapshot.exists()) {
+        const bikeBusGroupData = bikeBusGroupSnapshot.data();
+        setBikeBusGroup(bikeBusGroupData);
+      }
+
+      // get the name of the bikebusgroup from the bikebusgroup document in the database
+      const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
+      setBikeBusName(BikeBusName);
+
+
+      // get the route from the bikebusgroup document in the database
+      const selectedRoutes = bikeBusGroupSnapshot.data()?.BikeBusRoutes;
+      setSelectedRoutes(selectedRoutes);
+      console.log('selectedRoutes:', selectedRoutes);
+      // get the name of the routes from the route document in the database
+      const routesData = await Promise.all(selectedRoutes.map((routeRef: any) => getDoc(routeRef)));
+      const routes = routesData.map((route: any) => route.data());
+      setRoutes(routes);
+      console.log('routes:', routes);
+      // get the name of the routes from the route document in the database
+      const routesNames = routesData.map((route: any) => route.data()?.routeName);
+      console.log('routesNames:', routesNames);
+
+      // get the duration from the routes document in the database
+      const expectedDuration = routesData.map((route: any) => route.data()?.duration);
+      console.log('expectedDuration:', expectedDuration);
+      setExpectedDuration(expectedDuration);
+
+    };
+
+    fetchBikeBusGroupAndRoutes();
+  }, [id]);
+
+  useEffect(() => {
+    if (startDate && isRecurring) {
+      const date = new Date(startDate);
+      if (isRecurring === 'yes') {
+        date.setDate(date.getDate() + 30);
+      }
+      setEndDate(date.toISOString());
+    }
+  }, [startDate, isRecurring]);
+
+  useEffect(() => {
+    const updateUserAccountType = async () => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnapshot = await getDoc(userRef);
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
           if (userData && userData.accountType) {
             setaccountType(userData.accountType);
           }
         }
-      });
-    }
-  }, [user, RouteID,]);
+      }
+    };
+
+    updateUserAccountType();
+  }, [user]);
+
+
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -188,10 +217,10 @@ const AddSchedule: React.FC = () => {
       .filter(([_, isSelected]) => isSelected)
       .map(([day]) => days.indexOf(day));
     const dates = [];
-  
+
     // Check if all selectedDays values are false (i.e., recurring option is 'no')
     const isRecurring = selectedDayIndices.length > 0;
-  
+
     if (!isRecurring) {
       // If not recurring, return only the start date
       return [start];
@@ -203,28 +232,28 @@ const AddSchedule: React.FC = () => {
         }
       }
     }
-  
+
     return dates;
   }
-  
-
-
 
 
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
 
-    console.log('updateSchedule called');
+    // get the current endTimeDate from the startTimeDate and expectedDuration
     console.log('startTime:', startTime);
+    console.log('expectedDuration:', expectedDuration);
+    console.log('startDate:', startDate);
+    console.log('endDate:', endDate);
 
     // Calculate the end time based on the start time and expected duration
     const startTimeDate = moment(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm');
     const endTimeDate = moment(startTimeDate).add(expectedDuration, 'minutes');
     const endTime = endTimeDate.format('hh:mm a');
 
+    console.log('startTimeDate:', startTimeDate);
     console.log('endTimeDate:', endTimeDate);
     console.log('endTime:', endTime);
-    console.log('startTimeDate:', startTimeDate);
 
     // Convert the startTime to a Firestore timestamp
     const startTimestamp = Timestamp.fromDate(startTimeDate.toDate());
@@ -245,49 +274,31 @@ const AddSchedule: React.FC = () => {
       scheduleCreator: doc(db, 'users', user.uid),
     };
 
-    const scheduleRef = await addDoc(collection(db, 'schedules'), scheduleData);
-    const scheduleId = scheduleRef.id;
-    console.log('scheduleId:', scheduleId);
-
-
-
-    // get the bikebusgroup document from firestore
-    const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
-    const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
-    const bikeBusGroupData = bikeBusGroupSnapshot.data();
-    console.log('bikeBusGroupData:', bikeBusGroupData);
+    const scheduleNewRef = await addDoc(collection(db, 'schedules'), scheduleData);
+    const scheduleNewId = scheduleNewRef.id;
+    console.log('scheduleNewId:', scheduleNewId);
 
     const bikeBusData = {
-      BikeBusName: BikeBusName,
-      BikeBusDescription: BikeBusDescription,
-      BikeBusType: BikeBusType,
-      BikeBusRoutes: [doc(db, 'routes', RouteID)],
-      BikeBusLeader: doc(db, 'users', user.uid),
-      BikeBusMembers: [doc(db, 'users', user.uid)],
-      BikeBusCreator: doc(db, 'users', user.uid),
-      BikeBusSchedules: [doc(db, 'schedules', scheduleId)],
-      BikeBusStops: [],
-      BikeBusStopTimes: [],
-        };
+      BikeBusSchedules: [doc(db, 'schedules', scheduleNewId)],
+    };
+
+    console.log('bikeBusData:', bikeBusData);
 
 
+    // update the existing bikebusgroup document in firestore with the new schedule
+    const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
     await updateDoc(bikeBusGroupRef, {
-      BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleId)),
-    });
-
-    // add the bikebusgroupid to the routes collection in the firestore document for the route
-    const routeRef = doc(db, 'routes', RouteID);
-    await updateDoc(routeRef, {
-      ScheduleId: doc(db, 'schedules', scheduleId),
+      BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleNewId)),
     });
 
     // add the bikebusgroup document id to the schedule document in firestore
-    const scheduleRef2 = doc(db, 'schedules', scheduleId);
-    await updateDoc(scheduleRef2, {
+    const scheduleNewRef2 = doc(db, 'schedules', scheduleNewId);
+    await updateDoc(scheduleNewRef2, {
       BikeBusGroup: bikeBusGroupRef,
       // update the schedule name in firestore to match the bikebus name
       scheduleName: BikeBusName,
     });
+
 
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
@@ -303,8 +314,8 @@ const AddSchedule: React.FC = () => {
       recurring: isRecurring,
       groupId: bikeBusGroupRef,
       selectedDays: selectedDays,
-      schedule: doc(db, 'schedules', scheduleId),
-      BikeBusGroup:  bikeBusGroupRef,
+      schedule: doc(db, 'schedules', scheduleNewId),
+      BikeBusGroup: bikeBusGroupRef,
       status: '',
       days: Object.entries(selectedDays).reduce<number[]>((acc, [day, isSelected]) => {
         if (isSelected) acc.push(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day));
@@ -318,7 +329,7 @@ const AddSchedule: React.FC = () => {
 
 
     // add the events document id (as a reference) to the schedule document in firestore
-    const scheduleRef3 = doc(db, 'schedules', scheduleId);
+    const scheduleRef3 = doc(db, 'schedules', scheduleNewId);
     await updateDoc(scheduleRef3, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
@@ -342,12 +353,10 @@ const AddSchedule: React.FC = () => {
         startTimestamp: startTimestamp,
         endTime: endTimestamp,
         groupId: bikeBusGroupRef,
-        route: doc(db, 'routes', RouteID),
-        BikeBusGroup:  bikeBusGroupRef,
+        BikeBusGroup: bikeBusGroupRef,
         BikeBusStops: [],
         BikeBusStopTimes: [],
-        StaticMap: '',
-        schedule: doc(db, 'schedules', scheduleId),
+        schedule: doc(db, 'schedules', scheduleNewId),
         status: '',
       };
 
@@ -375,16 +384,14 @@ const AddSchedule: React.FC = () => {
           startTime: startTime,
           startTimestamp: startTimestamp,
           endTime: endTimestamp,
-          route: doc(db, 'routes', RouteID),
           BikeBusGroup: bikeBusGroupRef,
           BikeBusStops: [],
           BikeBusStopTimes: [],
-          StaticMap: '',
-          schedule: doc(db, 'schedules', scheduleId),
+          schedule: doc(db, 'schedules', scheduleNewId),
           status: '',
         });
-       // save the event document id to the bikebusgroup document in firestore as an array of references called event
-        const bikeBusGroupRef2 =  bikeBusGroupRef;
+        // save the event document id to the bikebusgroup document in firestore as an array of references called event
+        const bikeBusGroupRef2 = bikeBusGroupRef;
         await updateDoc(bikeBusGroupRef2, {
           event: arrayUnion(doc(db, 'event', eventId)),
         });
@@ -418,7 +425,7 @@ const AddSchedule: React.FC = () => {
     }
 
     // add the references to the event documents to the bikebusgroup document in firestore
-    const bikeBusGroupRef2 =  bikeBusGroupRef
+    const bikeBusGroupRef2 = bikeBusGroupRef
     await updateDoc(bikeBusGroupRef2, {
       events: arrayUnion(doc(db, 'events', eventId)),
     });
@@ -428,8 +435,6 @@ const AddSchedule: React.FC = () => {
     history.push(`/bikebusgrouppage/${bikeBusGroupRef}`);
   };
 
-
-
   return (
     <IonPage>
       <IonHeader>
@@ -437,12 +442,28 @@ const AddSchedule: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonLabel>Pick a Route to add a schedule: </IonLabel>
-        <IonSelect value={RouteID} placeholder="Select Route" onIonChange={e => setRouteID(e.detail.value)}>
-          {routes.map(route => (
-            <IonSelectOption key={route.id} value={route.id}>{route.routeName}</IonSelectOption>
-          ))}
-        </IonSelect>
+        <IonItem>
+          <IonLabel>BikeBus Name</IonLabel>
+          <IonLabel>{BikeBusName}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus Route</IonLabel>
+          <IonSelect
+            value={selectedRoute}
+            placeholder='Select Route'
+            onIonChange={e => {
+              console.log('selectedRoute:', e.detail.value);
+              setSelectedRoute(e.detail.value);
+            }
+            }
+          >
+            {routes.map((route: any) => (
+              <IonSelectOption key={route.id} value={route.id}>
+                {route.routeName}
+              </IonSelectOption>
+            ))}
+          </IonSelect>
+        </IonItem>
         <IonItem>
           <IonLabel>BikeBus Start Date</IonLabel>
           <IonLabel>
@@ -472,8 +493,8 @@ const AddSchedule: React.FC = () => {
             <IonDatetime
               presentation='time'
               onIonChange={e => {
-                console.log('End Time selected', e.detail.value);
-                setStartTime(e.detail.value as string);
+                const selectedTime = e.detail.value as string; // Get the selected time as a string
+                setStartTime(selectedTime); // Update the `startTime` state variable
               }}
             ></IonDatetime>
             <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
@@ -482,17 +503,6 @@ const AddSchedule: React.FC = () => {
         <IonItem>
           <IonLabel>BikeBus End Time</IonLabel>
           <IonLabel>{formattedEndTime}</IonLabel>
-          <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
-          <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
-            <IonDatetime
-              presentation='time'
-              onIonChange={e => {
-                console.log('End Time selected', e.detail.value);
-                setEndTime(e.detail.value as string);
-              }}
-            ></IonDatetime>
-            <IonButton onClick={() => setShowEndTimeModal(false)}>Done</IonButton>
-          </IonModal>
         </IonItem>
         <IonItem>
           <IonLabel>Is Recurring?</IonLabel>
@@ -522,20 +532,6 @@ const AddSchedule: React.FC = () => {
               </IonRadioGroup>
             </IonList>
             <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
-          </IonModal>
-          <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
-            <IonItemGroup>
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                <IonItem key={day}>
-                  <IonLabel>{day}</IonLabel>
-                  <IonCheckbox
-                    checked={selectedDays[day]}
-                    onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
-                  />
-                </IonItem>
-              ))}
-            </IonItemGroup>
-            <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
           </IonModal>
           <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
             <IonItemGroup>
