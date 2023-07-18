@@ -28,6 +28,8 @@ import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { get } from 'http';
+import { format } from 'path';
+import { set } from 'date-fns';
 
 const localizer = momentLocalizer(moment);
 
@@ -65,6 +67,7 @@ const AddSchedule: React.FC = () => {
   const [duration, setDuration] = useState<number>(0);
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
+  const [endTime, setEndTime] = useState<string>('07:00');
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -99,20 +102,25 @@ const AddSchedule: React.FC = () => {
   // format the startTime in am or pm (not 24 hour time)
   const formattedStartTime = startTime ? new Date(startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
+ // let's add the value of duration to the endTime 
+  const addDuration = (duration: number) => {
+    // don't use the moment library to add the duration to the startTime. It doesn't work. Use the javascript Date object instead
+    const endTimeDate = new Date(startTime);
+    // Duration in the database is mm:ss, so we need to drop the ss so it just be minutes that we add to endTimeDate
+    console.log('durationMinutes:', duration);
+    // make duration a rounded up number
+    duration = Math.ceil(duration);
+    console.log('durationMinutes:', duration);
+    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
+    const endTime = endTimeDate.toString();
+    console.log('endTime:', endTime);
+    setEndTime(endTime);
+  };
 
-  // get the duration from the routes document in the database
-
-  console.log('expectedDuration:', expectedDuration);
-
-  // add the expectedDuration to the startTime to get the endTime
-  const endTimeDate = formattedStartTime ? moment(formattedStartTime, 'hh:mm a').add(expectedDuration, 'minutes') : '';
-  console.log('endTimeDate:', endTimeDate);
-  // convert the endTimeDate to a string
-  const endTime = endTimeDate.toString();
+  console.log('endTime', endTime);
 
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
-  console.log('formattedEndTime:', formattedEndTime);
 
 
 
@@ -141,24 +149,13 @@ const AddSchedule: React.FC = () => {
       const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
       setBikeBusName(BikeBusName);
 
-
       // get the route from the bikebusgroup document in the database
       const selectedRoutes = bikeBusGroupSnapshot.data()?.BikeBusRoutes;
       setSelectedRoutes(selectedRoutes);
-      console.log('selectedRoutes:', selectedRoutes);
       // get the name of the routes from the route document in the database
       const routesData = await Promise.all(selectedRoutes.map((routeRef: any) => getDoc(routeRef)));
       const routes = routesData.map((route: any) => route.data());
       setRoutes(routes);
-      console.log('routes:', routes);
-      // get the name of the routes from the route document in the database
-      const routesNames = routesData.map((route: any) => route.data()?.routeName);
-      console.log('routesNames:', routesNames);
-
-      // get the duration from the routes document in the database
-      const expectedDuration = routesData.map((route: any) => route.data()?.duration);
-      console.log('expectedDuration:', expectedDuration);
-      setExpectedDuration(expectedDuration);
 
     };
 
@@ -191,6 +188,8 @@ const AddSchedule: React.FC = () => {
 
     updateUserAccountType();
   }, [user]);
+
+  // write a function that gets the route document from the user's selection of route from the dropdown menu
 
 
 
@@ -240,11 +239,18 @@ const AddSchedule: React.FC = () => {
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
 
-    // get the current endTimeDate from the startTimeDate and expectedDuration
-    console.log('startTime:', startTime);
-    console.log('expectedDuration:', expectedDuration);
-    console.log('startDate:', startDate);
-    console.log('endDate:', endDate);
+
+    // add the expectedDuration to the startTime to get the endTime
+    const endTimeDateWrite = formattedStartTime ? moment(formattedStartTime, 'hh:mm a').add(expectedDuration, 'minutes') : '';
+    console.log('endTimeDate:', endTimeDateWrite);
+
+    // convert the endTimeDate to a string
+    const endTimeWrite = endTimeDateWrite.toString();
+
+    // format the endTime in am or pm (not 24 hour time)
+    const formattedEndTime = endTimeWrite ? new Date(endTimeWrite).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+    console.log('formattedEndTime:', formattedEndTime);
+
 
     // Calculate the end time based on the start time and expected duration
     const startTimeDate = moment(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm');
@@ -432,7 +438,7 @@ const AddSchedule: React.FC = () => {
 
 
 
-    history.push(`/bikebusgrouppage/${bikeBusGroupRef}`);
+    history.push(`/bikebusgrouppage/${bikeBusGroupRef.id}`);
   };
 
   return (
@@ -450,12 +456,24 @@ const AddSchedule: React.FC = () => {
           <IonLabel>BikeBus Route</IonLabel>
           <IonSelect
             value={selectedRoute}
-            placeholder='Select Route'
-            onIonChange={e => {
+            placeholder={routes[0]?.routeName}
+            onIonChange={async e => {
               console.log('selectedRoute:', e.detail.value);
               setSelectedRoute(e.detail.value);
-            }
-            }
+              setRoute(e.detail.value);
+              // make the selectedRoute value a set"" when the page initially loads
+              if (e.detail.value === '') {
+                setSelectedRoute(routes[0]?.routeName);
+                setRoute(routes[0]?.routeName);
+                setRouteID(routes[0]?.id);
+              }
+              // make the duration value of the route selected in the dropdown menu the expectedDuration. Most bikebusgroups will only have 1 route, so this will be the default value
+              if (e.detail.value === routes[0]?.routeName) {
+                const duration = routes[0]?.duration;
+                console.log('duration:', duration);
+                setExpectedDuration(duration);
+              }
+            }}
           >
             {routes.map((route: any) => (
               <IonSelectOption key={route.id} value={route.id}>
@@ -495,6 +513,12 @@ const AddSchedule: React.FC = () => {
               onIonChange={e => {
                 const selectedTime = e.detail.value as string; // Get the selected time as a string
                 setStartTime(selectedTime); // Update the `startTime` state variable
+                setEndTime(selectedTime); // Update the `endTime` state variable
+                // bring in the duration value from the route data so that we can use to it to calculate the endTime for the function addDuration
+                const duration = routes[0]?.duration;
+                console.log('duration:', duration);
+                setExpectedDuration(duration);
+                addDuration(duration);
               }}
             ></IonDatetime>
             <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
