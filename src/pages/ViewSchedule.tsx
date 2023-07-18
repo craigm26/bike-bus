@@ -6,11 +6,9 @@ import {
     IonCard,
     IonButton,
     IonModal,
-    IonTitle,
     IonLabel,
     IonCardHeader,
     IonCardTitle,
-    IonCardSubtitle,
     IonCardContent,
     IonItem,
     IonText,
@@ -25,7 +23,6 @@ import { Link, useParams } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useHistory } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { parseISO } from 'date-fns';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import format from 'date-fns/format'
 import parse from 'date-fns/parse'
@@ -91,12 +88,11 @@ const ViewSchedule: React.FC = () => {
         const fetchDetailedEvents = async () => {
             const eventsSnapshot = await getDocs(collection(db, "event")); // get all event documents
             const eventDocs: Event[] = [];
-
+            // the above eventDocs does not seem to fill up with events
             // Inside fetchDetailedEvents function
             eventsSnapshot.forEach((docSnapshot) => {
                 const eventData = docSnapshot.data();
-                console.log('Number of events retrieved:', eventsSnapshot.docs.length);
-                if (eventData?.groupId === id) { // only process events related to the current group
+                if (eventData?.groupId.id === id) { // only process events related to the current group
                     const startDate = eventData.start.toDate();
                     const year = startDate.getFullYear();
                     const month = startDate.getMonth() + 1; // Months are zero-based in JavaScript
@@ -105,14 +101,17 @@ const ViewSchedule: React.FC = () => {
                     // Format the date as MM/DD/YYY and convert it to a firestore timestamp
                     const formattedStartDate = Timestamp.fromDate(new Date(`${month}/${day}/${year}`));
 
-                    // now we need to get the start time for the event
-                    const startTime = eventData.startTime;
+                    // Convert startTime to a Date object
+                    const startTimeDate = new Date(eventData.startTime); // Use eventData.startTime
+                    console.log('startTimeDate: ', startTimeDate)
 
-                    // Parse hours and minutes from startTime
-                    const [hours, minutes] = startTime.split(':').map(Number);
+                    // Extract hours and minutes
+                    const hours = startTimeDate.getHours();
+                    const minutes = startTimeDate.getMinutes();
 
                     // Create a new Date object from formattedStartDate and set the hours and minutes
                     const startEventDate = formattedStartDate.toDate();
+                    console.log('startEventDate: ', startEventDate)
                     startEventDate.setHours(hours, minutes);
 
                     console.log('eventData.endTime: ', eventData.endTime)
@@ -163,15 +162,13 @@ const ViewSchedule: React.FC = () => {
                     console.log('eventDocs: ', eventDocs);
                 }
             });
-
             setEvents(eventDocs);
-
-
+            // check the start and end times for the event
             const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const startTime = eventDocs?.[3]?.start ? eventDocs?.[3]?.start?.toLocaleString(undefined, dateOptions) : 'Loading...';
-            console.log(startTime);
-            const endTime = eventDocs?.[3]?.endTime ? new Date(eventDocs?.[3]?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-            console.log(endTime);
+            const startTime = eventDocs?.[0]?.startTimestamp ? new Date(eventDocs?.[0]?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+            const endTime = eventDocs?.[0]?.endTime ? new Date(eventDocs?.[0]?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+            console.log('startTime: ', startTime);
+            console.log('endTime: ', endTime);
             setStartTime(startTime);
             setEndTime(endTime);
         };
@@ -185,16 +182,16 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
-    
+
         const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
+        const startTime = event.start ? new Date(event.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
         const endTime = event.endTime ? new Date(event.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
         setStartTime(startTime);
         setEndTime(endTime);
-    
+
         console.log(event.endTime);
     };
-    
+
 
     const handleEditEvent = () => {
         setShowEventModal(false); // Close the modal
@@ -241,7 +238,7 @@ const ViewSchedule: React.FC = () => {
                                 </IonItem>
                                 <IonItem>
                                     <IonLabel>Route</IonLabel>
-                                    <Link to={`/ViewRoute/${selectedEvent?.route.id}`}>
+                                    <Link to={`/ViewRoute/${selectedEvent?.route?.id}`}>
                                         <IonButton>View Route</IonButton>
                                     </Link>
                                 </IonItem>
