@@ -14,6 +14,8 @@ import {
     IonItem,
     IonTitle,
     IonModal,
+    IonChip,
+    IonList,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -153,6 +155,14 @@ const ViewOrganization: React.FC = () => {
     const [schoolDistrict, setSchoolDistrict] = useState<string>("");
     const [school, setSchool] = useState<string>("");
     const [schools, setSchools] = useState<string[]>([]);
+    const [showMembersModal, setShowMembersModal] = useState(false);
+    const [membersData, setMembersData] = useState<any[]>([]);
+    const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
+    const [isUserManager, setIsUserManager] = useState(false);
+    const [isUserMember, setIsUserMember] = useState(false);
+    const [orgData, setOrgData] = useState<any>(null);
+    const [isUserCreator, setIsUserCreator] = useState(false);
+
 
 
     const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
@@ -189,8 +199,8 @@ const ViewOrganization: React.FC = () => {
                 .then((querySnapshot) => {
                     const BikeBusGroups: any[] = [];
                     querySnapshot.forEach((doc) => {
-                        const BikeBusGroupData = doc.data();
-                        BikeBusGroups.push(BikeBusGroupData);
+                        const BikeBusorgData = doc.data();
+                        BikeBusGroups.push(BikeBusorgData);
                     });
                     setBikeBusRoutes(BikeBusGroups);
                 })
@@ -208,8 +218,8 @@ const ViewOrganization: React.FC = () => {
                 .then((querySnapshot) => {
                     const BikeBusGroups: any[] = [];
                     querySnapshot.forEach((doc) => {
-                        const BikeBusGroupData = doc.data();
-                        BikeBusGroups.push(BikeBusGroupData);
+                        const BikeBusorgData = doc.data();
+                        BikeBusGroups.push(BikeBusorgData);
                     });
                     setBikeBusRoutes(BikeBusGroups);
                 })
@@ -269,6 +279,27 @@ const ViewOrganization: React.FC = () => {
                     }
                 }
             });
+
+            const groupRef = doc(db, 'collections', id);
+            getDoc(groupRef)
+                .then((docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const orgData = docSnapshot.data();
+                        setOrgData(orgData);
+                        const uid = user?.uid;
+
+                        if (orgData?.OrganizationCreator.id === uid) {
+                            setIsUserCreator(true);
+                        }
+
+                        if (orgData?.OrginzationMembers?.some((memberRef: any) => memberRef.path === `users/${user?.uid}`)) {
+                            setIsUserMember(true);
+                        }
+                    } else {
+                    }
+                })
+                .catch((error) => {
+                });
         }
     }, [bikeBusRoutes, id, user]);
 
@@ -287,6 +318,47 @@ const ViewOrganization: React.FC = () => {
     const setShowBikeBusGroupAddModal = (show: boolean) => {
         setShowBikeBusGroupAddModal(show);
     };
+
+    const fetchMembers = useCallback(async () => {
+        if (orgData?.BikeBusMembers && Array.isArray(orgData.BikeBusMembers)) {
+            const members = orgData.BikeBusMembers.map((member: any) => {
+                return getDoc(member)
+                    .then((docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const memberData = docSnapshot.data();
+                            return memberData ? {
+                                ...memberData,
+                                id: docSnapshot.id,
+                            } : { id: docSnapshot.id };
+                        } else {
+                            // Return a placeholder object if the member document doesn't exist
+                            return { id: member.id };
+                        }
+                    })
+                    .catch((error) => {
+                        // Handle the error if necessary
+                    });
+            });
+            const membersData = await Promise.all(members);
+            setMembersData(membersData);
+            // Fetch usernames and avatars for members
+            const usernamesArray = await Promise.all(
+                membersData.map(async (member) => {
+                    if (member && member.username) {
+                        const userRefId = member.username.split('/').pop();
+                        const userRef = doc(db, 'users', userRefId);
+                        const userSnapshot = await getDoc(userRef);
+                        if (userSnapshot.exists()) {
+                            const userData = userSnapshot.data();
+                            return userData?.username;
+                        }
+                    }
+                    return null;
+                })
+            );
+            setMemberUsernames(usernamesArray);
+        }
+    }, [orgData]);
 
     const showBikeBusGroupAddModal = () => {
         setShowBikeBusGroupAddModal(true);
@@ -337,7 +409,7 @@ const ViewOrganization: React.FC = () => {
                             <IonButton>Add Schools</IonButton>
                             <IonButton>Add Routes</IonButton>
                             <IonButton>Reports</IonButton>
-                            <IonButton>Collated BulletinBoard</IonButton>
+                            <IonButton>BulletinBoards</IonButton>
                         </IonRow>
                         <IonRow>
                         </IonRow>
@@ -389,29 +461,68 @@ const ViewOrganization: React.FC = () => {
                             </IonCol>
                             <IonCol>
                                 <IonItem>
-                                    <IonLabel position="stacked">Organization Administrators: {Organization?.OrganizationAdmins}</IonLabel>
+                                    <IonLabel position="stacked">Creator: {Organization?.OrganizationCreator}</IonLabel>
                                 </IonItem>
                             </IonCol>
                             <IonCol>
                                 <IonItem>
-                                    <IonLabel position="stacked">Organization Managers: {Organization?.OrganizationManagers}</IonLabel>
+                                    <IonLabel position="stacked">Administrators: {Organization?.OrganizationAdmins}</IonLabel>
                                 </IonItem>
                             </IonCol>
                             <IonCol>
                                 <IonItem>
-                                    <IonLabel position="stacked">Organization Employees: {Organization?.OrganizationEmployees}</IonLabel>
+                                    <IonLabel position="stacked">Managers: {Organization?.OrganizationManagers}</IonLabel>
                                 </IonItem>
                             </IonCol>
                             <IonCol>
                                 <IonItem>
-                                    <IonLabel position="stacked">Organization Volunteers: {Organization?.OrganizationVolunteers}</IonLabel>
+                                    <IonLabel position="stacked">Employees: {Organization?.OrganizationEmployees}</IonLabel>
                                 </IonItem>
                             </IonCol>
                             <IonCol>
-
+                                <IonItem>
+                                    <IonLabel position="stacked">Volunteers: {Organization?.OrganizationVolunteers}</IonLabel>
+                                </IonItem>
                             </IonCol>
-
-
+                            <IonCol>
+                                <IonItem>
+                                    <IonLabel position="stacked">Members:</IonLabel>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                                            <IonChip>
+                                                {membersData.map((user, index) => (
+                                                    <div style={{ marginRight: '8px' }} key={index}>
+                                                        <Avatar uid={user.id} size="extrasmall" />
+                                                    </div>
+                                                ))}
+                                                {membersData.length > 5 && (
+                                                    <IonChip>
+                                                        <IonLabel>{membersData.length}</IonLabel>
+                                                    </IonChip>
+                                                )}
+                                            </IonChip>
+                                        </IonButton>
+                                    </div>
+                                </IonItem>
+                                <IonModal isOpen={showMembersModal}>
+                                    <IonHeader>
+                                        <IonToolbar>
+                                            <IonTitle>Members</IonTitle>
+                                        </IonToolbar>
+                                    </IonHeader>
+                                    <IonContent>
+                                        <IonList>
+                                            {membersData.map((user, index) => (
+                                                <IonItem key={index}>
+                                                    <Avatar uid={user.id} />
+                                                    <IonLabel> {user?.username}</IonLabel>
+                                                </IonItem>
+                                            ))}
+                                        </IonList>
+                                        <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                                    </IonContent>
+                                </IonModal>
+                            </IonCol>
                         </IonRow>
                     </IonGrid>
                 </IonContent>

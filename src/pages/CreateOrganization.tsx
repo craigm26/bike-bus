@@ -19,13 +19,14 @@ import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from "firebase/firestore";
 import { useJsApiLoader } from '@react-google-maps/api';
 import React from "react";
 import './CreateOrganization.css'
 import { useHistory } from 'react-router-dom';
+import { add } from 'date-fns';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -163,7 +164,56 @@ const CreateOrganization: React.FC = () => {
     }
   };
 
+  const addBulletinBoardToOrganization = async () => {
+    if (!user) return;
+    // first we'll create a messages document for the organization
+    // create a messages document in the firestore collection "messages" for the organization
+    const messagesData = {
+      Organization: doc(db, 'organizations', newOrgId),
+      Messages: '',
+      Timestamp: '',
+      user: '',
+    };
+    await addDoc(collection(db, 'messages'), messagesData);
+    // then we'll add the messages document to the organization's bulletin boards as a reference
+    const orgRef = doc(db, 'organizations', newOrgId);
+    const docSnapshot = await getDoc(orgRef);
+    if (docSnapshot.exists()) {
+      const orgData = docSnapshot.data();
+      if (orgData && orgData.BulletinBoards) {
+        const orgBulletinBoards = orgData.BulletinBoards;
+        orgBulletinBoards.push(messagesData);
+        await updateDoc(orgRef, {
+          BulletinBoards: orgBulletinBoards,
+        });
+      }
+    }
+    // 
+    // get the messages document id
+    const messagesRef = await getDocs(collection(db, 'messages'));
+    const messagesId = messagesRef.docs[messagesRef.docs.length - 1].id;
+    console.log('messagesId:', messagesId);
 
+    // create a reference in the bulletinboard collection in firestore for the organization
+    const bulletinBoardData = {
+      Organization: doc(db, 'ogranization', newOrgId),
+      // make an array of messageIds references in "Messages"
+      Messages: [],
+    }
+    await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
+
+    // get the bulletinboard document id
+    const bulletinBoardRef = await getDocs(collection(db, 'bulletinboard'));
+    const bulletinBoardId = bulletinBoardRef.docs[bulletinBoardRef.docs.length - 1].id;
+    console.log('bulletinBoardId:', bulletinBoardId);
+
+    // add the bulletinboard reference to the organization document in firestore
+    const OrgRef2 = doc(db, 'Organizations', newOrgId);
+    await updateDoc(OrgRef2, {
+      bulletinboard: doc(db, 'bulletinboard', bulletinBoardId),
+    });
+
+  };
 
   // Form submission handler
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -171,7 +221,8 @@ const CreateOrganization: React.FC = () => {
     try {
       await createOrganization();
       await addOrganizationToUser();
-      history.push('/OrganizationProfile/' + newOrgId);
+      await addBulletinBoardToOrganization();
+      history.push('/ViewOrganization/' + newOrgId);
     }
     catch (error) {
       console.log(error);
