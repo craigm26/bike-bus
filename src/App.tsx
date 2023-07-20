@@ -236,7 +236,7 @@ const App: React.FC = () => {
     if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
       const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
 
-      if (eventDistance <= 5) {
+      if (eventDistance <= 20) {
         return true;
       }
       // if eventDistance is greater than 5, show the next event in my bikebusgroup
@@ -251,7 +251,6 @@ const App: React.FC = () => {
             const nextEvent = groupEvents[groupEventIndex + 1];
             if (nextEvent && nextEvent.location) {
               const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
-
               if (nextEventDistance <= 10) {
                 return true;
               }
