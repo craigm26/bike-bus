@@ -389,7 +389,6 @@ const ViewOrganization: React.FC = () => {
             <IonContent fullscreen className="ion-flex ion-flex-direction-column">
                 <IonHeader>
                     <IonToolbar>
-                        {headerContext?.showHeader && <IonHeader></IonHeader>}
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-flex-grow">
