@@ -24,6 +24,7 @@ interface UserData {
   lastName: string;
   accountType: "Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin";
   enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'Org Admin' | 'App Admin'>;
+  enabledOrgModes: Array<'OrganizationCreator' | 'OrganizationMembers' | 'OrganizationAdmins' | 'OrganizationManagers' | 'OrganizationEmployees' | 'Organization' >;
   // Add other properties specific to user data
 }
 
@@ -50,6 +51,7 @@ const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | 
 
 const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
   let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] = [];
+  let enabledOrgModes: ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization" )[] = [];
 
   // Fetch additional user data from the database or other sources
   const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
@@ -69,6 +71,7 @@ const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData>
     lastName: '',
     accountType: userData?.accountType || '',
     enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[],
+    enabledOrgModes: enabledOrgModes as ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization" )[],
     // Add other properties specific to user data
   };
 });
