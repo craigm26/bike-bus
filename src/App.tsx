@@ -276,17 +276,25 @@ const App: React.FC = () => {
     if (fetchedEvents && fetchedEvents.length > 0) {
       const fetchRelevantEvents = async () => {
         const relevantEvents = [];
-
+        const currentDate = new Date();
+      
         for (const event of fetchedEvents) {
-          const eventIsRelevant = await isEventRelevant(event);
-
-          if (eventIsRelevant) {
-            relevantEvents.push(event);
+          // Convert the event's date string to a Date object
+          const eventDate = new Date(event.eventDate);
+      
+          // Check if the event's date is in the future (not in the past)
+          if (eventDate > currentDate) {
+            const eventIsRelevant = await isEventRelevant(event);
+      
+            if (eventIsRelevant) {
+              relevantEvents.push(event);
+            }
           }
         }
-
+      
         setRelevantEvents(relevantEvents);
       };
+      
 
       fetchRelevantEvents();
     }
