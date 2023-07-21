@@ -162,7 +162,7 @@ const CreateOrganization: React.FC = () => {
         const userOrganizations = userData.organizations || [];
         const orgRef = doc(db, 'organizations', newOrgId); // Create a reference to the organization document
         userOrganizations.push(orgRef);
-        const enabledOrgModes = ['OrganizationAdmin', 'OrganizationCreator', 'OrganizationManager', 'OrganizationEmployee', 'OrganizationVolunteer'];
+        const enabledOrgModes = ['OrganizationAdmin', 'OrganizationCreator', 'OrganizationManager', 'OrganizationEmployee', 'OrganizationVolunteer', 'OrganizationMember'];
         await updateDoc(userRef, {
           organizations: userOrganizations,
           enabledOrgModes: enabledOrgModes,

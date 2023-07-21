@@ -62,18 +62,20 @@ const ViewOrganizationList: React.FC = () => {
     const fetchOrganizations = useCallback(async () => {
         const uid = user?.uid;
         console.log('UID:', uid);
-
+    
         if (!uid) {
             return;
         }
-
+    
+        // Fetch the user's document reference
+        const userRef = doc(db, 'users', uid);
+    
         const OrganizationCollection = collection(db, 'organizations');
-        const q = query(OrganizationCollection, where('OrganizationMembers', 'array-contains', `${user?.uid}`));
-        console.log('Query:', q);
+        // Use the user's document reference in the query
+        const q = query(OrganizationCollection, where('OrganizationMembers', 'array-contains', userRef));
+    
         const querySnapshot = await getDocs(q);
-
-
-
+    
         const OrganizationData: Organization[] = querySnapshot.docs.map(doc => ({
             ...doc.data() as Organization,
             id: doc.id,
@@ -81,6 +83,7 @@ const ViewOrganizationList: React.FC = () => {
         console.log('OrganizationData:', OrganizationData);
         setOrganization(OrganizationData);
     }, [user]);
+    
 
 
     useEffect(() => {
