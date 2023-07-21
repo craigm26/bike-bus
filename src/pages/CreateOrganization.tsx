@@ -155,10 +155,15 @@ const CreateOrganization: React.FC = () => {
     if (docSnapshot.exists()) {
       const userData = docSnapshot.data();
       if (userData && userData.organizations) {
+        const enabledOrgModes = userData.enabledOrgModes;
+        // set enabledOrgModes to include the orgnization's enabled account modes for the user. Make it set to OrganizationAdmin and OrganizationCreator by default
+        enabledOrgModes.push('OrganizationAdmin');
+        enabledOrgModes.push('OrganizationCreator');
         const userOrganizations = userData.organizations;
         userOrganizations.push(newOrgId);
         await updateDoc(userRef, {
           organizations: userOrganizations,
+          enabledOrgModes: enabledOrgModes,
         });
       }
     }
