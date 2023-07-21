@@ -412,116 +412,15 @@ const ViewOrganization: React.FC = () => {
                             <IonButton>BulletinBoards</IonButton>
                         </IonRow>
                         <IonRow>
-                        </IonRow>
-                        <IonRow>
                             <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Type: {Organization?.OrganizationType}</IonLabel>
+                                <IonItem lines="none">
+                                    <IonLabel position="stacked">Organization Type: {Organization?.OrganizationType}</IonLabel>
                                 </IonItem>
                             </IonCol>
                             <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Website: <a href="{Organization?.Website}">{Organization?.NameOfOrg}</a></IonLabel>
+                                <IonItem lines="none">
+                                    <IonLabel position="stacked">Organization Location: {Organization?.Location}</IonLabel>
                                 </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Email: <a href="mailto:{Organization?.Email}">{Organization?.Email}</a></IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Contact Name: {Organization?.ContactName}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">BikeBusGroups: {Organization?.BikeBusGroups}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Schools: {Organization?.schools}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">School District: {Organization?.SchoolDistrictName}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Location: {Organization?.Location}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Mailing Address: {Organization?.MailingAddress}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Creator: {Organization?.OrganizationCreator}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Administrators: {Organization?.OrganizationAdmins}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Managers: {Organization?.OrganizationManagers}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Employees: {Organization?.OrganizationEmployees}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Volunteers: {Organization?.OrganizationVolunteers}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem>
-                                    <IonLabel position="stacked">Members:</IonLabel>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                                            <IonChip>
-                                                {membersData.map((user, index) => (
-                                                    <div style={{ marginRight: '8px' }} key={index}>
-                                                        <Avatar uid={user.id} size="extrasmall" />
-                                                    </div>
-                                                ))}
-                                                {membersData.length > 5 && (
-                                                    <IonChip>
-                                                        <IonLabel>{membersData.length}</IonLabel>
-                                                    </IonChip>
-                                                )}
-                                            </IonChip>
-                                        </IonButton>
-                                    </div>
-                                </IonItem>
-                                <IonModal isOpen={showMembersModal}>
-                                    <IonHeader>
-                                        <IonToolbar>
-                                            <IonTitle>Members</IonTitle>
-                                        </IonToolbar>
-                                    </IonHeader>
-                                    <IonContent>
-                                        <IonList>
-                                            {membersData.map((user, index) => (
-                                                <IonItem key={index}>
-                                                    <Avatar uid={user.id} />
-                                                    <IonLabel> {user?.username}</IonLabel>
-                                                </IonItem>
-                                            ))}
-                                        </IonList>
-                                        <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
-                                    </IonContent>
-                                </IonModal>
                             </IonCol>
                         </IonRow>
                     </IonGrid>

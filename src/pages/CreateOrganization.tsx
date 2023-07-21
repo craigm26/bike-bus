@@ -101,6 +101,9 @@ const CreateOrganization: React.FC = () => {
   const label = user?.username ? user.username : "anonymous";
 
   const createOrganization = async () => {
+    if (!user?.uid) {
+      throw new Error("User not logged in");
+    }
     // Add a new document in collection "organizations"
     const newOrg = await addDoc(collection(db, "organizations"), {
       NameOfOrg: orgName,
@@ -116,11 +119,11 @@ const CreateOrganization: React.FC = () => {
       SchoolDistrictLocation: '',
       SchoolNames: [''],
       SchoolLocations: [''],
-      OrganizationCreator: user?.uid,
+      OrganizationCreator: doc(db, 'users', user?.uid),
       // any user who has one role in the OrganizationMembers array will be able to view certain parts of the ViewOrganization page
-      OrganizationMembers: [user?.uid],
+      OrganizationMembers: [doc(db, 'users', user?.uid)],
       // admins can delete users, change user roles, and change organization settings
-      OrganizationAdmins: [user?.uid],
+      OrganizationAdmins: [doc(db, 'users', user?.uid)],
       // managers can create events, create schedules, create bike bus groups, create routes, and create trips while assign employees to routes, bike bus groups, events, and trips
       OrganizationManagers: [''],
       // employees can view schedules, view events, view routes, view trips and accept assignments
@@ -138,29 +141,28 @@ const CreateOrganization: React.FC = () => {
       BikeBusGroups: [''],
       Messages: [''],
       CreatedOn: new Date(),
-      LastUpdatedBy: user?.uid,
+      LastUpdatedBy: doc(db, 'users', user?.uid),
       LastUpdatedOn: new Date(),
     });
     // make the document id available to the rest of the app with setNewOrgId
-    const newOrgId = newOrg.id;
     console.log("New organization created with ID: ", newOrg.id);
-    return newOrgId;
+    // we want to make the newOrg.id available to the rest of the app
+    return newOrg.id;
   };
 
   // add the new organization to the user's organization list
-  const addOrganizationToUser = async () => {
-    if (!user) return;
-    const userRef = doc(db, 'users', user?.uid);
+  const addOrganizationToUser = async (newOrgId: string) => {
+    console.log('addOrganizationToUser called');
+    if (!user || !newOrgId) return;  // Check that newOrgId is defined and non-empty
+    const userRef = doc(db, 'users', user.uid);
     const docSnapshot = await getDoc(userRef);
     if (docSnapshot.exists()) {
       const userData = docSnapshot.data();
-      if (userData && userData.organizations) {
-        const enabledOrgModes = userData.enabledOrgModes;
-        // set enabledOrgModes to include the orgnization's enabled account modes for the user. Make it set to OrganizationAdmin and OrganizationCreator by default
-        enabledOrgModes.push('OrganizationAdmin');
-        enabledOrgModes.push('OrganizationCreator');
-        const userOrganizations = userData.organizations;
-        userOrganizations.push(newOrgId);
+      if (userData) {
+        const userOrganizations = userData.organizations || [];
+        const orgRef = doc(db, 'organizations', newOrgId); // Create a reference to the organization document
+        userOrganizations.push(orgRef);
+        const enabledOrgModes = ['OrganizationAdmin', 'OrganizationCreator', 'OrganizationManager', 'OrganizationEmployee', 'OrganizationVolunteer'];
         await updateDoc(userRef, {
           organizations: userOrganizations,
           enabledOrgModes: enabledOrgModes,
@@ -169,7 +171,11 @@ const CreateOrganization: React.FC = () => {
     }
   };
 
-  const addBulletinBoardToOrganization = async () => {
+
+
+
+  const addBulletinBoardToOrganization = async (newOrgId: string) => {
+    console.log('addBulletinBoardToOrganization called');
     if (!user) return;
     // first we'll create a messages document for the organization
     // create a messages document in the firestore collection "messages" for the organization
@@ -201,7 +207,7 @@ const CreateOrganization: React.FC = () => {
 
     // create a reference in the bulletinboard collection in firestore for the organization
     const bulletinBoardData = {
-      Organization: doc(db, 'ogranization', newOrgId),
+      Organization: doc(db, 'organizations', newOrgId),
       // make an array of messageIds references in "Messages"
       Messages: [],
     }
@@ -213,7 +219,8 @@ const CreateOrganization: React.FC = () => {
     console.log('bulletinBoardId:', bulletinBoardId);
 
     // add the bulletinboard reference to the organization document in firestore
-    const OrgRef2 = doc(db, 'Organizations', newOrgId);
+    const OrgRef2 = doc(db, 'organizations', newOrgId);
+    console.log('OrgRef2:', OrgRef2);
     await updateDoc(OrgRef2, {
       bulletinboard: doc(db, 'bulletinboard', bulletinBoardId),
     });
@@ -224,15 +231,16 @@ const CreateOrganization: React.FC = () => {
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      await createOrganization();
-      await addOrganizationToUser();
-      await addBulletinBoardToOrganization();
+      const newOrgId = await createOrganization();
+      await addOrganizationToUser(newOrgId);
+      await addBulletinBoardToOrganization(newOrgId);
       history.push('/ViewOrganization/' + newOrgId);
     }
     catch (error) {
       console.log(error);
     }
   };
+
 
   return (
     <IonPage>
@@ -266,10 +274,6 @@ const CreateOrganization: React.FC = () => {
             <IonItem>
               <IonLabel>Email:</IonLabel>
               <IonInput value={user?.email} onIonChange={e => setOrgEmail(e.detail.value!)} readonly required />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Phone Number:</IonLabel>
-              <IonInput value={orgPhoneNumber} onIonChange={e => setOrgPhoneNumber(e.detail.value!)} />
             </IonItem>
             <IonItem>
               <IonLabel>Contact Name:</IonLabel>
