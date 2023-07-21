@@ -389,6 +389,7 @@ const ViewOrganization: React.FC = () => {
             <IonContent fullscreen className="ion-flex ion-flex-direction-column">
                 <IonHeader>
                     <IonToolbar>
+                    <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-flex-grow">
@@ -403,7 +404,7 @@ const ViewOrganization: React.FC = () => {
                             <IonButton>Add Staff</IonButton>
                             <IonButton>Map</IonButton>
                             <IonButton>Schedules</IonButton>
-                            <IonButton>View Timesheets</IonButton>
+                            <IonButton>Timesheets</IonButton>
                             <IonButton>Add BikeBusGroup</IonButton>
                             <IonButton>Add Schools</IonButton>
                             <IonButton>Add Routes</IonButton>
