@@ -9,6 +9,7 @@ import { useParams, Link } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
+import { event } from 'firebase-functions/v1/analytics';
 
 
 interface Coordinate {
@@ -456,7 +457,7 @@ const BikeBusGroupPage: React.FC = () => {
     fetchSchedules();
     fetchBulletinBoard();
     fetchMessages();
-    
+
   }
     , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules, fetchBulletinBoard, fetchMessages]);
 
@@ -540,19 +541,21 @@ const BikeBusGroupPage: React.FC = () => {
   // we need to ensure we have the eventData before we can use it. If it's just one event, that's acceptable too.
   useEffect(() => {
     if (eventIds.length > 0) {
-      const eventDocs = eventIds.map((eventId: string) => doc(db, 'events', eventId));
+      const eventDocs = eventIds
+        .map((eventId: string) => doc(db, 'events', eventId))
+        .filter(doc => doc !== undefined);
+
       setEventDocs(eventDocs);
     }
   }
     , [eventIds]);
 
-  console.log(eventDocs);
 
-  const validEvents = eventData.filter((event: Event) =>
+  const validEvents = (eventData || []).filter((event: Event) =>
     event.startTimestamp
   );
 
-  console.log(validEvents);
+
 
 
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
@@ -626,9 +629,9 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonItem>
                     <IonItem>
                       <IonLabel>Routes</IonLabel>
-                      {routesData.map((route, index) => (
+                      {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
                         <IonRouterLink key={index}>
-                          <Link to={`/ViewRoute/${route.id}`}>
+                          <Link to={`/ViewRoute/${route?.id}`}>
                             <IonLabel>{route?.routeName}</IonLabel>
                           </Link>
                         </IonRouterLink>
@@ -647,15 +650,13 @@ const BikeBusGroupPage: React.FC = () => {
                   <IonButton onClick={copyUrl}>Copy URL</IonButton>
                 </IonContent>
               </IonModal>
-
               {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
                 <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
               }
-              {isUserLeader && routesData.map((route, index) => (
+              {isUserLeader && Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
                 <IonItem key={index}>
-                  <IonButton routerLink={`/CreateBikeBusStops/${route.id}`}>Create BikeBusStops</IonButton>
-                  <IonButton routerLink={`/DeleteBikeBusStops/${route.id}`}>Delete BikeBusStops</IonButton>
-
+                  <IonButton routerLink={`/CreateBikeBusStops/${route?.id}`}>Create BikeBusStops</IonButton>
+                  <IonButton routerLink={`/DeleteBikeBusStops/${route?.id}`}>Delete BikeBusStops</IonButton>
                 </IonItem>
               ))}
               <IonList>
@@ -717,9 +718,9 @@ const BikeBusGroupPage: React.FC = () => {
                   <IonLabel>Routes</IonLabel>
                   {groupId && (
                     <IonList>
-                      {routesData.map((route, index) => (
+                      {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
                         <IonItem key={index}>
-                          <Link to={`/ViewRoute/${route.id}`}>
+                          <Link to={`/ViewRoute/${route?.id}`}>
                             <IonButton>{route?.routeName}</IonButton>
                           </Link>
                         </IonItem>
@@ -727,10 +728,15 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonList>
                   )}
                 </IonItem>
+
                 <IonItem>
-                  <><IonLabel>Next Event:</IonLabel><Link to={`/Event/${nextEventId}`}>
-                    <IonButton>{nextEventTime}</IonButton>
-                  </Link></>
+                  {nextEvent ?
+                    <><IonLabel>Next Event:</IonLabel><Link to={`/Event/${nextEventId}`}>
+                      <IonButton>{nextEventTime}</IonButton>
+                    </Link></>
+                    :
+                    <><IonLabel>Next Event has not been scheduled yet!</IonLabel></>
+                  }
                 </IonItem>
                 <IonItem>
                   <IonLabel>All Events</IonLabel>
@@ -768,8 +774,6 @@ const BikeBusGroupPage: React.FC = () => {
                     })}
                 </IonList>
               )}
-
-
             </div>
           </IonCardContent>
         </IonCard>
