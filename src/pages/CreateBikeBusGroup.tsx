@@ -58,7 +58,7 @@ const CreateBikeBusGroup: React.FC = () => {
   const [BikeBusType, setBikeBusType] = useState('');
   const [startDateTime, setStartDateTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('08:00');
-  const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
+  const [showStartDateTimeModal, setShowStartDateTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
   const [recurring, setRecurring] = useState<string>('no');
@@ -99,16 +99,19 @@ const CreateBikeBusGroup: React.FC = () => {
   }, [startDate, isRecurring]);
 
   // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
+  console.log('startDate:', startDate);
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  console.log('formattedStartDate:', formattedStartDate);
 
   // when the setEndDate is called, format formattedEndDate to be in the format "Month Day, Year"
+  console.log('endDate:', endDate);
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  console.log('formattedEndDate:', formattedEndDate);
 
   // format the startTime in am or pm (not 24 hour time)
-  const formattedStartTime = startTime ? startTime : '';
-
-
-  console.log("RouteID: ", RouteID);
+  console.log('startTime:', startTime);
+  const formattedStartDateTime = startTime ? startTime : '';
+  console.log('formattedStartDateTime:', formattedStartDateTime);
 
   // fetch route data from the previous step of "CreateBikeBusGroup" button with the id from the URL and user data from firestore
   const history = useHistory();
@@ -217,22 +220,29 @@ const CreateBikeBusGroup: React.FC = () => {
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const createBikeBusGroupAndSchedule = async () => {
 
-    console.log('createBikeBusGroupAndSchedule called');
-    console.log('startTime:', startTime);
-
-    // Calculate the end time based on the start time and expected duration
-    const startTimeDate = moment(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm');
-    const endTimeDate = moment(startTimeDate).add(expectedDuration, 'minutes');
-    const endTime = endTimeDate.format('hh:mm a');
-
-    console.log('endTimeDate:', endTimeDate);
+    // look at default date and time values to see if they are correct
+    console.log('startDateTime:', startDateTime);
     console.log('endTime:', endTime);
-    console.log('startTimeDate:', startTimeDate);
+    console.log('expectedDuration:', expectedDuration);
+    console.log('endDate:', endDate);
+    console.log('formattedStartDate:', formattedStartDate);
 
-    // Convert the startTime to a Firestore timestamp
-    const startTimestamp = Timestamp.fromDate(startTimeDate.toDate());
-    // Convert the endTime to a Firestore timestamp
-    const endTimestamp = Timestamp.fromDate(endTimeDate.toDate());
+    // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
+    const startDate = startDateTime.split('T')[0];
+    console.log('startDate:', startDate);
+  
+    // Convert the startDateTime and endTime to Firestore timestamps
+    const startTimestamp = Timestamp.fromDate(new Date(startDateTime));
+    console.log('startTimestamp:', startTimestamp);
+
+    // set the startTime to match the hh:mm value of the startTimestamp
+    const startTime = startTimestamp.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+
+    // set the start value of the schedule to be the startTimestamp
+    const start = startTimestamp;
+    
+    const endTimestamp = Timestamp.fromDate(new Date(endTime));
+    console.log('endTimestamp:', endTimestamp);
 
     const scheduleData = {
       startTime: startTime,
@@ -549,40 +559,43 @@ const CreateBikeBusGroup: React.FC = () => {
           </IonSelect>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus Start Date</IonLabel>
+          <IonLabel>BikeBus Start DateTime</IonLabel>
           <IonLabel>
-            <IonText>{formattedStartDate}</IonText>
+            <IonText>{formattedStartDateTime}</IonText>
           </IonLabel>
-          <IonButton onClick={() => setShowStartDayModal(true)}>Select Start Date</IonButton>
-          <IonModal isOpen={showStartDayModal} onDidDismiss={() => setShowStartDayModal(false)}>
+          <IonButton onClick={() => setShowStartDateTimeModal(true)}>Select Start DateTime</IonButton>
+          <IonModal isOpen={showStartDateTimeModal} onDidDismiss={() => setShowStartDateTimeModal(false)}>
             <IonDatetime
-              presentation='date'
+              presentation='date-time'
               onIonChange={e => {
                 if (typeof e.detail.value === 'string') {
-                  const date = new Date(e.detail.value);
-                  console.log('Start DateTime selected', date);
-                  setStartDate(date.toISOString());
+                  const startDateTime = new Date(e.detail.value);
+                  console.log('Start DateTime selected', startDateTime);
+                  setStartDateTime(startDateTime.toISOString());
+                  setEndTime(startDateTime.toISOString());
+                  // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
+                  const duration = route[0]?.duration;
+                  console.log('duration:', duration);
+                  setExpectedDuration(duration);
+              
+                  // Define addDuration here
+                  const addDuration = (duration: number) => {
+                    console.log('startDateTime:', startDateTime);
+                    const endTimeDate = new Date(startDateTime);
+                    console.log('endTimeDate:', endTimeDate);
+                    duration = Math.ceil(duration);
+                    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
+                    const endTime = endTimeDate.toString();
+                    console.log('endTime:', endTime);
+                    setEndTime(endTime);
+                  };
+              
+                  addDuration(duration);
                 }
               }}
-
+              
             ></IonDatetime>
-            <IonButton onClick={() => setShowStartDayModal(false)}>Done</IonButton>
-          </IonModal>
-        </IonItem>
-        <IonItem>
-          <IonLabel>BikeBus Start Time</IonLabel>
-          <IonLabel>{formattedStartTime}</IonLabel>
-          <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
-          <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
-            <IonDatetime
-              presentation="time"
-              value={startTime} // Set the value to the `startTime` string
-              onIonChange={e => {
-                const selectedTime = e.detail.value as string; // Get the selected time as a string
-                setStartTime(selectedTime); // Update the `startTime` state variable
-              }}
-            />
-            <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
+            <IonButton onClick={() => setShowStartDateTimeModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
         <IonItem>
