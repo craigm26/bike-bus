@@ -30,6 +30,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { get } from 'http';
 import { format } from 'path';
 import { set } from 'date-fns';
+import { da } from 'date-fns/locale';
 
 const localizer = momentLocalizer(moment);
 
@@ -57,6 +58,7 @@ const AddSchedule: React.FC = () => {
   const [showStartTimeModal, setShowStartTimeModal] = useState<boolean>(false);
   const [showStartDayModal, setShowStartDayModal] = useState<boolean>(false);
   const [showEndTimeModal, setShowEndTimeModal] = useState<boolean>(false);
+  const [showStartDateTimeModal, setShowStartDateTimeModal] = useState<boolean>(false);
   const [recurring, setRecurring] = useState<string>('no');
   const [showRecurringModal, setShowRecurringModal] = useState<boolean>(false);
   const [showRecurrenceDaysModal, setShowRecurrenceDaysModal] = useState<boolean>(false);
@@ -68,6 +70,7 @@ const AddSchedule: React.FC = () => {
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
   const [endTime, setEndTime] = useState<string>('07:00');
+  // user the default value of today's date and 7:00 AM time in the user's location
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
     Monday: false,
@@ -93,34 +96,22 @@ const AddSchedule: React.FC = () => {
   // grab the id from the url and get the bikebusgroup document from the database
   const [bikeBusGroup, setBikeBusGroup] = useState<any>(null);
 
-  // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year"
-  const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  // when the setStartDate is called, format formattedStartDate to be in the format "Month Day, Year HH:MM AM/PM"
+  const formattedStartDateTime = startDateTime ? new Date(startDateTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
   // when the setEndDate is called, format formattedEndDate to be in the format "Month Day, Year"
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
   // format the startTime in am or pm (not 24 hour time)
-  const formattedStartTime = startTime ? new Date(startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+  const formattedStartTime = startDateTime ? new Date(startDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
- // let's add the value of duration to the endTime 
-  const addDuration = (duration: number) => {
-    // don't use the moment library to add the duration to the startTime. It doesn't work. Use the javascript Date object instead
-    const endTimeDate = new Date(startTime);
-    // Duration in the database is mm:ss, so we need to drop the ss so it just be minutes that we add to endTimeDate
-    console.log('durationMinutes:', duration);
-    // make duration a rounded up number
-    duration = Math.ceil(duration);
-    console.log('durationMinutes:', duration);
-    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
-    const endTime = endTimeDate.toString();
-    console.log('endTime:', endTime);
-    setEndTime(endTime);
-  };
+  console.log('startDateTime:', startDateTime);
 
   console.log('endTime', endTime);
 
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
+  console.log('formattedEndTime:', formattedEndTime);
 
 
 
@@ -163,14 +154,15 @@ const AddSchedule: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-    if (startDate && isRecurring) {
-      const date = new Date(startDate);
+    console.log(startDateTime, isRecurring)
+    if (startDateTime && isRecurring) {
+      const date = new Date(startDateTime);
       if (isRecurring === 'yes') {
         date.setDate(date.getDate() + 30);
       }
       setEndDate(date.toISOString());
     }
-  }, [startDate, isRecurring]);
+  }, [startDateTime, isRecurring]);
 
   useEffect(() => {
     const updateUserAccountType = async () => {
@@ -238,33 +230,31 @@ const AddSchedule: React.FC = () => {
 
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
-
-
-    // add the expectedDuration to the startTime to get the endTime
-    const endTimeDateWrite = formattedStartTime ? moment(formattedStartTime, 'hh:mm a').add(expectedDuration, 'minutes') : '';
-    console.log('endTimeDate:', endTimeDateWrite);
-
-    // convert the endTimeDate to a string
-    const endTimeWrite = endTimeDateWrite.toString();
-
-    // format the endTime in am or pm (not 24 hour time)
-    const formattedEndTime = endTimeWrite ? new Date(endTimeWrite).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
-    console.log('formattedEndTime:', formattedEndTime);
-
-
-    // Calculate the end time based on the start time and expected duration
-    const startTimeDate = moment(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm');
-    const endTimeDate = moment(startTimeDate).add(expectedDuration, 'minutes');
-    const endTime = endTimeDate.format('hh:mm a');
-
-    console.log('startTimeDate:', startTimeDate);
-    console.log('endTimeDate:', endTimeDate);
+    // look at default date and time values to see if they are correct
+    console.log('startDateTime:', startDateTime);
     console.log('endTime:', endTime);
+    console.log('expectedDuration:', expectedDuration);
+    console.log('endDate:', endDate);
+    console.log('formattedStartDate:', formattedStartTime);
+    console.log('formattedEndDate:', formattedEndTime);
 
-    // Convert the startTime to a Firestore timestamp
-    const startTimestamp = Timestamp.fromDate(startTimeDate.toDate());
-    // Convert the endTime to a Firestore timestamp
-    const endTimestamp = Timestamp.fromDate(endTimeDate.toDate());
+    // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
+    const startDate = startDateTime.split('T')[0];
+    console.log('startDate:', startDate);
+  
+    // Convert the startDateTime and endTime to Firestore timestamps
+    const startTimestamp = Timestamp.fromDate(new Date(startDateTime));
+    console.log('startTimestamp:', startTimestamp);
+
+    // set the startTime to match the hh:mm value of the startTimestamp
+    const startTime = startTimestamp.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+
+    // set the start value of the schedule to be the startTimestamp
+    const start = startTimestamp;
+    
+    const endTimestamp = Timestamp.fromDate(new Date(endTime));
+    console.log('endTimestamp:', endTimestamp);
+  
 
     const scheduleData = {
       startTime: startTime,
@@ -310,7 +300,7 @@ const AddSchedule: React.FC = () => {
     const eventsData = {
       title: BikeBusName,
       BikeBusName: BikeBusName,
-      start: startDate.split('T')[0],
+      start: start,
       end: endDate.split('T')[0],
       startTime: startTime,
       startTimeStamp: startTimestamp,
@@ -344,7 +334,7 @@ const AddSchedule: React.FC = () => {
     const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
     for (const day of eventDays) {
       const eventData = {
-        title: BikeBusName + ' for ' + day,
+        title: BikeBusName,
         BikeBusName: BikeBusName,
         start: day,
         leader: '',
@@ -375,9 +365,9 @@ const AddSchedule: React.FC = () => {
         // update the event document in firestore with the eventData
         const eventRef = doc(db, 'event', eventId);
         await updateDoc(eventRef, {
-          title: BikeBusName + ' for ' + day,
+          title: BikeBusName,
           BikeBusName: BikeBusName,
-          start: day,
+          start: start,
           leader: '',
           members: [],
           kids: [],
@@ -475,53 +465,51 @@ const AddSchedule: React.FC = () => {
               }
             }}
           >
-            {routes.map((route: any) => (
-              <IonSelectOption key={route.id} value={route.id}>
-                {route.routeName}
+            {Array.isArray(routes) && routes.filter(route => route?.id).map((route: any) => (
+              <IonSelectOption key={route?.id} value={route?.id}>
+                {route?.routeName}
               </IonSelectOption>
             ))}
           </IonSelect>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus Start Date</IonLabel>
+          <IonLabel>BikeBus Start DateTime</IonLabel>
           <IonLabel>
-            <IonText>{formattedStartDate}</IonText>
+            <IonText>{formattedStartDateTime}</IonText>
           </IonLabel>
-          <IonButton onClick={() => setShowStartDayModal(true)}>Select Start Date</IonButton>
-          <IonModal isOpen={showStartDayModal} onDidDismiss={() => setShowStartDayModal(false)}>
+          <IonButton onClick={() => setShowStartDateTimeModal(true)}>Select Start DateTime</IonButton>
+          <IonModal isOpen={showStartDateTimeModal} onDidDismiss={() => setShowStartDateTimeModal(false)}>
             <IonDatetime
-              presentation='date'
+              presentation='date-time'
               onIonChange={e => {
                 if (typeof e.detail.value === 'string') {
-                  const date = new Date(e.detail.value);
-                  console.log('Start DateTime selected', date);
-                  setStartDate(date.toISOString());
+                  const startDateTime = new Date(e.detail.value);
+                  console.log('Start DateTime selected', startDateTime);
+                  setStartDateTime(startDateTime.toISOString());
+                  setEndTime(startDateTime.toISOString());
+                  // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
+                  const duration = routes[0]?.duration;
+                  console.log('duration:', duration);
+                  setExpectedDuration(duration);
+              
+                  // Define addDuration here
+                  const addDuration = (duration: number) => {
+                    console.log('startDateTime:', startDateTime);
+                    const endTimeDate = new Date(startDateTime);
+                    console.log('endTimeDate:', endTimeDate);
+                    duration = Math.ceil(duration);
+                    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
+                    const endTime = endTimeDate.toString();
+                    console.log('endTime:', endTime);
+                    setEndTime(endTime);
+                  };
+              
+                  addDuration(duration);
                 }
               }}
-
+              
             ></IonDatetime>
-            <IonButton onClick={() => setShowStartDayModal(false)}>Done</IonButton>
-          </IonModal>
-        </IonItem>
-        <IonItem>
-          <IonLabel>BikeBus Start Time</IonLabel>
-          <IonLabel>{formattedStartTime}</IonLabel>
-          <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
-          <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
-            <IonDatetime
-              presentation='time'
-              onIonChange={e => {
-                const selectedTime = e.detail.value as string; // Get the selected time as a string
-                setStartTime(selectedTime); // Update the `startTime` state variable
-                setEndTime(selectedTime); // Update the `endTime` state variable
-                // bring in the duration value from the route data so that we can use to it to calculate the endTime for the function addDuration
-                const duration = routes[0]?.duration;
-                console.log('duration:', duration);
-                setExpectedDuration(duration);
-                addDuration(duration);
-              }}
-            ></IonDatetime>
-            <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
+            <IonButton onClick={() => setShowStartDateTimeModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
         <IonItem>
