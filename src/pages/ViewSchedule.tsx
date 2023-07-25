@@ -29,6 +29,7 @@ import parse from 'date-fns/parse'
 import startOfWeek from 'date-fns/startOfWeek'
 import getDay from 'date-fns/getDay'
 import enUS from 'date-fns/locale/en-US'
+import { utcToZonedTime } from 'date-fns-tz';
 
 const locales = {
     'en-US': enUS,
@@ -83,56 +84,48 @@ const ViewSchedule: React.FC = () => {
     const [startTime, setStartTime] = useState<string>('');
     const [endTime, setEndTime] = useState<string>('');
 
+    const parseDate = (dateString: string) => {
+        const dateFormat = "MMMM d, yyyy 'at' h:mm:ss a 'UTC'XXX";
+        const date = parse(dateString, dateFormat, new Date());
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return utcToZonedTime(date, timeZone);
+    }
+
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     useEffect(() => {
         const fetchDetailedEvents = async () => {
             const eventsSnapshot = await getDocs(collection(db, "event")); // get all event documents
             const eventDocs: Event[] = [];
-            // the above eventDocs does not seem to fill up with events
             // Inside fetchDetailedEvents function
             eventsSnapshot.forEach((docSnapshot) => {
                 const eventData = docSnapshot.data();
                 if (eventData?.groupId.id === id) { // only process events related to the current group
                     const startDate = eventData.start.toDate();
-                    const year = startDate.getFullYear();
-                    const month = startDate.getMonth() + 1; // Months are zero-based in JavaScript
-                    const day = startDate.getDate();
-
-                    // Format the date as MM/DD/YYY and convert it to a firestore timestamp
-                    const formattedStartDate = Timestamp.fromDate(new Date(`${month}/${day}/${year}`));
-
-                    // Convert startTime to a Date object
-                    const startTimeDate = new Date(eventData.startTime); // Use eventData.startTime
-                    console.log('startTimeDate: ', startTimeDate)
-
-                    // Extract hours and minutes
-                    const hours = startTimeDate.getHours();
-                    const minutes = startTimeDate.getMinutes();
-
-                    // Create a new Date object from formattedStartDate and set the hours and minutes
-                    const startEventDate = formattedStartDate.toDate();
-                    console.log('startEventDate: ', startEventDate)
-                    startEventDate.setHours(hours, minutes);
-
-                    console.log('eventData.endTime: ', eventData.endTime)
-
-                    // Convert the endTime timestamp to a Date object
-                    const endTimeDate = eventData.endTime.toDate();
-
-                    // Get the hours and minutes from endTime
-                    const endTimeHours = endTimeDate.getHours();
-                    const endTimeMinutes = endTimeDate.getMinutes();
-
-                    // Set the hours and minutes of startEventDate to the hours and minutes of endTime
-                    // Create a new Date object for endEventDate and set the hours and minutes
-                    const endEventDate = new Date(startEventDate);
-                    endEventDate.setHours(endTimeHours, endTimeMinutes);
-
-
-
-                    // convert the endTimeTimeTime to a firestore timestamp
+                    const startTimeParts = eventData.startTime.split(/[:\s]/);
+                    let startTimeHours = parseInt(startTimeParts[0]);
+                    const startTimeMinutes = parseInt(startTimeParts[1]);
+                    const startTimePeriod = startTimeParts[2];
+            
+                    if (startTimePeriod === 'PM' && startTimeHours !== 12) {
+                        startTimeHours += 12;
+                    } else if (startTimePeriod === 'AM' && startTimeHours === 12) {
+                        startTimeHours = 0;
+                    }
+            
+                    const startEventDate = new Date(startDate.setHours(startTimeHours, startTimeMinutes));
+                    const formattedStartDate = Timestamp.fromDate(startEventDate);
+            
+                    // Get the UTC endTime and convert to local time zone
+                    const endDate = eventData.endTime.toDate();
+                    const localEndDate = utcToZonedTime(endDate, timeZone); 
+            
+                    let endTimeHours = localEndDate.getHours();
+                    const endTimeMinutes = localEndDate.getMinutes();
+            
+                    const endEventDate = new Date(startDate.setHours(endTimeHours, endTimeMinutes));
                     const formattedEndDate = Timestamp.fromDate(endEventDate);
-
+            
                     const event: Event = {
                         start: startEventDate,
                         end: formattedEndDate.toDate(),
@@ -159,18 +152,19 @@ const ViewSchedule: React.FC = () => {
                         formattedEndDate: formattedEndDate,
                     };
                     eventDocs.push(event);
-                    console.log('eventDocs: ', eventDocs);
                 }
             });
+            
+                      
             setEvents(eventDocs);
             // check the start and end times for the event
             const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
             const startTime = eventDocs?.[0]?.startTimestamp ? new Date(eventDocs?.[0]?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
             const endTime = eventDocs?.[0]?.endTime ? new Date(eventDocs?.[0]?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-            console.log('startTime: ', startTime);
-            console.log('endTime: ', endTime);
             setStartTime(startTime);
+            console.log(startTime);
             setEndTime(endTime);
+            console.log(endTime);
         };
         fetchDetailedEvents();
     }, [id]);
@@ -182,15 +176,14 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
-
+    
         const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        const startTime = event.start ? new Date(event.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-        const endTime = event.endTime ? new Date(event.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+        const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
+        const endTime = event.end ? event.end.toLocaleString(undefined, dateOptions) : 'Loading...';
         setStartTime(startTime);
         setEndTime(endTime);
-
-        console.log(event.endTime);
     };
+    
 
 
     const handleEditEvent = () => {

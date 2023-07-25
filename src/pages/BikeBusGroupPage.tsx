@@ -728,7 +728,6 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonList>
                   )}
                 </IonItem>
-
                 <IonItem>
                   {nextEvent ?
                     <><IonLabel>Next Event:</IonLabel><Link to={`/Event/${nextEventId}`}>
