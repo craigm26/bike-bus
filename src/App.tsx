@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Route, Redirect, useParams } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
@@ -149,16 +149,17 @@ const App: React.FC = () => {
       });
     }
 
-  }, [user, accountType]);
+  }, [user]);
 
-  const getUserLocation = async () => {
+  const getUserLocation = useCallback(async () => {
     if (!user) return null;
     const userLocationRef = ref(rtdb, `userLocations/${user.uid}`);
     const snapshot = await get(userLocationRef);
     return snapshot.val();
-  };
+  }
+    , [user]);
 
-  const getUserGroups = async () => {
+  const getUserGroups = useCallback(async () => {
     if (!user) return [];
     const userRef = doc(db, 'users', user.uid);
     const docSnapshot = await getDoc(userRef);
@@ -177,9 +178,10 @@ const App: React.FC = () => {
       }
     }
     return [];
-  };
+  }
+    , [user]);
 
-  const getRoute = async () => {
+  const getRoute = useCallback(async () => {
     if (!user) return null;
     const userRef = doc(db, 'users', user.uid);
     const docSnapshot = await getDoc(userRef);
@@ -205,33 +207,37 @@ const App: React.FC = () => {
       }
     }
     return null;
-  };
-
-  // Helper function to calculate the distance between two lat/long points
-  function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
-    var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2 - lat1);
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2)
-      ;
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c; // Distance in km
-    return d * 0.621371; // Convert to miles
   }
+    , [user]);
 
-  function deg2rad(deg: any) {
-    return deg * (Math.PI / 180)
-  }
+
+
 
   // Function to check if an event is within the required distance and if the event belongs to a group the user is part of
-  async function isEventRelevant(event: any) {
+  const isEventRelevant = useCallback(async (event: any) => {
     const userLocation = await getUserLocation(); // Get the user's location
     const userGroups = await getUserGroups(); // Get the groups the user is part of
     const groupRoute = await getRoute() as GRoute | null;
     // event.location doesn't exist, so we can't calculate distance. We need to get the route associated with the event and calculate distance from the user's location to the route
+
+    // Helper function to calculate the distance between two lat/long points
+    function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
+      var R = 6371; // Radius of the earth in km
+      var dLat = deg2rad(lat2 - lat1);
+      var dLon = deg2rad(lon2 - lon1);
+      var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      var d = R * c; // Distance in km
+      return d * 0.621371; // Convert to miles
+    }
+
+    function deg2rad(deg: any) {
+      return deg * (Math.PI / 180)
+    }
 
 
     if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
@@ -267,10 +273,9 @@ const App: React.FC = () => {
       }
     }
 
-
     return false;
   }
-
+    , [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
 
 
   useEffect(() => {
@@ -278,28 +283,28 @@ const App: React.FC = () => {
       const fetchRelevantEvents = async () => {
         const relevantEvents = [];
         const currentDate = new Date();
-      
+
         for (const event of fetchedEvents) {
           // Convert the event's date string to a Date object
           const eventDate = new Date(event.eventDate);
-      
+
           // Check if the event's date is in the future (not in the past)
           if (eventDate > currentDate) {
             const eventIsRelevant = await isEventRelevant(event);
-      
+
             if (eventIsRelevant) {
               relevantEvents.push(event);
             }
           }
         }
-      
+
         setRelevantEvents(relevantEvents);
       };
-      
+
 
       fetchRelevantEvents();
     }
-  }, [fetchedEvents]);
+  }, [fetchedEvents, isEventRelevant]);
 
   const getUpcomingEvent = () => {
     if (!relevantEvents || relevantEvents.length === 0) return null;

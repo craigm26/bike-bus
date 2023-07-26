@@ -10,24 +10,17 @@ import {
     IonToolbar,
     IonAvatar,
     IonLabel,
-    IonInput,
     IonItem,
     IonTitle,
-    IonModal,
-    IonChip,
-    IonList,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { ref, set } from "firebase/database";
-import { db, rtdb } from "../firebaseConfig";
+import { db } from "../firebaseConfig";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import {
-    locateOutline,
     personCircleOutline,
-    school,
 } from "ionicons/icons";
 
 
@@ -39,7 +32,6 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
-import { get } from "http";
 
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
@@ -409,7 +401,6 @@ const ViewOrganization: React.FC = () => {
                             <IonButton>Add Schools</IonButton>
                             <IonButton>Add Routes</IonButton>
                             <IonButton>Reports</IonButton>
-                            <IonButton>BulletinBoards</IonButton>
                         </IonRow>
                         <IonRow>
                             <IonCol>
