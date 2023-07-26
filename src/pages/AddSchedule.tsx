@@ -16,6 +16,7 @@ import {
   IonText,
   IonSelect,
   IonSelectOption,
+  IonTitle,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -241,7 +242,7 @@ const AddSchedule: React.FC = () => {
     // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
     const startDate = startDateTime.split('T')[0];
     console.log('startDate:', startDate);
-  
+
     // Convert the startDateTime and endTime to Firestore timestamps
     const startTimestamp = Timestamp.fromDate(new Date(startDateTime));
     console.log('startTimestamp:', startTimestamp);
@@ -251,10 +252,10 @@ const AddSchedule: React.FC = () => {
 
     // set the start value of the schedule to be the startTimestamp
     const start = startTimestamp;
-    
+
     const endTimestamp = Timestamp.fromDate(new Date(endTime));
     console.log('endTimestamp:', endTimestamp);
-  
+
 
     const scheduleData = {
       startTime: startTime,
@@ -491,7 +492,7 @@ const AddSchedule: React.FC = () => {
                   const duration = routes[0]?.duration;
                   console.log('duration:', duration);
                   setExpectedDuration(duration);
-              
+
                   // Define addDuration here
                   const addDuration = (duration: number) => {
                     console.log('startDateTime:', startDateTime);
@@ -503,11 +504,11 @@ const AddSchedule: React.FC = () => {
                     console.log('endTime:', endTime);
                     setEndTime(endTime);
                   };
-              
+
                   addDuration(duration);
                 }
               }}
-              
+
             ></IonDatetime>
             <IonButton onClick={() => setShowStartDateTimeModal(false)}>Done</IonButton>
           </IonModal>
@@ -546,6 +547,8 @@ const AddSchedule: React.FC = () => {
             <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
           </IonModal>
           <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
+            <IonTitle>Recurring Days</IonTitle>
+            <IonLabel>The default number of occurring events that are created are constrained to 30 days from the selected start date. After the BikeBus is created, additional schedules can be added.</IonLabel>
             <IonItemGroup>
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                 <IonItem key={day}>

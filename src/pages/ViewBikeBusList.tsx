@@ -9,6 +9,9 @@ import {
     IonHeader,
     IonToolbar,
     IonCard,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -104,17 +107,36 @@ const ViewBikeBusList: React.FC = () => {
             </IonHeader>
             <IonContent>
                 <IonCard>
-                    <IonList>
-                        {BikeBus.map((BikeBus) => (
-                            <IonItem key="id">
-                                <IonLabel>{BikeBus.BikeBusName}</IonLabel>
-                                <IonButton routerLink={`/bikebusgrouppage/${BikeBus.id}`}>View BikeBus</IonButton>
-                            </IonItem>
-                        ))}
-                    </IonList>
+                    {BikeBus.length === 0 ? (
+                        <IonCard>
+                            <IonCardHeader>
+                                <IonCardTitle>Creating a BikeBus</IonCardTitle>
+                            </IonCardHeader>
+                            <IonCardContent>
+                                <IonList>
+                                    <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
+                                    <IonItem>2. Create a Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help: Creating a Route</IonButton></IonItem>
+                                    <IonItem>3. View the Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/ViewRouteList">View your Routes</IonButton></IonItem>
+                                    <IonItem>4. Select the "Create BikeBus Group" button</IonItem>
+                                    <IonItem>5. Fill in the "Create BikeBus" form</IonItem>
+                                    <IonItem>6. Create your schedule of upcoming events</IonItem>
+                                    <IonItem>7. Invite people to join the BikeBus or share the event</IonItem>
+                                </IonList>
+                            </IonCardContent>
+                        </IonCard>
+                    ) : (
+                        <IonList>
+                            {BikeBus.map((BikeBus) => (
+                                <IonItem key="id">
+                                    <IonLabel>{BikeBus.BikeBusName}</IonLabel>
+                                    <IonButton routerLink={`/bikebusgrouppage/${BikeBus.id}`}>View BikeBus</IonButton>
+                                </IonItem>
+                            ))}
+                        </IonList>
+                    )}
                 </IonCard>
             </IonContent>
-        </IonPage>
+        </IonPage >
     );
 };
 
