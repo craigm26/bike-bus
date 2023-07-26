@@ -93,39 +93,6 @@ const BikeBusGroupPage: React.FC = () => {
 
   const [showFullPage, setShowFullPage] = useState(false); // State to toggle full-page layout
 
-  const loadMoreMessages = () => {
-    // Fetch additional messages from the server or load from a local data source
-    fetchMessages().then((newMessages) => {
-      // Append the newly fetched messages to the existing message list
-      if (newMessages !== undefined) {
-        setMessages((prevState: any[]) => [...prevState, ...newMessages]);
-      }
-    }
-    );
-    // Update the 'messages' state with the loaded messages
-    messagesData.length > messages.length && setMessages(messagesData);
-  };
-
-
-
-  const handleScroll = (event: { target: { scrollHeight: number; scrollTop: number; clientHeight: number; }; }) => {
-    const scrollThreshold = 100; // Adjust this value based on your layout and requirements
-
-    // Check if the user has scrolled to the bottom or the specified threshold
-    const scrolledToBottom =
-      event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
-    const scrolledToThreshold = event.target.scrollTop > scrollThreshold;
-
-    if (scrolledToBottom && messagesData.length > messages.length) {
-      // Load more messages only if there are actual messages to load
-      loadMoreMessages();
-    }
-
-    if (scrolledToThreshold) {
-      setShowFullPage(true);
-    }
-  };
-
 
 
   const avatarElement = user ? (
@@ -384,68 +351,7 @@ const BikeBusGroupPage: React.FC = () => {
 
 
 
-  const fetchBulletinBoard = useCallback(async () => {
-    if (groupData?.bulletinboard) {
-      const bulletinBoardRef = groupData.bulletinboard;
-      const bulletinBoardDoc = await getDoc(bulletinBoardRef);
 
-      if (bulletinBoardDoc.exists()) {
-        const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
-        const messagesData = bulletinBoardData?.Messages || [];
-        setMessagesData(messagesData);
-      } else {
-        // Handle the case when the bulletin board document doesn't exist
-      }
-    } else {
-      // Handle the case when the bulletin board reference is missing
-    }
-
-    // Move this line inside the fetchBulletinBoard function
-  }, [groupData]);
-
-  const fetchMessages = useCallback(async () => {
-    if (groupData?.bulletinboard) {
-      const bulletinBoardRef = groupData.bulletinboard;
-      const bulletinBoardDoc = await getDoc(bulletinBoardRef);
-
-      if (bulletinBoardDoc.exists()) {
-        const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
-        const messagesData = bulletinBoardData?.Messages || [];
-
-        const messagesPromises = messagesData.map(async (messageRef: DocumentReference) => {
-          const messageDoc = await getDoc(messageRef);
-          if (messageDoc.exists()) {
-            const messageData = messageDoc.data();
-
-            // Make sure the user reference exists
-            if (messageData?.user) {
-              const userDoc = await getDoc(messageData.user);
-              const userData = userDoc.data();
-
-              // return combined message data and user data, but also include the userDoc's id
-              return {
-                ...messageData,
-                user: userData ? {
-                  ...userData,
-                  id: userDoc.id,  // Include the document ID here
-                } : null,
-              };
-            } else {
-            }
-          } else {
-          }
-        });
-
-        const resolvedMessages = await Promise.all(messagesPromises);
-        setMessagesData(resolvedMessages || []);
-
-      } else {
-        // Handle the case when the bulletin board document doesn't exist
-      }
-    } else {
-      // Handle the case when the bulletin board reference is missing
-    }
-  }, [groupData]);
 
 
   useEffect(() => {
@@ -455,49 +361,11 @@ const BikeBusGroupPage: React.FC = () => {
     fetchEvents();
     fetchEvent();
     fetchSchedules();
-    fetchBulletinBoard();
-    fetchMessages();
 
   }
-    , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules, fetchBulletinBoard, fetchMessages]);
-
-  const submitMessage = async (event: { preventDefault: () => void; }) => {
-    event.preventDefault();
-
-    if (!user?.uid) {
-      return;
-    }
-
-    // Instead of getting 'bulletinboards' collection, get 'messages' collection directly
-    const messagesRef = collection(db, 'messages');
-    // create a new document in the messages collection
-    const messagesDoc = await addDoc(messagesRef, {
-      message: messageInput,
-      user: doc(db, 'users', user.uid),
-      username: username,
-      BikeBusGroup: doc(db, 'bikebusgroups', groupId),
-      timestamp: serverTimestamp(),
-      bulletinboard: doc(db, 'bulletinboard', groupData.bulletinboard.id),
-    });
-    const messageDoc = messagesDoc.id;
-    try {
-
-      // update the bulletinboard by adding a docref of the messages document to the bulletinboard Messages array
-      const bulletinBoardRef = doc(db, 'bulletinboard', groupData.bulletinboard.id);
-      await updateDoc(bulletinBoardRef, {
-        Messages: arrayUnion(doc(db, 'messages', messageDoc)) // need to get the id of the messages document that was just created and add it to the array
-      });
+    , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules,]);
 
 
-      // Clear the message input field
-      setMessageInput('');
-      postMessage('');
-      fetchMessages();
-
-    } catch (error) {
-      console.error("Error adding document: ", error);
-    }
-  };
 
 
 
@@ -588,7 +456,7 @@ const BikeBusGroupPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent onIonScroll={handleScroll} fullscreen>
+      <IonContent fullscreen>
         {headerContext?.showHeader && (
           <IonHeader>
             <IonToolbar>
@@ -743,35 +611,6 @@ const BikeBusGroupPage: React.FC = () => {
                   </Link>
                 </IonItem>
               </IonList>
-              {isUserMember && (
-                <IonList>
-                  <form onSubmit={submitMessage}>
-                    <IonInput
-                      value={messageInput}
-                      placeholder="Enter your message"
-                      onIonChange={e => setMessageInput(e.detail.value || '')}
-                    />
-                    <IonButton expand="full" type="submit">Post Bulletin Board Message</IonButton>
-                  </form>
-                  {messagesData && messagesData.length > 0 && messagesData
-                    .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp in descending order
-                    .map((message, index) => {
-                      return (
-                        <IonItem key={index}>
-                          {username !== message?.username && (
-                            <Avatar uid={message?.user?.id} size='extrasmall' />
-                          )}
-                          <IonLabel className={username === message?.username ? 'right-align' : 'left-align'}>
-                            {message?.message}
-                          </IonLabel>
-                          {username === message?.username && (
-                            <Avatar uid={message?.user?.id} size='extrasmall' />
-                          )}
-                        </IonItem>
-                      );
-                    })}
-                </IonList>
-              )}
             </div>
           </IonCardContent>
         </IonCard>

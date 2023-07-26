@@ -13,7 +13,7 @@ import {
   IonSelect,
   IonSelectOption,
 } from '@ionic/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
@@ -26,6 +26,8 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import React from "react";
 import './CreateOrganization.css'
 import { useHistory } from 'react-router-dom';
+import { HeaderContext } from '../components/HeaderContext';
+
 
 
 
@@ -47,6 +49,8 @@ const CreateOrganization: React.FC = () => {
   const [orgContactName, setOrgContactName] = useState("");
   const [enabledAccountModes, setAccountMode] = useState<string[]>([]);
   const [newOrgId, setNewOrgId] = useState<string>('');
+  const headerContext = useContext(HeaderContext);
+
 
 
   const togglePopover = (e: any) => {
@@ -202,9 +206,11 @@ const CreateOrganization: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen className="ion-flex ion-flex-direction-column">
-        <IonHeader>
-          <IonToolbar></IonToolbar>
-        </IonHeader>
+        {headerContext?.showHeader && (
+          <IonHeader>
+            <IonToolbar></IonToolbar>
+          </IonHeader>
+        )}
         <IonTitle>
           <h1>Create Organization</h1>
         </IonTitle>
