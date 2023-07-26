@@ -13,16 +13,15 @@ import {
   IonSelect,
   IonSelectOption,
 } from '@ionic/react';
-import { useEffect, useRef, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from "firebase/firestore";
-import { useJsApiLoader } from '@react-google-maps/api';
 import React from "react";
 import './CreateOrganization.css'
 import { useHistory } from 'react-router-dom';
@@ -205,7 +204,7 @@ const CreateOrganization: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent fullscreen className="ion-flex ion-flex-direction-column">
+      <IonContent fullscreen>
         {headerContext?.showHeader && (
           <IonHeader>
             <IonToolbar></IonToolbar>
@@ -214,9 +213,9 @@ const CreateOrganization: React.FC = () => {
         <IonTitle>
           <h1>Create Organization</h1>
         </IonTitle>
-        <IonContent className="ion-flex-grow">
+        <IonContent>
           <form onSubmit={submitForm}>
-            <IonItem className="ion-flex-grow">
+            <IonItem>
               <IonLabel>Name of Organization:</IonLabel>
               <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required />
             </IonItem>
