@@ -26,14 +26,8 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import React from "react";
 import './CreateOrganization.css'
 import { useHistory } from 'react-router-dom';
-import { add } from 'date-fns';
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
-interface Coordinate {
-  lat: number;
-  lng: number;
-}
 
 
 const CreateOrganization: React.FC = () => {
@@ -41,10 +35,6 @@ const CreateOrganization: React.FC = () => {
   const { avatarUrl } = useAvatar(user?.uid);
   const history = useHistory();
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries,
-  });
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -253,7 +243,7 @@ const CreateOrganization: React.FC = () => {
         </IonTitle>
         <IonContent className="ion-flex-grow">
           <form onSubmit={submitForm}>
-            <IonItem>
+            <IonItem className="ion-flex-grow">
               <IonLabel>Name of Organization:</IonLabel>
               <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required />
             </IonItem>

@@ -51,6 +51,7 @@ import EventSummary from './pages/EventSummary';
 import OrganizationProfile from './pages/OrganizationProfile';
 import ViewOrganization from './pages/ViewOrganization';
 import ViewOrganizationList from './pages/ViewOrganizationList';
+import BulletinBoards from './pages/BulletinBoards';
 import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
 import { useOrganizationContext } from "./components/Organizations/useOrganization";
 import useEvent from "./components/BikeBusGroup/useEvent";
@@ -354,6 +355,9 @@ const App: React.FC = () => {
                   <IonList>
                     <IonMenuToggle auto-hide="false">
                       <IonCard>
+                        <IonItem button routerLink="/BulletinBoards" routerDirection="none">
+                          <IonLabel>Bulletin Boards</IonLabel>
+                        </IonItem>
                         <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
@@ -498,6 +502,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route path="/SearchForBikeBus">
                         <SearchForBikeBus />
+                      </Route>
+                      <Route path="/BulletinBoards">
+                        <BulletinBoards />
                       </Route>
                       <Route path="/viewroute/:id" exact>
                         <ViewRoute />
