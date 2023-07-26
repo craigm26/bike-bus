@@ -492,7 +492,6 @@ const BikeBusGroupPage: React.FC = () => {
       // Clear the message input field
       setMessageInput('');
       postMessage('');
-
       fetchMessages();
 
     } catch (error) {
