@@ -21,6 +21,7 @@ import { HeaderContext } from "../components/HeaderContext";
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
+import './BulletinBoards.css';
 
 interface Coordinate {
     lat: number;
@@ -117,32 +118,49 @@ const BulletinBoards: React.FC = () => {
             });
         }
 
+    }, [user]);
+
+    useEffect(() => {
         if (selectedValue) {
-            const groupRef = doc(db, 'organizations', selectedValue);
-            getDoc(groupRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const groupData = docSnapshot.data();
+            // Fetch from organizations and bikebusgroups in parallel
+            const orgSnapshotPromise = getDoc(doc(db, 'organizations', selectedValue));
+            const busSnapshotPromise = getDoc(doc(db, 'bikebusgroups', selectedValue));
+    
+            Promise.all([orgSnapshotPromise, busSnapshotPromise]).then(([orgSnapshot, busSnapshot]) => {
+                if (orgSnapshot.exists()) {
+                    const groupData = orgSnapshot.data();
                     if (groupData) {
                         setGroupData(groupData);
-                        setGroupId(selectedValue);
-                    }
-                } else {
-                    const groupRef = doc(db, 'bikebusgroups', selectedValue);
-                    getDoc(groupRef).then((docSnapshot) => {
-                        if (docSnapshot.exists()) {
-                            const groupData = docSnapshot.data();
-                            if (groupData) {
-                                setGroupData(groupData);
-                                setGroupId(selectedValue);
-                            }
-                        } else {
+                        console.log('Org Data:', groupData);
+                        console.log('Org ID:', selectedValue);
+                        // find the bulletinboard for this org
+                        const bulletinBoardRef = groupData.bulletinboard;
+                        if (bulletinBoardRef) {
+                            getDoc(bulletinBoardRef).then((bulletinBoardSnapshot) => {
+                                if (bulletinBoardSnapshot.exists()) {
+                                    const bulletinBoardData = bulletinBoardSnapshot.data();
+                                    if (bulletinBoardData) {
+                                        console.log('Org Bulletin Board Data:', bulletinBoardData);
+                                        // show me the document reference for the id of the bulletinboard
+                                        console.log('Org Bulletin Board ID:', bulletinBoardSnapshot.id);
+                                    }
+                                } else {
+                                }
+                            });
                         }
-                    });
+                    }
+                } else if (busSnapshot.exists()) {
+                    const groupData = busSnapshot.data();
+                    if (groupData) {
+                        setGroupData(groupData);
+                        console.log('Bus Data:', groupData);
+                        console.log('Bus ID:', selectedValue);
+                    }
                 }
             });
         }
-
-    }, [user, groupId, username, selectedValue]);
+    }, [selectedValue]);
+    
 
     const fetchOrganizations = useCallback(async () => {
         let formattedData: { value: string, label: string }[] = [];
@@ -210,20 +228,20 @@ const BulletinBoards: React.FC = () => {
         if (groupData?.bulletinboard) {
             const bulletinBoardRef = doc(db, groupData.bulletinboard.path);
             const bulletinBoardDoc = await getDoc(bulletinBoardRef);
-    
+
             if (bulletinBoardDoc.exists()) {
                 const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
                 const messagesData = bulletinBoardData?.Messages || [];
-    
+
                 const messagesPromises = messagesData.map(async (messageRef: DocumentReference) => {
                     const messageDoc = await getDoc(messageRef);
                     if (messageDoc.exists()) {
                         const messageData = messageDoc.data();
-    
+
                         if (messageData?.user) {
                             const userDoc = await getDoc(messageData.user);
                             const userData = userDoc.data();
-    
+
                             return {
                                 ...messageData,
                                 user: userData ? {
@@ -236,16 +254,16 @@ const BulletinBoards: React.FC = () => {
                     } else {
                     }
                 });
-    
+
                 const resolvedMessages = await Promise.all(messagesPromises);
                 setMessagesData(resolvedMessages.filter((item): item is Message => Boolean(item)));
-    
+
             } else {
             }
         } else {
         }
     }, [groupData]);
-    
+
 
     useEffect(() => {
         if (groupType === 'BikeBus') {
@@ -261,7 +279,7 @@ const BulletinBoards: React.FC = () => {
 
     useEffect(() => {
         fetchMessages();
-    }, [fetchMessages]);
+    }, [fetchMessages, selectedValue]);
 
     const submitMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -285,6 +303,7 @@ const BulletinBoards: React.FC = () => {
         });
 
         setMessageInput('');
+        fetchMessages();
     };
 
     return (
@@ -306,8 +325,13 @@ const BulletinBoards: React.FC = () => {
                         </IonCardContent>
                     ) : (
                         <IonCardContent>
-                            <IonCardTitle>Select Organization or BikeBus Bulletin Board:</IonCardTitle>
-                            <IonSelect value={selectedValue} placeholder="Select One" onIonChange={e => setSelectedValue(e.detail.value)}>
+                            <IonCardTitle>Bulletin Board</IonCardTitle>
+                            <IonSelect
+                                className="custom-ion-select"
+                                value={selectedValue}
+                                placeholder="Select Organization or BikeBus:"
+                                onIonChange={e => setSelectedValue(e.detail.value)}
+                            >
                                 {combinedList.map((item, index) => (
                                     <IonSelectOption key={index} value={item.value}>
                                         {item.label}
@@ -315,18 +339,8 @@ const BulletinBoards: React.FC = () => {
                                 ))}
                             </IonSelect>
                             <IonList>
-                                {selectedValue && (
-                                    <form onSubmit={submitMessage}>
-                                        <IonInput
-                                            value={messageInput}
-                                            placeholder="Enter your message"
-                                            onIonChange={e => setMessageInput(e.detail.value || '')}
-                                        />
-                                        <IonButton expand="full" type="submit">Post Bulletin Board Message</IonButton>
-                                    </form>
-                                )}
                                 {messagesData && messagesData.length > 0 && messagesData
-                                    .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+                                    .sort((b, a) => Number(b.timestamp) - Number(a.timestamp))
                                     .map((message, index) => {
                                         return (
                                             <IonItem key={index}>
@@ -342,6 +356,16 @@ const BulletinBoards: React.FC = () => {
                                             </IonItem>
                                         );
                                     })}
+                                {selectedValue && (
+                                    <form onSubmit={submitMessage}>
+                                        <IonInput
+                                            value={messageInput}
+                                            placeholder="Enter your message"
+                                            onIonChange={e => setMessageInput(e.detail.value || '')}
+                                        />
+                                        <IonButton expand="full" type="submit">Post Bulletin Board Message</IonButton>
+                                    </form>
+                                )}
                             </IonList>
                         </IonCardContent>
                     )}
