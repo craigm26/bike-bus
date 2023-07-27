@@ -12,7 +12,9 @@ import {
     IonCardContent,
     IonCardTitle,
     IonSelect,
-    IonSelectOption
+    IonSelectOption,
+    IonInfiniteScroll,
+    IonInfiniteScrollContent
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -93,6 +95,14 @@ const BulletinBoards: React.FC = () => {
     const [username, setUsername] = useState<string | undefined>('');
     const [messageInput, setMessageInput] = useState<string>('');
     const [messagesData, setMessagesData] = useState<Message[]>([]);
+    const [disableInfiniteScroll, setDisableInfiniteScroll] = useState<boolean>(false);
+
+    async function searchNext($event: CustomEvent<void>) {
+        fetchMessages();
+    
+        ($event.target as HTMLIonInfiniteScrollElement).complete();
+      }
+
 
     useEffect(() => {
         if (headerContext) {
@@ -125,7 +135,7 @@ const BulletinBoards: React.FC = () => {
             // Fetch from organizations and bikebusgroups in parallel
             const orgSnapshotPromise = getDoc(doc(db, 'organizations', selectedValue));
             const busSnapshotPromise = getDoc(doc(db, 'bikebusgroups', selectedValue));
-    
+
             Promise.all([orgSnapshotPromise, busSnapshotPromise]).then(([orgSnapshot, busSnapshot]) => {
                 if (orgSnapshot.exists()) {
                     const groupData = orgSnapshot.data();
@@ -160,7 +170,7 @@ const BulletinBoards: React.FC = () => {
             });
         }
     }, [selectedValue]);
-    
+
 
     const fetchOrganizations = useCallback(async () => {
         let formattedData: { value: string, label: string }[] = [];
@@ -320,7 +330,7 @@ const BulletinBoards: React.FC = () => {
                             <IonCardTitle>How to Read Bulletin Boards:</IonCardTitle>
                             <IonList>
                                 <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
-                                <IonItem>2. Join a BikeBus <IonButton className="ion-button-profile" fill="solid" routerLink="/SearchForBikeBus">Search for BikeBus</IonButton> or Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/SearchForOrganization">Search for Organization</IonButton></IonItem>
+                                <IonItem>2. Join a BikeBus <IonButton className="ion-button-profile" fill="solid" routerLink="/SearchForBikeBus">Search for BikeBus</IonButton></IonItem>
                             </IonList>
                         </IonCardContent>
                     ) : (
@@ -367,6 +377,12 @@ const BulletinBoards: React.FC = () => {
                                     </form>
                                 )}
                             </IonList>
+                            <IonInfiniteScroll threshold="100px" disabled={disableInfiniteScroll}
+                                onIonInfinite={(e: CustomEvent<void>) => searchNext(e)}>
+                                <IonInfiniteScrollContent
+                                    loadingText="Loading more messages...">
+                                </IonInfiniteScrollContent>
+                            </IonInfiniteScroll>
                         </IonCardContent>
                     )}
                 </IonCard>

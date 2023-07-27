@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, addDoc, serverTimestamp, DocumentReference, Timestamp } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -9,7 +9,6 @@ import { useParams, Link } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
-import { event } from 'firebase-functions/v1/analytics';
 
 
 interface Coordinate {

@@ -9,6 +9,16 @@
   font-family: 'Indie-Flower', sans-serif;
 }
 
+.location-app-intro-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  text-align: center;
+  font-family: 'Indie-Flower', sans-serif;
+  overflow: hidden;
+}
+
 .EventTimeFont {
   font-size: .8em;
   font-family: 'Indie-Flower', sans-serif;

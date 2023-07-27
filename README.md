@@ -1,18 +1,9 @@
 # BikeBus
 
-# MVP goals
+## MVP goals
 
-- prove there's people willing to pay for premium services
-- prove there's network effects with this app
-- focus on providing value to bikebus members and leaders while giving a glimpse of what other roles could do to help make streets safer (data for policy makers)
-- basic features: 
---create a route, make it a scheduled route and call that a bikebus group. invite other or new users to join. 
---map search then allow options to get directions, llok for routes
---parents can check in a kid when the group starts
---org admins can claim a destination and make multiple routes and assign/invite leaders to them. 
---group page has group messages
---account page allows users to see their details
-
+- Providing value to bikebus members and leaders by allowing them to create a route, schedule it and invite users. Organizations can host multiple BikeBus groups and assign leaders to them. Organizations can also track time and distance traveled by BikeBus group as well as employee timesheets.
+  
 ## Safety in Numbers
 
 ## What
@@ -23,35 +14,44 @@ No ads or selling of user data with PII. Anonymous users and anonymized data whe
 
 ## Why
 
-We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets by enhanced awareness and data for pooicy makers on street design.
+We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets with data for policy makers on street design.
 
 ## Domain bikebus.app
 
+### Features
+
+-create a route, make it a scheduled route and call that a BikeBus group. Invite other or new users to join.
+-Map search then allow options to get directions, look for routes or BikeBus groups
+-Parents can check in a kid when the BikeBus starts
+-Org admins can claim a destination and make multiple routes and assign/invite leaders to them.
+-"Bulletin Boards" allow users in a BikeBus or Organization to send messages
+-Account page allows users to see their details and change them
+
 ## To develop
 
-npm 18.20.0
-firebase 9+
+-npm 18.20.0
+-firebase 9+
 
-npm install
-ionic develop
+-npm install
+-ionic develop
 
 ## To deploy to Firebase preview channel
 
-ionic build
-npx cap sync
-npx sync ios
-npx sync android
-firebase hosting:channel:deploy preview
+-ionic build
+-npx cap sync
+-npx sync ios
+-npx sync android
+-firebase hosting:channel:deploy preview
 
 ### will have to figure out how to deploy preview builds to ios and android
 
 ## to deploy to Firebase production channel
 
-ionic build --prod
-npx cap sync
-npx sync ios
-npx sync android
-firebase deploy --only hosting:production
+-ionic build --prod
+-npx cap sync
+-npx sync ios
+-npx sync android
+-firebase deploy --only hosting:production
 
 ## How does this app make money?
 
@@ -62,7 +62,6 @@ Free features:
 - BikeBus Leaders can create a route, schedule it and invite users.
 - BikeBus Members and Parents can search for a scheduled route.
 - BikeBus Members and Parents can become a leader by creating a new route.
-- Car Drivers can see BikeBus and be alerted when one is near.
 
 Premium features (Monthly, cost TBD):
 
