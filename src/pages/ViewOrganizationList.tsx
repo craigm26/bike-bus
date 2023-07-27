@@ -112,9 +112,9 @@ const ViewOrganizationList: React.FC = () => {
                                 <IonLabel>To Create an Organization:</IonLabel>
                                 <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
                                 <IonItem>2. Create a Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/CreateOrganization">Create Organization</IonButton></IonItem>
-                                <IonItem>3. Invite people to join your Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help: Inviting People to Join Your Organization</IonButton></IonItem>
-                                <IonItem>4. Delegate roles to your Organization:</IonItem>
-                                <IonItem>5. Create BikeBus groups and routes for your Organization:</IonItem>
+                                <IonItem>3. Invite people to join your Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
+                                <IonItem>4. Delegate roles to your Organization</IonItem>
+                                <IonItem>5. Create BikeBus groups and routes for your Organization</IonItem>
                                 <IonItem>6. Train others on timekeeping and reporting</IonItem>
                             </IonList>
                         </IonCardContent>

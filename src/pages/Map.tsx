@@ -583,10 +583,8 @@ const Map: React.FC = () => {
                   <IonList>
                     <IonText>
                       <p> BikeBus is a community of people who want to bike together. </p>
-                      <p> Create Bike routes, BikeBus groups and Organizations </p>
                       <p> Find Bike routes, BikeBus groups and Organizations near you </p>
-                      <p> Join BikeBus groups and Organizations </p>
-                      <p> Create BikeBus trips where other people can join your trip</p>
+                      <p> Create and Join Open Trips, BikeBus groups and events and Organizations </p>
                     </IonText>
                   </IonList>
                   <IonLabel>
