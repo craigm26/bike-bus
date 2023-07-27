@@ -12,16 +12,10 @@ import {
   IonAvatar,
   IonSegment,
   IonSegmentButton,
-  IonModal,
-  IonInput,
   IonTitle,
-  IonText,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
   IonItem,
   IonList,
+  IonText,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -31,7 +25,7 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { GoogleMap, LoadScript, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -582,532 +576,537 @@ const Map: React.FC = () => {
       <IonContent>
         {!showMap && (
           <>
-            <IonGrid>
-              <IonRow className="location-button-container">
-                <IonCol className="location-app-help-container">
-                  <IonTitle>How do I create a BikeBus?</IonTitle>
-                  <IonList>
-                    <IonItem>1. First, you should <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
-                    <IonItem>2. Click on the "Start Map by retrieving your Current Location" button</IonItem>
-                    <IonItem>3. Search for a Starting Location and Destination</IonItem>
-                    <IonItem>4. Click on the "Get Directions" button</IonItem>
-                    <IonItem>5. Click on the "Create Route" button</IonItem>
-                    <IonItem>6. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
-                    <IonItem>7. Invite users to your BikeBus</IonItem>
-                    <IonItem>8. When your schedule indicates that you -as BikeBus Leader- should start the BikeBus, Start the BikeBus on the Map</IonItem>
-                    <IonItem>9. Before the BikeBus Trip, users can RSVP for the trip. After the Leader starts the BikeBus, members can "Check-In".</IonItem>
-                  </IonList>
-                </IonCol>
-                <IonCol >
-                  <IonButton onClick={getLocation}>Start Map by retrieving your Current Location</IonButton>
-                </IonCol>
-              </IonRow>
+            <IonGrid className="location-app-intro-container">
               <IonRow>
+                <IonCol>
+                  <IonTitle>Welcome to BikeBus!</IonTitle>
+                  <IonList>
+                    <IonText>
+                      <p> BikeBus is a community of people who want to bike together. </p>
+                      <p> Create Bike routes, BikeBus groups and Organizations </p>
+                      <p> Find Bike routes, BikeBus groups and Organizations near you </p>
+                      <p> Join BikeBus groups and Organizations </p>
+                      <p> Create BikeBus trips where other people can join your trip</p>
+                    </IonText>
+                  </IonList>
+                  <IonLabel>
+                    <IonItem button color="primary" onClick={getLocation} lines="none">
+                      <IonText color="secondary">Start Map</IonText>
+                    </IonItem>
+                    or Visit
+                    <IonItem button color="primary"  routerLink="/Help" lines="none">
+                      <IonText color="secondary">Help</IonText>
+                    </IonItem>
+                  </IonLabel>
+                </IonCol>
               </IonRow>
             </IonGrid>
 
           </>
-        )}
-        {showMap && (
-          <IonGrid fixed={false}>
-            <IonRow className="map-base">
-              <GoogleMap
-                onLoad={(map) => {
-                  mapRef.current = map;
-                }}
-                mapContainerStyle={{
-                  width: "100%",
-                  height: "100%",
-                }}
-                center={mapCenter}
-                zoom={18}
-                options={{
-                  disableDefaultUI: true,
-                  zoomControl: false,
-                  mapTypeControl: false,
-                  disableDoubleClickZoom: true,
-                  maxZoom: 18,
-                  styles: [
-                    {
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#bdbdbd"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#eeeeee"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.business",
-                      "stylers": [
-                        {
-                          "visibility": "simplified"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.business",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "saturation": -65
-                        },
-                        {
-                          "lightness": 50
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#e5e5e5"
-                        },
-                        {
-                          "visibility": "simplified"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "color": "#27d349"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        },
-                        {
-                          "saturation": 45
-                        },
-                        {
-                          "lightness": -20
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "color": "#ffd800"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.stroke",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 3.5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#ffffff"
-                        },
-                        {
-                          "visibility": "simplified"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.arterial",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#dadada"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "transit",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "color": "#7ea3ec"
-                        },
-                        {
-                          "saturation": -50
-                        },
-                        {
-                          "lightness": 50
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#c9c9c9"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    }
-                  ],
-                }}
-              >
-                <IonGrid className="search-container">
-                  <IonRow className="current-location">
-                    <IonButton onClick={getLocation}>
-                      <IonIcon icon={locateOutline} />
-                    </IonButton>
-                    <IonCol>
+        )
+        }
+        {
+          showMap && (
+            <IonGrid fixed={false}>
+              <IonRow className="map-base">
+                <GoogleMap
+                  onLoad={(map) => {
+                    mapRef.current = map;
+                  }}
+                  mapContainerStyle={{
+                    width: "100%",
+                    height: "100%",
+                  }}
+                  center={mapCenter}
+                  zoom={18}
+                  options={{
+                    disableDefaultUI: true,
+                    zoomControl: false,
+                    mapTypeControl: false,
+                    disableDoubleClickZoom: true,
+                    maxZoom: 18,
+                    styles: [
+                      {
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#f5f5f5"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.icon",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#616161"
+                          }
+                        ]
+                      },
+                      {
+                        "elementType": "labels.text.stroke",
+                        "stylers": [
+                          {
+                            "color": "#f5f5f5"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.land_parcel",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.land_parcel",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#bdbdbd"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.neighborhood",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "administrative.neighborhood",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#eeeeee"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#757575"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.business",
+                        "stylers": [
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.business",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "saturation": -65
+                          },
+                          {
+                            "lightness": 50
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#e5e5e5"
+                          },
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#27d349"
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.park",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          },
+                          {
+                            "saturation": 45
+                          },
+                          {
+                            "lightness": -20
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#ffd800"
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "geometry.stroke",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          },
+                          {
+                            "weight": 5
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "poi.school",
+                        "elementType": "labels.text.stroke",
+                        "stylers": [
+                          {
+                            "visibility": "on"
+                          },
+                          {
+                            "weight": 3.5
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#ffffff"
+                          },
+                          {
+                            "visibility": "simplified"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road",
+                        "elementType": "labels.icon",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.arterial",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#757575"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.highway",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#dadada"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.highway",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#616161"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.local",
+                        "elementType": "labels",
+                        "stylers": [
+                          {
+                            "visibility": "off"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "road.local",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "transit",
+                        "elementType": "geometry.fill",
+                        "stylers": [
+                          {
+                            "color": "#7ea3ec"
+                          },
+                          {
+                            "saturation": -50
+                          },
+                          {
+                            "lightness": 50
+                          },
+                          {
+                            "visibility": "on"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "water",
+                        "elementType": "geometry",
+                        "stylers": [
+                          {
+                            "color": "#c9c9c9"
+                          }
+                        ]
+                      },
+                      {
+                        "featureType": "water",
+                        "elementType": "labels.text.fill",
+                        "stylers": [
+                          {
+                            "color": "#9e9e9e"
+                          }
+                        ]
+                      }
+                    ],
+                  }}
+                >
+                  <IonGrid className="search-container">
+                    <IonRow className="current-location">
+                      <IonButton onClick={getLocation}>
+                        <IonIcon icon={locateOutline} />
+                      </IonButton>
+                      <IonCol>
+                        <StandaloneSearchBox
+                          onLoad={onLoadStartingLocation}
+                          onPlacesChanged={onPlaceChangedStart}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder={userLocationAddress}
+                            style={{
+                              width: "300px",
+                              height: "40px",
+                            }}
+                          />
+                        </StandaloneSearchBox>
+                      </IonCol>
+                    </IonRow>
+                    <IonCol className="destination-box">
                       <StandaloneSearchBox
-                        onLoad={onLoadStartingLocation}
-                        onPlacesChanged={onPlaceChangedStart}
+                        onLoad={onLoadDestinationValue}
+                        onPlacesChanged={onPlaceChangedDestination}
                       >
                         <input
                           type="text"
                           autoComplete="on"
-                          placeholder={userLocationAddress}
+                          placeholder="Enter a Destination"
                           style={{
                             width: "300px",
                             height: "40px",
                           }}
                         />
                       </StandaloneSearchBox>
+                      {showGetDirectionsButton && !isAnonymous && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
+                      {showGetDirectionsButton && <IonRow className="travel-mode-row">
+                        <IonCol>
+                          <IonLabel>Travel Mode:</IonLabel>
+                          <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                            setTravelMode(e.detail.value);
+                            setTravelModeSelector(e.detail.value);
+                          }}>
+                            <IonSegmentButton value="WALKING">
+                              <IonIcon icon={walkOutline} />
+                            </IonSegmentButton>
+                            <IonSegmentButton value="BICYCLING">
+                              <IonIcon icon={bicycleOutline} />
+                            </IonSegmentButton>
+                            <IonSegmentButton value="DRIVING">
+                              <IonIcon icon={carOutline} />
+                            </IonSegmentButton>
+                            <IonSegmentButton value="TRANSIT">
+                              <IonIcon icon={busOutline} />
+                            </IonSegmentButton>
+                          </IonSegment>
+                        </IonCol>
+                      </IonRow>}
+                      <IonRow>
+                        <>
+                          {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                          {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+
+                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                          }
+
+                        </>
+                        {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
+                          history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);
+                        }}>Start Trip</IonButton>}
+                      </IonRow>
                     </IonCol>
-                  </IonRow>
-                  <IonCol className="destination-box">
-                    <StandaloneSearchBox
-                      onLoad={onLoadDestinationValue}
-                      onPlacesChanged={onPlaceChangedDestination}
-                    >
-                      <input
-                        type="text"
-                        autoComplete="on"
-                        placeholder="Enter a Destination"
-                        style={{
-                          width: "300px",
-                          height: "40px",
-                        }}
-                      />
-                    </StandaloneSearchBox>
-                    {showGetDirectionsButton && !isAnonymous && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
-                    {showGetDirectionsButton && <IonRow className="travel-mode-row">
-                      <IonCol>
-                        <IonLabel>Travel Mode:</IonLabel>
-                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                          setTravelMode(e.detail.value);
-                          setTravelModeSelector(e.detail.value);
-                        }}>
-                          <IonSegmentButton value="WALKING">
-                            <IonIcon icon={walkOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="BICYCLING">
-                            <IonIcon icon={bicycleOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="DRIVING">
-                            <IonIcon icon={carOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="TRANSIT">
-                            <IonIcon icon={busOutline} />
-                          </IonSegmentButton>
-                        </IonSegment>
-                      </IonCol>
-                    </IonRow>}
-                    <IonRow>
-                      <>
-                        {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
+                        <IonLabel>Distance: {distance} miles </IonLabel>
+                        <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                        <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                      </IonRow>}
+                    </IonCol>
+                  </IonGrid>
+                  <div>
+                    {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+                    {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                  </div>
+                  <div>
+                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
+                    {selectedEndLocation && <Marker position={selectedEndLocation} />}
+                  </div>
+                  <Polyline
+                    path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                    options={{
+                      strokeColor: "#FF0000",
+                      strokeOpacity: 1.0,
+                      strokeWeight: 2,
+                      geodesic: true,
+                      editable: true,
+                      draggable: true,
+                    }}
+                  />
+                </GoogleMap>
+              </IonRow>
+            </IonGrid>
+          )
+        }
 
-                          <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
-                        }
-
-                      </>
-                      {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
-                        history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);
-                      }}>Start Trip</IonButton>}
-                    </IonRow>
-                  </IonCol>
-                  <IonCol>
-                    {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
-                      <IonLabel>Distance: {distance} miles </IonLabel>
-                      <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                      <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                    </IonRow>}
-                  </IonCol>
-                </IonGrid>
-                <div>
-                  {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-                </div>
-                <div>
-                  {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                  {selectedEndLocation && <Marker position={selectedEndLocation} />}
-                </div>
-                <Polyline
-                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                  options={{
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2,
-                    geodesic: true,
-                    editable: true,
-                    draggable: true,
-                  }}
-                />
-              </GoogleMap>
-            </IonRow>
-          </IonGrid>
-        )}
-
-      </IonContent>
+      </IonContent >
     </IonPage >
   );
 };
