@@ -32,7 +32,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { helpCircleOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
+import { helpCircleOutline, homeOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -243,6 +243,7 @@ const App: React.FC = () => {
     if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
       const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
 
+
       if (eventDistance <= 30) {
         return true;
       }
@@ -273,6 +274,8 @@ const App: React.FC = () => {
       }
     }
 
+    const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
+
     return false;
   }
     , [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
@@ -285,8 +288,10 @@ const App: React.FC = () => {
         const currentDate = new Date();
 
         for (const event of fetchedEvents) {
-          // Convert the event's date string to a Date object
-          const eventDate = new Date(event.eventDate);
+          // Convert the event's startTimestamp to a Date object
+          const eventDate = event.startTimestamp.toDate();
+
+          // Log the eventDate and currentDate for each event
 
           // Check if the event's date is in the future (not in the past)
           if (eventDate > currentDate) {
@@ -301,12 +306,13 @@ const App: React.FC = () => {
         setRelevantEvents(relevantEvents);
       };
 
-
       fetchRelevantEvents();
     }
   }, [fetchedEvents, isEventRelevant]);
 
+
   const getUpcomingEvent = () => {
+
     if (!relevantEvents || relevantEvents.length === 0) return null;
 
     // Make sure to replace 'eventDate' with the actual property name that holds the event's date
@@ -314,6 +320,7 @@ const App: React.FC = () => {
 
     // Now, the first event in sortedEvents is the upcoming event
     const upcomingEvent = sortedEvents[0];
+
 
     return upcomingEvent;
   };
@@ -332,11 +339,8 @@ const App: React.FC = () => {
   );
 
   const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
   };
 
 
@@ -632,7 +636,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="start" slot="fixed">
                       <IonFabButton routerLink="/Map" routerDirection="none">
-                        <IonIcon icon={mapOutline} />
+                        <IonIcon icon={homeOutline} />
                       </IonFabButton>
                     </IonFab>
                   </div>

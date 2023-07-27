@@ -398,7 +398,7 @@ const SearchForBikeBus: React.FC = () => {
               <IonRow className="location-button-container">
                 <IonCol>
                   <IonButton onClick={getLocation}>
-                    Start Map by retrieving your Current Location
+                    Start Map
                   </IonButton>
                 </IonCol>
               </IonRow>

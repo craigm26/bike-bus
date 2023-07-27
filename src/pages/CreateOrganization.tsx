@@ -204,15 +204,12 @@ const CreateOrganization: React.FC = () => {
 
   return (
     <IonPage>
+        <IonContent fullscreen>
         {headerContext?.showHeader && (
           <IonHeader>
             <IonToolbar></IonToolbar>
           </IonHeader>
         )}
-        <IonContent fullscreen>
-        <IonTitle>
-          <h1>Create Organization</h1>
-        </IonTitle>
           <form onSubmit={submitForm}>
             <IonItem>
               <IonLabel>Name of Organization:</IonLabel>
