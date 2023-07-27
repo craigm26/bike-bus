@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@capacitor/action-sheet": "^5.0.6",
     "@capacitor/android": "^5.0.0",
     "@capacitor/app": "5.0.3",
     "@capacitor/core": "^5.0.0-rc.2",
@@ -10,6 +11,7 @@
     "@capacitor/haptics": "5.0.4",
     "@capacitor/ios": "^5.0.0",
     "@capacitor/keyboard": "5.0.4",
+    "@capacitor/share": "^5.0.6",
     "@capacitor/status-bar": "5.0.4",
     "@firebase/app": "^0.9.9",
     "@firebase/auth": "^0.23.1",

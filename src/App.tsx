@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Route, Redirect, useParams } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc, Timestamp } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
 import { DataSnapshot } from '@firebase/database';
 import { ref, get } from "firebase/database";
+import { Share } from '@capacitor/share';
 
 import Map from './pages/Map';
 import Login from './pages/Login';
@@ -32,7 +33,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { helpCircleOutline, homeOutline, mapOutline, personCircleOutline } from 'ionicons/icons';
+import { helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -117,6 +118,8 @@ const App: React.FC = () => {
   const { fetchedEvents } = useEvent();
   const [relevantEvents, setRelevantEvents] = useState<any[]>([]);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     if (user !== undefined) {
@@ -498,6 +501,66 @@ const App: React.FC = () => {
                           <Profile />
                         </IonPopover>
                         <IonButtons slot="primary">
+                          <IonActionSheet
+                            isOpen={showActionSheet}
+                            onDidDismiss={() => setShowActionSheet(false)}
+                            buttons={[
+                              {
+                                text: 'Share via Text Message',
+                                icon: phonePortraitOutline,
+                                handler: () => {
+                                  Share.share({
+                                    title: 'Check out my #BikeBus link!',
+                                    text: 'I found this link on the BikeBus app',
+                                    url: window.location.href,
+                                  });
+                                }
+                              },
+                              {
+                                text: 'Share on Twitter',
+                                icon: logoTwitter,
+                                handler: () => {
+                                  Share.share({
+                                    title: 'Check out my #BikeBus link!',
+                                    text: 'I found this link on the BikeBus app',
+                                    url: window.location.href,
+                                  });
+                                }
+                              },
+                              {
+                                text: 'Share on Instagram',
+                                icon: logoInstagram,
+                                handler: () => {
+                                  Share.share({
+                                    title: 'Check out my #BikeBus link!',
+                                    text: 'I found this link on the BikeBus app',
+                                    url: window.location.href,
+                                  });
+                                }
+                              },
+                              {
+                                text: 'Share via Email',
+                                icon: mailOutline,
+                                handler: () => {
+                                  Share.share({
+                                    title: 'Check out my #BikeBus link!',
+                                    text: 'I found this link on the BikeBus app',
+                                    url: window.location.href,
+                                  });
+                                }
+                              },
+                              {
+                                text: 'Cancel',
+                                role: 'cancel',
+                                handler: () => {
+                                  console.log('Cancel clicked');
+                                }
+                              },
+                            ]}
+                          />
+                          <IonButton onClick={() => setShowActionSheet(true)}>
+                            <IonIcon slot="end" icon={shareOutline}></IonIcon>
+                          </IonButton>
                           <IonButton routerLink='/help'>
                             <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
                           </IonButton>
