@@ -154,7 +154,7 @@ const ViewOrganization: React.FC = () => {
     const [isUserMember, setIsUserMember] = useState(false);
     const [orgData, setOrgData] = useState<any>(null);
     const [isUserCreator, setIsUserCreator] = useState(false);
-
+    const [organizationId, setOrganizationId] = useState<string>("");
 
 
     const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
@@ -247,6 +247,11 @@ const ViewOrganization: React.FC = () => {
                         setSchoolDistrict(organizationData.SchoolDistrictName);
                         setSchools(organizationData.SchoolNames);
                         setSchool(organizationData.SchoolNames[0]);
+                        // get the document id of the organization
+                        const organizationId = docSnapshot.id;
+                        console.log("organizationId: ", organizationId);
+                        // allow orgnizationId to be used for param routing 
+                        setOrganizationId(organizationId);
 
                     }
                 }
@@ -394,7 +399,7 @@ const ViewOrganization: React.FC = () => {
                         <IonRow>
                             <IonButton>Send Invite</IonButton>
                             <IonButton>Add Staff</IonButton>
-                            <IonButton>Map</IonButton>
+                            <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
                             <IonButton>Schedules</IonButton>
                             <IonButton>Timesheets</IonButton>
                             <IonButton>Add BikeBusGroup</IonButton>
@@ -411,6 +416,11 @@ const ViewOrganization: React.FC = () => {
                             <IonCol>
                                 <IonItem lines="none">
                                     <IonLabel position="stacked">Organization Location: {Organization?.Location}</IonLabel>
+                                </IonItem>
+                            </IonCol>
+                            <IonCol>
+                                <IonItem lines="none">
+                                    <IonLabel position="stacked">Document Id: {Organization?.id}</IonLabel>
                                 </IonItem>
                             </IonCol>
                         </IonRow>

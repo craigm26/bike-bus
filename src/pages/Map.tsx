@@ -24,7 +24,7 @@ import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -579,20 +579,45 @@ const Map: React.FC = () => {
             <IonGrid className="location-app-intro-container">
               <IonRow>
                 <IonCol>
-                  <IonTitle>Welcome to BikeBus!</IonTitle>
-                  <IonList>
-                    <IonText>
-                      <p> BikeBus is a community of people who want to bike together. </p>
-                      <p> Find Bike routes, BikeBus groups and Organizations near you </p>
-                      <p> Create and Join Open Trips, BikeBus groups and events and Organizations </p>
-                    </IonText>
+                  <IonList lines="full">
+                    <IonItem>
+                      <IonLabel>
+                        <h1>Welcome to BikeBus!</h1>
+                        <p>BikeBus is a community of people who want to bike together.</p>
+                      </IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>
+                        <h1>Get Involved</h1>
+                        <p>Find, Create, and Join:</p>
+                        <IonList>
+                          <IonItem>
+                            <IonIcon icon={bicycleOutline} slot="start" />
+                            <IonLabel>Routes</IonLabel>
+                          </IonItem>
+                          <IonItem>
+                            <IonIcon icon={busOutline} slot="start" />
+                            <IonLabel>Open Trips</IonLabel>
+                          </IonItem>
+                          <IonItem>
+                            <IonIcon icon={peopleOutline} slot="start" />
+                            <IonLabel>BikeBus Groups</IonLabel>
+                          </IonItem>
+                          <IonItem>
+                            <IonIcon icon={businessOutline} slot="start" />
+                            <IonLabel>Organizations Near You</IonLabel>
+                          </IonItem>
+                        </IonList>
+                      </IonLabel>
+                    </IonItem>
                   </IonList>
+
                   <IonLabel>
                     <IonItem button color="primary" onClick={getLocation} lines="none">
                       <IonText color="secondary">Start Map</IonText>
                     </IonItem>
                     or Visit
-                    <IonItem button color="primary"  routerLink="/Help" lines="none">
+                    <IonItem button color="primary" routerLink="/Help" lines="none">
                       <IonText color="secondary">Help</IonText>
                     </IonItem>
                   </IonLabel>

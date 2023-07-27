@@ -55,6 +55,7 @@ import BulletinBoards from './pages/BulletinBoards';
 import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
 import { useOrganizationContext } from "./components/Organizations/useOrganization";
 import useEvent from "./components/BikeBusGroup/useEvent";
+import OrganizationMap from './pages/OrganizationMap';
 
 
 import '@ionic/react/css/core.css';
@@ -345,7 +346,7 @@ const App: React.FC = () => {
 
 
   if (loading) {
-    return <p>Loading...</p>; // Replace with a loading spinner if available
+    return <p>Loading...</p>;
   }
 
   return (
@@ -577,6 +578,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route exact path="/ViewOrganization/:id">
                         <ViewOrganization />
+                      </Route>
+                      <Route exact path="/OrganizationMap/:id">
+                        <OrganizationMap />
                       </Route>
                       <Route exact path="/ViewOrganizationList">
                         <ViewOrganizationList />
