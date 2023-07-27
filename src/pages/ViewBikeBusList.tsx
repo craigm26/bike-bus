@@ -115,7 +115,7 @@ const ViewBikeBusList: React.FC = () => {
                             <IonCardContent>
                                 <IonList>
                                     <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
-                                    <IonItem>2. Create a Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help: Creating a Route</IonButton></IonItem>
+                                    <IonItem>2. Create a Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
                                     <IonItem>3. View the Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/ViewRouteList">View your Routes</IonButton></IonItem>
                                     <IonItem>4. Select the "Create BikeBus Group" button</IonItem>
                                     <IonItem>5. Fill in the "Create BikeBus" form</IonItem>
