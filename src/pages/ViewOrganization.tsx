@@ -32,6 +32,16 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
+import { set } from "date-fns";
+
+interface UserData {
+    username: string;
+    uid: string;
+    accountType: string;
+    enabledAccountModes: string[];
+    avatarUrl: string;
+    email: string;
+}
 
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
@@ -105,9 +115,6 @@ const ViewOrganization: React.FC = () => {
     const { user, isAnonymous } = useAuth();
     const history = useHistory();
     const { id } = useParams<{ id: string }>();
-    const [showActionSheet, setShowActionSheet] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [showMap, setShowMap] = useState(false);
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [username, setUsername] = useState<string>("");
     const [accountType, setAccountType] = useState<string>("");
@@ -150,16 +157,33 @@ const ViewOrganization: React.FC = () => {
     const [showMembersModal, setShowMembersModal] = useState(false);
     const [membersData, setMembersData] = useState<any[]>([]);
     const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
-    const [isUserManager, setIsUserManager] = useState(false);
-    const [isUserMember, setIsUserMember] = useState(false);
     const [orgData, setOrgData] = useState<any>(null);
-    const [isUserCreator, setIsUserCreator] = useState(false);
     const [organizationId, setOrganizationId] = useState<string>("");
+    const [isUserCreator, setIsUserCreator] = useState(false);
+    const [isUserManager, setIsUserManager] = useState(false)
+    const [isUserAdmin, setIsUserAdmin] = useState(false);
+    const [isUserMember, setIsUserMember] = useState(false);
+    const [isUserEmployee, setIsUserEmployee] = useState(false);
+    const [isUserVolunteer, setIsUserVolunteer] = useState(false);
+    const [userOrgRole, setUserOrgRole] = useState<string>("");
+    const [organizationAdmins, setOrganizationAdmins] = useState<string[]>([]);
+    const [organizationManagers, setOrganizationManagers] = useState<string[]>([]);
+    const [organizationEmployees, setOrganizationEmployees] = useState<string[]>([]);
+    const [organizationVolunteers, setOrganizationVolunteers] = useState<string[]>([]);
+    const [organizationMembers, setOrganizationMembers] = useState<string[]>([]);
+    const [organizationCreator, setOrganizationCreator] = useState<string>("");
+
+
+
+    // cheatsheet to all of the accountTypes available:
+    // App Admin, Org Admin, Member, Leader, Parent, Kid, Anonymous
+    // Cheatsheet to all of the BikeBusGroup roles available:
+    // BikeBusCreator, BikeBusLeader, BikeBusMembers, 
+    // cheatsheet ot all of the Organization user types available: 
+    // OrganizationCreator, OrganizationAdmins, OrganizationManagers, OrganizationEmployees, OrganizationVolunteers, OrganizationMembers
 
 
     const [bikeBusRoutes, setBikeBusRoutes] = useState<Array<any>>([]);
-    const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
-        ({ isOpen: false, content: '', position: null });
 
     // the purpose of this page is to display the organization's profile for the admin to view and edit. This is the main page for the admin to view and edit the organization's profile.
 
@@ -168,25 +192,22 @@ const ViewOrganization: React.FC = () => {
     // get the document data
     const [Organization, setOrganization] = useState<Organization | null>(null);
 
-
     useEffect(() => {
         if (user) {
             const userRef = firestoreDoc(db, "users", user.uid);
             const routesRef = collection(db, "routes");
             const BikeBusGroupsRef = collection(db, "BikeBusGroups");
+
             const queryObj = query(
                 routesRef,
                 where("isBikeBus", "==", true),
-
             );
 
             const BikeBusGroupsLeaderQueryObj = query(
                 BikeBusGroupsRef,
-                // where the logged in user is a leader of the BikeBusGroup
                 where("BikeBusGroupLeader", "==", user.uid),
             );
 
-            // now get the documents where BikeBusGroupLeader is equal to the logged in user's uid
             getDocs(BikeBusGroupsLeaderQueryObj)
                 .then((querySnapshot) => {
                     const BikeBusGroups: any[] = [];
@@ -197,15 +218,14 @@ const ViewOrganization: React.FC = () => {
                     setBikeBusRoutes(BikeBusGroups);
                 })
                 .catch((error) => {
+                    console.log(error);
                 });
 
             const BikeBusGroupsMemberQueryObj = query(
                 BikeBusGroupsRef,
-                // where the logged in user is a member of the BikeBusGroup
                 where("BikeBusGroupMembers", "array-contains", user.uid),
             );
 
-            // now get the documents where the BikeBusGroup member is equal to the logged in user's uid
             getDocs(BikeBusGroupsMemberQueryObj)
                 .then((querySnapshot) => {
                     const BikeBusGroups: any[] = [];
@@ -216,12 +236,8 @@ const ViewOrganization: React.FC = () => {
                     setBikeBusRoutes(BikeBusGroups);
                 })
                 .catch((error) => {
+                    console.log(error);
                 });
-
-
-
-
-
 
             getDocs(queryObj)
                 .then((querySnapshot) => {
@@ -233,6 +249,7 @@ const ViewOrganization: React.FC = () => {
                     setBikeBusRoutes(routes);
                 })
                 .catch((error) => {
+                    console.log(error);
                 });
 
             const organizationRef = firestoreDoc(db, "organizations", id);
@@ -240,65 +257,93 @@ const ViewOrganization: React.FC = () => {
                 if (docSnapshot.exists()) {
                     const organizationData = docSnapshot.data();
                     if (organizationData) {
-                        // let's get information from the document like the name, type, website and so on
                         setOrganization(organizationData as Organization);
                         setOrgType(organizationData.OrganizationType);
                         setOrgLocation(organizationData.Location);
                         setSchoolDistrict(organizationData.SchoolDistrictName);
                         setSchools(organizationData.SchoolNames);
                         setSchool(organizationData.SchoolNames[0]);
-                        // get the document id of the organization
+                        setOrganizationAdmins(organizationData.OrganizationAdmins);
+                        setOrganizationManagers(organizationData.OrganizationManagers);
+                        setOrganizationEmployees(organizationData.OrganizationEmployees);
+                        setOrganizationVolunteers(organizationData.OrganizationVolunteers);
+                        setOrganizationMembers(organizationData.OrganizationMembers);
+                        setOrganizationCreator(organizationData.OrganizationCreator);
+
+                        getDoc(userRef).then((docSnapshot) => {
+                            if (docSnapshot.exists()) {
+                                const userData = docSnapshot.data();
+                                if (userData) {
+                                    if (userData.enabledAccountModes) {
+                                        setEnabledAccountModes(userData.enabledAccountModes);
+                                    } else {
+                                        setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
+                                        updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
+                                    }
+                                    if (userData.username) {
+                                        setUsername(userData.username);
+                                    }
+                                    if (userData.accountType) {
+                                        setAccountType(userData.accountType);
+                                    }
+                                }
+                            }
+                        });
+
+                        if (organizationData.OrganizationCreator) {
+                            getDoc(organizationData.OrganizationCreator)
+                                .then((creatorDocSnapshot) => {
+                                    if (creatorDocSnapshot.exists()) {
+                                        const creatorData = creatorDocSnapshot.data() as UserData;
+                                        if (creatorData) {
+                                            const isUserCreator = creatorData.uid === user?.uid;
+                                            setIsUserCreator(isUserCreator);
+                                        }
+                                    }
+                                });
+                        }
+
+                        if (Array.isArray(organizationData.OrganizationAdmins)) {
+                            organizationData.OrganizationAdmins.forEach(adminRef => {
+                                getDoc(adminRef)
+                                    .then((adminDocSnapshot) => {
+                                        if (adminDocSnapshot.exists()) {
+                                            const adminData = adminDocSnapshot.data() as UserData;
+                                            if (adminData) {
+                                                const isUserAdmin = adminData.uid === user?.uid;
+                                                setIsUserAdmin(isUserAdmin);
+                                            }
+                                        }
+                                    });
+                            });
+                        }
+
                         const organizationId = docSnapshot.id;
-                        console.log("organizationId: ", organizationId);
-                        // allow orgnizationId to be used for param routing 
                         setOrganizationId(organizationId);
 
+                        const BikeBusGroupsRef = collection(db, "BikeBusGroups");
+                        const queryObj = query(
+                            BikeBusGroupsRef,
+                            where("Organization", "==", organizationId),
+                        );
+                        getDocs(queryObj)
+                            .then((querySnapshot) => {
+                                const BikeBusGroups: any[] = [];
+                                querySnapshot.forEach((doc) => {
+                                    const BikeBusorgData = doc.data();
+                                    BikeBusGroups.push(BikeBusorgData);
+                                });
+                                setBikeBusRoutes(BikeBusGroups);
+                            })
+                            .catch((error) => {
+                                console.log("Error getting documents: ", error);
+                            });
                     }
                 }
             });
-
-            getDoc(userRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const userData = docSnapshot.data();
-                    if (userData) {
-                        if (userData.enabledAccountModes) {
-                            setEnabledAccountModes(userData.enabledAccountModes);
-                        } else {
-                            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-                        }
-                        if (userData.username) {
-                            setUsername(userData.username);
-                        }
-                        if (userData.accountType) {
-                            setAccountType(userData.accountType);
-                        }
-                    }
-                }
-            });
-
-            const groupRef = doc(db, 'collections', id);
-            getDoc(groupRef)
-                .then((docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                        const orgData = docSnapshot.data();
-                        setOrgData(orgData);
-                        const uid = user?.uid;
-
-                        if (orgData?.OrganizationCreator.id === uid) {
-                            setIsUserCreator(true);
-                        }
-
-                        if (orgData?.OrginzationMembers?.some((memberRef: any) => memberRef.path === `users/${user?.uid}`)) {
-                            setIsUserMember(true);
-                        }
-                    } else {
-                    }
-                })
-                .catch((error) => {
-                });
         }
     }, [bikeBusRoutes, id, user]);
+
 
     const avatarElement = user ? (
         avatarUrl ? (
@@ -361,32 +406,12 @@ const ViewOrganization: React.FC = () => {
         setShowBikeBusGroupAddModal(true);
     };
 
-    function updateOrgType(orgType: string) {
-        updateOrgType(orgType);
-        console.log("updateOrgType: ", updateOrgType);
-    }
-
-    function updateOrgLocation(orgLocation: string) {
-        updateOrgLocation(orgLocation);
-        console.log("updateOrgLocation: ", updateOrgLocation);
-    }
-
-
-    function updateSchoolDistrict(schoolDistrict: string) {
-        updateSchoolDistrict(schoolDistrict);
-        console.log("updateSchoolDistrict: ", updateSchoolDistrict);
-    }
-
-    function addSchool(school: string) {
-        setSchools(prevSchools => [...prevSchools, school]);
-    }
-
     return (
         <IonPage>
             <IonContent fullscreen className="ion-flex ion-flex-direction-column">
                 <IonHeader>
                     <IonToolbar>
-                    <IonTitle>{Organization?.NameOfOrg}</IonTitle>
+                        <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-flex-grow">
@@ -397,6 +422,9 @@ const ViewOrganization: React.FC = () => {
                             </IonCol>
                         </IonRow>
                         <IonRow>
+                            {(isUserCreator || isUserAdmin || isUserManager) &&
+                                <IonButton routerLink={`/EditBikeBus/${organizationId}`}>Edit Organization</IonButton>
+                            }
                             <IonButton>Send Invite</IonButton>
                             <IonButton>Add Staff</IonButton>
                             <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
@@ -420,7 +448,7 @@ const ViewOrganization: React.FC = () => {
                             </IonCol>
                             <IonCol>
                                 <IonItem lines="none">
-                                    <IonLabel position="stacked">Document Id: {Organization?.id}</IonLabel>
+                                    <IonLabel position="stacked">Organization Contact: {Organization?.ContactName}</IonLabel>
                                 </IonItem>
                             </IonCol>
                         </IonRow>
@@ -432,3 +460,4 @@ const ViewOrganization: React.FC = () => {
 };
 
 export default ViewOrganization;
+
