@@ -6,95 +6,57 @@ import {
     IonInput,
     IonLabel,
     IonButton,
-    IonHeader,
-    IonToolbar,
-    IonPopover,
-    IonText,
     IonTitle,
-    IonSelect,
-    IonSelectOption,
     IonGrid,
     IonCol,
     IonRow,
+    IonSpinner,
+    IonSelect,
+    IonSelectOption,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, updateDoc, query, where, DocumentReference } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
+import { set } from 'date-fns';
 
 
-interface BikeBus {
-    BikeBusName: any;
-    BikeBusDescription: any;
-    BikeBusType: any;
-    travelMode: any;
-    startPoint: any;
-    endPoint: any;
-    pathCoordinates: any;
+interface Organization {
+    NameOfOrg: any;
+    OrganizationType: any;
+    OrganizationCreator: DocumentReference;
     id: string;
+    ContactName: string;
+    Email: string;
 }
 
 const EditOrganization: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
-    const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
-    const [selectedBikeBus, setSelectedBikeBus] = useState<BikeBus | null>(null);
-    const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
+    const [selectedOrganization, setselectedOrganization] = useState<Organization | null>(null);
+    const [Organization, setOrganization] = useState<Organization[]>([]);
+    const [isCreator, setIsCreator] = useState(false);
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const startPointRef = usePlacesAutocomplete((location, name) => { });
-    const endPointRef = usePlacesAutocomplete((location, name) => { });
-
-
-
-    const fetchBikeBus = useCallback(async () => {
-        const uid = user?.uid;
-        if (!uid) {
-            return;
-        }
-        const BikeBusCollection = collection(db, 'BikeBus');
-        const q = query(BikeBusCollection, where("BikeBusCreator", "==", `/users/${uid}`));
-        const querySnapshot = await getDocs(q);
-        const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
-            ...doc.data() as BikeBus,
-            id: doc.id,
-        }));
-        setBikeBus(BikeBusData);
-    }, [user]);
-
-    useEffect(() => {
-        fetchBikeBus();
-    }, [fetchBikeBus]);
-
-    useEffect(() => {
-        if (id) fetchSingleBikeBus(id);
-    }, [id]);
-
-    const fetchSingleBikeBus = async (id: string) => {
-        const docRef = doc(db, 'bikebusgroups', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const BikeBusData = {
-                ...docSnap.data() as BikeBus,
-                id: docSnap.id,
-            };
-            setSelectedBikeBus(BikeBusData);
-        }
+    const [isLoading, setIsLoading] = useState(true);
+    const [orgType, setOrgType] = useState(selectedOrganization?.OrganizationType || '');
+    const updatedOrganization: Partial<Organization> = {
+        NameOfOrg: selectedOrganization?.NameOfOrg,
+        OrganizationType: orgType,
     };
 
 
     useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
+        if (selectedOrganization) {
+            setOrgType(selectedOrganization.OrganizationType);
         }
-    }, [headerContext]);
+    }, [selectedOrganization]);
+    
 
     useEffect(() => {
         if (user) {
@@ -111,47 +73,105 @@ const EditOrganization: React.FC = () => {
     }, [user]);
 
 
+    const fetchSingleOrganization = async (id: string) => {
+        setIsLoading(true);
+        const docRef = doc(db, 'organizations', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const OrganizationData = {
+                ...docSnap.data() as Organization,
+                id: docSnap.id,
+            };
+            setselectedOrganization(OrganizationData);
+
+            // Extract the uid from the OrganizationCreator reference
+            const OrganizationCreatorUid = OrganizationData.OrganizationCreator.id;
+
+            // Determine if the user is the OrganizationCreator
+            setIsCreator(OrganizationCreatorUid === user?.uid);
+
+        }
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        if (id) fetchSingleOrganization(id);
+    }, [id, user, setIsCreator]);
+
+
+
     const handleSave = async () => {
-        if (!selectedBikeBus) {
+        if (!selectedOrganization || !isCreator) {
             return;
         }
 
-        const BikeBusRef = doc(db, 'organizations', selectedBikeBus.id);
-        const updatedBikeBus: Partial<BikeBus> = {
-            BikeBusName: selectedBikeBus.BikeBusName,
-            BikeBusDescription: selectedBikeBus.BikeBusDescription,
-            BikeBusType: selectedBikeBus.BikeBusType,
+        const OrganizationRef = doc(db, 'organizations', selectedOrganization.id);
+        const updatedOrganization: Partial<Organization> = {
+            NameOfOrg: selectedOrganization.NameOfOrg,
+            OrganizationType: selectedOrganization.OrganizationType,
         };
-        await updateDoc(BikeBusRef, updatedBikeBus);
-        alert('BikeBus Updated');
-        history.push(`/bikebusgrouppage/${selectedBikeBus.id}`)
+        await updateDoc(OrganizationRef, updatedOrganization);
+        alert('Organization Updated');
+        history.push(`/ViewOrganization/${selectedOrganization.id}`)
     };
 
     return (
         <IonPage className="ion-flex-offset-app">
-            <IonContent>
-                <IonGrid>
-                    <IonRow>
-                        <IonCol>
-                            <IonTitle>
-                                Editing Organization
-                            </IonTitle>
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonList>
-                                <IonItem>
-                                    <IonLabel>Organization Name:</IonLabel>
-                                    <IonInput aria-label="Organization Name:" value={selectedBikeBus?.BikeBusName} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusName: e.detail.value! })} />
-                                </IonItem>
-                            </IonList>
-                            <IonButton onClick={handleSave}>Save</IonButton>
-                            <IonButton routerLink={`/ViewOrganization/${id}`}>Cancel</IonButton>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonContent >
+            {
+                isLoading ?
+                    <IonSpinner /> :
+                    <IonContent fullscreen>
+                        <IonGrid>
+                            <IonRow>
+                                <IonCol>
+                                    <IonTitle>
+                                        Editing Organization
+                                    </IonTitle>
+                                </IonCol>
+                            </IonRow>
+                            <IonRow>
+                                <IonCol>
+                                    {
+                                        isLoading ?
+                                            <IonSpinner /> :
+                                            <IonList>
+                                                <IonItem>
+                                                    <IonLabel position="stacked">Organization Name:</IonLabel>
+                                                    <IonInput
+                                                        key={selectedOrganization?.id}
+                                                        value={selectedOrganization?.NameOfOrg || ''}
+                                                        onIonChange={e => {
+                                                            if (selectedOrganization) {
+                                                                const updatedOrganization = {
+                                                                    ...selectedOrganization,
+                                                                    NameOfOrg: e.detail.value!
+                                                                };
+                                                                setselectedOrganization(updatedOrganization);
+                                                            }
+                                                        }}
+                                                    />
+                                                </IonItem>
+                                                <IonItem>
+                                                    <IonLabel position="stacked">Organization Type:</IonLabel>
+                                                    <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)}>
+                                                        <IonSelectOption value="School">School</IonSelectOption>
+                                                        <IonSelectOption value="School District">School District</IonSelectOption>
+                                                        <IonSelectOption value="Work">Work</IonSelectOption>
+                                                        <IonSelectOption value="Social">Social</IonSelectOption>
+                                                        <IonSelectOption value="Club">Club</IonSelectOption>
+                                                    </IonSelect>
+                                                </IonItem>
+                                            </IonList>
+                                    }
+                                    <IonButton onClick={handleSave}>Save</IonButton>
+                                    <IonButton routerLink={`/ViewOrganization/${id}`}>Cancel</IonButton>
+                                </IonCol>
+                            </IonRow>
+                        </IonGrid>
+
+                    </IonContent >
+            }
         </IonPage >
     );
 

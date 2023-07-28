@@ -217,13 +217,8 @@ const DeleteBikeBusStops: React.FC = () => {
 
 
     return (
-        <IonPage style={{ height: '100%' }}>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent style={{ height: '100%' }}>
+        <IonPage className="ion-flex-offset-app">
+        <IonContent fullscreen>
                 <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <IonRow>
                         <IonCol>
