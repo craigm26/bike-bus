@@ -300,15 +300,11 @@ const ViewOrganization: React.FC = () => {
             <IonContent fullscreen className="ion-flex">
                 <IonHeader>
                     <IonToolbar>
+                    <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-flex-grow">
                     <IonGrid>
-                        <IonRow>
-                            <IonCol>
-                                <IonTitle>{Organization?.NameOfOrg}</IonTitle>
-                            </IonCol>
-                        </IonRow>
                         <IonRow>
                             <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
                             <IonButton>Send Invite</IonButton>

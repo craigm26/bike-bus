@@ -203,43 +203,38 @@ const CreateOrganization: React.FC = () => {
 
 
   return (
-    <IonPage>
-        <IonContent fullscreen>
-        {headerContext?.showHeader && (
-          <IonHeader>
-            <IonToolbar></IonToolbar>
-          </IonHeader>
-        )}
-          <form onSubmit={submitForm}>
-            <IonItem>
-              <IonLabel>Name of Organization:</IonLabel>
-              <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Type:</IonLabel>
-              <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)} >
-                <IonSelectOption value="School">School</IonSelectOption>
-                <IonSelectOption value="School District">School District</IonSelectOption>
-                <IonSelectOption value="Work">Work</IonSelectOption>
-                <IonSelectOption value="Social">Social</IonSelectOption>
-                <IonSelectOption value="Club">Club</IonSelectOption>
-              </IonSelect>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Website:</IonLabel>
-              <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} required />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Email:</IonLabel>
-              <IonInput value={user?.email} onIonChange={e => setOrgEmail(e.detail.value!)} readonly required />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Contact Name:</IonLabel>
-              <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} required />
-            </IonItem>
-            <IonButton expand="full" type="submit">Create Organization</IonButton>
-          </form>
-        </IonContent>
+    <IonPage className="ion-flex-offset-app">
+      <IonContent fullscreen>
+        <form onSubmit={submitForm}>
+          <IonItem>
+            <IonLabel>Name of Organization:</IonLabel>
+            <IonInput value={orgName} onIonChange={e => setOrgName(e.detail.value!)} required />
+          </IonItem>
+          <IonItem>
+            <IonLabel>Type:</IonLabel>
+            <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)} >
+              <IonSelectOption value="School">School</IonSelectOption>
+              <IonSelectOption value="School District">School District</IonSelectOption>
+              <IonSelectOption value="Work">Work</IonSelectOption>
+              <IonSelectOption value="Social">Social</IonSelectOption>
+              <IonSelectOption value="Club">Club</IonSelectOption>
+            </IonSelect>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Website:</IonLabel>
+            <IonInput value={orgWebsite} onIonChange={e => setOrgWebsite(e.detail.value!)} required />
+          </IonItem>
+          <IonItem>
+            <IonLabel>Email:</IonLabel>
+            <IonInput value={user?.email} onIonChange={e => setOrgEmail(e.detail.value!)} readonly required />
+          </IonItem>
+          <IonItem>
+            <IonLabel>Contact Name:</IonLabel>
+            <IonInput value={orgContactName} onIonChange={e => setOrgContactName(e.detail.value!)} required />
+          </IonItem>
+          <IonButton expand="full" type="submit">Create Organization</IonButton>
+        </form>
+      </IonContent>
     </IonPage >
   );
 };

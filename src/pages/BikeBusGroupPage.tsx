@@ -454,15 +454,8 @@ const BikeBusGroupPage: React.FC = () => {
 
 
   return (
-    <IonPage>
+    <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
-        {headerContext?.showHeader && (
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{groupData?.BikeBusName}</IonTitle>
-            </IonToolbar>
-          </IonHeader>
-        )}
         <IonCard>
           <IonCardHeader>
             <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>

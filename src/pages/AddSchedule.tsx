@@ -433,12 +433,8 @@ const AddSchedule: React.FC = () => {
   };
 
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
+    <IonPage className="ion-flex-offset-app">
+      <IonContent fullscreen>
         <IonItem>
           <IonLabel>BikeBus Name</IonLabel>
           <IonLabel>{BikeBusName}</IonLabel>

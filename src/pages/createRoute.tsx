@@ -38,7 +38,7 @@ const CreateRoute: React.FC = () => {
   const CurrentLocationContext = React.createContext<LocationContextProps | undefined>(undefined);
   const currentLocation = useContext(CurrentLocationContext);
 
-  
+
 
   useEffect(() => {
     if (headerContext) {
@@ -76,7 +76,7 @@ const CreateRoute: React.FC = () => {
       setStartPointAdress(data.results[0].formatted_address);
     }
   };
-  
+
   const getEndPointAdress = async () => {
     if (endPoint) {
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${endPoint.lat},${endPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
@@ -84,7 +84,7 @@ const CreateRoute: React.FC = () => {
       setEndPointAdress(data.results[0].formatted_address);
     }
   };
-  
+
 
   const handleSubmit = async () => {
     try {
@@ -117,7 +117,7 @@ const CreateRoute: React.FC = () => {
   }
 
   return (
-    <IonPage>
+    <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
         <IonHeader>
           <IonToolbar>
