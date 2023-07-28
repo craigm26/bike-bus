@@ -57,6 +57,7 @@ import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGrou
 import { useOrganizationContext } from "./components/Organizations/useOrganization";
 import useEvent from "./components/BikeBusGroup/useEvent";
 import OrganizationMap from './pages/OrganizationMap';
+import EditOrganization from './pages/EditOrganization';
 
 
 import '@ionic/react/css/core.css';
@@ -510,7 +511,7 @@ const App: React.FC = () => {
                                 icon: phonePortraitOutline,
                                 handler: () => {
                                   Share.share({
-                                    title: 'Check out my #BikeBus link!',
+                                    title: 'Check out my BikeBus link!',
                                     text: 'I found this link on the BikeBus app',
                                     url: window.location.href,
                                   });
@@ -521,7 +522,7 @@ const App: React.FC = () => {
                                 icon: logoTwitter,
                                 handler: () => {
                                   Share.share({
-                                    title: 'Check out my #BikeBus link!',
+                                    title: 'Check out my BikeBus link!',
                                     text: 'I found this link on the BikeBus app',
                                     url: window.location.href,
                                   });
@@ -532,7 +533,7 @@ const App: React.FC = () => {
                                 icon: logoInstagram,
                                 handler: () => {
                                   Share.share({
-                                    title: 'Check out my #BikeBus link!',
+                                    title: 'Check out my BikeBus link!',
                                     text: 'I found this link on the BikeBus app',
                                     url: window.location.href,
                                   });
@@ -543,7 +544,7 @@ const App: React.FC = () => {
                                 icon: mailOutline,
                                 handler: () => {
                                   Share.share({
-                                    title: 'Check out my #BikeBus link!',
+                                    title: 'Check out my BikeBus link!',
                                     text: 'I found this link on the BikeBus app',
                                     url: window.location.href,
                                   });
@@ -605,6 +606,9 @@ const App: React.FC = () => {
                       </Route>
                       <Route path="/editbikebus/:id" exact>
                         <EditBikeBus />
+                      </Route>
+                      <Route path="/editorganization/:id" exact>
+                        <EditOrganization />
                       </Route>
                       <Route path="/event/:id">
                         <Event />
