@@ -12,6 +12,7 @@ import {
     IonLabel,
     IonItem,
     IonTitle,
+    IonCardTitle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -298,8 +299,7 @@ const ViewOrganization: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen className="ion-flex">
-                <IonTitle>{Organization?.NameOfOrg}</IonTitle>
-                <IonContent className="ion-flex-grow">
+                <IonCardTitle>{Organization?.NameOfOrg}</IonCardTitle>
                     <IonGrid>
                         <IonRow>
                             <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
@@ -328,7 +328,6 @@ const ViewOrganization: React.FC = () => {
                         </IonRow>
                     </IonGrid>
                 </IonContent>
-            </IonContent>
         </IonPage>
     );
 };

@@ -174,11 +174,6 @@ const ViewRoute: React.FC = () => {
 
 
   const isBikeBus = selectedRoute?.isBikeBus ?? false;
-  useEffect(() => {
-    if (headerContext) {
-      headerContext.setShowHeader(true);
-    }
-  }, [headerContext]);
 
   useEffect(() => {
     if (selectedRoute) {
