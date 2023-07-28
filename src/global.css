@@ -9,11 +9,18 @@
   font-family: 'Indie-Flower', sans-serif;
 }
 
+.ion-flex-offset-app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 60px;
+}
+
 .location-app-intro-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 80vh;
+  height: 75vh;
   text-align: center;
   font-family: 'Indie-Flower', sans-serif;
   overflow: hidden;

@@ -96,13 +96,8 @@ const ViewOrganizationList: React.FC = () => {
 
 
     return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent>
+        <IonPage className="ion-flex-offset-app">
+            <IonContent fullscreen>
                 <IonCard>
                     {Organization.length === 0 ? (
                         <IonCardContent>

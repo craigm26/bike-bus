@@ -13,6 +13,9 @@ import {
     IonTitle,
     IonSelect,
     IonSelectOption,
+    IonGrid,
+    IonCol,
+    IonRow,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -36,7 +39,7 @@ interface BikeBus {
     id: string;
 }
 
-const EditBikeBus: React.FC = () => {
+const EditOrganization: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
@@ -113,7 +116,7 @@ const EditBikeBus: React.FC = () => {
             return;
         }
 
-        const BikeBusRef = doc(db, 'bikebusgroups', selectedBikeBus.id);
+        const BikeBusRef = doc(db, 'organizations', selectedBikeBus.id);
         const updatedBikeBus: Partial<BikeBus> = {
             BikeBusName: selectedBikeBus.BikeBusName,
             BikeBusDescription: selectedBikeBus.BikeBusDescription,
@@ -125,41 +128,33 @@ const EditBikeBus: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
+        <IonPage className="ion-flex-offset-app">
             <IonContent>
-                <IonTitle>
-                    Editing BikeBus
-                </IonTitle>
-                <IonList>
-                    <IonItem>
-                        <IonLabel>BikeBus Name:</IonLabel>
-                        <IonInput value={selectedBikeBus?.BikeBusName} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusName: e.detail.value! })} />
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel>Description:</IonLabel>
-                        <IonInput value={selectedBikeBus?.BikeBusDescription} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusDescription: e.detail.value! })} />
-                    </IonItem>
-                    <IonItem>
-                        <IonLabel>BikeBus Type:</IonLabel>
-                        <IonSelect value={selectedBikeBus?.BikeBusType} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusType: e.detail.value })}>
-                            <IonSelectOption value="Work">Work</IonSelectOption>
-                            <IonSelectOption value="School">School</IonSelectOption>
-                            <IonSelectOption value="Social">Social</IonSelectOption>
-                            <IonSelectOption value="Club">Club</IonSelectOption>
-                        </IonSelect>
-                    </IonItem>
-                </IonList>
-                <IonButton onClick={handleSave}>Save</IonButton>
-                <IonButton routerLink={`/bikebusgrouppage/${id}`}>Cancel</IonButton>
+                <IonGrid>
+                    <IonRow>
+                        <IonCol>
+                            <IonTitle>
+                                Editing Organization
+                            </IonTitle>
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonList>
+                                <IonItem>
+                                    <IonLabel>Organization Name:</IonLabel>
+                                    <IonInput aria-label="Organization Name:" value={selectedBikeBus?.BikeBusName} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusName: e.detail.value! })} />
+                                </IonItem>
+                            </IonList>
+                            <IonButton onClick={handleSave}>Save</IonButton>
+                            <IonButton routerLink={`/ViewOrganization/${id}`}>Cancel</IonButton>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
             </IonContent >
         </IonPage >
     );
 
 };
 
-export default EditBikeBus;
+export default EditOrganization;

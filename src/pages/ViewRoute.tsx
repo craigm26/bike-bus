@@ -223,12 +223,7 @@ const ViewRoute: React.FC = () => {
   };
 
   return (
-    <IonPage style={{ height: '100%' }}>
-      <IonHeader>
-        <IonToolbar>
-          {headerContext?.showHeader && <IonHeader></IonHeader>}
-        </IonToolbar>
-      </IonHeader>
+    <IonPage className="ion-flex-offset-app">
       <IonContent style={{ height: '100%' }}>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>

@@ -40,12 +40,8 @@ const Template: React.FC = () => {
   }, [user]);
 
   return (
-    <IonPage>
+    <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
-      {headerContext?.showHeader && (
-        <IonHeader>
-        </IonHeader>
-      )}
       </IonContent>
     </IonPage>
   );

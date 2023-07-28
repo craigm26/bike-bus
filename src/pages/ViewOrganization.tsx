@@ -22,8 +22,6 @@ import { useHistory, useParams } from "react-router-dom";
 import {
     personCircleOutline,
 } from "ionicons/icons";
-
-
 import { HeaderContext } from "../components/HeaderContext";
 import React from "react";
 import Avatar from "../components/Avatar";
@@ -32,7 +30,6 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
-import { set } from "date-fns";
 
 interface UserData {
     username: string;
@@ -44,25 +41,6 @@ interface UserData {
 }
 
 
-const DEFAULT_ACCOUNT_MODES = ["Member"];
-
-type RouteType = "SCHOOL" | "WORK";
-
-type Point = {
-    lat: number;
-    lng: number;
-};
-
-type Place = {
-    name: string;
-    formatted_address: string;
-    geometry: {
-        location: {
-            lat(): number;
-            lng(): number;
-        };
-    };
-};
 
 type Organization = {
     id: string;
@@ -118,36 +96,8 @@ const ViewOrganization: React.FC = () => {
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [username, setUsername] = useState<string>("");
     const [accountType, setAccountType] = useState<string>("");
-    const [selectedStartLocation, setSelectedStartLocation] = useState<Point>({ lat: 0, lng: 0 });
-    const [selectedEndLocation, setSelectedEndLocation] = useState<Point | null>(null);
-    const headerContext = useContext(HeaderContext);
-    const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
-    const [userLocation, setUserLocation] = useState<Point>({ lat: 0, lng: 0 });
-    const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
-    const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
-    const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
-    const [mapCenter, setMapCenter] = useState<Point>({ lat: 0, lng: 0 });
-    const [mapZoom, setMapZoom] = useState(8);
-    const [getLocationClicked, setGetLocationClicked] = useState(false);
     const mapRef = React.useRef<google.maps.Map | null>(null);
     const { avatarUrl } = useAvatar(user?.uid);
-    const [travelMode, setTravelMode] = useState<string>("");
-    const [travelModeSelector, setTravelModeSelector] = useState<string>("BICYCLING");
-    const [distance, setDistance] = useState<string>("");
-    const [duration, setDuration] = useState<string>("");
-    const [arrivalTime, setArrivalTime] = useState<string>("");
-    const [routeStartLocation, setRouteStartLocation] = useState<string>("");
-    const [routeStartName, setRouteStartName] = useState<string>("");
-    const [routeStartStreetName, setRouteStartStreetName] = useState<string>("");
-    const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>("");
-    const [routeType, setRouteType] = useState<RouteType>("SCHOOL");
-    const [pathCoordinates, setPathCoordinates] = useState<Point[]>([]);
-    const [startPointAddress, setStartPointAddress] = useState<string>("");
-    const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>("");
-    const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>("");
-    const [endPointAddress, setEndPointAddress] = useState<string>("");
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
     const [route, setRoute] = useState<DocumentData | null>(null);
     const [orgType, setOrgType] = useState<string>("");
     const [orgLocation, setOrgLocation] = useState<string>("");
@@ -159,19 +109,6 @@ const ViewOrganization: React.FC = () => {
     const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
     const [orgData, setOrgData] = useState<any>(null);
     const [organizationId, setOrganizationId] = useState<string>("");
-    const [isUserCreator, setIsUserCreator] = useState(false);
-    const [isUserManager, setIsUserManager] = useState(false)
-    const [isUserAdmin, setIsUserAdmin] = useState(false);
-    const [isUserMember, setIsUserMember] = useState(false);
-    const [isUserEmployee, setIsUserEmployee] = useState(false);
-    const [isUserVolunteer, setIsUserVolunteer] = useState(false);
-    const [userOrgRole, setUserOrgRole] = useState<string>("");
-    const [organizationAdmins, setOrganizationAdmins] = useState<string[]>([]);
-    const [organizationManagers, setOrganizationManagers] = useState<string[]>([]);
-    const [organizationEmployees, setOrganizationEmployees] = useState<string[]>([]);
-    const [organizationVolunteers, setOrganizationVolunteers] = useState<string[]>([]);
-    const [organizationMembers, setOrganizationMembers] = useState<string[]>([]);
-    const [organizationCreator, setOrganizationCreator] = useState<string>("");
 
 
 
@@ -263,60 +200,12 @@ const ViewOrganization: React.FC = () => {
                         setSchoolDistrict(organizationData.SchoolDistrictName);
                         setSchools(organizationData.SchoolNames);
                         setSchool(organizationData.SchoolNames[0]);
-                        setOrganizationAdmins(organizationData.OrganizationAdmins);
-                        setOrganizationManagers(organizationData.OrganizationManagers);
-                        setOrganizationEmployees(organizationData.OrganizationEmployees);
-                        setOrganizationVolunteers(organizationData.OrganizationVolunteers);
-                        setOrganizationMembers(organizationData.OrganizationMembers);
-                        setOrganizationCreator(organizationData.OrganizationCreator);
 
                         getDoc(userRef).then((docSnapshot) => {
                             if (docSnapshot.exists()) {
                                 const userData = docSnapshot.data();
-                                if (userData) {
-                                    if (userData.enabledAccountModes) {
-                                        setEnabledAccountModes(userData.enabledAccountModes);
-                                    } else {
-                                        setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                                        updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-                                    }
-                                    if (userData.username) {
-                                        setUsername(userData.username);
-                                    }
-                                    if (userData.accountType) {
-                                        setAccountType(userData.accountType);
-                                    }
-                                }
                             }
                         });
-
-                        if (organizationData.OrganizationCreator) {
-                            getDoc(organizationData.OrganizationCreator)
-                                .then((creatorDocSnapshot) => {
-                                    if (creatorDocSnapshot.exists()) {
-                                        const creatorData = creatorDocSnapshot.data() as UserData;
-                                        if (creatorData) {
-                                            const isUserCreator = creatorData.uid === user?.uid;
-                                            setIsUserCreator(isUserCreator);
-                                        }
-                                    }
-                                });
-                        }
-
-                        if (Array.isArray(organizationData.OrganizationAdmins)) {
-                            organizationData.OrganizationAdmins.forEach(adminRef => {
-                                getDoc(adminRef)
-                                    .then((adminDocSnapshot) => {
-                                        if (adminDocSnapshot.exists()) {
-                                            const adminData = adminDocSnapshot.data() as UserData;
-                                            if (adminData) {
-                                                const isUserAdmin = adminData.uid === user?.uid;
-                                                setIsUserAdmin(isUserAdmin);
-                                            }
-                                        }
-                                    });
-                            });
-                        }
 
                         const organizationId = docSnapshot.id;
                         setOrganizationId(organizationId);
@@ -407,11 +296,10 @@ const ViewOrganization: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen className="ion-flex ion-flex-direction-column">
+        <IonPage className="ion-flex-offset-app">
+            <IonContent fullscreen className="ion-flex">
                 <IonHeader>
                     <IonToolbar>
-                        <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-flex-grow">
@@ -422,9 +310,7 @@ const ViewOrganization: React.FC = () => {
                             </IonCol>
                         </IonRow>
                         <IonRow>
-                            {(isUserCreator || isUserAdmin || isUserManager) &&
-                                <IonButton routerLink={`/EditBikeBus/${organizationId}`}>Edit Organization</IonButton>
-                            }
+                            <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
                             <IonButton>Send Invite</IonButton>
                             <IonButton>Add Staff</IonButton>
                             <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
@@ -432,7 +318,6 @@ const ViewOrganization: React.FC = () => {
                             <IonButton>Timesheets</IonButton>
                             <IonButton>Add BikeBusGroup</IonButton>
                             <IonButton>Add Schools</IonButton>
-                            <IonButton>Add Routes</IonButton>
                             <IonButton>Reports</IonButton>
                         </IonRow>
                         <IonRow>

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonHeader, IonInput, IonItem, IonLabel, IonPage, IonText } from '@ionic/react';
+import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonPage, IonText } from '@ionic/react';
 import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
@@ -63,9 +63,8 @@ const Signup: React.FC = () => {
 
     return (
 
-        <IonPage className="signup-page">
-            <IonHeader>
-            </IonHeader>
+        <IonPage className="ion-flex-offset-app">
+        <IonContent fullscreen>
             <IonItem>
                 <IonLabel>Email</IonLabel>
                 <IonInput
@@ -126,6 +125,7 @@ const Signup: React.FC = () => {
                     <p>Username is already taken.</p>
                 </IonText>
             )}
+        </IonContent>
         </IonPage>
     );
 };

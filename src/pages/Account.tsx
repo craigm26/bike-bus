@@ -134,7 +134,7 @@ const Account: React.FC = () => {
 
 
     return (
-        <IonPage>
+        <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
                 <IonCard className="ion-justify-content-center">
                     <IonCardHeader>

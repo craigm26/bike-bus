@@ -16,6 +16,7 @@ import {
   IonItem,
   IonList,
   IonText,
+  IonCardTitle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
@@ -24,7 +25,7 @@ import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
-import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -567,13 +568,8 @@ const Map: React.FC = () => {
   // when the user clicks on the "startBikeBusTrip" action button, we want to create a new trip document in Firestore and use the current values for start (users current location) and end (use the route in the bikbusgroup)  locations as turn by turn google directions
 
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          {headerContext?.showHeader && <IonHeader></IonHeader>}
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
+    <IonPage className="ion-flex-offset-app">
+      <IonContent fullscreen>
         {!showMap && (
           <>
             <IonGrid className="location-app-intro-container">
@@ -582,21 +578,20 @@ const Map: React.FC = () => {
                   <IonList lines="full">
                     <IonItem>
                       <IonLabel>
-                        <h1>Welcome to BikeBus!</h1>
-                        <p>BikeBus is a community of people who want to bike together.</p>
+                        <IonCardTitle>Welcome to BikeBus!</IonCardTitle>
+                        <IonText>BikeBus is a group of people who want to bike together.</IonText>
                       </IonLabel>
                     </IonItem>
                     <IonItem>
                       <IonLabel>
-                        <h1>Get Involved</h1>
-                        <p>Find, Create, and Join:</p>
+                        <IonText>Find, Create, and Join:</IonText>
                         <IonList>
                           <IonItem>
-                            <IonIcon icon={bicycleOutline} slot="start" />
+                            <IonIcon icon={mapOutline} slot="start" />
                             <IonLabel>Routes</IonLabel>
                           </IonItem>
                           <IonItem>
-                            <IonIcon icon={busOutline} slot="start" />
+                            <IonIcon icon={bicycleOutline} slot="start" />
                             <IonLabel>Open Trips</IonLabel>
                           </IonItem>
                           <IonItem>
@@ -611,7 +606,6 @@ const Map: React.FC = () => {
                       </IonLabel>
                     </IonItem>
                   </IonList>
-
                   <IonLabel>
                     <IonItem button color="primary" onClick={getLocation} lines="none">
                       <IonText color="secondary">Start Map</IonText>
