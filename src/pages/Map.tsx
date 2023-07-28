@@ -578,8 +578,8 @@ const Map: React.FC = () => {
                   <IonList lines="full">
                     <IonItem>
                       <IonLabel>
-                        <IonCardTitle>Welcome to BikeBus!</IonCardTitle>
-                        <IonText>BikeBus is a group of people who want to bike together.</IonText>
+                        <IonCardTitle className="BikeBusFont">Welcome to BikeBus!</IonCardTitle>
+                        <IonText>BikeBus is a group of people who want to bike together</IonText>
                       </IonLabel>
                     </IonItem>
                     <IonItem>
