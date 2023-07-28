@@ -298,22 +298,15 @@ const ViewOrganization: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen className="ion-flex">
-                <IonHeader>
-                    <IonToolbar>
-                    <IonTitle>{Organization?.NameOfOrg}</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
+                <IonTitle>{Organization?.NameOfOrg}</IonTitle>
                 <IonContent className="ion-flex-grow">
                     <IonGrid>
                         <IonRow>
                             <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
                             <IonButton>Send Invite</IonButton>
-                            <IonButton>Add Staff</IonButton>
                             <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
                             <IonButton>Schedules</IonButton>
                             <IonButton>Timesheets</IonButton>
-                            <IonButton>Add BikeBusGroup</IonButton>
-                            <IonButton>Add Schools</IonButton>
                             <IonButton>Reports</IonButton>
                         </IonRow>
                         <IonRow>
