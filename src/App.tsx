@@ -361,29 +361,22 @@ const App: React.FC = () => {
       const futureEvents = allEvents.filter(
         (event) => new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now()
       );
-      console.log('futureEvents:', futureEvents);
-
       // Sort all the future events by startTimestamp in ascending order
       const sortedEvents = [...futureEvents].sort(
         (a, b) =>
           new Date(a.startTimestamp.seconds * 1000).getTime() - new Date(b.startTimestamp.seconds * 1000).getTime()
       );
-      console.log('sortedEvents:', sortedEvents);
 
       // Now, the first event in sortedEvents is the upcoming event
       const upcomingEvent = sortedEvents[0];
-      console.log('upcomingEvent:', upcomingEvent);
 
       // Find the group that the upcoming event belongs to
       const upcomingGroup = upcomingEvent
         ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId)
         : null;
-      console.log('upcomingGroup:', upcomingGroup);
 
       setUpcomingEvent(upcomingEvent);
-      console.log('upcomingEvent.id:', upcomingEvent?.id);
       setUpcomingGroup(upcomingGroup);
-      console.log('upcomingGroup.id:', upcomingGroup?.id);
     });
   }, [fetchedGroups]);
 
@@ -791,7 +784,7 @@ const App: React.FC = () => {
                         </IonButton>
                       </div>
                     ) : (
-                      <p>Loading groups...</p>
+                      <p>Loading BikeBus Event...</p>
                     )}
                   </div>
                 </div>
