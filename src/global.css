@@ -302,3 +302,10 @@
   border-left: none;
   padding-left: 0;
 }
+
+.event-map {
+  position: absolute;
+  height: 640px;
+  width: 100%;
+  overflow: hidden;
+}

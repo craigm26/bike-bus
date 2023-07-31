@@ -619,22 +619,35 @@ const Event: React.FC = () => {
 
   // when page loads, do the checkEventTime function
   useEffect(() => {
-    // bring in RouteID from the eventData
-    const RouteId = eventData?.route;
-    // get the document from the routes collection that matches the RouteId, then set the routeData to that document
-
-
+    const fetchRouteData = async () => {
+      // bring in RouteID from the eventData
+      const RouteId = eventData?.route;
+      // get the document from the routes collection that matches the RouteId, then set the routeData to that document
+      // get the route data from the route document that matches the RouteId
+      const docRef = doc(db, 'routes', RouteId);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        const routeData = docSnapshot.data() as Route;
+        setrouteData(routeData);
+      }
+    };
+  
+    fetchRouteData();
+  
+    // now get the startTime and endTime from the eventData
+    const startTime = eventData?.startTimestamp;
+  
     checkEventTime();
     // check the event time every 30 seconds
     const interval = setInterval(() => {
       checkEventTime();
-    }
-      , 30000);
-
+    }, 30000);
+  
     // when the page unloads, clear the interval
     return () => clearInterval(interval);
-
-  }, [checkEventTime, eventData?.route]);
+  
+  }, [checkEventTime, startTime, eventData?.route, eventData?.startTimestamp]);
+  
 
   const toggleJoinEvent = () => {
     const tripsRef = doc(db, 'trips', eventData?.tripId);
@@ -719,13 +732,14 @@ const Event: React.FC = () => {
   function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
     const routeData = RouteId;
     const center = `${mapCenter.lat},${mapCenter.lng}`;
-    const size = '600x300';
+    // make the size fill the screen and as a background image
+    const size = `${window.innerWidth}x${window.innerHeight}`;
     const path = routeData?.pathCoordinates
       .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
       .join('|');
     const markers = [
-      `markers=color:red|label:S|${startGeo.lat},${startGeo.lng}`,
-      `markers=color:green|label:E|${endGeo.lat},${endGeo.lng}`,
+      `markers=color:green|label:S|${startGeo.lat},${startGeo.lng}`,
+      `markers=color:red|label:E|${endGeo.lat},${endGeo.lng}`,
     ];
     // create markers for bikebusstops along the route
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
@@ -734,7 +748,7 @@ const Event: React.FC = () => {
 
 
   return (
-    <IonPage className="ion-flex-offset-app">
+    <IonPage  className="ion-flex-offset-app">
       <IonContent fullscreen>
         <IonGrid>
           <IonRow>
@@ -894,7 +908,7 @@ const Event: React.FC = () => {
                 <IonLabel>{startTime} to </IonLabel>
                 <IonLabel>{endTime}</IonLabel>
               </IonItem>
-              <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
+              <IonImg className="event-map" onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
                 src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
             </IonCol>
           </IonRow>
