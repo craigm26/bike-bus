@@ -146,7 +146,8 @@ const Event: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [eventData, setEventData] = useState<any>(null);
   const [bikeBusGroupData, setBikeBusGroupData] = useState<any>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showRSVPModal, setShowRSVPModal] = useState(false);
+  const [showRSVPListModal, setShowRSVPListModal] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
 
@@ -292,7 +293,7 @@ const Event: React.FC = () => {
             // set the groupId to the groupId
             setGroupId(groupId);
           }
-           else {
+          else {
           }
         };
         fetchBikeBusGroup();
@@ -536,7 +537,7 @@ const Event: React.FC = () => {
 
     // Clear the role selection and hide the modal
     setRole([]);
-    setShowModal(false);
+    setShowRSVPModal(false);
   };
 
   useEffect(() => {
@@ -789,7 +790,7 @@ const Event: React.FC = () => {
   console.log('selectedRoute is ', selectedRoute);
   console.log('RouteId is ', RouteId);
 
-  function createStaticMapUrl(mapCenter: { lat: number; lng: number } , selectedRoute: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
+  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, selectedRoute: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
     const center = `${mapCenter.lat},${mapCenter.lng}`;
     const size = '1000x60';
     const path = routeData?.pathCoordinates
@@ -802,38 +803,28 @@ const Event: React.FC = () => {
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
     return url;
   }
-  
+
 
   return (
     <IonPage className="ion-flex-offset-app">
-    <IonContent fullscreen>
-          <IonLabel>{eventData?.BikeBusName}</IonLabel>
-          <IonItem>
-            <IonLabel>{startTime} to {endTime}</IonLabel>
-          </IonItem>
+      <IonContent fullscreen>
+        <IonGrid>
           <IonRow>
-                <IonCard >
-                  <IonCardContent>
-                      <IonRow className="static-map-event">
-                        <IonCol>
-                          <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey), '_blank')}
-                           src={createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey)} />
-                        </IonCol>
-                      </IonRow>
-                  </IonCardContent>
-                </IonCard>
-          </IonRow>
-            {isEventLeader && (
-              <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-            )}
-            {!isEventLeader && isEventActive && (
-              <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
-            )}
-            {isEventLeader && isEventActive && (
-              <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
-            )}
-          <IonButton onClick={() => setShowModal(true)}>RSVP to be there!</IonButton>
-          <IonModal isOpen={showModal}>
+            <IonCol>
+              <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
+            </IonCol>
+
+          {isEventLeader && (
+            <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+          )}
+          {!isEventLeader && isEventActive && (
+            <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+          )}
+          {isEventLeader && isEventActive && (
+            <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
+          )}
+          <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+          <IonModal isOpen={showRSVPModal}>
             <IonHeader>
               <IonToolbar>
                 <IonTitle>Select a Role</IonTitle>
@@ -874,92 +865,112 @@ const Event: React.FC = () => {
                   <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
                 </IonItem>
               </IonList>
-              <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
+              <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
               <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
             </IonContent>
-
           </IonModal>
-          <IonItem>
-            <IonLabel>Roles in the BikeBus</IonLabel>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Leader</IonLabel>
-            {eventData?.leader}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Members</IonLabel>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                {membersId.slice(0, 5).map((member, index) => (
-                  <IonChip key={index}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar uid={member?.uid} size="extrasmall" />
-                    </div>
-                  </IonChip>
-                ))}
-                {membersId.length > 5 && (
-                  <IonChip>
-                    <IonLabel>{membersId.length}</IonLabel>
-                  </IonChip>
-                )}
-              </IonButton>
-            </div>
-          </IonItem>
-          <IonModal isOpen={showMembersModal}>
+          <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+          <IonModal isOpen={showRSVPListModal}>
             <IonHeader>
               <IonToolbar>
-                <IonTitle>Members</IonTitle>
+                <IonTitle>RSVP List</IonTitle>
               </IonToolbar>
             </IonHeader>
             <IonContent>
               <IonList>
-                {membersId.map((member, index) => (
-                  <IonItem key={index}>
-                    <Avatar uid={member?.uid} />
-                    <IonLabel>{username}</IonLabel>
-                  </IonItem>
-                ))}
+                <IonItem>
+                  <IonLabel>Leader</IonLabel>
+                  {eventData?.leader}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Members</IonLabel>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                      {membersId.slice(0, 5).map((member, index) => (
+                        <IonChip key={index}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar uid={member?.uid} size="extrasmall" />
+                          </div>
+                        </IonChip>
+                      ))}
+                      {membersId.length > 5 && (
+                        <IonChip>
+                          <IonLabel>{membersId.length}</IonLabel>
+                        </IonChip>
+                      )}
+                    </IonButton>
+                  </div>
+                </IonItem>
+                <IonModal isOpen={showMembersModal}>
+                  <IonHeader>
+                    <IonToolbar>
+                      <IonTitle>Members</IonTitle>
+                    </IonToolbar>
+                  </IonHeader>
+                  <IonContent>
+                    <IonList>
+                      {membersId.map((member, index) => (
+                        <IonItem key={index}>
+                          <Avatar uid={member?.uid} />
+                          <IonLabel>{username}</IonLabel>
+                        </IonItem>
+                      ))}
+                    </IonList>
+                    <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                  </IonContent>
+                </IonModal>
+                <IonItem>
+                  <IonLabel>Captains</IonLabel>
+                  {captains.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Sheepdogs</IonLabel>
+                  {sheepdogs.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Sprinters</IonLabel>
+                  {sprinters.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Parents</IonLabel>
+                  {parents.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Kids</IonLabel>
+                  {kids.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Caboose</IonLabel>
+                  {caboose.map((username: string, index: number) => (
+                    <IonLabel key={index}>{username}</IonLabel>
+                  ))}
+                </IonItem>
               </IonList>
-              <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+              <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
             </IonContent>
           </IonModal>
-          <IonItem>
-            <IonLabel>Captains</IonLabel>
-            {captains.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Sheepdogs</IonLabel>
-            {sheepdogs.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Sprinters</IonLabel>
-            {sprinters.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Parents</IonLabel>
-            {parents.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Kids</IonLabel>
-            {kids.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-          <IonItem>
-            <IonLabel>Caboose</IonLabel>
-            {caboose.map((username: string, index: number) => (
-              <IonLabel key={index}>{username}</IonLabel>
-            ))}
-          </IonItem>
-        <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
+          </IonRow>
+          <IonRow className="static-map-event">
+            <IonCol>
+              <IonLabel>{eventData?.BikeBusName}</IonLabel>
+              <IonItem>
+                <IonLabel>{startTime} to {endTime}</IonLabel>
+              </IonItem>
+              <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey), '_blank')}
+                src={createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey)} />
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage >
   );
