@@ -162,7 +162,6 @@ const Event: React.FC = () => {
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
   const [RouteId, setRouteId] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
-  const [routeData, setRouteData] = useState<any>(null);
   const [groupData, setGroupData] = useState<any>(null);
   const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -176,7 +175,7 @@ const Event: React.FC = () => {
   const [sprintersId, setSprintersId] = useState<FetchedUserData[]>([]);
   const [tripRefid, setTripRefid] = useState<string>('');
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [routeData, setrouteData] = useState<Route | null>(null);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
   const [startAddress, setStartAddress] = useState<string>('');
@@ -277,16 +276,14 @@ const Event: React.FC = () => {
             const RouteId = bikeBusGroupData.BikeBusRoutes[0].id;
             console.log('RouteId is ', RouteId);
             setRouteId(RouteId);
-            // also set the RouteId to be the selectedRoute
-            const selectedRoute = routes.find((route) => route.id === RouteId);
-            // get the document from the routes collection that matches the RouteId, then set the selectedRoute to that document
-            setSelectedRoute(selectedRoute || null);
-            console.log('selectedRoute is ', selectedRoute);
-            // get the route data from the selectedRoute
-            const routeData = selectedRoute;
+            // also set the RouteId to be the routeData
+            const routeData = routes.find((route) => route.id === RouteId);
+            // get the document from the routes collection that matches the RouteId, then set the routeData to that document
+            setrouteData(routeData || null);
+            console.log('routeData is ', routeData);
+            // get the route data from the routeData
             console.log('routeData is ', routeData);
             // set the routeData to the routeData
-            setRouteData(routeData);
             // get the group id from the bikeBusGroupData
             const groupId = bikeBusGroupData.id;
             console.log('groupId is ', groupId);
@@ -740,7 +737,7 @@ const Event: React.FC = () => {
           lng: coord.lng,  // use 'lng' instead of 'longitude'
         })),
       };
-      setSelectedRoute(routeData);
+      setrouteData(routeData);
       setBikeBusGroupId(routeData.BikeBusGroupId);
       console.log(routeData);
       console.log(routeData.BikeBusGroupId);
@@ -773,24 +770,32 @@ const Event: React.FC = () => {
     }
   };
 
-  const isBikeBus = selectedRoute?.isBikeBus ?? false;
+  const isBikeBus = routeData?.isBikeBus ?? false;
 
   useEffect(() => {
-    if (selectedRoute) {
+    if (routeData) {
       setMapCenter({
-        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
       });
-      setStartGeo(selectedRoute.startPoint);
-      setEndGeo(selectedRoute.endPoint);
+      setStartGeo(routeData.startPoint);
+      setEndGeo(routeData.endPoint);
     }
   }
-    , [selectedRoute]);
+    , [routeData]);
 
-  console.log('selectedRoute is ', selectedRoute);
+  console.log('routeData is ', routeData);
   console.log('RouteId is ', RouteId);
+  console.log('routeData is ', routeData);
 
   function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
+    console.log('createStaticMapUrl is running!');
+    console.log('mapCenter is ', mapCenter);
+    console.log('RouteId is ', RouteId);
+    console.log('startGeo is ', startGeo);
+    console.log('endGeo is ', endGeo);
+    const routeData = RouteId;
+    console.log('routeData is ', routeData);
     const center = `${mapCenter.lat},${mapCenter.lng}`;
     const size = '600x300';
     const path = routeData?.pathCoordinates
@@ -801,8 +806,11 @@ const Event: React.FC = () => {
       `markers=color:green|label:E|${endGeo.lat},${endGeo.lng}`,
     ];
     // create markers for bikebusstops along the route
-
+    bikeBusStops.forEach((stop, index) => {
+      markers.push(`markers=color:blue|label:${index + 1}|${stop.lat},${stop.lng}`);
+    });
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
+    console.log('url is ', url);
     return url;
   }
 
@@ -814,15 +822,6 @@ const Event: React.FC = () => {
           <IonRow>
             <IonCol>
               <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
-              {isEventLeader && (
-                <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-              )}
-              {!isEventLeader && isEventActive && (
-                <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
-              )}
-              {isEventLeader && isEventActive && (
-                <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
-              )}
               <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
               <IonModal isOpen={showRSVPModal}>
                 <IonHeader>
@@ -959,6 +958,15 @@ const Event: React.FC = () => {
                   <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
                 </IonContent>
               </IonModal>
+              {isEventLeader && (
+                <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+              )}
+              {!isEventLeader && isEventActive && (
+                <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+              )}
+              {isEventLeader && isEventActive && (
+                <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
+              )}
             </IonCol>
           </IonRow>
           <IonRow className="static-map-event">
@@ -967,8 +975,8 @@ const Event: React.FC = () => {
               <IonItem>
                 <IonLabel>{startTime} to {endTime}</IonLabel>
               </IonItem>
-              <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey), '_blank')}
-                src={createStaticMapUrl(mapCenter, selectedRoute, startGeo, endGeo, apiKey)} />
+              <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
+                src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
             </IonCol>
           </IonRow>
         </IonGrid>
