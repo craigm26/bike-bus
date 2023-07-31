@@ -1178,9 +1178,10 @@ const Map: React.FC = () => {
                           }
 
                         </>
-                        {showGetDirectionsButton && directionsFetched && <IonButton expand="block" onClick={() => {
+                        {showGetDirectionsButton && directionsFetched && 
+                        <IonButton expand="block" onClick={() => {
                           history.push(`/starttrip/${selectedStartLocationAddress}/${selectedEndLocationAddress}`);
-                        }}>Start Trip</IonButton>}
+                        }}>Start Open Trip</IonButton>}
                       </IonRow>
                     </IonCol>
                     <IonCol>
