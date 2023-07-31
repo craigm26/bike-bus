@@ -355,7 +355,6 @@ const App: React.FC = () => {
         id: eventSnapshot.id,
         groupId: fetchedGroups[Math.floor(index / fetchedGroups[0].event.length)].id,
       }));
-      console.log(allEvents);
 
       // Filter out events in the past
       const futureEvents = allEvents.filter(
@@ -441,60 +440,19 @@ const App: React.FC = () => {
                       </IonCard>
                       {accountType === 'App Admin' &&
                         <IonCard>
-                          <IonLabel>Premium User Functions</IonLabel>
-                          <IonItem button routerLink='/CheckInAsMember' routerDirection="none">
-                            <IonLabel>Check In to a active BikeBusGroup Ride</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/AddAKid' routerDirection="none">
-                            <IonLabel>Add a Kid -Converts to Parent Account</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/CheckInKid' routerDirection="none">
-                            <IonLabel>Check In a Kid to a BikeBusGroupRide</IonLabel>
-                          </IonItem>
-                        </IonCard>}
-                      {accountType === 'App Admin' &&
-                        <IonCard>
-                          <IonLabel>BikeBus Leader Functions</IonLabel>
-                          <IonItem button routerLink='/CheckInKidFromLeader' routerDirection="none">
-                            <IonLabel>Check In a Kid to a BikeBus</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/EndBikeBusGroupRide' routerDirection="none">
-                            <IonLabel>Finish a BikeBusGroup ride - end ride for all</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/StartBikeBusGroupRide' routerDirection="none">
-                            <IonLabel>Start a BikeBusGroup ride at BikeBusStation 1</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/CreateBikeBusStops' routerDirection="none">
-                            <IonLabel>Create BikeBusStops</IonLabel>
-                          </IonItem>
-                        </IonCard>}
-                      {accountType === 'App Admin' &&
-                        <IonCard>
                           <IonLabel>Org Admin Functions</IonLabel>
                           <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
                             <IonLabel>Update BikeBusGroups</IonLabel>
                           </IonItem>
-                          <IonItem button routerLink='/UpdateBikeBusStations' routerDirection="none">
-                            <IonLabel>Update BikeBusStations</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/UpdateRoutes' routerDirection="none">
-                            <IonLabel>Update Associated Routes</IonLabel>
-                          </IonItem>
                           <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
                             <IonLabel>Update Organization</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/DataAnalytics' routerDirection="none">
-                            <IonLabel>Data Analytics</IonLabel>
                           </IonItem>
                         </IonCard>}
                       {accountType === 'App Admin' &&
                         <IonCard>
                           <IonLabel>App Admin Functions</IonLabel>
-                          <IonItem button routerLink='/ViewBikeBusStations' routerDirection="none">
-                            <IonLabel>TODO: View BikeBusStations</IonLabel>
-                          </IonItem>
                           <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
-                            <IonLabel>TODO: Upgrade Account to Premium</IonLabel>
+                            <IonLabel>Upgrade Account to Premium</IonLabel>
                           </IonItem>
                           <IonItem button routerLink="/UpdateUsers" routerDirection="none">
                             <IonLabel>Update Users' Data</IonLabel>
