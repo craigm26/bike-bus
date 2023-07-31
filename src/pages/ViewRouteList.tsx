@@ -126,11 +126,6 @@ const ViewRouteList: React.FC = () => {
 
 
 
-    useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
-        }
-    }, [headerContext]);
 
     useEffect(() => {
         if (user) {

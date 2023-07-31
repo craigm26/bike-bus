@@ -33,7 +33,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
+import { arrowUp, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -72,6 +72,7 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
+import { type } from 'os';
 
 setupIonicReact();
 
@@ -121,6 +122,9 @@ const App: React.FC = () => {
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [upcomingEvent, setUpcomingEvent] = useState<Group['event'] | null>(null);
+  const [upcomingGroup, setUpcomingGroup] = useState<Group | null>(null);
+  
 
 
   function formatDate(timestamp: Timestamp) {
@@ -217,92 +221,104 @@ const App: React.FC = () => {
       const userLocation = await getUserLocation(); // Get the user's location
       const userGroups = await getUserGroups(); // Get the groups the user is part of
       const groupRoute = await getRoute() as GRoute | null;
-    // event.location doesn't exist, so we can't calculate distance. We need to get the route associated with the event and calculate distance from the user's location to the route
+      // event.location doesn't exist, so we can't calculate distance. We need to get the route associated with the event and calculate distance from the user's location to the route
 
-    // Helper function to calculate the distance between two lat/long points
-    function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
-      var R = 6371; // Radius of the earth in km
-      var dLat = deg2rad(lat2 - lat1);
-      var dLon = deg2rad(lon2 - lon1);
-      var a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        ;
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      var d = R * c; // Distance in km
-      return d * 0.621371; // Convert to miles
-    }
-
-    function deg2rad(deg: any) {
-      return deg * (Math.PI / 180)
-    }
-
-
-    if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
-      const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
-
-
-      if (eventDistance <= 30) {
-        resolve(true);
+      // Helper function to calculate the distance between two lat/long points
+      function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
+        var R = 6371; // Radius of the earth in km
+        var dLat = deg2rad(lat2 - lat1);
+        var dLon = deg2rad(lon2 - lon1);
+        var a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2)
+          ;
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c; // Distance in km
+        return d * 0.621371; // Convert to miles
       }
-      // if eventDistance is greater than 5, show the next event in my bikebusgroup
-      else {
-        const group = fetchedGroups.find((group: any) => group.event && group.event.length > 0 && group.event[0].id === event.id);
 
-        if (group) {
-          const groupEvents = group.event;
-          const groupEventIndex = groupEvents.findIndex((groupEvent: any) => groupEvent.id === event.id);
+      function deg2rad(deg: any) {
+        return deg * (Math.PI / 180)
+      }
 
-          if (groupEventIndex !== -1 && groupEventIndex < groupEvents.length - 1) {
-            const nextEvent = groupEvents[groupEventIndex + 1];
-            if (nextEvent && nextEvent.location) {
-              const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
-              if (nextEventDistance <= 10) {
-                resolve(true);
+
+      if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
+        const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
+
+
+        if (eventDistance <= 30) {
+          resolve(true);
+        }
+        // if eventDistance is greater than 5, show the next event in my bikebusgroup
+        else {
+          const group = fetchedGroups.find((group: any) => group.event && group.event.length > 0 && group.event[0].id === event.id);
+
+          if (group) {
+            const groupEvents = group.event;
+            const groupEventIndex = groupEvents.findIndex((groupEvent: any) => groupEvent.id === event.id);
+
+            if (groupEventIndex !== -1 && groupEventIndex < groupEvents.length - 1) {
+              const nextEvent = groupEvents[groupEventIndex + 1];
+              if (nextEvent && nextEvent.location) {
+                const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
+                if (nextEventDistance <= 10) {
+                  resolve(true);
+                }
               }
             }
           }
         }
       }
-    }
 
-    for (const group of userGroups as Group[]) {
-      if (group.event.id === event.id) {
-        resolve(true);
+      for (const group of userGroups as Group[]) {
+        if (group.event.id === event.id) {
+          resolve(true);
+        }
       }
+
+
+
+
+      const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
+
+      resolve(isRelevant);
+    });
+  }, [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
+
+
+  useEffect(() => {
+    if (fetchedEvents && fetchedEvents.length > 0) {
+      Promise.all(fetchedEvents.map(isEventRelevant)) // Map each event to a promise that resolves to a boolean
+        .then(relevanceArray => {
+          const relevantEvents = fetchedEvents.filter((_, index) => relevanceArray[index]); // Filter events based on the relevance array
+          setRelevantEvents(relevantEvents);
+        });
     }
+  }, [fetchedEvents, isEventRelevant]);
 
+  useEffect(() => {
+    if (!fetchedGroups || fetchedGroups.length === 0) return;
 
-    const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
+    // Flatten all the events from all the groups into a single array, while keeping track of which group each event is associated with
+    const allEvents = fetchedGroups.flatMap((group) => group.event.map((event: Group['event']) => ({ ...event, groupId: group.id })));
 
-    resolve (isRelevant);
-  });
- }, [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
+    // Filter out events in the past
+    const futureEvents = allEvents.filter(event => new Date(event.startTimestamp).getTime() > Date.now());
 
-
-    useEffect(() => {
-      if (fetchedEvents && fetchedEvents.length > 0) {
-        Promise.all(fetchedEvents.map(isEventRelevant)) // Map each event to a promise that resolves to a boolean
-          .then(relevanceArray => {
-            const relevantEvents = fetchedEvents.filter((_, index) => relevanceArray[index]); // Filter events based on the relevance array
-            setRelevantEvents(relevantEvents);
-          });
-      }
-    }, [fetchedEvents, isEventRelevant]);
-    
-
-  const upcomingEvent = useMemo(() => {
-
-    if (!relevantEvents || relevantEvents.length === 0) return null;
-
-    // Make sure to replace 'eventDate' with the actual property name that holds the event's date
-    const sortedEvents = [...relevantEvents].sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+    // Sort all the future events by startTimestamp in ascending order
+    const sortedEvents = [...futureEvents].sort((a, b) => new Date(a.startTimestamp).getTime() - new Date(b.startTimestamp).getTime());
 
     // Now, the first event in sortedEvents is the upcoming event
+    const upcomingEvent = sortedEvents[0];
 
-    return sortedEvents[0];
-  }, [relevantEvents]);
+    // Find the group that the upcoming event belongs to
+    const upcomingGroup = upcomingEvent ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId) : null;
+
+    setUpcomingEvent(upcomingEvent);
+    setUpcomingGroup(upcomingGroup);
+
+  }, [fetchedGroups]);
 
 
   const avatarElement = useMemo(() => {
@@ -318,7 +334,7 @@ const App: React.FC = () => {
       <IonIcon icon={personCircleOutline} />
     );
   }, [user, avatarUrl]);
-  
+
 
   const togglePopover = (e: any) => {
     setPopoverEvent(e.nativeEvent);
@@ -354,9 +370,6 @@ const App: React.FC = () => {
                         </IonItem>
                         <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                           <IonLabel>View BikeBusses</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/SearchForBikeBus' routerDirection="none">
-                          <IonLabel>Search for BikeBus</IonLabel>
                         </IonItem>
                         <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
                           <IonLabel>View Organizations</IonLabel>
@@ -689,28 +702,26 @@ const App: React.FC = () => {
                     </IonFab>
                   </div>
                   <div className="bikebusname-button-container">
-                    {fetchedGroups ? (
-                      fetchedGroups.map((group: any) => {
-                        return (
-                          <IonButton
-                            shape="round"
-                            size="large"
-                            key={group.id}
-                            routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${group.id}`}
-                            routerDirection="none"
-                          >
-                            <IonLabel className="BikeBusFont" text-wrap>
-                              {group.BikeBusName}
-                              {upcomingEvent && (
-                                <IonText className="EventTimeFont">
-                                  {formatDate(upcomingEvent.startTimestamp)}
-                                </IonText>
-                              )}
-                            </IonLabel>
-                          </IonButton>
-                        );
-                      })
-
+                    {upcomingGroup ? (
+                      <div className="button-group">
+                        <IonButton
+                          className="group-button"
+                          shape="round"
+                          size="large"
+                          key={upcomingGroup.id}
+                          routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${upcomingGroup.id}`}
+                          routerDirection="none"
+                        >
+                          <IonLabel className="BikeBusFont" text-wrap>
+                            {upcomingGroup.BikeBusName}
+                            {upcomingEvent && (
+                              <IonText className="EventTimeFont">
+                                {formatDate(upcomingEvent.startTimestamp)}
+                              </IonText>
+                            )}
+                          </IonLabel>
+                        </IonButton>
+                      </div>
                     ) : (
                       <p>Loading groups...</p>
                     )}

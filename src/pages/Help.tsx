@@ -95,11 +95,13 @@ const Help: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <IonList>
-                    <IonItem>1. First, you should be signed up as a User</IonItem>
-                    <IonItem>2. Then you create a route</IonItem>
-                    <IonItem>3. Create a BikeBus by clicking on the "Create BikeBus" button on the route page</IonItem>
-                    <IonItem>4. Invite users to your BikeBus</IonItem>
-                    <IonItem>5. When your schedule indicates that you (as BikeBus Leader) should start the BikeBus, Start the BikeBus on the Map</IonItem>
+                    <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
+                    <IonItem>2. Create a Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
+                    <IonItem>3. View the Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/ViewRouteList">View your Routes</IonButton></IonItem>
+                    <IonItem>4. Select the "Create BikeBus Group" button</IonItem>
+                    <IonItem>5. Fill in the "Create BikeBus" form</IonItem>
+                    <IonItem>6. Create your schedule of upcoming events</IonItem>
+                    <IonItem>7. Invite people to join the BikeBus or share the event</IonItem>
                   </IonList>
                 </IonCardContent>
               </IonCard>
