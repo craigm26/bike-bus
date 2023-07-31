@@ -352,6 +352,7 @@ const App: React.FC = () => {
       // Extract event data from snapshots
       const allEvents = eventSnapshots.map((eventSnapshot, index) => ({
         ...eventSnapshot.data(),
+        id: eventSnapshot.id,
         groupId: fetchedGroups[Math.floor(index / fetchedGroups[0].event.length)].id,
       }));
       console.log(allEvents);
@@ -380,7 +381,9 @@ const App: React.FC = () => {
       console.log('upcomingGroup:', upcomingGroup);
 
       setUpcomingEvent(upcomingEvent);
+      console.log('upcomingEvent.id:', upcomingEvent?.id);
       setUpcomingGroup(upcomingGroup);
+      console.log('upcomingGroup.id:', upcomingGroup?.id);
     });
   }, [fetchedGroups]);
 
