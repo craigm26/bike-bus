@@ -150,7 +150,7 @@ const Account: React.FC = () => {
     }, [fetchRoutes]);
 
 
-    
+
     // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
     const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
 
@@ -257,7 +257,6 @@ const Account: React.FC = () => {
                     </IonCardContent>
                 </IonCard>
                 <IonCard>
-                <IonCard>
                     <IonCardHeader>
                         <IonCardTitle>My Routes</IonCardTitle>
                     </IonCardHeader>
@@ -271,7 +270,6 @@ const Account: React.FC = () => {
                             ))}
                         </IonList>
                     </IonCardContent>
-                    </IonCard>
                 </IonCard>
             </IonContent>
         </IonPage>

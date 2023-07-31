@@ -790,9 +790,9 @@ const Event: React.FC = () => {
   console.log('selectedRoute is ', selectedRoute);
   console.log('RouteId is ', RouteId);
 
-  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, selectedRoute: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
+  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
     const center = `${mapCenter.lat},${mapCenter.lng}`;
-    const size = '1000x60';
+    const size = '600x300';
     const path = routeData?.pathCoordinates
       .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
       .join('|');
@@ -800,6 +800,8 @@ const Event: React.FC = () => {
       `markers=color:red|label:S|${startGeo.lat},${startGeo.lng}`,
       `markers=color:green|label:E|${endGeo.lat},${endGeo.lng}`,
     ];
+    // create markers for bikebusstops along the route
+
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
     return url;
   }
@@ -812,153 +814,152 @@ const Event: React.FC = () => {
           <IonRow>
             <IonCol>
               <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
+              {isEventLeader && (
+                <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+              )}
+              {!isEventLeader && isEventActive && (
+                <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+              )}
+              {isEventLeader && isEventActive && (
+                <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
+              )}
+              <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+              <IonModal isOpen={showRSVPModal}>
+                <IonHeader>
+                  <IonToolbar>
+                    <IonTitle>Select a Role</IonTitle>
+                  </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                  <IonList>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="members" disabled checked />
+                      <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Kids: Be safe and have fun!</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
+                      <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
+                    </IonItem>
+                  </IonList>
+                  <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
+                  <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
+                </IonContent>
+              </IonModal>
+              <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+              <IonModal isOpen={showRSVPListModal}>
+                <IonHeader>
+                  <IonToolbar>
+                    <IonTitle>RSVP List</IonTitle>
+                  </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                  <IonList>
+                    <IonItem>
+                      <IonLabel>Leader</IonLabel>
+                      {eventData?.leader}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Members</IonLabel>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                          {membersId.slice(0, 5).map((member, index) => (
+                            <IonChip key={index}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Avatar uid={member?.uid} size="extrasmall" />
+                              </div>
+                            </IonChip>
+                          ))}
+                          {membersId.length > 5 && (
+                            <IonChip>
+                              <IonLabel>{membersId.length}</IonLabel>
+                            </IonChip>
+                          )}
+                        </IonButton>
+                      </div>
+                    </IonItem>
+                    <IonModal isOpen={showMembersModal}>
+                      <IonHeader>
+                        <IonToolbar>
+                          <IonTitle>Members</IonTitle>
+                        </IonToolbar>
+                      </IonHeader>
+                      <IonContent>
+                        <IonList>
+                          {membersId.map((member, index) => (
+                            <IonItem key={index}>
+                              <Avatar uid={member?.uid} />
+                              <IonLabel>{username}</IonLabel>
+                            </IonItem>
+                          ))}
+                        </IonList>
+                        <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                      </IonContent>
+                    </IonModal>
+                    <IonItem>
+                      <IonLabel>Captains</IonLabel>
+                      {captains.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Sheepdogs</IonLabel>
+                      {sheepdogs.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Sprinters</IonLabel>
+                      {sprinters.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Parents</IonLabel>
+                      {parents.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Kids</IonLabel>
+                      {kids.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Caboose</IonLabel>
+                      {caboose.map((username: string, index: number) => (
+                        <IonLabel key={index}>{username}</IonLabel>
+                      ))}
+                    </IonItem>
+                  </IonList>
+                  <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
+                </IonContent>
+              </IonModal>
             </IonCol>
-
-          {isEventLeader && (
-            <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-          )}
-          {!isEventLeader && isEventActive && (
-            <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
-          )}
-          {isEventLeader && isEventActive && (
-            <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
-          )}
-          <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
-          <IonModal isOpen={showRSVPModal}>
-            <IonHeader>
-              <IonToolbar>
-                <IonTitle>Select a Role</IonTitle>
-              </IonToolbar>
-            </IonHeader>
-            <IonContent>
-              <IonList>
-                <IonItem>
-                  <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="members" disabled checked />
-                  <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Kids: Be safe and have fun!</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
-                  <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
-                </IonItem>
-              </IonList>
-              <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
-              <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
-            </IonContent>
-          </IonModal>
-          <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
-          <IonModal isOpen={showRSVPListModal}>
-            <IonHeader>
-              <IonToolbar>
-                <IonTitle>RSVP List</IonTitle>
-              </IonToolbar>
-            </IonHeader>
-            <IonContent>
-              <IonList>
-                <IonItem>
-                  <IonLabel>Leader</IonLabel>
-                  {eventData?.leader}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Members</IonLabel>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                      {membersId.slice(0, 5).map((member, index) => (
-                        <IonChip key={index}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar uid={member?.uid} size="extrasmall" />
-                          </div>
-                        </IonChip>
-                      ))}
-                      {membersId.length > 5 && (
-                        <IonChip>
-                          <IonLabel>{membersId.length}</IonLabel>
-                        </IonChip>
-                      )}
-                    </IonButton>
-                  </div>
-                </IonItem>
-                <IonModal isOpen={showMembersModal}>
-                  <IonHeader>
-                    <IonToolbar>
-                      <IonTitle>Members</IonTitle>
-                    </IonToolbar>
-                  </IonHeader>
-                  <IonContent>
-                    <IonList>
-                      {membersId.map((member, index) => (
-                        <IonItem key={index}>
-                          <Avatar uid={member?.uid} />
-                          <IonLabel>{username}</IonLabel>
-                        </IonItem>
-                      ))}
-                    </IonList>
-                    <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
-                  </IonContent>
-                </IonModal>
-                <IonItem>
-                  <IonLabel>Captains</IonLabel>
-                  {captains.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Sheepdogs</IonLabel>
-                  {sheepdogs.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Sprinters</IonLabel>
-                  {sprinters.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Parents</IonLabel>
-                  {parents.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Kids</IonLabel>
-                  {kids.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Caboose</IonLabel>
-                  {caboose.map((username: string, index: number) => (
-                    <IonLabel key={index}>{username}</IonLabel>
-                  ))}
-                </IonItem>
-              </IonList>
-              <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
-            </IonContent>
-          </IonModal>
           </IonRow>
           <IonRow className="static-map-event">
             <IonCol>
