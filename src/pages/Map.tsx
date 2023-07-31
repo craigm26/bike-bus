@@ -217,9 +217,7 @@ const Map: React.FC = () => {
             const routeData = doc.data();
             routes.push(routeData);
           });
-          console.log("BikeBus Routes", routes);
           setBikeBusRoutes(routes);
-          console.log("BikeBus Routes", bikeBusRoutes);
         })
         .catch((error) => {
           console.log("Error fetching bike/bus routes:", error);

@@ -124,7 +124,7 @@ const App: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [upcomingEvent, setUpcomingEvent] = useState<Group['event'] | null>(null);
   const [upcomingGroup, setUpcomingGroup] = useState<Group | null>(null);
-  
+
 
 
   function formatDate(timestamp: Timestamp) {
@@ -157,6 +157,49 @@ const App: React.FC = () => {
     }
 
   }, [user]);
+
+
+  useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnapshot = await getDoc(userRef);
+
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.bikebusgroups) {
+            const groupRefs = userData.bikebusgroups; // getting the group document references
+            const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref))); // Fetch all group documents in parallel
+
+            const groups = groupSnapshots.map(snapshot => snapshot.data());
+
+            // Fetch routes and events for each group
+            for (const group of groups) {
+              if (group && group.BikeBusRoutes) {
+                const routeRef = group.BikeBusRoutes[0];
+                const routeSnapshot = await getDoc(routeRef);
+
+                group.route = routeSnapshot.data();
+              }
+
+              if (group && group.event) {
+                const eventRef = group.event[0];
+                const eventSnapshot = await getDoc(eventRef);
+
+                group.event = eventSnapshot.data();
+              }
+            }
+
+            // Now groups contains all the data we need
+            setGroupData(groups);
+          }
+        }
+      };
+
+      fetchData();
+    }
+  }, [user]);
+
 
   const getUserLocation = useCallback(async () => {
     if (!user) return null;
@@ -300,25 +343,47 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!fetchedGroups || fetchedGroups.length === 0) return;
 
-    // Flatten all the events from all the groups into a single array, while keeping track of which group each event is associated with
-    const allEvents = fetchedGroups.flatMap((group) => group.event.map((event: Group['event']) => ({ ...event, groupId: group.id })));
+    // Fetch all event documents from their references in parallel
+    const eventFetchPromises = fetchedGroups.flatMap((group) =>
+      group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef))
+    );
 
-    // Filter out events in the past
-    const futureEvents = allEvents.filter(event => new Date(event.startTimestamp).getTime() > Date.now());
+    Promise.all(eventFetchPromises).then((eventSnapshots) => {
+      // Extract event data from snapshots
+      const allEvents = eventSnapshots.map((eventSnapshot, index) => ({
+        ...eventSnapshot.data(),
+        groupId: fetchedGroups[Math.floor(index / fetchedGroups[0].event.length)].id,
+      }));
+      console.log(allEvents);
 
-    // Sort all the future events by startTimestamp in ascending order
-    const sortedEvents = [...futureEvents].sort((a, b) => new Date(a.startTimestamp).getTime() - new Date(b.startTimestamp).getTime());
+      // Filter out events in the past
+      const futureEvents = allEvents.filter(
+        (event) => new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now()
+      );
+      console.log('futureEvents:', futureEvents);
 
-    // Now, the first event in sortedEvents is the upcoming event
-    const upcomingEvent = sortedEvents[0];
+      // Sort all the future events by startTimestamp in ascending order
+      const sortedEvents = [...futureEvents].sort(
+        (a, b) =>
+          new Date(a.startTimestamp.seconds * 1000).getTime() - new Date(b.startTimestamp.seconds * 1000).getTime()
+      );
+      console.log('sortedEvents:', sortedEvents);
 
-    // Find the group that the upcoming event belongs to
-    const upcomingGroup = upcomingEvent ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId) : null;
+      // Now, the first event in sortedEvents is the upcoming event
+      const upcomingEvent = sortedEvents[0];
+      console.log('upcomingEvent:', upcomingEvent);
 
-    setUpcomingEvent(upcomingEvent);
-    setUpcomingGroup(upcomingGroup);
+      // Find the group that the upcoming event belongs to
+      const upcomingGroup = upcomingEvent
+        ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId)
+        : null;
+      console.log('upcomingGroup:', upcomingGroup);
 
+      setUpcomingEvent(upcomingEvent);
+      setUpcomingGroup(upcomingGroup);
+    });
   }, [fetchedGroups]);
+
 
 
   const avatarElement = useMemo(() => {
