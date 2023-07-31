@@ -805,12 +805,8 @@ const Event: React.FC = () => {
   
 
   return (
-    <IonPage>
-      <IonContent fullscreen>
-        <IonHeader>
-          <IonToolbar></IonToolbar>
-        </IonHeader>
-        <IonList>
+    <IonPage className="ion-flex-offset-app">
+    <IonContent fullscreen>
           <IonLabel>{eventData?.BikeBusName}</IonLabel>
           <IonItem>
             <IonLabel>{startTime} to {endTime}</IonLabel>
@@ -927,7 +923,6 @@ const Event: React.FC = () => {
               <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
             </IonContent>
           </IonModal>
-
           <IonItem>
             <IonLabel>Captains</IonLabel>
             {captains.map((username: string, index: number) => (
@@ -964,7 +959,6 @@ const Event: React.FC = () => {
               <IonLabel key={index}>{username}</IonLabel>
             ))}
           </IonItem>
-        </IonList>
         <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
       </IonContent>
     </IonPage >
