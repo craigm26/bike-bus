@@ -17,16 +17,17 @@ import {
   IonList,
   IonText,
   IonCardTitle,
+  IonToggle,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useContext } from "react";
+import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
+import { DocumentSnapshot, Firestore, FirestoreError, QueryDocumentSnapshot, QuerySnapshot, arrayUnion, getDoc, query, doc, getDocs, onSnapshot, updateDoc, where } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { BicyclingLayer, GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -35,6 +36,10 @@ import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
+import {
+  DocumentData,
+  doc as firestoreDoc,
+} from "firebase/firestore";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -86,6 +91,8 @@ const Map: React.FC = () => {
   const [endPointAdress, setEndPointAdress] = useState<string>('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
+  const [route, setRoute] = useState<DocumentData | null>(null);
+
 
 
   type Point = {
@@ -107,15 +114,15 @@ const Map: React.FC = () => {
   const [routeName, setRouteName] = useState('');
   const [description, setDescription] = useState('');
   const [isBikeBus, setIsBikeBus] = useState(false);
+  const polylinesRef = useRef([]); const [bikeBusEnabled, setBikeBusEnabled] = useState(false);
+  const [routesEnabled, setRoutesEnabled] = useState(false);
+  const [organizationsEnabled, setOrganizationsEnabled] = useState(false);
+  const [openTripsEnabled, setOpenTripsEnabled] = useState(false);
+  const [eventsEnabled, setEventsEnabled] = useState(false);
+  const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
+  const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
+    ({ isOpen: false, content: '', position: null });
 
-
-
-
-  useEffect(() => {
-    if (headerContext) {
-      headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
-    }
-  }, [headerContext]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -194,10 +201,30 @@ const Map: React.FC = () => {
     }
   }, [user, getLocationClicked, watchLocation]);
 
-
   useEffect(() => {
     if (user) {
-      const userRef = doc(db, "users", user.uid);
+      const userRef = firestoreDoc(db, "users", user.uid);
+      const routesRef = collection(db, "routes");
+      const queryObj = query(
+        routesRef,
+        where("isBikeBus", "==", true),
+
+      );
+      getDocs(queryObj)
+        .then((querySnapshot) => {
+          const routes: any[] = [];
+          querySnapshot.forEach((doc) => {
+            const routeData = doc.data();
+            routes.push(routeData);
+          });
+          console.log("BikeBus Routes", routes);
+          setBikeBusRoutes(routes);
+          console.log("BikeBus Routes", bikeBusRoutes);
+        })
+        .catch((error) => {
+          console.log("Error fetching bike/bus routes:", error);
+        });
+
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
@@ -219,6 +246,8 @@ const Map: React.FC = () => {
       });
     }
   }, [user]);
+
+  
 
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
@@ -561,6 +590,72 @@ const Map: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+  // when the bikebus button is clicked, show the bikebus routes on the map
+  const handleBikeBusButtonClick = (routeId: string) => {
+    const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
+    if (bikeBusGroup) {
+      const bikeBusGroupName = bikeBusGroup.BikeBusName;
+      const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
+      const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
+      const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
+      console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
+      // Show an InfoWindow with the BikeBusGroup name
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div>${bikeBusGroupName}
+            // link to the page for the corresponding bike/bus group
+            <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
+            </div>`,
+
+      });
+      infoWindow.open(mapRef.current, bikeBusGroupId);
+      // Redirect to the page for the corresponding bike/bus group
+      history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
+    }
+  };
+
+  const handleMarkerClick = (stop: any) => {
+    console.log("handleMarkerClick called");
+    console.log("stop: ", stop);
+    const stopId = stop.id;
+    const stopName = stop.name;
+    const stopRoutes = stop.routes;
+    const stopRoutesArray = stopRoutes?.split(",");
+    const stopRoutesString = stopRoutesArray?.join(", ");
+    console.log("stopRoutesString: ", stopRoutesString);
+    // Show an InfoWindow with the stop name
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div>${stopName}
+            <br>
+            Routes: ${stopRoutesString}
+            </div>`,
+    });
+    infoWindow.open(mapRef.current, stopId);
+    // show the routes that stop at this stop and then show the next 3 arrival times for each route
+    // get the routes that stop at this stop
+    const stopRoutesArray2 = stopRoutes?.split(",");
+    console.log("stopRoutesArray2: ", stopRoutesArray2);
+    // get the routes that stop at this stop from firebase
+
+  };
+
+  const handleBikeBusRouteClick = (route: any) => {
+    // Set content to whatever you want to display inside the InfoWindow
+    const content = `<a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    View ${route.BikeBusName}
+    </a>`
+
+      ;
+
+    // Set position to the startPoint of the route (or any other point you prefer)
+    const position = route.startPoint;
+
+    setInfoWindow({ isOpen: true, content, position });
+  };
+
+  const handleCloseClick = () => {
+    setInfoWindow({ isOpen: false, content: '', position: null });
+  };
+
   // when the user clicks on the "startTrip" action button, we want to create a new trip document in Firestore and use the current values for start and end locations as turn by turn google navigation - but only if it's not the browser. If it's the browser, then only allow user location to be tracked and the route is shown
 
 
@@ -569,7 +664,7 @@ const Map: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent fullscreen>
+      <IonContent>
         {!showMap && (
           <>
             <IonGrid className="location-app-intro-container">
@@ -624,7 +719,7 @@ const Map: React.FC = () => {
         }
         {
           showMap && (
-            <IonGrid fixed={false}>
+            <IonGrid fixed={false} className="map-grid">
               <IonRow className="map-base">
                 <GoogleMap
                   onLoad={(map) => {
@@ -635,7 +730,7 @@ const Map: React.FC = () => {
                     height: "100%",
                   }}
                   center={mapCenter}
-                  zoom={18}
+                  zoom={15}
                   options={{
                     disableDefaultUI: true,
                     zoomControl: false,
@@ -1098,6 +1193,88 @@ const Map: React.FC = () => {
                       </IonRow>}
                     </IonCol>
                   </IonGrid>
+                  {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
+                    const keyPrefix = route.id || route.routeName;
+                    return (
+                      <div key={`${keyPrefix}`}>
+                        <Polyline
+                          key={`${keyPrefix}-border`}
+                          path={route.pathCoordinates}
+                          options={{
+                            strokeColor: "#000000", // Border color
+                            strokeOpacity: .7,
+                            strokeWeight: 3, // Border thickness
+                            clickable: true,
+                            icons: [
+                              {
+                                icon: {
+                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                  strokeColor: "#000000", // Main line color
+                                  strokeOpacity: .7,
+                                  strokeWeight: 3,
+                                  fillColor: "#000000",
+                                  fillOpacity: .7,
+                                  scale: 3,
+                                },
+                                offset: "100%",
+                                repeat: "100px",
+                              },
+                            ],
+                          }}
+                          onClick={() => { handleBikeBusRouteClick(route) }}
+                        />
+                        {infoWindow.isOpen && infoWindow.position && (
+                          <InfoWindow
+                            position={infoWindow.position}
+                            onCloseClick={handleCloseClick}
+                          >
+                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                          </InfoWindow>
+                        )}
+                        <Polyline
+                          key={`${keyPrefix}-main`}
+                          path={route.pathCoordinates}
+                          options={{
+                            strokeColor: "#ffd800", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            icons: [
+                              {
+                                icon: {
+                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                  strokeColor: "#ffd800", // Main line color
+                                  strokeOpacity: 1,
+                                  strokeWeight: 2,
+                                  fillColor: "#ffd800",
+                                  fillOpacity: 1,
+                                  scale: 3,
+                                },
+                                offset: "100%",
+                                repeat: "100px",
+                              },
+                            ],
+                          }}
+                        />
+                        {route.startPoint && (
+                          <Marker
+                            key={`${keyPrefix}-start`}
+                            label={`Start of ${route.BikeBusName}`}
+                            position={route.startPoint}
+                            onClick={() => { handleBikeBusRouteClick(route) }}
+                          />
+                        )}
+                        {route.endPoint && (
+                          <Marker
+                            key={`${keyPrefix}-end`}
+                            label={`End of ${route.BikeBusName}`}
+                            position={route.endPoint}
+                            onClick={() => { handleBikeBusRouteClick(route) }}
+
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                   <div>
                     {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
                     {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
@@ -1105,6 +1282,16 @@ const Map: React.FC = () => {
                   <div>
                     {selectedStartLocation && <Marker position={selectedStartLocation} />}
                     {selectedEndLocation && <Marker position={selectedEndLocation} />}
+                  </div>
+                  <div>
+                    <IonGrid className="toggle-bikebus-container">
+                      <IonRow>
+                        <IonCol>
+                          <IonLabel>BikeBus</IonLabel>
+                          <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                        </IonCol>
+                      </IonRow>
+                    </IonGrid>
                   </div>
                   <Polyline
                     path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
@@ -1129,3 +1316,4 @@ const Map: React.FC = () => {
 };
 
 export default Map;
+

@@ -13,7 +13,7 @@ import {
     IonTitle,
     IonIcon,
 } from '@ionic/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './Account.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -32,6 +32,24 @@ interface Group {
     BikeBusMembers: string[];
 }
 
+interface Coordinate {
+    lat: number;
+    lng: number;
+}
+
+interface Route {
+    id: string;
+    accountType: string;
+    description: string;
+    endPoint: Coordinate;
+    routeCreator: string;
+    routeLeader: string;
+    routeName: string;
+    routeType: string;
+    startPoint: Coordinate;
+    travelMode: string;
+}
+
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
@@ -45,6 +63,7 @@ const Account: React.FC = () => {
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
     const [savedDestinations, setSavedDestinations] = useState<Group[]>([]);
     const [uploadComplete, setUploadComplete] = useState(false);
+    const [routes, setRoutes] = useState<Route[]>([]);
 
 
 
@@ -99,6 +118,41 @@ const Account: React.FC = () => {
             });
         }
     }, [user, checkAndUpdateAccountModes]);
+
+    const fetchRoutes = useCallback(async () => {
+        // Assuming that your uid is stored in the user.uid
+        const uid = user?.uid;
+
+        if (!uid) {
+            // If there's no user, we cannot fetch routes
+            return;
+        }
+
+        // Create a reference to the 'routes' collection
+        const routesCollection = collection(db, 'routes');
+
+        // Create a query against the collection.
+        // This will fetch all documents where the routeCreator equals the user's uid
+        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
+
+        const querySnapshot = await getDocs(q);
+        const routesData: Route[] = querySnapshot.docs.map(doc => ({
+            ...doc.data() as Route,
+            id: doc.id,
+        }));
+        setRoutes(routesData);
+    }, [user]); // here user is a dependency
+
+
+
+    useEffect(() => {
+        fetchRoutes();
+    }, [fetchRoutes]);
+
+
+    
+    // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
+    const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
 
 
     const refreshAvatar = () => {
@@ -190,13 +244,6 @@ const Account: React.FC = () => {
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>Notification Settings</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardHeader>
                         <IonCardTitle>Favorite Destinations</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
@@ -210,13 +257,21 @@ const Account: React.FC = () => {
                     </IonCardContent>
                 </IonCard>
                 <IonCard>
+                <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>Parent</IonCardTitle>
+                        <IonCardTitle>My Routes</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
-                        <IonText>Add a Kid Account here</IonText>
-                        <IonText>At first, the only thing that happens with a kid account is that the Parent can check in the kid during a initiated BikeBus Trip. Parents receive notifications about the ride.</IonText>
+                        <IonList>
+                            {routes.map((route) => (
+                                <IonItem key={route.id}>
+                                    <IonLabel>{route.routeName}</IonLabel>
+                                    <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
+                                </IonItem>
+                            ))}
+                        </IonList>
                     </IonCardContent>
+                    </IonCard>
                 </IonCard>
             </IonContent>
         </IonPage>

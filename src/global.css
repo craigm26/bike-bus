@@ -14,6 +14,7 @@
   justify-content: center;
   align-items: center;
   padding-top: 62px;
+  overflow: hidden;
 }
 
 .static-map-event {
@@ -221,10 +222,23 @@
   z-index: 1000;
   background-color: white;
   border: 1px solid transparent;
-  width: 420px;
+  width: 450px;
   padding: 2px 12px;
   outline: none;
   background-color: rgba(255, 255, 255, 0.9);
+}
+
+.toggle-bikebus-container {
+  position: fixed;
+  width: max-content;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
+  width: 135px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  left: 0;
+  bottom: 85px;
 }
 
 .current-location {
@@ -257,6 +271,7 @@
   position: absolute;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .right-align {
@@ -265,4 +280,25 @@
 
 .left-align {
   text-align: left;
+}
+
+.button-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.group-button {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.icon-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  padding-left: 0;
 }
