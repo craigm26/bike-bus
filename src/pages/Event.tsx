@@ -274,19 +274,36 @@ const Event: React.FC = () => {
             const bikeBusGroupData = groupDocSnapshot.data() as BikeBusGroup;
             setBikeBusGroupData(bikeBusGroupData);
             const RouteId = bikeBusGroupData.BikeBusRoutes[0].id;
-            console.log('RouteId is ', RouteId);
             setRouteId(RouteId);
             // also set the RouteId to be the routeData
             const routeData = routes.find((route) => route.id === RouteId);
             // get the document from the routes collection that matches the RouteId, then set the routeData to that document
-            setrouteData(routeData || null);
-            console.log('routeData is ', routeData);
-            // get the route data from the routeData
-            console.log('routeData is ', routeData);
-            // set the routeData to the routeData
-            // get the group id from the bikeBusGroupData
+            // get the route data from the route document that matches the RouteId
+            const docRef = doc(db, 'routes', RouteId);
+            const docSnapshot = await getDoc(docRef);
+            if (docSnapshot.exists()) {
+              const routeData = docSnapshot.data() as Route;
+              setrouteData(routeData);
+
+              // set the pathCoordinates to the pathCoordinates in the routeData
+              const pathCoordinates = routeData.pathCoordinates;
+              setPath(pathCoordinates);
+
+              // set the bikeBusStops to the BikeBusStop in the routeData
+              const bikeBusStops = routeData.BikeBusStop;
+              setBikeBusStops(bikeBusStops);
+
+              // set the startAddress to the startPointAddress in the routeData
+              const startAddress = routeData.startPointAddress;
+              setStartAddress(startAddress);
+
+              // set the endAddress to the endPointAddress in the routeData
+              const endAddress = routeData.endPointAddress;
+              setEndAddress(endAddress);
+
+            }
+
             const groupId = bikeBusGroupData.id;
-            console.log('groupId is ', groupId);
             // set the groupId to the groupId
             setGroupId(groupId);
           }
@@ -297,7 +314,7 @@ const Event: React.FC = () => {
       }
     };
     fetchEvent();
-  }, [id]);
+  }, [id, routes]);
 
   useEffect(() => {
     if (user) {
@@ -323,13 +340,11 @@ const Event: React.FC = () => {
 
   const createTrip = useCallback(async () => {
 
-    console.log('createTrip is running!');
     let routeData: RouteData | undefined;
     let groupData;
 
     const docRefEvent = doc(db, 'event', id);
     const docEventsnapshot = await getDoc(docRefEvent);
-    console.log('docEventsnapshot is ', docEventsnapshot);
 
     if (docEventsnapshot.exists()) {
       const eventDataForCreateTrip = docEventsnapshot.data();
@@ -340,25 +355,20 @@ const Event: React.FC = () => {
         if (docSnapshotgroup.exists()) {
           groupData = docSnapshotgroup.data();
         }
-        console.log('groupData is ', groupData);
+
 
         const routeRef = eventDataForCreateTrip?.route;
         const docSnapshotroute = await getDoc(routeRef);
-        console.log('docSnapshotroute is ', docSnapshotroute);
-        console.log('routeRef is ', routeRef);
+
 
         if (docSnapshotroute.exists()) {
           const data = docSnapshotroute.data();
-          console.log('route data before type check:', data);
           if (isRouteData(data)) {
             routeData = data as RouteData;
           }
-          console.log('routeData is ', routeData);
         }
 
         if (routeData && groupData) {
-          console.log('routeData is ', routeData);
-          console.log('groupData is ', groupData);
           const tripsRef = collection(db, 'trips');
           const docRef = await addDoc(tripsRef, {
             // wait until all of the values are set in the trip document before continuing
@@ -443,7 +453,6 @@ const Event: React.FC = () => {
             tripEndTripGroupId: '',
             tripEndTripGroupSize: '',
           });
-          console.log('Document written with ID: ', docRef.id);
 
           const tripRefid = docRef.id;
           setTripRefid(tripRefid);
@@ -457,7 +466,6 @@ const Event: React.FC = () => {
         }
       } else {
         // doc.data() will be undefined in this case
-        console.log('No such document!');
       }
     }
   }, [id, user?.uid, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, eventData?.leader, history]);
@@ -493,14 +501,12 @@ const Event: React.FC = () => {
 
   const handleRSVP = async () => {
     if (!user || !username) {
-      console.log("No user is logged in or username is not loaded yet!");
       return;
     }
 
     if (!role || role.length === 0) {
       // set the role to members if no role is selected
       setRole(['members']);
-      console.log("No role is selected!");
       return;
     }
 
@@ -528,7 +534,6 @@ const Event: React.FC = () => {
         await setDoc(eventRef, {
           members: arrayUnion(username)
         }, { merge: true });
-        console.log('members is ', eventData.members);
       }
     }
 
@@ -564,7 +569,6 @@ const Event: React.FC = () => {
 
   const setShowStartBikeBus = (value: boolean) => {
     setShowJoinBikeBus(value);
-    console.log('setShowJoinBikeBus is ', value);
   };
 
   const toggleEventStatus = useCallback(async (status: string) => {
@@ -576,17 +580,13 @@ const Event: React.FC = () => {
     if (status === '' || status === 'inactive') {
       setEventData((prevEventData: any) => ({ ...prevEventData, status: '' }));
       setShowStartBikeBus(true);
-      console.log('setShowStartBikeBus is true!');
       setShowJoinBikeBus(false);
-      console.log('setShowJoinBikeBus is false!');
     } else
       if (status === 'active') {
         setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
         createTrip();
         //setShowJoinBikeBus(true);
-        //console.log('setShowJoinBikeBus is true!');
         //setShowStartBikeBus(false);
-        //console.log('setShowStartBikeBus is false!');
       }
   }, [createTrip, id]);
 
@@ -607,9 +607,7 @@ const Event: React.FC = () => {
     // check to see if the event start time and date is before the current time and date and within 30 minutes of the current time and date
     if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 15 * 60000)) {
       // show the join bikebus button
-      console.log('The event is active!');
       setShowJoinBikeBus(true);
-      console.log('setShowJoinBikeBus is true!');
       // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active when it's the eventData?.startTimestamp
       if (eventData?.startTimestamp) {
         toggleStartEvent();
@@ -621,7 +619,11 @@ const Event: React.FC = () => {
 
   // when page loads, do the checkEventTime function
   useEffect(() => {
-    fetchSingleRoute(eventData?.route);
+    // bring in RouteID from the eventData
+    const RouteId = eventData?.route;
+    // get the document from the routes collection that matches the RouteId, then set the routeData to that document
+
+
     checkEventTime();
     // check the event time every 30 seconds
     const interval = setInterval(() => {
@@ -635,11 +637,7 @@ const Event: React.FC = () => {
   }, [checkEventTime, eventData?.route]);
 
   const toggleJoinEvent = () => {
-    console.log('toggleJoinEvent is running!');
-    console.log('eventData is ', eventData);
-    console.log('eventData?.tripId is ', eventData?.tripId);
     const tripsRef = doc(db, 'trips', eventData?.tripId);
-    console.log('tripsRef is ', tripsRef);
     setDoc(tripsRef, {
       JoinedMembers: arrayUnion(username)
     }, { merge: true });
@@ -692,9 +690,6 @@ const Event: React.FC = () => {
         tripCheckInMembers: arrayUnion(username),
         tripCheckInMembersTimeStamp: serverTimestamp()
       }, { merge: true });
-      console.log('members is ', eventData.members);
-      console.log('tripCheckInMembers is ', eventData.tripCheckInMembers);
-      console.log('tripCheckInMembersTimeStamp is ', eventData.tripCheckInMembersTimeStamp);
     }
     // do the same as parents to the leader array
     if (eventData?.leader.includes(username)) {
@@ -705,69 +700,6 @@ const Event: React.FC = () => {
     }
     // re-direct users to the trip page
     history.push(`/trips/${eventData?.tripId}`);
-  };
-
-  // we need to get the routeId from the bikeBusGroupData
-
-  const fetchSingleRoute = async (RouteId: any) => {
-    console.log('fetchSingleRoute is running!')
-    console.log('RouteId is ', RouteId)
-    const docRef = doc(db, 'routes', RouteId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const routeData = {
-        ...docSnap.data() as Route,
-        id: docSnap.id,
-        isBikeBus: docSnap.data().isBikeBus,
-        startPoint: docSnap.data().startPoint,
-        endPoint: docSnap.data().endPoint,
-        BikeBusGroupId: docSnap.data().BikeBusGroupId,
-        // convert BikeBusGroupId (document reference in firebase) to a string
-        pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-          lat: coord.lat,  // use 'lat' instead of 'latitude'
-          lng: coord.lng,  // use 'lng' instead of 'longitude'
-        })),
-        BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
-          lat: coord.lat,  // use 'lat' instead of 'latitude'
-          lng: coord.lng,  // use 'lng' instead of 'longitude'
-        })),
-        BikeBusStops: (docSnap.data().BikeBusStop || []).map((coord: any) => ({
-          lat: coord.lat,  // use 'lat' instead of 'latitude'
-          lng: coord.lng,  // use 'lng' instead of 'longitude'
-        })),
-      };
-      setrouteData(routeData);
-      setBikeBusGroupId(routeData.BikeBusGroupId);
-      console.log(routeData);
-      console.log(routeData.BikeBusGroupId);
-      // setBikeBusGroup(routeData.BikeBusGroupId); is a document reference. Convert it to a string
-      setPath(routeData.pathCoordinates);
-      setBikeBusStops(routeData.BikeBusStops);
-      setStartGeo(routeData.startPoint);
-      setEndGeo(routeData.endPoint);
-      // test if the route is a bikebus
-      if (routeData.isBikeBus) {
-        console.log("This is a bike bus route");
-        console.log(routeData.BikeBusGroupId);
-        // fetch the bikebus group data
-        const docRef = doc(db, 'bikeBusGroups', routeData.BikeBusGroupId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const bikeBusGroupData = {
-            ...docSnap.data() as BikeBusGroup,
-            id: docSnap.id,
-          };
-          setBikeBusGroup(bikeBusGroupData);
-          console.log(bikeBusGroupData);
-        } else {
-          // doc.data() will be undefined in this case
-          console.log("No such document!");
-        }
-      }
-
-
-    }
   };
 
   const isBikeBus = routeData?.isBikeBus ?? false;
@@ -784,18 +716,8 @@ const Event: React.FC = () => {
   }
     , [routeData]);
 
-  console.log('routeData is ', routeData);
-  console.log('RouteId is ', RouteId);
-  console.log('routeData is ', routeData);
-
   function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
-    console.log('createStaticMapUrl is running!');
-    console.log('mapCenter is ', mapCenter);
-    console.log('RouteId is ', RouteId);
-    console.log('startGeo is ', startGeo);
-    console.log('endGeo is ', endGeo);
     const routeData = RouteId;
-    console.log('routeData is ', routeData);
     const center = `${mapCenter.lat},${mapCenter.lng}`;
     const size = '600x300';
     const path = routeData?.pathCoordinates
@@ -806,11 +728,7 @@ const Event: React.FC = () => {
       `markers=color:green|label:E|${endGeo.lat},${endGeo.lng}`,
     ];
     // create markers for bikebusstops along the route
-    bikeBusStops.forEach((stop, index) => {
-      markers.push(`markers=color:blue|label:${index + 1}|${stop.lat},${stop.lng}`);
-    });
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
-    console.log('url is ', url);
     return url;
   }
 
@@ -973,7 +891,8 @@ const Event: React.FC = () => {
             <IonCol>
               <IonLabel>{eventData?.BikeBusName}</IonLabel>
               <IonItem>
-                <IonLabel>{startTime} to {endTime}</IonLabel>
+                <IonLabel>{startTime} to </IonLabel>
+                <IonLabel>{endTime}</IonLabel>
               </IonItem>
               <IonImg onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
                 src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
