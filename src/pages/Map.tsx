@@ -22,7 +22,7 @@ import {
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { get, ref, set } from "firebase/database";
+import { get, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { DocumentSnapshot, Firestore, FirestoreError, QueryDocumentSnapshot, QuerySnapshot, arrayUnion, getDoc, query, doc, getDocs, onSnapshot, updateDoc, where } from "firebase/firestore";
 import { useHistory } from "react-router-dom";
@@ -123,10 +123,14 @@ const Map: React.FC = () => {
   const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
   const [openTrips, setOpenTrips] = useState<any[]>([]);
   const [openTripMarkers, setOpenTripMarkers] = useState<any[]>([]);
-  const [openTripLeaderLocation, setOpenTripLeaderLocation] = useState<any[]>([]);
   const [openTripLeaderLocationMarker, setOpenTripLeaderLocationMarker] = useState<any[]>([]);
   const [endOpenTripButton, setEndOpenTripButton] = useState(false);
   const [showEndOpenTripButton, setShowEndOpenTripButton] = useState(false);
+  const [openTripId, setOpenTripId] = useState('');
+  const [openTripEventId, setOpenTripEventId] = useState('');
+  const [tripActive, setTripActive] = useState(false);
+  const [openTripLeaderLocation, setOpenTripLeaderLocation] = useState<{ lat: number, lng: number } | null>(null);
+
   const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
     ({ isOpen: false, content: '', position: null });
 
@@ -140,6 +144,7 @@ const Map: React.FC = () => {
   const getLocation = () => {
     setGetLocationClicked(true);
     setShowMap(true);
+    setIsActiveEvent(false);
     setMapCenter(userLocation);
     watchLocation();
     onPlaceChangedStart();
@@ -253,6 +258,56 @@ const Map: React.FC = () => {
   }, [user]);
 
 
+  useEffect(() => {
+    let timer: string | number | NodeJS.Timeout | undefined;
+    if (tripActive && user) {
+      const uid = user.uid;
+      const userLocationRef = ref(rtdb, `userLocations/${uid}`);
+      const userLocation = get(userLocationRef);
+      console.log("userLocation: ", userLocation);
+
+      timer = setInterval(() => {
+        const tripRef = doc(db, "trips", openTripId);
+        updateDoc(tripRef, {
+          userLocation: userLocation,
+        });
+
+        const eventRef = doc(db, "event", openTripEventId);
+        updateDoc(eventRef, {
+          userLocation: userLocation,
+        });
+      }, 5000);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [tripActive, user, openTripId, openTripEventId]);
+
+
+  useEffect(() => {
+    if (user) {
+      const uid = user.uid;
+      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+
+      // Set up a real-time subscription
+      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
+        const newLocation = snapshot.val();
+        if (newLocation) {
+          setOpenTripLeaderLocation(newLocation);
+        }
+      });
+
+      // Clean up the subscription when the component unmounts
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user]);
+
+
 
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
@@ -269,6 +324,77 @@ const Map: React.FC = () => {
     }
   }, [selectedStartLocation, selectedEndLocation]);
 
+
+
+
+
+
+  useEffect(() => {
+    if (openTripsEnabled) {
+      // when the user clicks on the "openTrips" toggle button, we want to show all of the openTrips on the map
+      const getOpenTrips = () => {
+        const tripsRef = collection(db, "trips");
+        getDocs(tripsRef)
+          .then((querySnapshot) => {
+            // we want to pull out all of the trips that are tripType "openTrip" and status "active"
+            const trips: any[] = [];
+            querySnapshot.forEach((doc) => {
+              const tripData = doc.data();
+              trips.push(tripData);
+            });
+            const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
+            // how do we make the "openTrips" array available to the rest of the code?
+            setOpenTrips(openTrips);
+            console.log("openTrips: ", openTrips);
+            // let's get the openTripLeader current location from the realTimeDatabase in the format {lat: number, lng: number} and the path is userLocations/${uid}
+            // get the user's current location from the firebase realtime database document collection "userLocations"
+            if (user) {
+              const uid = user.uid;
+              const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+              const openTripLeaderLocation = get(openTripLeaderLocationRef);
+              console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+              // for each openTrip, we want to show a marker on the map for the user's start location and end location along with their current position from (userLocation) or firebase real time database (userLocation)
+              const openTripMarkers = openTrips.map((trip) => {
+                const startLocation = trip.startLocation;
+                const endLocation = trip.endLocation;
+                const userLocation = trip.userLocation;
+                const openTripMarker = new google.maps.Marker({
+                  position: startLocation,
+                  map: mapRef.current,
+                  title: "Start Location",
+                });
+                const openTripMarker2 = new google.maps.Marker({
+                  position: endLocation,
+                  map: mapRef.current,
+                  title: "End Location",
+                });
+                const openTripMarker3 = new google.maps.Marker({
+                  position: userLocation,
+                  map: mapRef.current,
+                  title: "Your Location",
+                });
+                const openTripMarker4 = new google.maps.Marker({
+                  // this is the location of the openTripLeader that can be retrieved using the realTimeDatabase
+                  //position: openTripLeaderLocation,
+                  map: mapRef.current,
+                  title: "Open Trip Leader Location",
+                });
+
+                return [openTripMarker, openTripMarker2, openTripMarker3, openTripMarker4];
+              });
+            }
+            console.log("openTripMarkers: ", openTripMarkers);
+            // let's show the openTripMarkers on the map
+            openTripMarkers.forEach((openTripMarker) => {
+              openTripMarker.forEach((marker: { setMap: (arg0: google.maps.Map | null) => void; }) => {
+                marker.setMap(mapRef.current);
+              });
+            });
+          });
+      }
+      getOpenTrips();
+    }
+  }, [openTripMarkers, openTripsEnabled, user]);
 
   const avatarElement = user ? (
     avatarUrl ? (
@@ -292,7 +418,6 @@ const Map: React.FC = () => {
   };
 
   const onPlaceChangedStart = () => {
-    console.log("onPlaceChangedStart called");
     if (autocompleteStart !== null) {
       const places = autocompleteStart.getPlaces();
       if (places && places.length > 0) {
@@ -595,6 +720,7 @@ const Map: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+
   // when the bikebus button is clicked, show the bikebus routes on the map
   const handleBikeBusButtonClick = (routeId: string) => {
     const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
@@ -663,80 +789,103 @@ const Map: React.FC = () => {
 
   // openTrips is any trip that is not a bikebus trip and is not a route that has been created by a user. When the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
 
-  // when the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
+
+  // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
   const startOpenTrip = () => {
     // get the user.uid
+    setIsActiveEvent(true);
     if (user) {
-      const userRef = firestoreDoc(db, "users", user?.uid);
-      // get all of the trips from Firestore
-      const tripsRef = collection(db, "trips");
-      getDocs(tripsRef)
-        .then((querySnapshot) => {
-          // we want to pull out all of the trips that are tripType "openTrip" and status "active"
-          const trips: any[] = [];
-          querySnapshot.forEach((doc) => {
-            const tripData = doc.data();
-            trips.push(tripData);
-          });
-          const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
-          // how do we make the "openTrips" array available to the rest of the code?
-          setOpenTrips(openTrips);
-          console.log("openTrips: ", openTrips);
-          // let's get the openTripLeader current location from the realTimeDatabase in the format {lat: number, lng: number} and the path is userLocations/${uid}
-          const openTripLeaderLocationRef = ref(rtdb, `userLocations/${user.uid}`);
-          const openTripLeaderLocation = get(openTripLeaderLocationRef);
-          console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-          // for each openTrip, we want to show a marker on the map for the user's start location and end location along with their current position from (userLocation) or firebase real time database (userLocation)
-          const openTripMarkers = openTrips.map((trip) => {
-            const startLocation = trip.startLocation;
-            const endLocation = trip.endLocation;
-            const userLocation = trip.userLocation;
-            const openTripMarker = new google.maps.Marker({
-              position: startLocation,
-              map: mapRef.current,
-              title: "Start Location",
-            });
-            const openTripMarker2 = new google.maps.Marker({
-              position: endLocation,
-              map: mapRef.current,
-              title: "End Location",
-            });
-            const openTripMarker3 = new google.maps.Marker({
-              position: userLocation,
-              map: mapRef.current,
-              title: "Your Location",
-            });
-            const openTripMarker4 = new google.maps.Marker({
-              // this is the location of the openTripLeader that can be retrieved using the realTimeDatabase
-              //position: openTripLeaderLocation,
-              map: mapRef.current,
-              title: "Open Trip Leader Location",
-            });
-            return [openTripMarker, openTripMarker2, openTripMarker3, openTripMarker4];
-          });
-          console.log("openTripMarkers: ", openTripMarkers);
-          // let's show the openTripMarkers on the map
-          openTripMarkers.forEach((openTripMarker) => {
-            openTripMarker.forEach((marker) => {
-              marker.setMap(mapRef.current);
-            });
-          }
-
-          );
+      const uid = user.uid;
+      // get the user's current location from this page. 
+      if (openTripLeaderLocation) {
+        // your Firestore operations here
+        console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+        // write a new document to the firestore document collection "trips" with the following fields: tripType: "openTrip", status: "active", userLocation: userLocation, startLocation: userLocation, endLocation: userLocation, startTime: new Date(), endTime: null, tripLeader: user.uid, tripParticipants: [user.uid]
+        const tripsRef = collection(db, "trips");
+        addDoc(tripsRef, {
+          tripType: "openTrip",
+          status: "active",
+          userLocation: openTripLeaderLocation,
+          startLocation: startPointAdress,
+          endLocation: endPointAdress,
+          // start in the firestore timestamp format
+          start: new Date(),
+          startTime: new Date(),
+          startTimestamp: new Date(),
+          endTime: null,
+          tripLeader: user.uid,
+          tripParticipants: [user.uid],
         })
-        .catch((error) => {
-          console.log("Error fetching trips:", error);
-        });
+          .then((docRef) => {
+            console.log("Document written with ID: ", docRef.id);
+            // set docRef.id to a new const so that we can use it throughout the rest of the code
+            const openTripId = docRef.id;
+            setOpenTripId(openTripId);
+            console.log("openTripId: ", openTripId);
+            // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
+            const userRef = doc(db, "users", user.uid);
+            updateDoc(userRef, {
+              trips: arrayUnion(docRef),
+            });
+            // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
+            const eventRef = collection(db, "event");
+            addDoc(eventRef, {
+              eventType: "openTrip",
+              status: "active",
+              startLocation: startPointAdress,
+              endLocation: endPointAdress,
+              start: new Date(),
+              startTime: new Date(),
+              startTimestamp: new Date(),
+              endTime: null,
+              eventLeader: user.uid,
+              eventParticipants: [user.uid],
+            })
+              .then((docRef) => {
+                console.log("Document written with ID: ", docRef.id);
+                // set the docRef.id to a new const so that we can use it throughout the rest of the code
+                const openTripEventId = docRef.id;
+                setOpenTripEventId(openTripEventId);
+                console.log("openTripEventId: ", openTripEventId);
+              })
+              .catch((error) => {
+                console.error("Error adding document: ", error);
+              });
+          })
+          .catch((error) => {
+            console.error("Error adding document: ", error);
+          });
+      } else {
+        console.log("user is not logged in");
+        setShowLoginModal(true);
+      }
+      setTripActive(true);
+      setShowEndOpenTripButton(true);
     }
-    // now let's show the button for ending the openTrip
-    setShowEndOpenTripButton(true);
-  };
-
-  // endOpenTrip
-  const endOpenTrip = () => {
-    // let's end the openTrip gracefully with closing timestamps and status "inactive"
-    // let's first get the openTripLeader's trip id from the firestore document collection "trips"
   }
+
+  const endOpenTrip = () => {
+    // get the user.uid
+    if (user) {
+      // get the tripRef and eventRef from the openTripId and openTripEventId
+      const tripRef = doc(db, "trips", openTripId);
+      const eventRef = doc(db, "event", openTripEventId);
+      // update the tripRef and eventRef with the following fields: status: "inactive", endTime: new Date()
+      updateDoc(tripRef, {
+        status: "inactive",
+        endTime: new Date(),
+      });
+      updateDoc(eventRef, {
+        status: "inactive",
+        endTime: new Date(),
+      });
+    }
+    setTripActive(false);
+    setIsActiveEvent(false);
+    setShowEndOpenTripButton(false);
+  }
+
+
 
   return (
     <IonPage className="ion-flex-offset-app">
@@ -1224,7 +1373,6 @@ const Map: React.FC = () => {
                           }}
                         />
                       </StandaloneSearchBox>
-                      {showGetDirectionsButton && !isAnonymous && <IonButton onClick={saveDestination}>Save as a Favorite Destination</IonButton>}
                       {showGetDirectionsButton && <IonRow className="travel-mode-row">
                         <IonCol>
                           <IonLabel>Travel Mode:</IonLabel>
@@ -1254,11 +1402,10 @@ const Map: React.FC = () => {
 
                             <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
                           }
-
                         </>
-                        {showGetDirectionsButton && directionsFetched &&
-                          <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>}
-                        {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
+                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                          <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                        )}
                       </IonRow>
                     </IonCol>
                     <IonCol>
@@ -1873,38 +2020,10 @@ const Map: React.FC = () => {
                       </IonButton>
                     </IonRow>
                     <IonCol className="destination-box">
-                      {showGetDirectionsButton && <IonRow className="travel-mode-row">
-                        <IonCol>
-                          <IonLabel>Travel Mode:</IonLabel>
-                          <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                            setTravelMode(e.detail.value);
-                            setTravelModeSelector(e.detail.value);
-                          }}>
-                            <IonSegmentButton value="WALKING">
-                              <IonIcon icon={walkOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="BICYCLING">
-                              <IonIcon icon={bicycleOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="DRIVING">
-                              <IonIcon icon={carOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="TRANSIT">
-                              <IonIcon icon={busOutline} />
-                            </IonSegmentButton>
-                          </IonSegment>
-                        </IonCol>
-                      </IonRow>}
                       <IonRow>
-                        <>
-                          {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                          {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
-                          }
-                        </>
-                        <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>
                       </IonRow>
                     </IonCol>
+                    {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
                     <IonCol>
                       {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
                         <IonLabel>Distance: {distance} miles </IonLabel>
@@ -2034,5 +2153,5 @@ const Map: React.FC = () => {
   );
 }
 
-export default Map;
 
+export default Map;
