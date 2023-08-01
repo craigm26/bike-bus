@@ -254,6 +254,43 @@ const Map: React.FC = () => {
           }
         }
       });
+      // look in the userRef document in the database for the user's trips array
+      const tripsRef = collection(db, "trips");
+      const queryObj2 = query(
+        tripsRef,
+        where("tripType", "==", "openTrip"),
+        where("status", "==", "active"),
+      );
+      getDocs(queryObj2)
+        .then((querySnapshot) => {
+          const trips: any[] = [];
+          querySnapshot.forEach((doc) => {
+            const tripData = doc.data();
+            trips.push(tripData);
+          });
+          setOpenTrips(trips);
+          console.log("openTrips: ", trips);
+          // set the isActiveEvent to true if the user is the leader of an open trip
+          const openTrip = trips.find((trip) => trip.tripLeader === "/users/" + user.uid);
+          if (openTrip) {
+            setIsActiveEvent(true);
+            setTripActive(true);
+            setTripActive(true);
+            setOpenTripId(openTrip.id);
+            setOpenTripEventId(openTrip.eventId);
+            // when the page loads, the conditional render of isActiveEvent should be true and the user should see the "end event" button
+            setShowEndOpenTripButton(true);
+          }
+        })
+        .catch((error) => {
+          console.log("Error fetching open trips:", error);
+        }
+        )
+        .catch((error) => {
+          console.log("Error fetching open trips:", error);
+        }
+        );
+
     }
   }, [user]);
 
@@ -813,8 +850,8 @@ const Map: React.FC = () => {
           startTime: new Date(),
           startTimestamp: new Date(),
           endTime: null,
-          tripLeader: user.uid,
-          tripParticipants: [user.uid],
+          tripLeader: '/users/' + user.uid,
+          tripParticipants: ['/users/' + user.uid],
         })
           .then((docRef) => {
             console.log("Document written with ID: ", docRef.id);
@@ -838,8 +875,8 @@ const Map: React.FC = () => {
               startTime: new Date(),
               startTimestamp: new Date(),
               endTime: null,
-              eventLeader: user.uid,
-              eventParticipants: [user.uid],
+              eventLeader: '/users/' + user.uid,
+              eventParticipants: ['/users/' + user.uid],
             })
               .then((docRef) => {
                 console.log("Document written with ID: ", docRef.id);
