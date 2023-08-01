@@ -297,32 +297,49 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     let timer: string | number | NodeJS.Timeout | undefined;
-    if (tripActive && user) {
+    if (tripActive && user && openTripId && openTripEventId) {  // Check openTripId and openTripEventId are not undefined
       const uid = user.uid;
       const userLocationRef = ref(rtdb, `userLocations/${uid}`);
-      const userLocation = get(userLocationRef);
-      console.log("userLocation: ", userLocation);
-
+  
+      console.log(`openTripId: ${openTripId}, openTripEventId: ${openTripEventId}`);  // Log the IDs
+  
       timer = setInterval(() => {
-        const tripRef = doc(db, "trips", openTripId);
-        updateDoc(tripRef, {
-          userLocation: userLocation,
-        });
+        get(userLocationRef).then((snapshot) => {
+          const userLocation = snapshot.val();
+  
+          if(userLocation) {  // Check userLocation is not undefined
+            const tripRef = doc(db, "trips", openTripId);
+            updateDoc(tripRef, {
+              userLocation: userLocation,
+            });
+            // what we want to do is to add the lat lng values of the userLocation to the pathCoordinates array to create a path that shows the user's location over time
+            const pathCoordinatesRef = doc(db, "trips", openTripId);
+            updateDoc(pathCoordinatesRef, {
+              pathCoordinates: arrayUnion(userLocation),
+            });
 
-        const eventRef = doc(db, "event", openTripEventId);
-        updateDoc(eventRef, {
-          userLocation: userLocation,
+  
+            const eventRef = doc(db, "event", openTripEventId);
+            updateDoc(eventRef, {
+              userLocation: userLocation,
+            });
+            // do the same pathCoordinates update for the event
+            const eventPathCoordinatesRef = doc(db, "event", openTripEventId);
+            updateDoc(eventPathCoordinatesRef, {
+              pathCoordinates: arrayUnion(userLocation),
+            });
+          }
         });
       }, 5000);
     }
-
+  
     return () => {
       if (timer) {
         clearInterval(timer);
       }
     };
   }, [tripActive, user, openTripId, openTripEventId]);
-
+  
 
   useEffect(() => {
     if (user) {
@@ -368,70 +385,90 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     if (openTripsEnabled) {
-      // when the user clicks on the "openTrips" toggle button, we want to show all of the openTrips on the map
-      const getOpenTrips = () => {
+      const getOpenTrips = async () => {
         const tripsRef = collection(db, "trips");
-        getDocs(tripsRef)
-          .then((querySnapshot) => {
-            // we want to pull out all of the trips that are tripType "openTrip" and status "active"
-            const trips: any[] = [];
-            querySnapshot.forEach((doc) => {
-              const tripData = doc.data();
-              trips.push(tripData);
-            });
-            const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
-            // how do we make the "openTrips" array available to the rest of the code?
-            setOpenTrips(openTrips);
-            console.log("openTrips: ", openTrips);
-            // let's get the openTripLeader current location from the realTimeDatabase in the format {lat: number, lng: number} and the path is userLocations/${uid}
-            // get the user's current location from the firebase realtime database document collection "userLocations"
-            if (user) {
-              const uid = user.uid;
-              const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
-              const openTripLeaderLocation = get(openTripLeaderLocationRef);
-              console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-              // for each openTrip, we want to show a marker on the map for the user's start location and end location along with their current position from (userLocation) or firebase real time database (userLocation)
-              const openTripMarkers = openTrips.map((trip) => {
-                const startLocation = trip.startLocation;
-                const endLocation = trip.endLocation;
-                const userLocation = trip.userLocation;
-                const openTripMarker = new google.maps.Marker({
-                  position: startLocation,
-                  map: mapRef.current,
-                  title: "Start Location",
-                });
-                const openTripMarker2 = new google.maps.Marker({
-                  position: endLocation,
-                  map: mapRef.current,
-                  title: "End Location",
-                });
-                const openTripMarker3 = new google.maps.Marker({
-                  position: userLocation,
-                  map: mapRef.current,
-                  title: "Your Location",
-                });
-                const openTripMarker4 = new google.maps.Marker({
-                  // this is the location of the openTripLeader that can be retrieved using the realTimeDatabase
-                  //position: openTripLeaderLocation,
-                  map: mapRef.current,
-                  title: "Open Trip Leader Location",
-                });
+        const querySnapshot = await getDocs(tripsRef);
 
-                return [openTripMarker, openTripMarker2, openTripMarker3, openTripMarker4];
-              });
-            }
-            console.log("openTripMarkers: ", openTripMarkers);
-            // let's show the openTripMarkers on the map
-            openTripMarkers.forEach((openTripMarker) => {
-              openTripMarker.forEach((marker: { setMap: (arg0: google.maps.Map | null) => void; }) => {
-                marker.setMap(mapRef.current);
-              });
+        const trips: any[] = [];
+        querySnapshot.forEach((doc) => {
+          const tripData = doc.data();
+          trips.push(tripData);
+        });
+        const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
+
+        setOpenTrips(openTrips);
+        console.log("openTrips: ", openTrips);
+
+        if (user) {
+          const uid = user.uid;
+          const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+          const snapshot = await get(openTripLeaderLocationRef);
+          const openTripLeaderLocation = snapshot.exists() ? snapshot.val() : null;
+
+          const openTripMarkers = openTrips.map((trip) => {
+            const startIcon = {
+              url: "URL_OF_START_ICON", // URL of start icon
+              scaledSize: new google.maps.Size(50, 50),
+            };
+
+            const endIcon = {
+              url: "URL_OF_END_ICON", // URL of end icon
+              scaledSize: new google.maps.Size(50, 50),
+            };
+
+            const userIcon = {
+              url: "URL_OF_USER_ICON", // URL of user icon
+              scaledSize: new google.maps.Size(50, 50),
+            };
+
+            const userIconLeader = {
+              url: "URL_OF_USER_ICON_LEADER", // URL of user icon
+              scaledSize: new google.maps.Size(50, 50),
+            };
+
+            const openTripMarker = new google.maps.Marker({
+              position: trip.startLocation,
+              map: mapRef.current,
+              title: "Start Location",
+              icon: startIcon,
+            });
+
+            const openTripMarker2 = new google.maps.Marker({
+              position: trip.endLocation,
+              map: mapRef.current,
+              title: "End Location",
+              icon: endIcon,
+            });
+
+            const openTripMarker3 = new google.maps.Marker({
+              position: trip.userLocation,
+              map: mapRef.current,
+              title: "Your Location",
+              icon: userIcon,
+            });
+
+            const openTripMarker4 = new google.maps.Marker({
+              position: openTripLeaderLocation,
+              map: mapRef.current,
+              title: "Open Trip Leader Location",
+              icon: userIconLeader,
+            });
+
+            return [openTripMarker, openTripMarker2, openTripMarker3, openTripMarker4];
+          });
+
+          openTripMarkers.forEach((openTripMarker) => {
+            openTripMarker.forEach((marker: { setMap: (arg0: google.maps.Map | null) => void; }) => {
+              marker.setMap(mapRef.current);
             });
           });
-      }
+        }
+      };
+
       getOpenTrips();
     }
-  }, [openTripMarkers, openTripsEnabled, user]);
+  }, [openTripsEnabled, user]);
+
 
   const avatarElement = user ? (
     avatarUrl ? (
@@ -843,7 +880,7 @@ const Map: React.FC = () => {
           tripType: "openTrip",
           status: "active",
           userLocation: openTripLeaderLocation,
-          startLocation: startPointAdress,
+          startLocation: openTripLeaderLocation,
           endLocation: endPointAdress,
           // start in the firestore timestamp format
           start: new Date(),
@@ -852,6 +889,7 @@ const Map: React.FC = () => {
           endTime: null,
           tripLeader: '/users/' + user.uid,
           tripParticipants: ['/users/' + user.uid],
+          pathCoordinates: [],
         })
           .then((docRef) => {
             console.log("Document written with ID: ", docRef.id);
@@ -877,6 +915,7 @@ const Map: React.FC = () => {
               endTime: null,
               eventLeader: '/users/' + user.uid,
               eventParticipants: ['/users/' + user.uid],
+              pathCoordinates: [],
             })
               .then((docRef) => {
                 console.log("Document written with ID: ", docRef.id);
@@ -901,26 +940,36 @@ const Map: React.FC = () => {
     }
   }
 
-  const endOpenTrip = () => {
-    // get the user.uid
-    if (user) {
-      // get the tripRef and eventRef from the openTripId and openTripEventId
+  async function endOpenTrip() {
+    if (user && openTripId && openTripEventId) {
+      const uid = user.uid;
       const tripRef = doc(db, "trips", openTripId);
       const eventRef = doc(db, "event", openTripEventId);
-      // update the tripRef and eventRef with the following fields: status: "inactive", endTime: new Date()
-      updateDoc(tripRef, {
-        status: "inactive",
-        endTime: new Date(),
-      });
-      updateDoc(eventRef, {
-        status: "inactive",
-        endTime: new Date(),
-      });
+      const userLocationRef = ref(rtdb, `userLocations/${uid}`);
+      const snapshot = await get(userLocationRef);
+      const userLocation = snapshot.val();
+  
+      if (userLocation) {  // Check if userLocation is not undefined before using it
+        await updateDoc(tripRef, {
+          status: "inactive",
+          userLocation: userLocation,
+          endLocation: userLocation,
+          endTime: new Date(),
+        });
+  
+        await updateDoc(eventRef, {
+          status: "inactive",
+          userLocation: userLocation,
+          endLocation: userLocation,
+          endTime: new Date(),
+        });
+      }
     }
-    setTripActive(false);
     setIsActiveEvent(false);
+    setTripActive(false);
     setShowEndOpenTripButton(false);
   }
+  
 
 
 
