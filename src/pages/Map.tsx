@@ -19,7 +19,7 @@ import {
   IonCardTitle,
   IonToggle,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useRef, useContext } from "react";
+import { useEffect, useCallback, useState, useRef, useContext, useMemo } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import { get, onValue, ref, set } from "firebase/database";
@@ -40,6 +40,7 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
+import { getStorage, ref as storageRef, getDownloadURL } from 'firebase/storage';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -68,6 +69,7 @@ const Map: React.FC = () => {
     lng: 0,
   });
   const [mapZoom, setMapZoom] = useState(15);
+  const storage = getStorage();
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
@@ -300,14 +302,14 @@ const Map: React.FC = () => {
     if (tripActive && user && openTripId && openTripEventId) {  // Check openTripId and openTripEventId are not undefined
       const uid = user.uid;
       const userLocationRef = ref(rtdb, `userLocations/${uid}`);
-  
+
       console.log(`openTripId: ${openTripId}, openTripEventId: ${openTripEventId}`);  // Log the IDs
-  
+
       timer = setInterval(() => {
         get(userLocationRef).then((snapshot) => {
           const userLocation = snapshot.val();
-  
-          if(userLocation) {  // Check userLocation is not undefined
+
+          if (userLocation) {  // Check userLocation is not undefined
             const tripRef = doc(db, "trips", openTripId);
             updateDoc(tripRef, {
               userLocation: userLocation,
@@ -318,7 +320,7 @@ const Map: React.FC = () => {
               pathCoordinates: arrayUnion(userLocation),
             });
 
-  
+
             const eventRef = doc(db, "event", openTripEventId);
             updateDoc(eventRef, {
               userLocation: userLocation,
@@ -332,14 +334,14 @@ const Map: React.FC = () => {
         });
       }, 5000);
     }
-  
+
     return () => {
       if (timer) {
         clearInterval(timer);
       }
     };
   }, [tripActive, user, openTripId, openTripEventId]);
-  
+
 
   useEffect(() => {
     if (user) {
@@ -362,7 +364,6 @@ const Map: React.FC = () => {
   }, [user]);
 
 
-
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
     if (selectedStartLocation && selectedEndLocation) {
@@ -377,11 +378,6 @@ const Map: React.FC = () => {
       setMapCenter(selectedEndLocation);
     }
   }, [selectedStartLocation, selectedEndLocation]);
-
-
-
-
-
 
   useEffect(() => {
     if (openTripsEnabled) {
@@ -405,6 +401,17 @@ const Map: React.FC = () => {
           const snapshot = await get(openTripLeaderLocationRef);
           const openTripLeaderLocation = snapshot.exists() ? snapshot.val() : null;
 
+          // Create a reference to the avatar image using the storageRef function
+          const avatarRef = storageRef(storage, `avatars/${uid}`);
+          const avatarUrl = await getDownloadURL(avatarRef);
+
+          // ...
+
+          // Similarly, you can create references to other avatars
+          const openTripLeaderAvatarRef = storageRef(storage, `avatars/${openTrips[0].tripLeader.slice(7)}`);
+          const openTripLeaderAvatarUrl = await getDownloadURL(openTripLeaderAvatarRef);
+
+
           const openTripMarkers = openTrips.map((trip) => {
             const startIcon = {
               url: "URL_OF_START_ICON", // URL of start icon
@@ -417,12 +424,14 @@ const Map: React.FC = () => {
             };
 
             const userIcon = {
-              url: "URL_OF_USER_ICON", // URL of user icon
+              // this should be the avatarElement
+              url: avatarUrl,
               scaledSize: new google.maps.Size(50, 50),
             };
 
             const userIconLeader = {
-              url: "URL_OF_USER_ICON_LEADER", // URL of user icon
+              // this should be the avatarElement of the trip leader
+              url: openTripLeaderAvatarUrl,
               scaledSize: new google.maps.Size(50, 50),
             };
 
@@ -430,6 +439,7 @@ const Map: React.FC = () => {
               position: trip.startLocation,
               map: mapRef.current,
               title: "Start Location",
+              // use a Ionic Icon for the start icon
               icon: startIcon,
             });
 
@@ -880,7 +890,7 @@ const Map: React.FC = () => {
           tripType: "openTrip",
           status: "active",
           userLocation: openTripLeaderLocation,
-          startLocation: openTripLeaderLocation,
+          startLocation: selectedStartLocation,
           endLocation: endPointAdress,
           // start in the firestore timestamp format
           start: new Date(),
@@ -907,7 +917,7 @@ const Map: React.FC = () => {
             addDoc(eventRef, {
               eventType: "openTrip",
               status: "active",
-              startLocation: startPointAdress,
+              startLocation: selectedStartLocation,
               endLocation: endPointAdress,
               start: new Date(),
               startTime: new Date(),
@@ -948,7 +958,7 @@ const Map: React.FC = () => {
       const userLocationRef = ref(rtdb, `userLocations/${uid}`);
       const snapshot = await get(userLocationRef);
       const userLocation = snapshot.val();
-  
+
       if (userLocation) {  // Check if userLocation is not undefined before using it
         await updateDoc(tripRef, {
           status: "inactive",
@@ -956,7 +966,7 @@ const Map: React.FC = () => {
           endLocation: userLocation,
           endTime: new Date(),
         });
-  
+
         await updateDoc(eventRef, {
           status: "inactive",
           userLocation: userLocation,
@@ -969,7 +979,7 @@ const Map: React.FC = () => {
     setTripActive(false);
     setShowEndOpenTripButton(false);
   }
-  
+
 
 
 
@@ -1592,7 +1602,7 @@ const Map: React.FC = () => {
                           key={`${keyPrefix}-border`}
                           path={trip.pathCoordinates}
                           options={{
-                            strokeColor: "#000000", // Border color
+                            strokeColor: "#9e9e9e", // Border color
                             strokeOpacity: .7,
                             strokeWeight: 3, // Border thickness
                             clickable: true,
@@ -1600,10 +1610,11 @@ const Map: React.FC = () => {
                               {
                                 icon: {
                                   path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#000000", // Main line color
+                                  // make the stroke color a nice complementary green color to #ffd800
+                                  strokeColor: "#9e9e9e", // Main line color
                                   strokeOpacity: .7,
                                   strokeWeight: 3,
-                                  fillColor: "#000000",
+                                  fillColor: "#9e9e9e",
                                   fillOpacity: .7,
                                   scale: 3,
                                 },
@@ -1626,17 +1637,17 @@ const Map: React.FC = () => {
                           key={`${keyPrefix}-main`}
                           path={trip.pathCoordinates}
                           options={{
-                            strokeColor: "#ffd800", // Main line color
+                            strokeColor: "#9e9e9e", // Main line color
                             strokeOpacity: 1,
                             strokeWeight: 2,
                             icons: [
                               {
                                 icon: {
                                   path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#ffd800", // Main line color
+                                  strokeColor: "#9e9e9e", // Main line color
                                   strokeOpacity: 1,
                                   strokeWeight: 2,
-                                  fillColor: "#ffd800",
+                                  fillColor: "#9e9e9e",
                                   fillOpacity: 1,
                                   scale: 3,
                                 },
@@ -2126,7 +2137,7 @@ const Map: React.FC = () => {
                           key={`${keyPrefix}-border`}
                           path={trip.pathCoordinates}
                           options={{
-                            strokeColor: "#000000", // Border color
+                            strokeColor: "#27D349", // Border color
                             strokeOpacity: .7,
                             strokeWeight: 3, // Border thickness
                             clickable: true,
@@ -2134,10 +2145,10 @@ const Map: React.FC = () => {
                               {
                                 icon: {
                                   path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#000000", // Main line color
+                                  strokeColor: "#27D349", // Main line color
                                   strokeOpacity: .7,
                                   strokeWeight: 3,
-                                  fillColor: "#000000",
+                                  fillColor: "#27D349",
                                   fillOpacity: .7,
                                   scale: 3,
                                 },
@@ -2220,7 +2231,7 @@ const Map: React.FC = () => {
                   <Polyline
                     path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                     options={{
-                      strokeColor: "#FF0000",
+                      strokeColor: "#9e9e9e",
                       strokeOpacity: 1.0,
                       strokeWeight: 2,
                       geodesic: true,
