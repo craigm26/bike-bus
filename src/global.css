@@ -220,14 +220,23 @@
   position: fixed;
   width: max-content;
   z-index: 1000;
-  background-color: white;
+  background-color: transparent;
   border: 1px solid transparent;
   width: 155px;
   outline: none;
-  background-color: rgba(255, 255, 255, 0.7);
   left: 0;
   bottom: 85px;
 }
+
+.toggle-bikebus-container IonLabel {
+  background-color: rgba(255, 255, 255, 0.5); /* semi-transparent white */
+  padding: 2px 4px; /* some padding to give the background some space around the text */
+  border-radius: 4px; /* rounded corners for the background */
+  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5); /* more prominent shadow */
+}
+
+
+
 
 .my-location-container {
   position: fixed;
@@ -257,28 +266,66 @@
   z-index: 1000;
   background-color: white;
   border: 1px solid transparent;
+  height: auto;
+  padding: 2px 12px;
+  outline: none;
+  left: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.start-location-selected {
+  position: absolute;
+  width: max-content;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
   width: 380px;
   height: 120px;
   padding: 2px 12px;
   outline: none;
   background-color: rgba(255, 255, 255, 0.9);
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.end-location-selected {
+  position: absolute;
+  width: max-content;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
+  width: 380px;
+  height: 120px;
+  padding: 2px 12px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
 }
 
 .travel-button-row {
-  padding-top: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background-color: rgba(255, 255, 255, 0.9);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 380px;
 }
 
 .destination-box {
   display: flex;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid transparent;
-  position: absolute;
-  width: max-content;
-  height: 120px;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
 }
 
 @media screen and (max-width: 600px) {
