@@ -216,18 +216,6 @@
   z-index: 10;
 }
 
-.search-container {
-  position: absolute;
-  width: max-content;
-  z-index: 1000;
-  background-color: white;
-  border: 1px solid transparent;
-  width: 450px;
-  padding: 2px 12px;
-  outline: none;
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
 .toggle-bikebus-container {
   position: fixed;
   width: max-content;
@@ -236,9 +224,21 @@
   border: 1px solid transparent;
   width: 155px;
   outline: none;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.7);
   left: 0;
   bottom: 85px;
+}
+
+.my-location-container {
+  position: fixed;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
+  width: 80px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0);
+  left: 0;
+  bottom: 170px;
 }
 
 .current-location {
@@ -251,9 +251,31 @@
   width: 100%;
 }
 
+.search-container {
+  position: absolute;
+  width: max-content;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid transparent;
+  width: 380px;
+  height: 120px;
+  padding: 2px 12px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.travel-button-row {
+  padding-top: 60px;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
 .destination-box {
   display: flex;
-  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid transparent;
+  position: absolute;
+  width: max-content;
+  height: 120px;
   flex-direction: column;
   justify-content: center;
   align-items: center;

@@ -411,26 +411,6 @@ const ViewRoute: React.FC = () => {
                         ]
                       },
                       {
-                        "featureType": "poi.business",
-                        "stylers": [
-                          {
-                            "visibility": "simplified"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.business",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "saturation": -65
-                          },
-                          {
-                            "lightness": 50
-                          }
-                        ]
-                      },
-                      {
                         "featureType": "poi.park",
                         "stylers": [
                           {
@@ -444,9 +424,6 @@ const ViewRoute: React.FC = () => {
                         "stylers": [
                           {
                             "color": "#e5e5e5"
-                          },
-                          {
-                            "visibility": "simplified"
                           }
                         ]
                       },
@@ -455,43 +432,7 @@ const ViewRoute: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#27d349"
-                          },
-                          {
                             "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          },
-                          {
-                            "saturation": 45
-                          },
-                          {
-                            "lightness": -20
                           }
                         ]
                       },
@@ -519,6 +460,9 @@ const ViewRoute: React.FC = () => {
                         "featureType": "poi.school",
                         "elementType": "geometry.stroke",
                         "stylers": [
+                          {
+                            "color": "#ffd800"
+                          },
                           {
                             "visibility": "on"
                           }
@@ -637,16 +581,10 @@ const ViewRoute: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#7ea3ec"
-                          },
-                          {
                             "saturation": -50
                           },
                           {
                             "lightness": 50
-                          },
-                          {
-                            "visibility": "on"
                           }
                         ]
                       },
