@@ -18,8 +18,23 @@ const AvatarMapMarker: React.FC<Props> = ({ uid, position }) => {
       position={position}
       mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
     >
-      <div className="default-avatar-map-marker">
-        <Avatar uid={uid} size="extrasmall" />
+      <div className="default-avatar-map-marker" style={{
+          position: "relative",
+          display: "inline-block",
+          borderRadius: "50%",
+          overflow: "hidden",
+          boxShadow: "0 0 0 3px #0000ff, 0 0 10px #0000ff, 0 0 20px #0000ff",
+          width: "26px",
+          height: "26px"
+      }}>
+        <div style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: "50%",
+          overflow: "hidden",
+        }}>
+          <Avatar uid={uid} size="extrasmall" />
+        </div>
       </div>
     </OverlayView>
   );

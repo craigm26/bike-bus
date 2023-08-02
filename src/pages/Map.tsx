@@ -135,6 +135,9 @@ const Map: React.FC = () => {
   const [openTripLeaderLocation, setOpenTripLeaderLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [openTripLeaderAvatarUrl, setOpenTripLeaderAvatarUrl] = useState('');
   const [pathCoordinatesTrip, setPathCoordinatesTrip] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [isStartLocationSelected, setIsStartLocationSelected] = useState(false);
+  const [isEndLocationSelected, setIsEndLocationSelected] = useState(false);
+
 
   const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
     ({ isOpen: false, content: '', position: null });
@@ -414,12 +417,12 @@ const Map: React.FC = () => {
 
           const openTripMarkers = openTrips.map((trip) => {
             const startIcon = {
-              url: "URL_OF_START_ICON", // URL of start icon
+              url: "/assets/markers/MarkerS.svg",
               scaledSize: new google.maps.Size(50, 50),
             };
 
             const endIcon = {
-              url: "URL_OF_END_ICON", // URL of end icon
+              url: "/assets/markers/MarkerE.svg",
               scaledSize: new google.maps.Size(50, 50),
             };
 
@@ -526,6 +529,7 @@ const Map: React.FC = () => {
         }
       }
     }
+    setIsStartLocationSelected(true);
   };
 
   const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
@@ -564,6 +568,7 @@ const Map: React.FC = () => {
         }
       }
     }
+    setIsEndLocationSelected(true);
   };
 
   interface LatLng {
@@ -608,69 +613,73 @@ const Map: React.FC = () => {
   }
 
   const getDirections = () => {
-    if (selectedStartLocation && selectedEndLocation) {
-      getEndPointAdress();
-      getStartPointAdress();
-      const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer();
-      directionsRenderer.setMap(mapRef.current);
-      directionsService.route(
-        {
-          origin: selectedStartLocation,
-          destination: selectedEndLocation,
-          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-        },
-        (response, status) => {
-          if (status === "OK" && response) {
-            directionsRenderer.setDirections(response);
-
-            const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
-              latitude: latLng.lat(),
-              longitude: latLng.lng(),
-            }));
-            const epsilon = 0.0001;
-            const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
-            setPathCoordinates(simplifiedPathPoints);
-          } else {
-            console.error("Directions request failed due to " + status);
+    return new Promise((resolve, reject) => {
+      if (selectedStartLocation && selectedEndLocation) {
+        getEndPointAdress();
+        getStartPointAdress();
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(mapRef.current);
+        directionsService.route(
+          {
+            origin: selectedStartLocation,
+            destination: selectedEndLocation,
+            travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
+          },
+          (response, status) => {
+            if (status === "OK" && response) {
+              directionsRenderer.setDirections(response);
+  
+              const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
+                latitude: latLng.lat(),
+                longitude: latLng.lng(),
+              }));
+              const epsilon = 0.0001;
+              const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
+              setPathCoordinates(simplifiedPathPoints);
+              resolve(simplifiedPathPoints);
+            } else {
+              console.error("Directions request failed due to " + status);
+              reject(status);
+            }
           }
-        }
-      );
-
-      const service = new google.maps.DistanceMatrixService();
-      service.getDistanceMatrix(
-        {
-          origins: [selectedStartLocation],
-          destinations: [selectedEndLocation],
-          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-        },
-        (response, status) => {
-          if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
-            const distance = response?.rows[0]?.elements[0]?.distance?.value;
-            const duration = response?.rows[0]?.elements[0]?.duration?.value;
-            console.log("Distance Matrix Response: ", response);
-
-            setDistance(
-              (Math.round((distance * 0.000621371192) * 100) / 100).toString()
-            );
-
-            setDuration(
-              (Math.round((duration * 0.0166667) * 100) / 100).toString()
-            );
-
-            const arrivalTime = new Date();
-            const durationInMinutes = duration / 60;
-            arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
-            setArrivalTime(arrivalTime.toLocaleTimeString());
-          } else {
-            console.error("Error calculating distance:", status);
+        );
+  
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+          {
+            origins: [selectedStartLocation],
+            destinations: [selectedEndLocation],
+            travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
+          },
+          (response, status) => {
+            if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+              const distance = response?.rows[0]?.elements[0]?.distance?.value;
+              const duration = response?.rows[0]?.elements[0]?.duration?.value;
+              console.log("Distance Matrix Response: ", response);
+  
+              setDistance(
+                (Math.round((distance * 0.000621371192) * 100) / 100).toString()
+              );
+  
+              setDuration(
+                (Math.round((duration * 0.0166667) * 100) / 100).toString()
+              );
+  
+              const arrivalTime = new Date();
+              const durationInMinutes = duration / 60;
+              arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
+              setArrivalTime(arrivalTime.toLocaleTimeString());
+            } else {
+              console.error("Error calculating distance:", status);
+            }
           }
-        }
-      );
-    }
-    setDirectionsFetched(true);
-
+        );
+      }
+      setDirectionsFetched(true);
+    });
   };
+  
 
   const getStartPointAdress = async () => {
     if (startPoint) {
@@ -871,12 +880,16 @@ const Map: React.FC = () => {
 
 
   // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
-  const startOpenTrip = () => {
+  const startOpenTrip = async () => {
+    // we want to use the createRoute const and the getDirections const to create route data points and pathCoordinates data points for the openTrip
+
     // get the user.uid
     setIsActiveEvent(true);
     if (user) {
+      try {
+        const pathCoordinates = await getDirections();
       // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
-      getDirections();
+      // getDirections();
       // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
       const uid = user.uid;
       // get the user's current location from this page. 
@@ -946,9 +959,9 @@ const Map: React.FC = () => {
         console.log("user is not logged in");
         setShowLoginModal(true);
       }
-
-
-
+    } catch (error) {
+      console.log("Error: ", error);
+    }
       // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
       // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
       const routesRef = collection(db, "routes");
@@ -1017,6 +1030,14 @@ const Map: React.FC = () => {
     setIsActiveEvent(false);
     setTripActive(false);
     setShowEndOpenTripButton(false);
+  }
+
+  function generateSVG(label: string) {
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
+      <rect width="20" height="20" rx="10" fill="#ffd800"/>
+      <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
 
   if (!isLoaded) {
@@ -1411,7 +1432,7 @@ const Map: React.FC = () => {
                   }}
                 >
                   <IonGrid className="search-container">
-                    <IonRow className="current-location">
+                    <IonRow>
                       <IonCol>
                         <StandaloneSearchBox
                           onLoad={onLoadStartingLocation}
@@ -1424,7 +1445,7 @@ const Map: React.FC = () => {
                               autoComplete="on"
                               placeholder={userLocationAddress}
                               style={{
-                                width: "300px",
+                                width: "350px",
                                 height: "40px",
                               }}
                             />
@@ -1432,7 +1453,7 @@ const Map: React.FC = () => {
                         </StandaloneSearchBox>
                       </IonCol>
                     </IonRow>
-                    <IonRow className="destination-box">
+                    <IonRow>
                       <IonCol>
                         <StandaloneSearchBox
                           onLoad={onLoadDestinationValue}
@@ -1445,7 +1466,7 @@ const Map: React.FC = () => {
                               autoComplete="on"
                               placeholder="Enter a Destination"
                               style={{
-                                width: "300px",
+                                width: "350px",
                                 height: "40px",
                               }}
                             />
@@ -1453,8 +1474,8 @@ const Map: React.FC = () => {
                         </StandaloneSearchBox>
                       </IonCol>
                     </IonRow>
-                    <IonRow className="travel-button-row">
-                      {showGetDirectionsButton &&
+                    {showGetDirectionsButton &&
+                      <IonRow>
                         <IonCol>
                           <IonLabel>Travel Mode:</IonLabel>
                           <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
@@ -1475,17 +1496,18 @@ const Map: React.FC = () => {
                             </IonSegmentButton>
                           </IonSegment>
                         </IonCol>
-                      }
-                    </IonRow>
+                      </IonRow>
+                    }
                     <IonRow>
                       <IonCol>
-                        <>
-                          {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                          {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-
-                            <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
-                          }
-                        </>
+                        {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                      </IonCol>
+                      <IonCol>
+                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                          <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                        }
+                      </IonCol>
+                      <IonCol>
                         {showGetDirectionsButton && directionsFetched && !isAnonymous && (
                           <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
                         )}
@@ -1493,11 +1515,19 @@ const Map: React.FC = () => {
                     </IonRow>
                     <IonRow>
                       <IonCol>
-                        {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
-                          <IonLabel>Distance: {distance} miles </IonLabel>
-                          <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                          <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                        </IonRow>}
+                        {showGetDirectionsButton && directionsFetched && (
+                          <>
+                            <IonRow>
+                              <IonLabel>Distance: {distance} miles </IonLabel>
+                            </IonRow>
+                            <IonRow>
+                              <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                            </IonRow>
+                            <IonRow>
+                              <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                            </IonRow>
+                          </>
+                        )}
                       </IonCol>
                     </IonRow>
                   </IonGrid>
@@ -1566,18 +1596,25 @@ const Map: React.FC = () => {
                         {route.startPoint && (
                           <Marker
                             key={`${keyPrefix}-start`}
-                            label={`Start of ${route.BikeBusName}`}
+                            label={`${route.BikeBusName}`}
                             position={route.startPoint}
+                            icon={{
+                              url: generateSVG(route.BikeBusName),
+                              scaledSize: new google.maps.Size(60, 20),
+                            }}
                             onClick={() => { handleBikeBusRouteClick(route) }}
                           />
                         )}
                         {route.endPoint && (
                           <Marker
-                            key={`${keyPrefix}-end`}
-                            label={`End of ${route.BikeBusName}`}
-                            position={route.endPoint}
+                            key={`${keyPrefix}-start`}
+                            label={`${route.BikeBusName}`}
+                            position={route.startPoint}
+                            icon={{
+                              url: generateSVG(route.BikeBusName),
+                              scaledSize: new google.maps.Size(60, 20),
+                            }}
                             onClick={() => { handleBikeBusRouteClick(route) }}
-
                           />
                         )}
                       </div>
@@ -1692,6 +1729,13 @@ const Map: React.FC = () => {
                     <IonGrid className="toggle-bikebus-container">
                       <IonRow>
                         <IonCol>
+                          <IonButton onClick={getLocation}>
+                            <IonIcon icon={locateOutline} />
+                          </IonButton>
+                        </IonCol>
+                      </IonRow>
+                      <IonRow>
+                        <IonCol>
                           <IonLabel>BikeBus</IonLabel>
                           <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
                         </IonCol>
@@ -1701,16 +1745,6 @@ const Map: React.FC = () => {
                           <IonLabel>Open Trips</IonLabel>
                           <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
                         </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </div>
-                  <div>
-                    <IonGrid className="my-location-container">
-                      <IonRow>
-                        <IonCol>
-                          <IonButton onClick={getLocation}>
-                            <IonIcon icon={locateOutline} />
-                          </IonButton>                        </IonCol>
                       </IonRow>
                     </IonGrid>
                   </div>
@@ -2079,7 +2113,8 @@ const Map: React.FC = () => {
                       />
                     )}
                     {selectedEndLocation && (
-                      <Marker position={selectedEndLocation}
+                      <Marker
+                        position={selectedEndLocation}
                         icon={{
                           url: "/assets/markers/MarkerB.svg",
                           scaledSize: new google.maps.Size(20, 20),
@@ -2087,17 +2122,7 @@ const Map: React.FC = () => {
                       />
                     )}
                   </div>
-                  <div>
-                    <IonGrid className="my-location-container">
-                      <IonRow>
-                        <IonCol>
-                          <IonButton onClick={getLocation}>
-                            <IonIcon icon={locateOutline} />
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </div>
+
                   <Polyline
                     path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                     options={{
