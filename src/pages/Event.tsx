@@ -19,6 +19,7 @@ import {
   IonCardContent,
   IonGrid,
   IonImg,
+  IonText,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
@@ -738,11 +739,19 @@ const Event: React.FC = () => {
       .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
       .join('|');
     const markers = [
-      `markers=color:green|label:S|${startGeo.lat},${startGeo.lng}`,
-      `markers=color:red|label:E|${endGeo.lat},${endGeo.lng}`,
+      `markers=color:red|label:A|${startGeo.lat},${startGeo.lng}`,
+      `markers=color:red|label:B|${endGeo.lat},${endGeo.lng}`,
     ];
+    // let's make some markers for the bikebusstops in the route
+    const bikeBusStops = routeData?.BikeBusStop;
+    if (bikeBusStops) {
+      for (let i = 0; i < bikeBusStops.length; i++) {
+        markers.push(`markers=color:blue|label:${i + 1}|${bikeBusStops[i].lat},${bikeBusStops[i].lng}`);
+      }
+    }
+    const styles = "element:geometry%7Ccolor:0xf5f5f5&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative%7Celement:geometry%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Celement:geometry.fill%7Cvisibility:off&style=feature:administrative.neighborhood%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Cvisibility:on&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:geometry.fill%7Cvisibility:on&style=feature:poi.school%7Cvisibility:on&style=feature:poi.school%7Celement:geometry.fill%7Ccolor:0xffd800%7Cvisibility:on&style=feature:poi.school%7Celement:labels%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text.fill%7Cvisibility:on%7Cweight:5&style=feature:poi.school%7Celement:labels.text.stroke%7Cvisibility:on%7Cweight:3.5&style=feature:road%7Celement:geometry%7Ccolor:0xffffff%7Cvisibility:simplified&style=feature:road%7Celement:labels.icon%7Cvisibility:off&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels%7Cvisibility:off&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit%7Celement:geometry.fill%7Csaturation:-50%7Clightness:50&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e";
     // create markers for bikebusstops along the route
-    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xFFFF00FF|weight:3|${path}&${markers.join('&')}&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xffd800|weight:3|${path}&${markers.join('&')}&${styles}&key=${apiKey}`;
     return url;
   }
 
@@ -905,8 +914,7 @@ const Event: React.FC = () => {
             <IonCol>
               <IonLabel>{eventData?.BikeBusName}</IonLabel>
               <IonItem>
-                <IonLabel>{startTime} to </IonLabel>
-                <IonLabel>{endTime}</IonLabel>
+                <IonText>{startTime} to {endTime}</IonText>
               </IonItem>
               <IonImg className="event-map" onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
                 src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />

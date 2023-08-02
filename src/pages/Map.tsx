@@ -131,7 +131,10 @@ const Map: React.FC = () => {
   const [openTripId, setOpenTripId] = useState('');
   const [openTripEventId, setOpenTripEventId] = useState('');
   const [tripActive, setTripActive] = useState(false);
+  const [openTripRouteId, setOpenTripRouteId] = useState('');
   const [openTripLeaderLocation, setOpenTripLeaderLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [openTripLeaderAvatarUrl, setOpenTripLeaderAvatarUrl] = useState('');
+  const [pathCoordinatesTrip, setPathCoordinatesTrip] = useState<{ latitude: number; longitude: number; }[]>([]);
 
   const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
     ({ isOpen: false, content: '', position: null });
@@ -405,9 +408,6 @@ const Map: React.FC = () => {
           const avatarRef = storageRef(storage, `avatars/${uid}`);
           const avatarUrl = await getDownloadURL(avatarRef);
 
-          // ...
-
-          // Similarly, you can create references to other avatars
           const openTripLeaderAvatarRef = storageRef(storage, `avatars/${openTrips[0].tripLeader.slice(7)}`);
           const openTripLeaderAvatarUrl = await getDownloadURL(openTripLeaderAvatarRef);
 
@@ -800,10 +800,6 @@ const Map: React.FC = () => {
     }
   };
 
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
-
 
   // when the bikebus button is clicked, show the bikebus routes on the map
   const handleBikeBusButtonClick = (routeId: string) => {
@@ -879,6 +875,9 @@ const Map: React.FC = () => {
     // get the user.uid
     setIsActiveEvent(true);
     if (user) {
+      // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
+      getDirections();
+      // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
       const uid = user.uid;
       // get the user's current location from this page. 
       if (openTripLeaderLocation) {
@@ -900,6 +899,7 @@ const Map: React.FC = () => {
           tripLeader: '/users/' + user.uid,
           tripParticipants: ['/users/' + user.uid],
           pathCoordinates: [],
+          pathCoordinatesTrip: [],
         })
           .then((docRef) => {
             console.log("Document written with ID: ", docRef.id);
@@ -926,6 +926,7 @@ const Map: React.FC = () => {
               eventLeader: '/users/' + user.uid,
               eventParticipants: ['/users/' + user.uid],
               pathCoordinates: [],
+              pathCoordinatesTrip: [],
             })
               .then((docRef) => {
                 console.log("Document written with ID: ", docRef.id);
@@ -945,6 +946,44 @@ const Map: React.FC = () => {
         console.log("user is not logged in");
         setShowLoginModal(true);
       }
+
+
+
+      // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
+      // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
+      const routesRef = collection(db, "routes");
+      addDoc(routesRef, {
+        routeName: "Open Trip to " + endPointAdress,
+        description: "Open Trip",
+        isBikeBus: false,
+        BikeBusGroupId: "",
+        startPoint: selectedStartLocation,
+        endPoint: endPointAdress,
+        routeType: "openTrip",
+        duration: null,
+        accountType: "openTrip",
+        // set a tripId field to the openTripId
+        tripId: openTripId,
+        eventId: openTripEventId,
+        userId: user.uid,
+        travelMode: "BICYCLING",
+        routeCreator: "/users/" + user.uid,
+        routeLeader: "/users/" + user.uid,
+        // get the actual path coordinates that the getDirections function returns
+        pathCoordinates: pathCoordinates,
+        pathCoordinatesTrip: [],
+      })
+        .then((docRef) => {
+          console.log("Document written with ID: ", docRef.id);
+          // set the docRef.id to a new const so that we can use it throughout the rest of the code
+          const openTripRouteId = docRef.id;
+          setOpenTripRouteId(openTripRouteId);
+          console.log("openTripRouteId: ", openTripRouteId);
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+        });
+
       setTripActive(true);
       setShowEndOpenTripButton(true);
     }
@@ -980,12 +1019,13 @@ const Map: React.FC = () => {
     setShowEndOpenTripButton(false);
   }
 
-
-
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent>
+      <IonContent fullscreen>
         {!showMap && (
           <>
             <IonGrid className="location-app-intro-container">
@@ -1172,26 +1212,6 @@ const Map: React.FC = () => {
                         ]
                       },
                       {
-                        "featureType": "poi.business",
-                        "stylers": [
-                          {
-                            "visibility": "simplified"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.business",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "saturation": -65
-                          },
-                          {
-                            "lightness": 50
-                          }
-                        ]
-                      },
-                      {
                         "featureType": "poi.park",
                         "stylers": [
                           {
@@ -1205,9 +1225,6 @@ const Map: React.FC = () => {
                         "stylers": [
                           {
                             "color": "#e5e5e5"
-                          },
-                          {
-                            "visibility": "simplified"
                           }
                         ]
                       },
@@ -1216,43 +1233,7 @@ const Map: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#27d349"
-                          },
-                          {
                             "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          },
-                          {
-                            "saturation": 45
-                          },
-                          {
-                            "lightness": -20
                           }
                         ]
                       },
@@ -1280,6 +1261,9 @@ const Map: React.FC = () => {
                         "featureType": "poi.school",
                         "elementType": "geometry.stroke",
                         "stylers": [
+                          {
+                            "color": "#ffd800"
+                          },
                           {
                             "visibility": "on"
                           }
@@ -1398,16 +1382,10 @@ const Map: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#7ea3ec"
-                          },
-                          {
                             "saturation": -50
                           },
                           {
                             "lightness": 50
-                          },
-                          {
-                            "visibility": "on"
                           }
                         ]
                       },
@@ -1434,42 +1412,49 @@ const Map: React.FC = () => {
                 >
                   <IonGrid className="search-container">
                     <IonRow className="current-location">
-                      <IonButton onClick={getLocation}>
-                        <IonIcon icon={locateOutline} />
-                      </IonButton>
                       <IonCol>
                         <StandaloneSearchBox
                           onLoad={onLoadStartingLocation}
                           onPlacesChanged={onPlaceChangedStart}
                         >
-                          <input
-                            type="text"
-                            autoComplete="on"
-                            placeholder={userLocationAddress}
-                            style={{
-                              width: "300px",
-                              height: "40px",
-                            }}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
+                            <input
+                              type="text"
+                              autoComplete="on"
+                              placeholder={userLocationAddress}
+                              style={{
+                                width: "300px",
+                                height: "40px",
+                              }}
+                            />
+                          </div>
                         </StandaloneSearchBox>
                       </IonCol>
                     </IonRow>
-                    <IonCol className="destination-box">
-                      <StandaloneSearchBox
-                        onLoad={onLoadDestinationValue}
-                        onPlacesChanged={onPlaceChangedDestination}
-                      >
-                        <input
-                          type="text"
-                          autoComplete="on"
-                          placeholder="Enter a Destination"
-                          style={{
-                            width: "300px",
-                            height: "40px",
-                          }}
-                        />
-                      </StandaloneSearchBox>
-                      {showGetDirectionsButton && <IonRow className="travel-mode-row">
+                    <IonRow className="destination-box">
+                      <IonCol>
+                        <StandaloneSearchBox
+                          onLoad={onLoadDestinationValue}
+                          onPlacesChanged={onPlaceChangedDestination}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
+                            <input
+                              type="text"
+                              autoComplete="on"
+                              placeholder="Enter a Destination"
+                              style={{
+                                width: "300px",
+                                height: "40px",
+                              }}
+                            />
+                          </div>
+                        </StandaloneSearchBox>
+                      </IonCol>
+                    </IonRow>
+                    <IonRow className="travel-button-row">
+                      {showGetDirectionsButton &&
                         <IonCol>
                           <IonLabel>Travel Mode:</IonLabel>
                           <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
@@ -1490,8 +1475,10 @@ const Map: React.FC = () => {
                             </IonSegmentButton>
                           </IonSegment>
                         </IonCol>
-                      </IonRow>}
-                      <IonRow>
+                      }
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
                         <>
                           {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
                           {showGetDirectionsButton && directionsFetched && !isAnonymous && (
@@ -1502,15 +1489,17 @@ const Map: React.FC = () => {
                         {showGetDirectionsButton && directionsFetched && !isAnonymous && (
                           <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
                         )}
-                      </IonRow>
-                    </IonCol>
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
-                        <IonLabel>Distance: {distance} miles </IonLabel>
-                        <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                        <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                      </IonRow>}
-                    </IonCol>
+                      </IonCol>
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
+                        {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
+                          <IonLabel>Distance: {distance} miles </IonLabel>
+                          <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                          <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                        </IonRow>}
+                      </IonCol>
+                    </IonRow>
                   </IonGrid>
                   {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
                     const keyPrefix = route.id || route.routeName;
@@ -1681,8 +1670,23 @@ const Map: React.FC = () => {
                     {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
                   </div>
                   <div>
-                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                    {selectedEndLocation && <Marker position={selectedEndLocation} />}
+                    {selectedStartLocation && (
+                      <Marker
+                        position={selectedStartLocation}
+                        icon={{
+                          url: "/assets/markers/MarkerA.svg",
+                          scaledSize: new google.maps.Size(20, 20),
+                        }}
+                      />
+                    )}
+                    {selectedEndLocation && (
+                      <Marker position={selectedEndLocation}
+                        icon={{
+                          url: "/assets/markers/MarkerB.svg",
+                          scaledSize: new google.maps.Size(20, 20),
+                        }}
+                      />
+                    )}
                   </div>
                   <div>
                     <IonGrid className="toggle-bikebus-container">
@@ -1697,6 +1701,16 @@ const Map: React.FC = () => {
                           <IonLabel>Open Trips</IonLabel>
                           <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
                         </IonCol>
+                      </IonRow>
+                    </IonGrid>
+                  </div>
+                  <div>
+                    <IonGrid className="my-location-container">
+                      <IonRow>
+                        <IonCol>
+                          <IonButton onClick={getLocation}>
+                            <IonIcon icon={locateOutline} />
+                          </IonButton>                        </IonCol>
                       </IonRow>
                     </IonGrid>
                   </div>
@@ -1850,26 +1864,6 @@ const Map: React.FC = () => {
                         ]
                       },
                       {
-                        "featureType": "poi.business",
-                        "stylers": [
-                          {
-                            "visibility": "simplified"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.business",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "saturation": -65
-                          },
-                          {
-                            "lightness": 50
-                          }
-                        ]
-                      },
-                      {
                         "featureType": "poi.park",
                         "stylers": [
                           {
@@ -1883,9 +1877,6 @@ const Map: React.FC = () => {
                         "stylers": [
                           {
                             "color": "#e5e5e5"
-                          },
-                          {
-                            "visibility": "simplified"
                           }
                         ]
                       },
@@ -1894,43 +1885,7 @@ const Map: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#27d349"
-                          },
-                          {
                             "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          },
-                          {
-                            "saturation": 45
-                          },
-                          {
-                            "lightness": -20
                           }
                         ]
                       },
@@ -1958,6 +1913,9 @@ const Map: React.FC = () => {
                         "featureType": "poi.school",
                         "elementType": "geometry.stroke",
                         "stylers": [
+                          {
+                            "color": "#ffd800"
+                          },
                           {
                             "visibility": "on"
                           }
@@ -2076,16 +2034,10 @@ const Map: React.FC = () => {
                         "elementType": "geometry.fill",
                         "stylers": [
                           {
-                            "color": "#7ea3ec"
-                          },
-                          {
                             "saturation": -50
                           },
                           {
                             "lightness": 50
-                          },
-                          {
-                            "visibility": "on"
                           }
                         ]
                       },
@@ -2110,120 +2062,38 @@ const Map: React.FC = () => {
                     ],
                   }}
                 >
-                  <IonGrid className="search-container">
-                    <IonRow className="current-location">
-                      <IonButton onClick={getLocation}>
-                        <IonIcon icon={locateOutline} />
-                      </IonButton>
-                    </IonRow>
-                    <IonCol className="destination-box">
-                      <IonRow>
-                      </IonRow>
-                    </IonCol>
+                  <IonGrid>
                     {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && <IonRow className="map-directions-after-get">
-                        <IonLabel>Distance: {distance} miles </IonLabel>
-                        <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                        <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                      </IonRow>}
-                    </IonCol>
                   </IonGrid>
-                  {openTripsEnabled && openTrips.map((trip: any) => {
-                    const keyPrefix = trip.id || trip.routeName;
-                    return (
-                      <div key={`${keyPrefix}`}>
-                        <Polyline
-                          key={`${keyPrefix}-border`}
-                          path={trip.pathCoordinates}
-                          options={{
-                            strokeColor: "#27D349", // Border color
-                            strokeOpacity: .7,
-                            strokeWeight: 3, // Border thickness
-                            clickable: true,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#27D349", // Main line color
-                                  strokeOpacity: .7,
-                                  strokeWeight: 3,
-                                  fillColor: "#27D349",
-                                  fillOpacity: .7,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
-                              },
-                            ],
-                          }}
-                          onClick={() => { handleBikeBusRouteClick(trip) }}
-                        />
-                        {infoWindow.isOpen && infoWindow.position && (
-                          <InfoWindow
-                            position={infoWindow.position}
-                            onCloseClick={handleCloseClick}
-                          >
-                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                          </InfoWindow>
-                        )}
-                        <Polyline
-                          key={`${keyPrefix}-main`}
-                          path={trip.pathCoordinates}
-                          options={{
-                            strokeColor: "#ffd800", // Main line color
-                            strokeOpacity: 1,
-                            strokeWeight: 2,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#ffd800", // Main line color
-                                  strokeOpacity: 1,
-                                  strokeWeight: 2,
-                                  fillColor: "#ffd800",
-                                  fillOpacity: 1,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
-                              },
-                            ],
-                          }}
-                        />
-                        {trip.startPoint && (
-                          <Marker
-                            key={`${keyPrefix}-start`}
-                            label={`Start of ${trip.routeName}`}
-                            position={trip.startPoint}
-                            onClick={() => { handleBikeBusRouteClick(trip) }}
-                          />
-                        )}
-                        {trip.endPoint && (
-                          <Marker
-                            key={`${keyPrefix}-end`}
-                            label={`End of ${trip.routeName}`}
-                            position={trip.endPoint}
-                            onClick={() => { handleBikeBusRouteClick(trip) }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
                   <div>
-                    {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
                     {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
                   </div>
                   <div>
-                    {selectedStartLocation && <Marker position={selectedStartLocation} />}
-                    {selectedEndLocation && <Marker position={selectedEndLocation} />}
+                    {selectedStartLocation && (
+                      <Marker
+                        position={selectedStartLocation}
+                        icon={{
+                          url: "/assets/markers/MarkerA.svg",
+                          scaledSize: new google.maps.Size(20, 20),
+                        }}
+                      />
+                    )}
+                    {selectedEndLocation && (
+                      <Marker position={selectedEndLocation}
+                        icon={{
+                          url: "/assets/markers/MarkerB.svg",
+                          scaledSize: new google.maps.Size(20, 20),
+                        }}
+                      />
+                    )}
                   </div>
                   <div>
-                    <IonGrid className="toggle-bikebus-container">
+                    <IonGrid className="my-location-container">
                       <IonRow>
                         <IonCol>
-                          <IonLabel>Open Trips</IonLabel>
-                          <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
+                          <IonButton onClick={getLocation}>
+                            <IonIcon icon={locateOutline} />
+                          </IonButton>
                         </IonCol>
                       </IonRow>
                     </IonGrid>
@@ -2231,7 +2101,18 @@ const Map: React.FC = () => {
                   <Polyline
                     path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                     options={{
-                      strokeColor: "#9e9e9e",
+                      strokeColor: "#FF0000",
+                      strokeOpacity: 1.0,
+                      strokeWeight: 2,
+                      geodesic: true,
+                      editable: true,
+                      draggable: true,
+                    }}
+                  />
+                  <Polyline
+                    path={pathCoordinatesTrip.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                    options={{
+                      strokeColor: "#000",
                       strokeOpacity: 1.0,
                       strokeWeight: 2,
                       geodesic: true,
@@ -2244,7 +2125,6 @@ const Map: React.FC = () => {
             </IonGrid>
           )
         }
-
       </IonContent >
     </IonPage >
   );
