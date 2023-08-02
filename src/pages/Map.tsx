@@ -613,7 +613,7 @@ const Map: React.FC = () => {
   }
 
   const getDirections = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       if (selectedStartLocation && selectedEndLocation) {
         getEndPointAdress();
         getStartPointAdress();
@@ -629,14 +629,13 @@ const Map: React.FC = () => {
           (response, status) => {
             if (status === "OK" && response) {
               directionsRenderer.setDirections(response);
-  
+
               const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
                 latitude: latLng.lat(),
                 longitude: latLng.lng(),
               }));
               const epsilon = 0.0001;
               const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
-              setPathCoordinates(simplifiedPathPoints);
               resolve(simplifiedPathPoints);
             } else {
               console.error("Directions request failed due to " + status);
@@ -644,7 +643,7 @@ const Map: React.FC = () => {
             }
           }
         );
-  
+
         const service = new google.maps.DistanceMatrixService();
         service.getDistanceMatrix(
           {
@@ -657,15 +656,15 @@ const Map: React.FC = () => {
               const distance = response?.rows[0]?.elements[0]?.distance?.value;
               const duration = response?.rows[0]?.elements[0]?.duration?.value;
               console.log("Distance Matrix Response: ", response);
-  
+
               setDistance(
                 (Math.round((distance * 0.000621371192) * 100) / 100).toString()
               );
-  
+
               setDuration(
                 (Math.round((duration * 0.0166667) * 100) / 100).toString()
               );
-  
+
               const arrivalTime = new Date();
               const durationInMinutes = duration / 60;
               arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
@@ -679,7 +678,7 @@ const Map: React.FC = () => {
       setDirectionsFetched(true);
     });
   };
-  
+
 
   const getStartPointAdress = async () => {
     if (startPoint) {
@@ -883,85 +882,87 @@ const Map: React.FC = () => {
   const startOpenTrip = async () => {
     // we want to use the createRoute const and the getDirections const to create route data points and pathCoordinates data points for the openTrip
 
+
+
     // get the user.uid
     setIsActiveEvent(true);
     if (user) {
       try {
         const pathCoordinates = await getDirections();
-      // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
-      // getDirections();
-      // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
-      const uid = user.uid;
-      // get the user's current location from this page. 
-      if (openTripLeaderLocation) {
-        // your Firestore operations here
-        console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-        // write a new document to the firestore document collection "trips" with the following fields: tripType: "openTrip", status: "active", userLocation: userLocation, startLocation: userLocation, endLocation: userLocation, startTime: new Date(), endTime: null, tripLeader: user.uid, tripParticipants: [user.uid]
-        const tripsRef = collection(db, "trips");
-        addDoc(tripsRef, {
-          tripType: "openTrip",
-          status: "active",
-          userLocation: openTripLeaderLocation,
-          startLocation: selectedStartLocation,
-          endLocation: endPointAdress,
-          // start in the firestore timestamp format
-          start: new Date(),
-          startTime: new Date(),
-          startTimestamp: new Date(),
-          endTime: null,
-          tripLeader: '/users/' + user.uid,
-          tripParticipants: ['/users/' + user.uid],
-          pathCoordinates: [],
-          pathCoordinatesTrip: [],
-        })
-          .then((docRef) => {
-            console.log("Document written with ID: ", docRef.id);
-            // set docRef.id to a new const so that we can use it throughout the rest of the code
-            const openTripId = docRef.id;
-            setOpenTripId(openTripId);
-            console.log("openTripId: ", openTripId);
-            // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
-            const userRef = doc(db, "users", user.uid);
-            updateDoc(userRef, {
-              trips: arrayUnion(docRef),
-            });
-            // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
-            const eventRef = collection(db, "event");
-            addDoc(eventRef, {
-              eventType: "openTrip",
-              status: "active",
-              startLocation: selectedStartLocation,
-              endLocation: endPointAdress,
-              start: new Date(),
-              startTime: new Date(),
-              startTimestamp: new Date(),
-              endTime: null,
-              eventLeader: '/users/' + user.uid,
-              eventParticipants: ['/users/' + user.uid],
-              pathCoordinates: [],
-              pathCoordinatesTrip: [],
-            })
-              .then((docRef) => {
-                console.log("Document written with ID: ", docRef.id);
-                // set the docRef.id to a new const so that we can use it throughout the rest of the code
-                const openTripEventId = docRef.id;
-                setOpenTripEventId(openTripEventId);
-                console.log("openTripEventId: ", openTripEventId);
-              })
-              .catch((error) => {
-                console.error("Error adding document: ", error);
-              });
+        // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
+        // getDirections();
+        // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
+        const uid = user.uid;
+        // get the user's current location from this page. 
+        if (openTripLeaderLocation) {
+          // your Firestore operations here
+          console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+          // write a new document to the firestore document collection "trips" with the following fields: tripType: "openTrip", status: "active", userLocation: userLocation, startLocation: userLocation, endLocation: userLocation, startTime: new Date(), endTime: null, tripLeader: user.uid, tripParticipants: [user.uid]
+          const tripsRef = collection(db, "trips");
+          addDoc(tripsRef, {
+            tripType: "openTrip",
+            status: "active",
+            userLocation: openTripLeaderLocation,
+            startLocation: selectedStartLocation,
+            endLocation: endPointAdress,
+            // start in the firestore timestamp format
+            start: new Date(),
+            startTime: new Date(),
+            startTimestamp: new Date(),
+            endTime: null,
+            tripLeader: '/users/' + user.uid,
+            tripParticipants: ['/users/' + user.uid],
+            pathCoordinates: [],
+            pathCoordinatesTrip: [],
           })
-          .catch((error) => {
-            console.error("Error adding document: ", error);
-          });
-      } else {
-        console.log("user is not logged in");
-        setShowLoginModal(true);
+            .then((docRef) => {
+              console.log("Document written with ID: ", docRef.id);
+              // set docRef.id to a new const so that we can use it throughout the rest of the code
+              const openTripId = docRef.id;
+              setOpenTripId(openTripId);
+              console.log("openTripId: ", openTripId);
+              // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
+              const userRef = doc(db, "users", user.uid);
+              updateDoc(userRef, {
+                trips: arrayUnion(docRef),
+              });
+              // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
+              const eventRef = collection(db, "event");
+              addDoc(eventRef, {
+                eventType: "openTrip",
+                status: "active",
+                startLocation: selectedStartLocation,
+                endLocation: endPointAdress,
+                start: new Date(),
+                startTime: new Date(),
+                startTimestamp: new Date(),
+                endTime: null,
+                eventLeader: '/users/' + user.uid,
+                eventParticipants: ['/users/' + user.uid],
+                pathCoordinates: [],
+                pathCoordinatesTrip: [],
+              })
+                .then((docRef) => {
+                  console.log("Document written with ID: ", docRef.id);
+                  // set the docRef.id to a new const so that we can use it throughout the rest of the code
+                  const openTripEventId = docRef.id;
+                  setOpenTripEventId(openTripEventId);
+                  console.log("openTripEventId: ", openTripEventId);
+                })
+                .catch((error) => {
+                  console.error("Error adding document: ", error);
+                });
+            })
+            .catch((error) => {
+              console.error("Error adding document: ", error);
+            });
+        } else {
+          console.log("user is not logged in");
+          setShowLoginModal(true);
+        }
+      } catch (error) {
+        console.log("Error: ", error);
       }
-    } catch (error) {
-      console.log("Error: ", error);
-    }
       // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
       // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
       const routesRef = collection(db, "routes");
