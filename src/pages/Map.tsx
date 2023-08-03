@@ -40,7 +40,7 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { getStorage, ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, getDownloadURL, uploadString } from 'firebase/storage';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -117,10 +117,10 @@ const Map: React.FC = () => {
   const [routeName, setRouteName] = useState('');
   const [description, setDescription] = useState('');
   const [isBikeBus, setIsBikeBus] = useState(false);
-  const polylinesRef = useRef([]); const [bikeBusEnabled, setBikeBusEnabled] = useState(false);
+  const polylinesRef = useRef([]); const [bikeBusEnabled, setBikeBusEnabled] = useState(true);
   const [routesEnabled, setRoutesEnabled] = useState(false);
   const [organizationsEnabled, setOrganizationsEnabled] = useState(false);
-  const [openTripsEnabled, setOpenTripsEnabled] = useState(false);
+  const [openTripsEnabled, setOpenTripsEnabled] = useState(true);
   const [eventsEnabled, setEventsEnabled] = useState(false);
   const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
   const [openTrips, setOpenTrips] = useState<any[]>([]);
@@ -138,10 +138,30 @@ const Map: React.FC = () => {
   const [isStartLocationSelected, setIsStartLocationSelected] = useState(false);
   const [isEndLocationSelected, setIsEndLocationSelected] = useState(false);
 
+  interface Trip {
+    id: string;
+    routeName?: string;
+    tripLeader?: string;
+  }
+
+  interface InfoWindowOpenTrip {
+    isOpen: boolean;
+    content: string;
+    position: { lat: number; lng: number; } | null;
+    trip: Trip | null;
+  }
+
+  // uploadString is the string that will be uploaded to the database
+
+  const [infoWindowOpenTrip, setInfoWindowOpenTrip] = useState<InfoWindowOpenTrip>({
+    isOpen: false,
+    content: '',
+    position: null,
+    trip: null,
+  });
 
   const [infoWindow, setInfoWindow] = useState<{ isOpen: boolean, content: string, position: { lat: number, lng: number } | null }>
     ({ isOpen: false, content: '', position: null });
-
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -149,7 +169,43 @@ const Map: React.FC = () => {
     libraries,
   });
 
+  const uploadAvatar = useCallback(async (user: { uid: any; }) => {
+    const avatarElement = generateSVG("Open Trip Leader");
+    const storage = getStorage();
+    const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
+    await uploadString(avatarRef, avatarElement, 'data_url', { contentType: "image/svg+xml" });
+    const avatarUrl = await getDownloadURL(avatarRef);
+    uploadAvatar(user).catch(console.error);
+    return avatarUrl;
+  }, []);
+
+  // check to see if the user has a open trip leader avatar in the storage document collection "avatars" sub folder "Open Trip Leaders"
+  const checkForAvatar = useCallback(async () => {
+    if (user) {
+      const storage = getStorage();
+      const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
+      console.log("avatarRef: ", avatarRef);
+  
+      let avatarUrl;
+      try {
+        avatarUrl = await getDownloadURL(avatarRef);
+        console.log("avatarUrl: ", avatarUrl);
+      } catch (error) {
+        console.log("Avatar doesn't exist, generating a new one...");
+      }
+  
+      if (!avatarUrl) {
+        // if the user does not have an avatar, then we need to create one and upload it to the storage document collection "avatars" sub folder "Open Trip Leaders"
+        generateSVG("Open Trip Leader");
+        avatarUrl = await uploadAvatar(user);
+        console.log("avatarUrl: ", avatarUrl);
+      }
+    }
+  }, [uploadAvatar, user]);
+  
+
   const getLocation = () => {
+    checkForAvatar();
     setGetLocationClicked(true);
     setShowMap(true);
     setIsActiveEvent(false);
@@ -399,7 +455,11 @@ const Map: React.FC = () => {
         const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
 
         setOpenTrips(openTrips);
+
+        // let's confirm the data by logging the openTrips array to the console - specifically looking for marker data and polyline data
         console.log("openTrips: ", openTrips);
+
+        // now let's add the markers to the map
 
         if (user) {
           const uid = user.uid;
@@ -407,11 +467,14 @@ const Map: React.FC = () => {
           const snapshot = await get(openTripLeaderLocationRef);
           const openTripLeaderLocation = snapshot.exists() ? snapshot.val() : null;
 
+          // generate a new avatar for the trip leader with the uid of the trip leader and the function getAvatarUrl
+          const storage = getStorage();
+
           // Create a reference to the avatar image using the storageRef function
           const avatarRef = storageRef(storage, `avatars/${uid}`);
           const avatarUrl = await getDownloadURL(avatarRef);
 
-          const openTripLeaderAvatarRef = storageRef(storage, `avatars/${openTrips[0].tripLeader.slice(7)}`);
+          const openTripLeaderAvatarRef = storageRef(storage, `avatars/opentripleader/${uid}`);
           const openTripLeaderAvatarUrl = await getDownloadURL(openTripLeaderAvatarRef);
 
 
@@ -541,6 +604,10 @@ const Map: React.FC = () => {
     setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
   };
 
+  function getSelectedStartLocation() {
+    return selectedStartLocation;
+  }
+
   const onPlaceChangedDestination = () => {
     if (autocompleteEnd !== null) {
       const places = autocompleteEnd.getPlaces();
@@ -558,6 +625,19 @@ const Map: React.FC = () => {
           const streetName = addressComponents?.find(component =>
             component.types.includes('route')
           )?.long_name;
+          // we need to reset the mapCenter to the selected end location and the selected start location to fit on the page
+          // first get the lat and lng of the selected start location from setSelectedStartLocation
+          // then get the lat and lng of the selected end location from setSelectedEndLocation
+          // then set the mapCenter to the midpoint between the two
+          // then set the mapZoom to fit both locations on the map
+          const selectedStartLocation = getSelectedStartLocation(); // You need to implement this function
+          const selectedEndLocation = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+          const midpoint = {
+            lat: (selectedStartLocation.lat + selectedEndLocation.lat) / 2,
+            lng: (selectedStartLocation.lng + selectedEndLocation.lng) / 2,
+          };
+          setMapCenter(midpoint);
+
 
           setRouteEndStreetName(streetName ?? '');
           setRouteEndName(`${place.name}` ?? '');
@@ -780,11 +860,32 @@ const Map: React.FC = () => {
         distance: distance,
       });
       console.log("routeName: ", routeStartName + " to " + routeEndName);
-      history.push(`/viewroute/${routeDocRef.id}`);
+      // if this is not part of the open trip feature, then redirect to the view route page
+      // if route is not "Open Trip", then redirect to the view route page
+      if (routeType !== "Open Trip") {
+        history.push(`/viewroute/${routeDocRef.id}`);
+      }
+      return routeDocRef;
     } catch (error) {
       console.log("Error: ", error);
     }
   };
+
+  const handleJoinClick = async (trip: { id: string; }) => {
+    // Get the current user's ID
+    if (user) {
+      const userId = user.uid;
+
+      // Add the user to the trip's list of participants in Firestore
+      const tripRef = doc(db, 'trips', trip.id);
+      await updateDoc(tripRef, {
+        tripParticipants: arrayUnion('/users/' + userId),
+      });
+    }
+
+    // Add any additional actions here, such as displaying a success message
+  };
+
 
 
   const saveDestination = () => {
@@ -871,91 +972,141 @@ const Map: React.FC = () => {
     setInfoWindow({ isOpen: true, content, position });
   };
 
+  const handleOpenTripRouteClick = (trip: any) => {
+    setInfoWindowOpenTrip({
+      isOpen: true,
+      position: { lat: trip.startPoint.lat, lng: trip.startPoint.lng },
+      trip: trip,
+      content: `Start of ${trip.routeName}`,
+    });
+  };
+
+  const handleCloseOpenTripClick = () => {
+    setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
+  };
+
   const handleCloseClick = () => {
     setInfoWindow({ isOpen: false, content: '', position: null });
   };
 
-  // openTrips is any trip that is not a bikebus trip and is not a route that has been created by a user. When the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
 
+  // how do we do the uploadString function for the avatarElement?
+  // we need to create a new document in the firestore storage document collection "avatars" sub folder "Open Trip Leaders"
 
-  // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
-  const startOpenTrip = async () => {
-    // we want to use the createRoute const and the getDirections const to create route data points and pathCoordinates data points for the openTrip
+  const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
+    console.log("openTripLeaderLocation: ", openTripLeaderLocation);
 
-
-
-    // get the user.uid
-    setIsActiveEvent(true);
     if (user) {
-      try {
-        const pathCoordinates = await getDirections();
-        // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
-        // getDirections();
-        // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
-        const uid = user.uid;
-        // get the user's current location from this page. 
-        if (openTripLeaderLocation) {
-          // your Firestore operations here
-          console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-          // write a new document to the firestore document collection "trips" with the following fields: tripType: "openTrip", status: "active", userLocation: userLocation, startLocation: userLocation, endLocation: userLocation, startTime: new Date(), endTime: null, tripLeader: user.uid, tripParticipants: [user.uid]
-          const tripsRef = collection(db, "trips");
-          addDoc(tripsRef, {
-            tripType: "openTrip",
+      const tripsRef = collection(db, "trips");
+      const docRef = await addDoc(tripsRef, {
+        tripType: "openTrip",
+        status: "active",
+        userLocation: openTripLeaderLocation,
+        startLocation: selectedStartLocation,
+        endLocation: endPointAdress,
+        // start in the firestore timestamp format
+        start: new Date(),
+        startTime: new Date(),
+        startTimestamp: new Date(),
+        endTime: null,
+        tripLeader: '/users/' + user.uid,
+        tripParticipants: ['/users/' + user.uid],
+        pathCoordinates: pathCoordinates,
+        pathCoordinatesTrip: [''],
+      })
+        .then((docRef) => {
+          console.log("Document written with ID: ", docRef.id);
+          // set docRef.id to a new const so that we can use it throughout the rest of the code
+          const openTripId = docRef.id;
+          setOpenTripId(openTripId);
+          console.log("openTripId: ", openTripId);
+          // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
+          const userRef = doc(db, "users", user.uid);
+          updateDoc(userRef, {
+            trips: arrayUnion(docRef),
+          });
+          // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
+          const eventRef = collection(db, "event");
+          addDoc(eventRef, {
+            eventType: "openTrip",
             status: "active",
-            userLocation: openTripLeaderLocation,
             startLocation: selectedStartLocation,
             endLocation: endPointAdress,
-            // start in the firestore timestamp format
             start: new Date(),
             startTime: new Date(),
             startTimestamp: new Date(),
             endTime: null,
-            tripLeader: '/users/' + user.uid,
-            tripParticipants: ['/users/' + user.uid],
-            pathCoordinates: [],
-            pathCoordinatesTrip: [],
+            eventLeader: '/users/' + user.uid,
+            eventParticipants: ['/users/' + user.uid],
+            pathCoordinates: pathCoordinates,
+            pathCoordinatesTrip: pathCoordinates,
+
           })
             .then((docRef) => {
               console.log("Document written with ID: ", docRef.id);
-              // set docRef.id to a new const so that we can use it throughout the rest of the code
-              const openTripId = docRef.id;
-              setOpenTripId(openTripId);
-              console.log("openTripId: ", openTripId);
-              // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
-              const userRef = doc(db, "users", user.uid);
-              updateDoc(userRef, {
-                trips: arrayUnion(docRef),
-              });
-              // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
-              const eventRef = collection(db, "event");
-              addDoc(eventRef, {
-                eventType: "openTrip",
-                status: "active",
-                startLocation: selectedStartLocation,
-                endLocation: endPointAdress,
-                start: new Date(),
-                startTime: new Date(),
-                startTimestamp: new Date(),
-                endTime: null,
-                eventLeader: '/users/' + user.uid,
-                eventParticipants: ['/users/' + user.uid],
-                pathCoordinates: [],
-                pathCoordinatesTrip: [],
-              })
-                .then((docRef) => {
-                  console.log("Document written with ID: ", docRef.id);
-                  // set the docRef.id to a new const so that we can use it throughout the rest of the code
-                  const openTripEventId = docRef.id;
-                  setOpenTripEventId(openTripEventId);
-                  console.log("openTripEventId: ", openTripEventId);
-                })
-                .catch((error) => {
-                  console.error("Error adding document: ", error);
-                });
+              // set the docRef.id to a new const so that we can use it throughout the rest of the code
+              const openTripEventId = docRef.id;
+              setOpenTripEventId(openTripEventId);
+              console.log("openTripEventId: ", openTripEventId);
             })
             .catch((error) => {
               console.error("Error adding document: ", error);
             });
+        })
+
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+        });
+      return docRef;
+    }
+  };
+
+  const updateUserDocument = async (user: { uid: string; }, docRef: unknown) => {
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, {
+      trips: arrayUnion(docRef),
+    });
+  };
+
+
+  // openTrips is any trip that is not a bikebus trip and is not a route that has been created by a user. When the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
+  // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
+  const startOpenTrip = async () => {
+    // get the user.uid
+    setIsActiveEvent(true);
+    if (user) {
+      try {
+        const uid = user.uid;
+
+        // Check for active trips
+        const activeTripsRef = collection(db, "trips");
+        const q = query(activeTripsRef, where("tripLeader", "==", `/users/${uid}`), where("status", "==", "active"));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          console.error("An active trip already exists for this user.");
+          return;
+        }
+        // perform uploadAvatar function to get the avatarUrl
+        const avatarUrl = await uploadAvatar(user);
+        console.log("avatarUrl: ", avatarUrl);
+
+        // now let's ensure that the function getDirections will work by confirming with the console.log that the selectedStartLocation and the selectedEndLocation are not null
+        console.log("selectedStartLocation: ", selectedStartLocation);
+        console.log("selectedEndLocation: ", selectedEndLocation);
+
+        const pathCoordinates = await getDirections();
+        const docRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
+        await updateUserDocument(user, docRef);
+        // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
+        // getDirections();
+        // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
+        // get the user's current location from this page. 
+        if (openTripLeaderLocation) {
+          // your Firestore operations here
+          console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+          // perform the createTripDocument function to create a new trip document in the trip document collection "trips"
+          const tripDocRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
+          console.log("tripDocRef: ", tripDocRef);
         } else {
           console.log("user is not logged in");
           setShowLoginModal(true);
@@ -965,41 +1116,48 @@ const Map: React.FC = () => {
       }
       // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
       // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
-      const routesRef = collection(db, "routes");
-      addDoc(routesRef, {
-        routeName: "Open Trip to " + endPointAdress,
-        description: "Open Trip",
-        isBikeBus: false,
-        BikeBusGroupId: "",
-        startPoint: selectedStartLocation,
-        endPoint: endPointAdress,
-        routeType: "openTrip",
-        duration: null,
-        accountType: "openTrip",
-        // set a tripId field to the openTripId
-        tripId: openTripId,
-        eventId: openTripEventId,
-        userId: user.uid,
-        travelMode: "BICYCLING",
-        routeCreator: "/users/" + user.uid,
-        routeLeader: "/users/" + user.uid,
-        // get the actual path coordinates that the getDirections function returns
-        pathCoordinates: pathCoordinates,
-        pathCoordinatesTrip: [],
-      })
-        .then((docRef) => {
-          console.log("Document written with ID: ", docRef.id);
-          // set the docRef.id to a new const so that we can use it throughout the rest of the code
-          const openTripRouteId = docRef.id;
-          setOpenTripRouteId(openTripRouteId);
-          console.log("openTripRouteId: ", openTripRouteId);
-        })
-        .catch((error) => {
-          console.error("Error adding document: ", error);
-        });
 
-      setTripActive(true);
-      setShowEndOpenTripButton(true);
+      // let's re-use handleCreateRouteSubmit to create the route document and return the routesRef (the document id of the route document that was just created)
+
+      const routesRef = await handleCreateRouteSubmit();
+
+      if (routesRef) {
+
+        const route = doc(db, 'routes', routesRef.id);  // get the route document
+
+        await updateDoc(route, {
+          routeName: "Open Trip to " + endPointAdress,
+          description: "Open Trip",
+          isBikeBus: false,
+          BikeBusGroupId: "",
+          routeType: "openTrip",
+          duration: null,
+          accountType: "openTrip",
+          // set a tripId field to the openTripId
+          tripId: openTripId,
+          eventId: openTripEventId,
+          userId: user.uid,
+          travelMode: "BICYCLING",
+          routeCreator: "/users/" + user.uid,
+          routeLeader: "/users/" + user.uid,
+          // get the actual path coordinates that the getDirections function returns
+          pathCoordinates: pathCoordinates,
+          pathCoordinatesTrip: [''],
+        })
+          .then((docRef) => {
+            console.log("Document written with ID: ", routesRef.id);
+            // set the docRef.id to a new const so that we can use it throughout the rest of the code
+            const openTripRouteId = routesRef.id;
+            setOpenTripRouteId(openTripRouteId);
+            console.log("openTripRouteId: ", openTripRouteId);
+          })
+          .catch((error) => {
+            console.error("Error adding document: ", error);
+          });
+
+        setTripActive(true);
+        setShowEndOpenTripButton(true);
+      }
     }
   }
 
@@ -1034,12 +1192,23 @@ const Map: React.FC = () => {
   }
 
   function generateSVG(label: string) {
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
-      <rect width="20" height="20" rx="10" fill="#ffd800"/>
+    const svgString = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="50" cy="50" r="40" fill="#ffd800" filter="url(#glow)"/>
       <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
-  }
+}
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -1047,7 +1216,7 @@ const Map: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent fullscreen>
+      <IonContent>
         {!showMap && (
           <>
             <IonGrid className="location-app-intro-container">
@@ -1102,1053 +1271,1055 @@ const Map: React.FC = () => {
         }
         {
           showMap && !isActiveEvent && (
-            <IonGrid fixed={false} className="map-grid">
-              <IonRow className="map-base">
-                <GoogleMap
-                  onLoad={(map) => {
-                    mapRef.current = map;
-                  }}
-                  mapContainerStyle={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  center={mapCenter}
-                  zoom={15}
-                  options={{
-                    disableDefaultUI: true,
-                    zoomControl: false,
-                    mapTypeControl: false,
-                    disableDoubleClickZoom: true,
-                    maxZoom: 18,
-                    styles: [
-                      {
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#f5f5f5"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.icon",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#616161"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.text.stroke",
-                        "stylers": [
-                          {
-                            "color": "#f5f5f5"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.land_parcel",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.land_parcel",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#bdbdbd"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.neighborhood",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.neighborhood",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#eeeeee"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#757575"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#e5e5e5"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "color": "#ffd800"
-                          },
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "geometry.stroke",
-                        "stylers": [
-                          {
-                            "color": "#ffd800"
-                          },
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          },
-                          {
-                            "weight": 5
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text.stroke",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          },
-                          {
-                            "weight": 3.5
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#ffffff"
-                          },
-                          {
-                            "visibility": "simplified"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road",
-                        "elementType": "labels.icon",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.arterial",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#757575"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.highway",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#dadada"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.highway",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#616161"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.local",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.local",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "transit",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "saturation": -50
-                          },
-                          {
-                            "lightness": 50
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "water",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#c9c9c9"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "water",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          }
-                        ]
-                      }
-                    ],
-                  }}
-                >
-                  <IonGrid className="search-container">
-                    <IonRow>
-                      <IonCol>
-                        <StandaloneSearchBox
-                          onLoad={onLoadStartingLocation}
-                          onPlacesChanged={onPlaceChangedStart}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
-                            <input
-                              type="text"
-                              autoComplete="on"
-                              placeholder={userLocationAddress}
-                              style={{
-                                width: "350px",
-                                height: "40px",
-                              }}
-                            />
-                          </div>
-                        </StandaloneSearchBox>
-                      </IonCol>
-                    </IonRow>
-                    <IonRow>
-                      <IonCol>
-                        <StandaloneSearchBox
-                          onLoad={onLoadDestinationValue}
-                          onPlacesChanged={onPlaceChangedDestination}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
-                            <input
-                              type="text"
-                              autoComplete="on"
-                              placeholder="Enter a Destination"
-                              style={{
-                                width: "350px",
-                                height: "40px",
-                              }}
-                            />
-                          </div>
-                        </StandaloneSearchBox>
-                      </IonCol>
-                    </IonRow>
-                    {showGetDirectionsButton &&
-                      <IonRow>
-                        <IonCol>
-                          <IonLabel>Travel Mode:</IonLabel>
-                          <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                            setTravelMode(e.detail.value);
-                            setTravelModeSelector(e.detail.value);
-                          }}>
-                            <IonSegmentButton value="WALKING">
-                              <IonIcon icon={walkOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="BICYCLING">
-                              <IonIcon icon={bicycleOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="DRIVING">
-                              <IonIcon icon={carOutline} />
-                            </IonSegmentButton>
-                            <IonSegmentButton value="TRANSIT">
-                              <IonIcon icon={busOutline} />
-                            </IonSegmentButton>
-                          </IonSegment>
-                        </IonCol>
-                      </IonRow>
-                    }
-                    <IonRow>
-                      <IonCol>
-                        {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                      </IonCol>
-                      <IonCol>
-                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                          <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+            <IonRow className="map-base">
+              <GoogleMap
+                onLoad={(map) => {
+                  mapRef.current = map;
+                }}
+                mapContainerStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                center={mapCenter}
+                zoom={15}
+                options={{
+                  disableDefaultUI: true,
+                  zoomControl: false,
+                  mapTypeControl: true,
+                  disableDoubleClickZoom: true,
+                  maxZoom: 18,
+                  styles: [
+                    {
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#f5f5f5"
                         }
-                      </IonCol>
-                      <IonCol>
-                        {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                          <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
-                        )}
-                      </IonCol>
-                    </IonRow>
+                      ]
+                    },
+                    {
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "color": "#f5f5f5"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#bdbdbd"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#eeeeee"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#e5e5e5"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "color": "#ffd800"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.stroke",
+                      "stylers": [
+                        {
+                          "color": "#ffd800"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 3.5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#ffffff"
+                        },
+                        {
+                          "visibility": "simplified"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.arterial",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#dadada"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "transit",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "saturation": -50
+                        },
+                        {
+                          "lightness": 50
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#c9c9c9"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    }
+                  ],
+                }}
+              >
+                <IonGrid className="search-container">
+                  <IonRow>
+                    <IonCol>
+                      <StandaloneSearchBox
+                        onLoad={onLoadStartingLocation}
+                        onPlacesChanged={onPlaceChangedStart}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder={userLocationAddress}
+                            style={{
+                              width: "350px",
+                              height: "40px",
+                            }}
+                          />
+                        </div>
+                      </StandaloneSearchBox>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <StandaloneSearchBox
+                        onLoad={onLoadDestinationValue}
+                        onPlacesChanged={onPlaceChangedDestination}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder="Enter a Destination"
+                            style={{
+                              width: "350px",
+                              height: "40px",
+                            }}
+                          />
+                        </div>
+                      </StandaloneSearchBox>
+                    </IonCol>
+                  </IonRow>
+                  {showGetDirectionsButton &&
                     <IonRow>
                       <IonCol>
-                        {showGetDirectionsButton && directionsFetched && (
-                          <>
-                            <IonRow>
-                              <IonLabel>Distance: {distance} miles </IonLabel>
-                            </IonRow>
-                            <IonRow>
-                              <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                            </IonRow>
-                            <IonRow>
-                              <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                            </IonRow>
-                          </>
-                        )}
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                          setTravelMode(e.detail.value);
+                          setTravelModeSelector(e.detail.value);
+                        }}>
+                          <IonSegmentButton value="WALKING">
+                            <IonIcon icon={walkOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="BICYCLING">
+                            <IonIcon icon={bicycleOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="DRIVING">
+                            <IonIcon icon={carOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="TRANSIT">
+                            <IonIcon icon={busOutline} />
+                          </IonSegmentButton>
+                        </IonSegment>
                       </IonCol>
                     </IonRow>
-                  </IonGrid>
-                  {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
-                    const keyPrefix = route.id || route.routeName;
-                    return (
-                      <div key={`${keyPrefix}`}>
-                        <Polyline
-                          key={`${keyPrefix}-border`}
-                          path={route.pathCoordinates}
-                          options={{
-                            strokeColor: "#000000", // Border color
-                            strokeOpacity: .7,
-                            strokeWeight: 3, // Border thickness
-                            clickable: true,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#000000", // Main line color
-                                  strokeOpacity: .7,
-                                  strokeWeight: 3,
-                                  fillColor: "#000000",
-                                  fillOpacity: .7,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
+                  }
+                  <IonRow>
+                    <IonCol>
+                      {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                    </IonCol>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                        <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                      }
+                    </IonCol>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && !isAnonymous && (
+                        <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && (
+                        <>
+                          <IonRow>
+                            <IonLabel>Distance: {distance} miles </IonLabel>
+                          </IonRow>
+                          <IonRow>
+                            <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                          </IonRow>
+                          <IonRow>
+                            <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                          </IonRow>
+                        </>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+                {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
+                  const keyPrefix = route.id || route.routeName;
+                  return (
+                    <div key={`${keyPrefix}`}>
+                      <Polyline
+                        key={`${keyPrefix}-border`}
+                        path={route.pathCoordinates}
+                        options={{
+                          strokeColor: "#000000", // Border color
+                          strokeOpacity: .7,
+                          strokeWeight: 3, // Border thickness
+                          clickable: true,
+                          icons: [
+                            {
+                              icon: {
+                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                strokeColor: "#000000", // Main line color
+                                strokeOpacity: .7,
+                                strokeWeight: 3,
+                                fillColor: "#000000",
+                                fillOpacity: .7,
+                                scale: 3,
                               },
-                            ],
+                              offset: "100%",
+                              repeat: "100px",
+                            },
+                          ],
+                        }}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
+                      />
+                      {infoWindow.isOpen && infoWindow.position && (
+                        <InfoWindow
+                          position={infoWindow.position}
+                          onCloseClick={handleCloseClick}
+                        >
+                          <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                        </InfoWindow>
+                      )}
+                      <Polyline
+                        key={`${keyPrefix}-main`}
+                        path={route.pathCoordinates}
+                        options={{
+                          strokeColor: "#ffd800", // Main line color
+                          strokeOpacity: 1,
+                          strokeWeight: 2,
+                          icons: [
+                            {
+                              icon: {
+                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                strokeColor: "#ffd800", // Main line color
+                                strokeOpacity: 1,
+                                strokeWeight: 2,
+                                fillColor: "#ffd800",
+                                fillOpacity: 1,
+                                scale: 3,
+                              },
+                              offset: "100%",
+                              repeat: "100px",
+                            },
+                          ],
+                        }}
+                      />
+                      {route.startPoint && (
+                        <Marker
+                          key={`${keyPrefix}-start`}
+                          label={`${route.BikeBusName}`}
+                          position={route.startPoint}
+                          icon={{
+                            url: generateSVG(route.BikeBusName),
+                            scaledSize: new google.maps.Size(60, 20),
                           }}
                           onClick={() => { handleBikeBusRouteClick(route) }}
                         />
-                        {infoWindow.isOpen && infoWindow.position && (
-                          <InfoWindow
-                            position={infoWindow.position}
-                            onCloseClick={handleCloseClick}
-                          >
-                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                          </InfoWindow>
-                        )}
-                        <Polyline
-                          key={`${keyPrefix}-main`}
-                          path={route.pathCoordinates}
-                          options={{
-                            strokeColor: "#ffd800", // Main line color
-                            strokeOpacity: 1,
-                            strokeWeight: 2,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#ffd800", // Main line color
-                                  strokeOpacity: 1,
-                                  strokeWeight: 2,
-                                  fillColor: "#ffd800",
-                                  fillOpacity: 1,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
-                              },
-                            ],
+                      )}
+                      {route.endPoint && (
+                        <Marker
+                          key={`${keyPrefix}-end`}
+                          label={`${route.BikeBusName}`}
+                          position={route.endPoint}
+                          icon={{
+                            url: generateSVG(route.BikeBusName),
+                            scaledSize: new google.maps.Size(60, 20),
                           }}
+                          onClick={() => { handleBikeBusRouteClick(route) }}
                         />
-                        {route.startPoint && (
-                          <Marker
-                            key={`${keyPrefix}-start`}
-                            label={`${route.BikeBusName}`}
-                            position={route.startPoint}
-                            icon={{
-                              url: generateSVG(route.BikeBusName),
-                              scaledSize: new google.maps.Size(60, 20),
-                            }}
-                            onClick={() => { handleBikeBusRouteClick(route) }}
-                          />
-                        )}
-                        {route.endPoint && (
-                          <Marker
-                            key={`${keyPrefix}-start`}
-                            label={`${route.BikeBusName}`}
-                            position={route.startPoint}
-                            icon={{
-                              url: generateSVG(route.BikeBusName),
-                              scaledSize: new google.maps.Size(60, 20),
-                            }}
-                            onClick={() => { handleBikeBusRouteClick(route) }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                  {openTripsEnabled && openTrips.map((trip: any) => {
-                    const keyPrefix = trip.id || trip.routeName;
-                    return (
-                      <div key={`${keyPrefix}`}>
-                        <Polyline
-                          key={`${keyPrefix}-border`}
-                          path={trip.pathCoordinates}
-                          options={{
-                            strokeColor: "#9e9e9e", // Border color
-                            strokeOpacity: .7,
-                            strokeWeight: 3, // Border thickness
-                            clickable: true,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  // make the stroke color a nice complementary green color to #ffd800
-                                  strokeColor: "#9e9e9e", // Main line color
-                                  strokeOpacity: .7,
-                                  strokeWeight: 3,
-                                  fillColor: "#9e9e9e",
-                                  fillOpacity: .7,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
+                      )}
+                    </div>
+                  );
+                })}
+                {openTripsEnabled && openTrips.map((trip: any) => {
+                  const keyPrefix = trip.id || trip.routeName;
+                  return (
+                    <div key={`${keyPrefix}`}>
+                      <Polyline
+                        key={`${keyPrefix}-border`}
+                        path={trip.pathCoordinates}
+                        options={{
+                          strokeColor: "#9e9e9e", // Border color
+                          strokeOpacity: .7,
+                          strokeWeight: 3, // Border thickness
+                          clickable: true,
+                          icons: [
+                            {
+                              icon: {
+                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                // make the stroke color a nice complementary green color to #ffd800
+                                strokeColor: "#9e9e9e", // Main line color
+                                strokeOpacity: .7,
+                                strokeWeight: 3,
+                                fillColor: "#9e9e9e",
+                                fillOpacity: .7,
+                                scale: 3,
                               },
-                            ],
-                          }}
-                          onClick={() => { handleBikeBusRouteClick(trip) }}
-                        />
-                        {infoWindow.isOpen && infoWindow.position && (
-                          <InfoWindow
-                            position={infoWindow.position}
-                            onCloseClick={handleCloseClick}
-                          >
-                            <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                          </InfoWindow>
-                        )}
-                        <Polyline
-                          key={`${keyPrefix}-main`}
-                          path={trip.pathCoordinates}
-                          options={{
-                            strokeColor: "#9e9e9e", // Main line color
-                            strokeOpacity: 1,
-                            strokeWeight: 2,
-                            icons: [
-                              {
-                                icon: {
-                                  path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                  strokeColor: "#9e9e9e", // Main line color
-                                  strokeOpacity: 1,
-                                  strokeWeight: 2,
-                                  fillColor: "#9e9e9e",
-                                  fillOpacity: 1,
-                                  scale: 3,
-                                },
-                                offset: "100%",
-                                repeat: "100px",
+                              offset: "100%",
+                              repeat: "100px",
+                            },
+                          ],
+                        }}
+                        onClick={() => { handleOpenTripRouteClick(trip) }}
+                      />
+                      {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
+                        <InfoWindow
+                          position={infoWindowOpenTrip.position}
+                          onCloseClick={handleCloseOpenTripClick}
+                        >
+                          <div>
+                            <h2>{infoWindowOpenTrip.trip?.routeName}</h2>
+                            <p>Leader: {infoWindowOpenTrip.trip?.tripLeader}</p>
+                            <button onClick={() => infoWindowOpenTrip.trip && handleJoinClick(infoWindowOpenTrip.trip)}>Join</button>
+                          </div>
+                        </InfoWindow>
+                      )}
+
+                      <Polyline
+                        key={`${keyPrefix}-main`}
+                        path={trip.pathCoordinates}
+                        options={{
+                          strokeColor: "#9e9e9e", // Main line color
+                          strokeOpacity: 1,
+                          strokeWeight: 2,
+                          icons: [
+                            {
+                              icon: {
+                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                strokeColor: "#9e9e9e", // Main line color
+                                strokeOpacity: 1,
+                                strokeWeight: 2,
+                                fillColor: "#9e9e9e",
+                                fillOpacity: 1,
+                                scale: 3,
                               },
-                            ],
-                          }}
-                        />
-                        {trip.startPoint && (
-                          <Marker
-                            key={`${keyPrefix}-start`}
-                            label={`Start of ${trip.routeName}`}
-                            position={trip.startPoint}
-                            onClick={() => { handleBikeBusRouteClick(trip) }}
-                          />
-                        )}
-                        {trip.endPoint && (
-                          <Marker
-                            key={`${keyPrefix}-end`}
-                            label={`End of ${trip.routeName}`}
-                            position={trip.endPoint}
-                            onClick={() => { handleBikeBusRouteClick(trip) }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                  <div>
-                    {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-                    {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-                  </div>
-                  <div>
-                    {selectedStartLocation && (
-                      <Marker
-                        position={selectedStartLocation}
-                        icon={{
-                          url: "/assets/markers/MarkerA.svg",
-                          scaledSize: new google.maps.Size(20, 20),
+                              offset: "100%",
+                              repeat: "100px",
+                            },
+                          ],
                         }}
                       />
-                    )}
-                    {selectedEndLocation && (
-                      <Marker position={selectedEndLocation}
-                        icon={{
-                          url: "/assets/markers/MarkerB.svg",
-                          scaledSize: new google.maps.Size(20, 20),
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <IonGrid className="toggle-bikebus-container">
-                      <IonRow>
-                        <IonCol>
-                          <IonButton onClick={getLocation}>
-                            <IonIcon icon={locateOutline} />
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                      <IonRow>
-                        <IonCol>
-                          <IonLabel>BikeBus</IonLabel>
-                          <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
-                        </IonCol>
-                      </IonRow>
-                      <IonRow>
-                        <IonCol>
-                          <IonLabel>Open Trips</IonLabel>
-                          <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </div>
-                  <Polyline
-                    path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                    options={{
-                      strokeColor: "#FF0000",
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2,
-                      geodesic: true,
-                      editable: true,
-                      draggable: true,
-                    }}
-                  />
-                </GoogleMap>
-              </IonRow>
-            </IonGrid>
+                      {trip.startPoint && (
+                        <Marker
+                          key={`${keyPrefix}-start`}
+                          label={`Start of ${trip.routeName}`}
+                          position={trip.startPoint}
+                          onClick={() => { handleOpenTripRouteClick(trip) }}
+                        />
+                      )}
+                      {trip.endPoint && (
+                        <Marker
+                          key={`${keyPrefix}-end`}
+                          label={`End of ${trip.routeName}`}
+                          position={trip.endPoint}
+                          onClick={() => { handleOpenTripRouteClick(trip) }}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+                <div>
+                  {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                </div>
+                <div>
+                  {selectedStartLocation && (
+                    <Marker
+                      position={selectedStartLocation}
+                      icon={{
+                        url: "/assets/markers/MarkerA.svg",
+                        scaledSize: new google.maps.Size(20, 20),
+                      }}
+                    />
+                  )}
+                  {selectedEndLocation && (
+                    <Marker position={selectedEndLocation}
+                      icon={{
+                        url: "/assets/markers/MarkerB.svg",
+                        scaledSize: new google.maps.Size(20, 20),
+                      }}
+                    />
+                  )}
+                </div>
+                <div>
+                  <IonGrid className="toggle-bikebus-container">
+                    <IonRow>
+                      <IonCol>
+                        <IonButton onClick={getLocation}>
+                          <IonIcon icon={locateOutline} />
+                        </IonButton>
+                      </IonCol>
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
+                        <IonLabel>BikeBus</IonLabel>
+                        <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                      </IonCol>
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
+                        <IonLabel>Open Trips</IonLabel>
+                        <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </div>
+                <Polyline
+                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    geodesic: true,
+                    editable: true,
+                    draggable: true,
+                  }}
+                />
+              </GoogleMap>
+            </IonRow>
+
           )
         }
         {
           showMap && isActiveEvent && (
-            <IonGrid fixed={false} className="map-grid">
-              <IonRow className="map-base">
-                <GoogleMap
-                  onLoad={(map) => {
-                    mapRef.current = map;
-                  }}
-                  mapContainerStyle={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  center={mapCenter}
-                  zoom={15}
-                  options={{
-                    disableDefaultUI: true,
-                    zoomControl: false,
-                    mapTypeControl: false,
-                    disableDoubleClickZoom: true,
-                    maxZoom: 18,
-                    styles: [
-                      {
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#f5f5f5"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.icon",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#616161"
-                          }
-                        ]
-                      },
-                      {
-                        "elementType": "labels.text.stroke",
-                        "stylers": [
-                          {
-                            "color": "#f5f5f5"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.land_parcel",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.land_parcel",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#bdbdbd"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.neighborhood",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "administrative.neighborhood",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#eeeeee"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#757575"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#e5e5e5"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.park",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "color": "#ffd800"
-                          },
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "geometry.stroke",
-                        "stylers": [
-                          {
-                            "color": "#ffd800"
-                          },
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          },
-                          {
-                            "weight": 5
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "poi.school",
-                        "elementType": "labels.text.stroke",
-                        "stylers": [
-                          {
-                            "visibility": "on"
-                          },
-                          {
-                            "weight": 3.5
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#ffffff"
-                          },
-                          {
-                            "visibility": "simplified"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road",
-                        "elementType": "labels.icon",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.arterial",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#757575"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.highway",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#dadada"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.highway",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#616161"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.local",
-                        "elementType": "labels",
-                        "stylers": [
-                          {
-                            "visibility": "off"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "road.local",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "transit",
-                        "elementType": "geometry.fill",
-                        "stylers": [
-                          {
-                            "saturation": -50
-                          },
-                          {
-                            "lightness": 50
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "water",
-                        "elementType": "geometry",
-                        "stylers": [
-                          {
-                            "color": "#c9c9c9"
-                          }
-                        ]
-                      },
-                      {
-                        "featureType": "water",
-                        "elementType": "labels.text.fill",
-                        "stylers": [
-                          {
-                            "color": "#9e9e9e"
-                          }
-                        ]
-                      }
-                    ],
-                  }}
-                >
-                  <IonGrid>
-                    {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
-                  </IonGrid>
-                  <div>
-                    {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-                  </div>
-                  <div>
-                    {selectedStartLocation && (
-                      <Marker
-                        position={selectedStartLocation}
-                        icon={{
-                          url: "/assets/markers/MarkerA.svg",
-                          scaledSize: new google.maps.Size(20, 20),
-                        }}
-                      />
-                    )}
-                    {selectedEndLocation && (
-                      <Marker
-                        position={selectedEndLocation}
-                        icon={{
-                          url: "/assets/markers/MarkerB.svg",
-                          scaledSize: new google.maps.Size(20, 20),
-                        }}
-                      />
-                    )}
-                  </div>
+            <IonRow className="map-base">
+              <GoogleMap
+                onLoad={(map) => {
+                  mapRef.current = map;
+                }}
+                mapContainerStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                center={userLocation}
+                zoom={15}
+                options={{
+                  disableDefaultUI: true,
+                  zoomControl: false,
+                  mapTypeControl: true,
+                  disableDoubleClickZoom: true,
+                  maxZoom: 18,
+                  styles: [
+                    {
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#f5f5f5"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "color": "#f5f5f5"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.land_parcel",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#bdbdbd"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "administrative.neighborhood",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#eeeeee"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#e5e5e5"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.park",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "color": "#ffd800"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "geometry.stroke",
+                      "stylers": [
+                        {
+                          "color": "#ffd800"
+                        },
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "poi.school",
+                      "elementType": "labels.text.stroke",
+                      "stylers": [
+                        {
+                          "visibility": "on"
+                        },
+                        {
+                          "weight": 3.5
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#ffffff"
+                        },
+                        {
+                          "visibility": "simplified"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road",
+                      "elementType": "labels.icon",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.arterial",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#757575"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#dadada"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.highway",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#616161"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels",
+                      "stylers": [
+                        {
+                          "visibility": "off"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "road.local",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "transit",
+                      "elementType": "geometry.fill",
+                      "stylers": [
+                        {
+                          "saturation": -50
+                        },
+                        {
+                          "lightness": 50
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "geometry",
+                      "stylers": [
+                        {
+                          "color": "#c9c9c9"
+                        }
+                      ]
+                    },
+                    {
+                      "featureType": "water",
+                      "elementType": "labels.text.fill",
+                      "stylers": [
+                        {
+                          "color": "#9e9e9e"
+                        }
+                      ]
+                    }
+                  ],
+                }}
+              >
+                <IonGrid>
+                  {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
+                </IonGrid>
+                <div>
+                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+                </div>
+                <div>
+                  {selectedStartLocation && (
+                    <Marker
+                      position={selectedStartLocation}
+                      icon={{
+                        url: "/assets/markers/MarkerA.svg",
+                        scaledSize: new google.maps.Size(20, 20),
+                      }}
+                    />
+                  )}
+                  {selectedEndLocation && (
+                    <Marker
+                      position={selectedEndLocation}
+                      icon={{
+                        url: "/assets/markers/MarkerB.svg",
+                        scaledSize: new google.maps.Size(20, 20),
+                      }}
+                    />
+                  )}
+                </div>
 
-                  <Polyline
-                    path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                    options={{
-                      strokeColor: "#FF0000",
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2,
-                      geodesic: true,
-                      editable: true,
-                      draggable: true,
-                    }}
-                  />
-                  <Polyline
-                    path={pathCoordinatesTrip.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                    options={{
-                      strokeColor: "#000",
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2,
-                      geodesic: true,
-                      editable: true,
-                      draggable: true,
-                    }}
-                  />
-                </GoogleMap>
-              </IonRow>
-            </IonGrid>
+                <Polyline
+                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    geodesic: true,
+                    editable: true,
+                    draggable: true,
+                  }}
+                />
+                <Polyline
+                  path={pathCoordinatesTrip.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  options={{
+                    strokeColor: "#000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    geodesic: true,
+                    editable: true,
+                    draggable: true,
+                  }}
+                />
+              </GoogleMap>
+            </IonRow>
           )
         }
       </IonContent >

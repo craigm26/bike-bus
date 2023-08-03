@@ -720,6 +720,7 @@ const App: React.FC = () => {
                       </IonFabButton>
                     </IonFab>
                   </div>
+                  {upcomingGroup && user.uid !== 'anonymous' && (
                   <div className="bikebusname-button-container">
                     {upcomingGroup ? (
                       <div className="button-group">
@@ -745,6 +746,7 @@ const App: React.FC = () => {
                       <p>Loading BikeBus Event...</p>
                     )}
                   </div>
+                  )}
                 </div>
               )}
             </React.Fragment>

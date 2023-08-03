@@ -5,6 +5,10 @@ service firebase.storage {
       allow read: if request.auth != null;  // Any authenticated user can read avatars
       allow write: if request.auth.uid == userId;  // Only the user themselves can write their avatar
     }
+    match /avatars/opentripleaders/{userId}/{allPaths=**} {
+      allow read: if true;  // Anyone can read these avatars
+      allow write: if request.auth.uid == userId;  // Only the user themselves can write their avatar
+    }
     match /{allPaths=**} {
       allow read, write: if false;
     }
