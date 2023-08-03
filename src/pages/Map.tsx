@@ -40,7 +40,7 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { getStorage, ref as storageRef, getDownloadURL, uploadString } from 'firebase/storage';
+import { getStorage, ref as storageRef, getDownloadURL, uploadString, uploadBytesResumable, getBytes } from 'firebase/storage';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -169,15 +169,33 @@ const Map: React.FC = () => {
     libraries,
   });
 
+
   const uploadAvatar = useCallback(async (user: { uid: any; }) => {
-    const avatarElement = generateSVG("Open Trip Leader");
     const storage = getStorage();
+
+    // Get URL of base avatar
+    const baseAvatarRef = storageRef(storage, `avatars/${user.uid}`);
+    const baseAvatarUrl = await getDownloadURL(baseAvatarRef);
+
+    // Download file from old location
+    const data = await getBytes(baseAvatarRef);
+
+    const destRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
+
+    // Upload file to new location
+    await uploadBytesResumable(destRef, data);
+
+    // Generate new SVG avatar
+    const avatarElement = generateSVG("Open Trip Leader", baseAvatarUrl);
+
     const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
     await uploadString(avatarRef, avatarElement, 'data_url', { contentType: "image/svg+xml" });
+
     const avatarUrl = await getDownloadURL(avatarRef);
-    uploadAvatar(user).catch(console.error);
     return avatarUrl;
   }, []);
+
+
 
   // check to see if the user has a open trip leader avatar in the storage document collection "avatars" sub folder "Open Trip Leaders"
   const checkForAvatar = useCallback(async () => {
@@ -185,7 +203,7 @@ const Map: React.FC = () => {
       const storage = getStorage();
       const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
       console.log("avatarRef: ", avatarRef);
-  
+
       let avatarUrl;
       try {
         avatarUrl = await getDownloadURL(avatarRef);
@@ -193,19 +211,18 @@ const Map: React.FC = () => {
       } catch (error) {
         console.log("Avatar doesn't exist, generating a new one...");
       }
-  
+
       if (!avatarUrl) {
         // if the user does not have an avatar, then we need to create one and upload it to the storage document collection "avatars" sub folder "Open Trip Leaders"
-        generateSVG("Open Trip Leader");
+        generateSVG("Open Trip Leader", user.uid);
         avatarUrl = await uploadAvatar(user);
         console.log("avatarUrl: ", avatarUrl);
       }
     }
   }, [uploadAvatar, user]);
-  
+
 
   const getLocation = () => {
-    checkForAvatar();
     setGetLocationClicked(true);
     setShowMap(true);
     setIsActiveEvent(false);
@@ -379,7 +396,7 @@ const Map: React.FC = () => {
             // what we want to do is to add the lat lng values of the userLocation to the pathCoordinates array to create a path that shows the user's location over time
             const pathCoordinatesRef = doc(db, "trips", openTripId);
             updateDoc(pathCoordinatesRef, {
-              pathCoordinates: arrayUnion(userLocation),
+              pathCoordinatesTrip: arrayUnion(userLocation),
             });
 
 
@@ -390,7 +407,7 @@ const Map: React.FC = () => {
             // do the same pathCoordinates update for the event
             const eventPathCoordinatesRef = doc(db, "event", openTripEventId);
             updateDoc(eventPathCoordinatesRef, {
-              pathCoordinates: arrayUnion(userLocation),
+              pathCoordinatesTrip: arrayUnion(userLocation),
             });
           }
         });
@@ -474,7 +491,7 @@ const Map: React.FC = () => {
           const avatarRef = storageRef(storage, `avatars/${uid}`);
           const avatarUrl = await getDownloadURL(avatarRef);
 
-          const openTripLeaderAvatarRef = storageRef(storage, `avatars/opentripleader/${uid}`);
+          const openTripLeaderAvatarRef = storageRef(storage, `avatars/opentripleaders/${uid}`);
           const openTripLeaderAvatarUrl = await getDownloadURL(openTripLeaderAvatarRef);
 
 
@@ -829,7 +846,7 @@ const Map: React.FC = () => {
   };
 
 
-  const handleCreateRouteSubmit = async () => {
+  const handleCreateRouteSubmit = async (routeType = "") => {
     getEndPointAdress();
     getStartPointAdress();
     try {
@@ -862,7 +879,7 @@ const Map: React.FC = () => {
       console.log("routeName: ", routeStartName + " to " + routeEndName);
       // if this is not part of the open trip feature, then redirect to the view route page
       // if route is not "Open Trip", then redirect to the view route page
-      if (routeType !== "Open Trip") {
+      if (routeType !== "openTrip") {
         history.push(`/viewroute/${routeDocRef.id}`);
       }
       return routeDocRef;
@@ -995,6 +1012,10 @@ const Map: React.FC = () => {
 
   const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
     console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+    console.log("selectedStartLocation: ", selectedStartLocation);
+    console.log("selectedEndLocation: ", selectedEndLocation);
+    console.log("pathCoordinates: ", pathCoordinates);
+
 
     if (user) {
       const tripsRef = collection(db, "trips");
@@ -1015,7 +1036,7 @@ const Map: React.FC = () => {
         pathCoordinatesTrip: [''],
       })
         .then((docRef) => {
-          console.log("Document written with ID: ", docRef.id);
+          console.log("Trip Document written with ID: ", docRef.id);
           // set docRef.id to a new const so that we can use it throughout the rest of the code
           const openTripId = docRef.id;
           setOpenTripId(openTripId);
@@ -1057,6 +1078,7 @@ const Map: React.FC = () => {
         .catch((error) => {
           console.error("Error adding document: ", error);
         });
+      console.log("docRef: ", docRef)
       return docRef;
     }
   };
@@ -1067,13 +1089,19 @@ const Map: React.FC = () => {
       trips: arrayUnion(docRef),
     });
   };
-
-
   // openTrips is any trip that is not a bikebus trip and is not a route that has been created by a user. When the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
   // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
   const startOpenTrip = async () => {
     // get the user.uid
+    if (user) {
+    // perform uploadAvatar function to get the avatarUrl
+    const avatarUrl = await uploadAvatar(user);
+    console.log("avatarUrl: ", avatarUrl);
+    
     setIsActiveEvent(true);
+    //     checkForAvatar(); perform that function to check for the avatar
+    checkForAvatar();
+    }
     if (user) {
       try {
         const uid = user.uid;
@@ -1086,9 +1114,7 @@ const Map: React.FC = () => {
           console.error("An active trip already exists for this user.");
           return;
         }
-        // perform uploadAvatar function to get the avatarUrl
-        const avatarUrl = await uploadAvatar(user);
-        console.log("avatarUrl: ", avatarUrl);
+
 
         // now let's ensure that the function getDirections will work by confirming with the console.log that the selectedStartLocation and the selectedEndLocation are not null
         console.log("selectedStartLocation: ", selectedStartLocation);
@@ -1117,9 +1143,9 @@ const Map: React.FC = () => {
       // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
       // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
 
-      // let's re-use handleCreateRouteSubmit to create the route document and return the routesRef (the document id of the route document that was just created)
+      // let's re-use handleCreateRouteSubmit to create the route document and return the routesRef (the document id of the route document that was just created) and pass routeType as "openTrip"
 
-      const routesRef = await handleCreateRouteSubmit();
+      const routesRef = await handleCreateRouteSubmit("openTrip");
 
       if (routesRef) {
 
@@ -1132,7 +1158,6 @@ const Map: React.FC = () => {
           BikeBusGroupId: "",
           routeType: "openTrip",
           duration: null,
-          accountType: "openTrip",
           // set a tripId field to the openTripId
           tripId: openTripId,
           eventId: openTripEventId,
@@ -1162,36 +1187,65 @@ const Map: React.FC = () => {
   }
 
   async function endOpenTrip() {
-    if (user && openTripId && openTripEventId) {
-      const uid = user.uid;
-      const tripRef = doc(db, "trips", openTripId);
-      const eventRef = doc(db, "event", openTripEventId);
-      const userLocationRef = ref(rtdb, `userLocations/${uid}`);
-      const snapshot = await get(userLocationRef);
-      const userLocation = snapshot.val();
+    try {
+      if (user && openTripId && openTripEventId) {
+        const uid = user.uid;
+        const tripRef = doc(db, "trips", openTripId);
+        const eventRef = doc(db, "event", openTripEventId);
+        const routeRef = doc(db, "routes", openTripRouteId);
+        console.log("openTripLeaderLocation: ", openTripLeaderLocation);
+        console.log("openTripId: ", openTripId);
+        console.log("openTripEventId: ", openTripEventId);
 
-      if (userLocation) {  // Check if userLocation is not undefined before using it
-        await updateDoc(tripRef, {
-          status: "inactive",
-          userLocation: userLocation,
-          endLocation: userLocation,
-          endTime: new Date(),
-        });
+        if (openTripLeaderLocation) {  // Check if userLocation is not undefined before using it
+          await updateDoc(tripRef, {
+            status: "inactive",
+            endLocation: openTripLeaderLocation,
+            endTime: new Date(),
+          });
 
-        await updateDoc(eventRef, {
-          status: "inactive",
-          userLocation: userLocation,
-          endLocation: userLocation,
-          endTime: new Date(),
-        });
+          await updateDoc(eventRef, {
+            status: "inactive",
+            endLocation: openTripLeaderLocation,
+            endTime: new Date(),
+          });
+
+          await updateDoc(routeRef, {
+            endLocation: openTripLeaderLocation,
+          });
+        }
       }
+      setIsActiveEvent(false);
+      setTripActive(false);
+      setShowEndOpenTripButton(false);
+    } catch (error) {
+      console.error("Error ending trip:", error);
     }
-    setIsActiveEvent(false);
-    setTripActive(false);
-    setShowEndOpenTripButton(false);
   }
 
-  function generateSVG(label: string) {
+
+  function generateSVG(label: string, avatarUrl: string) {
+    const encodedUrl = encodeURIComponent(avatarUrl);
+    const svgString = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <image href="${encodedUrl}" x="0" y="0" height="100" width="100"/>
+        <circle cx="50" cy="50" r="40" fill="#ffd800" filter="url(#glow)"/>
+        <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
+      </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+  }
+
+
+  function generateSVGBikeBus(label: string) {
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
       <defs>
@@ -1207,8 +1261,7 @@ const Map: React.FC = () => {
       <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
-}
-
+  }
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -1768,7 +1821,7 @@ const Map: React.FC = () => {
                           label={`${route.BikeBusName}`}
                           position={route.startPoint}
                           icon={{
-                            url: generateSVG(route.BikeBusName),
+                            url: generateSVGBikeBus(route.BikeBusName),
                             scaledSize: new google.maps.Size(60, 20),
                           }}
                           onClick={() => { handleBikeBusRouteClick(route) }}
@@ -1780,7 +1833,7 @@ const Map: React.FC = () => {
                           label={`${route.BikeBusName}`}
                           position={route.endPoint}
                           icon={{
-                            url: generateSVG(route.BikeBusName),
+                            url: generateSVGBikeBus(route.BikeBusName),
                             scaledSize: new google.maps.Size(60, 20),
                           }}
                           onClick={() => { handleBikeBusRouteClick(route) }}

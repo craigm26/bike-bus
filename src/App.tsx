@@ -357,9 +357,14 @@ const App: React.FC = () => {
       }));
 
       // Filter out events in the past
-      const futureEvents = allEvents.filter(
-        (event) => new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now()
-      );
+      const futureEvents = allEvents.filter(event => {
+        if (!event.startTimestamp || typeof event.startTimestamp.seconds === 'undefined') {
+          console.error('Invalid timestamp:', event);
+          return false;
+        }
+        return new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now();
+      });
+      
       // Sort all the future events by startTimestamp in ascending order
       const sortedEvents = [...futureEvents].sort(
         (a, b) =>
