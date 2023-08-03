@@ -1,0 +1,9 @@
+[
+    {
+        "origin": ["http://localhost:8100", "https://firebasestorage.googleapis.com/v0/b/bikebus-71dd5.appspot.com", "https://bikebus.app"],
+        "method": ["GET"],
+        "maxAgeSeconds": 3600
+    }
+]
+
+  
