@@ -846,7 +846,7 @@ const Map: React.FC = () => {
   };
 
 
-  const handleCreateRouteSubmit = async (routeType = "") => {
+  const handleCreateRouteSubmit = async () => {
     getEndPointAdress();
     getStartPointAdress();
     try {
@@ -879,9 +879,9 @@ const Map: React.FC = () => {
       console.log("routeName: ", routeStartName + " to " + routeEndName);
       // if this is not part of the open trip feature, then redirect to the view route page
       // if route is not "Open Trip", then redirect to the view route page
-      if (routeType !== "openTrip") {
-        history.push(`/viewroute/${routeDocRef.id}`);
-      }
+      // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
+      history.push(`/viewroute/${routeDocRef.id}`);
+
       return routeDocRef;
     } catch (error) {
       console.log("Error: ", error);
@@ -1090,14 +1090,51 @@ const Map: React.FC = () => {
     });
   };
 
+  const createRouteDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
+    if (user) {
+      const routesRef = collection(db, "routes");
+      const docRouteRef = await addDoc(routesRef, {
+        routeName: "Open Trip to " + routeEndName,
+        description: "Open Trip",
+        isBikeBus: false,
+        BikeBusGroupId: "",
+        routeType: "openTrip",
+        duration: duration,
+        // set a tripId field to the openTripId
+        tripId: openTripId,
+        eventId: openTripEventId,
+        userId: user.uid,
+        travelMode: "BICYCLING",
+        routeCreator: "/users/" + user.uid,
+        routeLeader: "/users/" + user.uid,
+        // get the actual path coordinates that the getDirections function returns
+        pathCoordinates: pathCoordinates,
+        pathCoordinatesTrip: [''],
+      })
+        .then((docRouteRef) => {
+          console.log("Document written with ID: ", docRouteRef.id);
+          // set the docRef.id to a new const so that we can use it throughout the rest of the code
+          const openTripRouteId = docRouteRef.id;
+          setOpenTripRouteId(openTripRouteId);
+          console.log("openTripRouteId: ", openTripRouteId);
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+        });
+      console.log("docRef: ", docRouteRef)
+      return docRouteRef;
+    }
+  };
+
+
   const startOpenTrip = async () => {
     // get the user.uid
     if (user) {
-    // perform uploadAvatar function to get the avatarUrl
-    const avatarUrl = await uploadAvatar(user);
-    
-    setIsActiveEvent(true);
-    checkForAvatar();
+      // perform uploadAvatar function to get the avatarUrl
+      const avatarUrl = await uploadAvatar(user);
+
+      setIsActiveEvent(true);
+      checkForAvatar();
     }
     if (user) {
       try {
@@ -1112,7 +1149,9 @@ const Map: React.FC = () => {
           return;
         }
 
+        const routeDataTrip = await createRoute();
         const pathCoordinates = await getDirections();
+
         const docRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
         await updateUserDocument(user, docRef);
 
@@ -1127,46 +1166,15 @@ const Map: React.FC = () => {
       } catch (error) {
         console.log("Error: ", error);
       }
-      const routesRef = await handleCreateRouteSubmit("openTrip");
-
-      if (routesRef) {
-
-        const route = doc(db, 'routes', routesRef.id);  // get the route document
-
-        await updateDoc(route, {
-          routeName: "Open Trip to " + routeEndName,
-          description: "Open Trip",
-          isBikeBus: false,
-          BikeBusGroupId: "",
-          routeType: "openTrip",
-          duration: duration,
-          // set a tripId field to the openTripId
-          tripId: openTripId,
-          eventId: openTripEventId,
-          userId: user.uid,
-          travelMode: "BICYCLING",
-          routeCreator: "/users/" + user.uid,
-          routeLeader: "/users/" + user.uid,
-          // get the actual path coordinates that the getDirections function returns
-          pathCoordinates: pathCoordinates,
-          pathCoordinatesTrip: [''],
-        })
-          .then((docRef) => {
-            console.log("Document written with ID: ", routesRef.id);
-            // set the docRef.id to a new const so that we can use it throughout the rest of the code
-            const openTripRouteId = routesRef.id;
-            setOpenTripRouteId(openTripRouteId);
-            console.log("openTripRouteId: ", openTripRouteId);
-          })
-          .catch((error) => {
-            console.error("Error adding document: ", error);
-          });
+      const routesRef = await createRouteDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
+      await updateUserDocument(user, routesRef);
+      
 
         setTripActive(true);
         setShowEndOpenTripButton(true);
-      }
+      
     }
-  }
+  };
 
   async function endOpenTrip() {
     try {
@@ -1204,8 +1212,7 @@ const Map: React.FC = () => {
       console.error("Error ending trip:", error);
     }
   }
-
-
+  
   function generateSVG(label: string, avatarUrl: string) {
     const encodedUrl = encodeURIComponent(avatarUrl);
     const svgString = `
@@ -1224,6 +1231,7 @@ const Map: React.FC = () => {
         <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
       </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+  
   }
 
   function generateSVGBikeBus(label: string) {
@@ -1957,7 +1965,7 @@ const Map: React.FC = () => {
                   </IonGrid>
                 </div>
                 <Polyline
-                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  path={pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({ lat: coord.latitude, lng: coord.longitude }))}
                   options={{
                     strokeColor: "#FF0000",
                     strokeOpacity: 1.0,
@@ -2331,7 +2339,7 @@ const Map: React.FC = () => {
                 </div>
 
                 <Polyline
-                  path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                  path={pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({ lat: coord.latitude, lng: coord.longitude }))}
                   options={{
                     strokeColor: "#FF0000",
                     strokeOpacity: 1.0,
@@ -2359,7 +2367,11 @@ const Map: React.FC = () => {
       </IonContent >
     </IonPage >
   );
+
 }
 
 
-export default Map;
+
+
+
+  export default Map;
