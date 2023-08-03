@@ -345,8 +345,9 @@ const App: React.FC = () => {
 
     // Fetch all event documents from their references in parallel
     const eventFetchPromises = fetchedGroups.flatMap((group) =>
-      group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef))
-    );
+    group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
+  );
+  
 
     Promise.all(eventFetchPromises).then((eventSnapshots) => {
       // Extract event data from snapshots

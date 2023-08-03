@@ -1089,17 +1089,14 @@ const Map: React.FC = () => {
       trips: arrayUnion(docRef),
     });
   };
-  // openTrips is any trip that is not a bikebus trip and is not a route that has been created by a user. When the user clicks on the "openTrips" button, we want to show all of the openTrips on the map
-  // when the user clicks on the "openTrips" button, we want to start some documents and update the users' locations in those documents every 5 seconds
+
   const startOpenTrip = async () => {
     // get the user.uid
     if (user) {
     // perform uploadAvatar function to get the avatarUrl
     const avatarUrl = await uploadAvatar(user);
-    console.log("avatarUrl: ", avatarUrl);
     
     setIsActiveEvent(true);
-    //     checkForAvatar(); perform that function to check for the avatar
     checkForAvatar();
     }
     if (user) {
@@ -1115,24 +1112,14 @@ const Map: React.FC = () => {
           return;
         }
 
-
-        // now let's ensure that the function getDirections will work by confirming with the console.log that the selectedStartLocation and the selectedEndLocation are not null
-        console.log("selectedStartLocation: ", selectedStartLocation);
-        console.log("selectedEndLocation: ", selectedEndLocation);
-
         const pathCoordinates = await getDirections();
         const docRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
         await updateUserDocument(user, docRef);
-        // get the actual path coordinates that the getDirections function returns based on teh selected start location and the selected end location
-        // getDirections();
-        // we need to get the start location from the selected start location and the end location from the selected end location and get the pathCoordinates from the getDirections function
-        // get the user's current location from this page. 
+
         if (openTripLeaderLocation) {
           // your Firestore operations here
-          console.log("openTripLeaderLocation: ", openTripLeaderLocation);
           // perform the createTripDocument function to create a new trip document in the trip document collection "trips"
           const tripDocRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-          console.log("tripDocRef: ", tripDocRef);
         } else {
           console.log("user is not logged in");
           setShowLoginModal(true);
@@ -1140,11 +1127,6 @@ const Map: React.FC = () => {
       } catch (error) {
         console.log("Error: ", error);
       }
-      // create a route document based on the createRoute function - we want to show the planned route on the map when the toggle is selected
-      // create a new route document in the route document collection "routes" with the following fields: routeName: "Open Trip", description: "Open Trip", isBikeBus: false, BikeBusGroupId: "", startPoint: userLocation, endPoint: userLocation, routeType: "openTrip", duration: null, accountType: "openTrip", travelMode: "BICYCLING", routeCreator: user.uid, routeLeader: user.uid, pathCoordinates: []
-
-      // let's re-use handleCreateRouteSubmit to create the route document and return the routesRef (the document id of the route document that was just created) and pass routeType as "openTrip"
-
       const routesRef = await handleCreateRouteSubmit("openTrip");
 
       if (routesRef) {
@@ -1152,12 +1134,12 @@ const Map: React.FC = () => {
         const route = doc(db, 'routes', routesRef.id);  // get the route document
 
         await updateDoc(route, {
-          routeName: "Open Trip to " + endPointAdress,
+          routeName: "Open Trip to " + routeEndName,
           description: "Open Trip",
           isBikeBus: false,
           BikeBusGroupId: "",
           routeType: "openTrip",
-          duration: null,
+          duration: duration,
           // set a tripId field to the openTripId
           tripId: openTripId,
           eventId: openTripEventId,
@@ -1238,12 +1220,11 @@ const Map: React.FC = () => {
           </filter>
         </defs>
         <image href="${encodedUrl}" x="0" y="0" height="100" width="100"/>
-        <circle cx="50" cy="50" r="40" fill="#ffd800" filter="url(#glow)"/>
+        <circle cx="50" cy="50" r="40" fill="#c3ecb2" filter="url(#glow)"/>
         <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
       </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
-
 
   function generateSVGBikeBus(label: string) {
     const svgString = `
