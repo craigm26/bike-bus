@@ -291,12 +291,8 @@ const Map: React.FC = () => {
             event.push(eventData);
           });
           setOpenTrips(event);
-          console.log("openTrips: ", event);
           // set the isActiveEvent to true if the user is the leader of an open trip and the status is active
           const openTripLeaderCheck = event.find((trip) => trip.tripLeader === user.uid);
-          console.log("isActiveEvent: ", isActiveEvent);
-          console.log("openTripLeaderCheck: ", openTripLeaderCheck);
-          setOpenTripId(openTripLeaderCheck.id);
           if (openTripLeaderCheck && openTripLeaderCheck.tripLeader === user.uid) {
             // set the value of the openTripId to the id of the open trip
             setOpenTripId(openTripLeaderCheck.id);
@@ -405,29 +401,38 @@ const Map: React.FC = () => {
   useEffect(() => {
     if (openTripsEnabled) {
       const getOpenTrips = async () => {
-        const tripsRef = collection(db, "event");
+        const tripsRef = query(
+          collection(db, "event"),
+          where('eventType', '==', 'openTrip'),
+          where('status', '==', 'active')
+        );
         const querySnapshot = await getDocs(tripsRef);
 
         const trips: any[] = [];
         querySnapshot.forEach((doc) => {
-          const tripData = doc.data();
+          const tripData = { id: doc.id, ...doc.data() };  // include the document ID
           trips.push(tripData);
         });
-        const openTrips = trips.filter((trip) => trip.tripType === "openTrip" && trip.status === "active");
 
-        setOpenTrips(openTrips);
+        // set the isActiveEvent to true if the user is the leader of an open trip and the status is active
+        //const openTripLeaderCheck = trips.find((trip) => trip.tripLeader === user.uid);
+        //if (openTripLeaderCheck && openTripLeaderCheck.tripLeader === user.uid) {
+        // set the value of the openTripId to the id of the open trip
+        //setOpenTripId(openTripLeaderCheck.id);
+        //console.log("openTripId: ", openTripLeaderCheck.id);
+        //setShowEndOpenTripButton(true);
+        //setIsActiveEvent(true);
+        //setTripActive(true);
+        //setOpenTripEventId(openTripLeaderCheck.eventId);
+        //}
 
-        // let's confirm the data by logging the openTrips array to the console - specifically looking for marker data and polyline data
-        console.log("openTrips: ", openTrips);
-
-        // now let's add the markers to the map
+        setOpenTrips(trips);
 
         if (user) {
           const uid = user.uid;
           const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
           const snapshot = await get(openTripLeaderLocationRef);
           const openTripLeaderLocation = snapshot.exists() ? snapshot.val() : null;
-
 
           const openTripMarkers = openTrips.map((trip) => {
             const startIcon = {
@@ -948,13 +953,23 @@ const Map: React.FC = () => {
   };
 
   const handleOpenTripRouteClick = (trip: any) => {
+    const contentString = `
+      <div>
+        <h2>Start of ${trip.routeName}</h2>
+        <p>Additional event details here...</p>
+        <button onclick="window.handleJoinClick(${trip.id})">Join</button>
+        <button onclick="window.handleFocus(${trip.id})">Focus on Leader</button>
+      </div>
+    `;
+  
     setInfoWindowOpenTrip({
       isOpen: true,
       position: { lat: trip.startPoint.lat, lng: trip.startPoint.lng },
       trip: trip,
-      content: `Start of ${trip.routeName}`,
+      content: contentString,
     });
   };
+  
 
   const handleCloseOpenTripClick = () => {
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
@@ -1009,17 +1024,8 @@ const Map: React.FC = () => {
         .catch((error) => {
           console.error("Error adding document: ", error);
         });
-      console.log("docRef: ", docRefPromise)
-
       return docRefPromise;
     }
-  };
-
-  const updateUserDocument = async (user: { uid: string; }, docRef: unknown) => {
-    const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, {
-      trips: arrayUnion(docRef),
-    });
   };
 
   const createRouteDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
@@ -1085,14 +1091,13 @@ const Map: React.FC = () => {
 
         // use the createTripDocument function to create a new trip document in the trip document collection "trips"
         const docTripRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-        await updateUserDocument(user, docTripRef);
+        console.log("docTripRef: ", docTripRef);
 
       } catch (error) {
         console.log("Error: ", error);
       }
       const routesRef = await createRouteDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-
-      await updateUserDocument(user, routesRef);
+      console.log("routesRef: ", routesRef);
       setTripActive(true);
       setShowEndOpenTripButton(true);
 
@@ -1125,15 +1130,16 @@ const Map: React.FC = () => {
       setIsActiveEvent(false);
       setTripActive(false);
       setShowEndOpenTripButton(false);
+      console.log("openTripId: ", openTripId)
       // take the user to the eventsummary page - use the event doc id to get the event doc and then pass the event doc to the eventsummary page
-      history.push(`/eventsummary/${openTripId}`); // Change this line to use openTripId
+      history.push({
+        pathname: `/EventSummary/${openTripId}`,
+        state: { id: openTripId }
+      });      
     } catch (error) {
       console.error("Error ending trip:", error);
     }
   }
-
-
-
 
   function generateSVG(label: string, avatarUrl: string) {
     const encodedUrl = encodeURIComponent(avatarUrl);
@@ -1765,7 +1771,7 @@ const Map: React.FC = () => {
                       key={`${keyPrefix}-border`}
                       path={trip.pathCoordinates}
                       options={{
-                        strokeColor: "#9e9e9e", // Border color
+                        strokeColor: "#80ff00", // Border color
                         strokeOpacity: .7,
                         strokeWeight: 3, // Border thickness
                         clickable: true,
@@ -1774,10 +1780,10 @@ const Map: React.FC = () => {
                             icon: {
                               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                               // make the stroke color a nice complementary green color to #ffd800
-                              strokeColor: "#9e9e9e", // Main line color
+                              strokeColor: "#80ff00", // Main line color
                               strokeOpacity: .7,
                               strokeWeight: 3,
-                              fillColor: "#9e9e9e",
+                              fillColor: "#80ff00",
                               fillOpacity: .7,
                               scale: 3,
                             },
