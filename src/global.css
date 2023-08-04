@@ -236,7 +236,16 @@
 }
 
 
-
+.end-open-trip {
+  position: fixed;
+  width: max-content;
+  z-index: 1000;
+  background-color: transparent;
+  border: 1px solid transparent;
+  width: 155px;
+  outline: none;
+  left: 0;
+}
 
 .my-location-container {
   position: fixed;
@@ -374,7 +383,7 @@
 
 .event-map {
   position: absolute;
-  height: 640px;
+  height: 440px;
   width: 100%;
   overflow: hidden;
 }

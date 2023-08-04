@@ -40,7 +40,8 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { getStorage, ref as storageRef, getDownloadURL, uploadString, uploadBytesResumable, getBytes } from 'firebase/storage';
+import { getStorage, ref as storageRef, getDownloadURL, uploadString } from 'firebase/storage';
+import { tr } from "date-fns/locale";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -169,63 +170,9 @@ const Map: React.FC = () => {
     libraries,
   });
 
-
-  const uploadAvatar = useCallback(async (user: { uid: any; }) => {
-    const storage = getStorage();
-
-    // Get URL of base avatar
-    const baseAvatarRef = storageRef(storage, `avatars/${user.uid}`);
-    const baseAvatarUrl = await getDownloadURL(baseAvatarRef);
-
-    // Download file from old location
-    const data = await getBytes(baseAvatarRef);
-
-    const destRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
-
-    // Upload file to new location
-    await uploadBytesResumable(destRef, data);
-
-    // Generate new SVG avatar
-    const avatarElement = generateSVG("Open Trip Leader", baseAvatarUrl);
-
-    const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
-    await uploadString(avatarRef, avatarElement, 'data_url', { contentType: "image/svg+xml" });
-
-    const avatarUrl = await getDownloadURL(avatarRef);
-    return avatarUrl;
-  }, []);
-
-
-
-  // check to see if the user has a open trip leader avatar in the storage document collection "avatars" sub folder "Open Trip Leaders"
-  const checkForAvatar = useCallback(async () => {
-    if (user) {
-      const storage = getStorage();
-      const avatarRef = storageRef(storage, `avatars/opentripleaders/${user.uid}`);
-      console.log("avatarRef: ", avatarRef);
-
-      let avatarUrl;
-      try {
-        avatarUrl = await getDownloadURL(avatarRef);
-        console.log("avatarUrl: ", avatarUrl);
-      } catch (error) {
-        console.log("Avatar doesn't exist, generating a new one...");
-      }
-
-      if (!avatarUrl) {
-        // if the user does not have an avatar, then we need to create one and upload it to the storage document collection "avatars" sub folder "Open Trip Leaders"
-        generateSVG("Open Trip Leader", user.uid);
-        avatarUrl = await uploadAvatar(user);
-        console.log("avatarUrl: ", avatarUrl);
-      }
-    }
-  }, [uploadAvatar, user]);
-
-
   const getLocation = () => {
     setGetLocationClicked(true);
     setShowMap(true);
-    setIsActiveEvent(false);
     setMapCenter(userLocation);
     watchLocation();
     onPlaceChangedStart();
@@ -335,32 +282,29 @@ const Map: React.FC = () => {
           }
         }
       });
-      // look in the userRef document in the database for the user's trips array
-      const tripsRef = collection(db, "trips");
-      const queryObj2 = query(
-        tripsRef,
-        where("tripType", "==", "openTrip"),
-        where("status", "==", "active"),
-      );
+      const queryObj2 = query(collection(db, 'event'), where('eventType', '==', 'openTrip'), where('status', '==', 'active'));
       getDocs(queryObj2)
         .then((querySnapshot) => {
-          const trips: any[] = [];
+          const event: any[] = [];
           querySnapshot.forEach((doc) => {
-            const tripData = doc.data();
-            trips.push(tripData);
+            const eventData = { id: doc.id, ...doc.data() };  // include the document ID
+            event.push(eventData);
           });
-          setOpenTrips(trips);
-          console.log("openTrips: ", trips);
-          // set the isActiveEvent to true if the user is the leader of an open trip
-          const openTrip = trips.find((trip) => trip.tripLeader === "/users/" + user.uid);
-          if (openTrip) {
+          setOpenTrips(event);
+          console.log("openTrips: ", event);
+          // set the isActiveEvent to true if the user is the leader of an open trip and the status is active
+          const openTripLeaderCheck = event.find((trip) => trip.tripLeader === user.uid);
+          console.log("isActiveEvent: ", isActiveEvent);
+          console.log("openTripLeaderCheck: ", openTripLeaderCheck);
+          setOpenTripId(openTripLeaderCheck.id);
+          if (openTripLeaderCheck && openTripLeaderCheck.tripLeader === user.uid) {
+            // set the value of the openTripId to the id of the open trip
+            setOpenTripId(openTripLeaderCheck.id);
+            console.log("openTripId: ", openTripLeaderCheck.id);
+            setShowEndOpenTripButton(true);
             setIsActiveEvent(true);
             setTripActive(true);
-            setTripActive(true);
-            setOpenTripId(openTrip.id);
-            setOpenTripEventId(openTrip.eventId);
-            // when the page loads, the conditional render of isActiveEvent should be true and the user should see the "end event" button
-            setShowEndOpenTripButton(true);
+            setOpenTripEventId(openTripLeaderCheck.eventId);
           }
         })
         .catch((error) => {
@@ -400,8 +344,8 @@ const Map: React.FC = () => {
             });
 
 
-            const eventRef = doc(db, "event", openTripEventId);
-            updateDoc(eventRef, {
+            const eventDocRef = doc(db, "event", openTripEventId);
+            updateDoc(eventDocRef, {
               userLocation: userLocation,
             });
             // do the same pathCoordinates update for the event
@@ -461,7 +405,7 @@ const Map: React.FC = () => {
   useEffect(() => {
     if (openTripsEnabled) {
       const getOpenTrips = async () => {
-        const tripsRef = collection(db, "trips");
+        const tripsRef = collection(db, "event");
         const querySnapshot = await getDocs(tripsRef);
 
         const trips: any[] = [];
@@ -484,38 +428,28 @@ const Map: React.FC = () => {
           const snapshot = await get(openTripLeaderLocationRef);
           const openTripLeaderLocation = snapshot.exists() ? snapshot.val() : null;
 
-          // generate a new avatar for the trip leader with the uid of the trip leader and the function getAvatarUrl
-          const storage = getStorage();
-
-          // Create a reference to the avatar image using the storageRef function
-          const avatarRef = storageRef(storage, `avatars/${uid}`);
-          const avatarUrl = await getDownloadURL(avatarRef);
-
-          const openTripLeaderAvatarRef = storageRef(storage, `avatars/opentripleaders/${uid}`);
-          const openTripLeaderAvatarUrl = await getDownloadURL(openTripLeaderAvatarRef);
-
 
           const openTripMarkers = openTrips.map((trip) => {
             const startIcon = {
               url: "/assets/markers/MarkerS.svg",
-              scaledSize: new google.maps.Size(50, 50),
+              scaledSize: new google.maps.Size(26, 26),
             };
 
             const endIcon = {
               url: "/assets/markers/MarkerE.svg",
-              scaledSize: new google.maps.Size(50, 50),
+              scaledSize: new google.maps.Size(26, 26),
             };
 
             const userIcon = {
               // this should be the avatarElement
-              url: avatarUrl,
-              scaledSize: new google.maps.Size(50, 50),
+              url: "/assets/markers/Blue.svg",
+              scaledSize: new google.maps.Size(26, 26),
             };
 
             const userIconLeader = {
               // this should be the avatarElement of the trip leader
-              url: openTripLeaderAvatarUrl,
-              scaledSize: new google.maps.Size(50, 50),
+              url: "/assets/markers/Green.svg",
+              scaledSize: new google.maps.Size(26, 26),
             };
 
             const openTripMarker = new google.maps.Marker({
@@ -537,6 +471,7 @@ const Map: React.FC = () => {
               position: trip.userLocation,
               map: mapRef.current,
               title: "Your Location",
+              // use the default userLocation icon for the user icon
               icon: userIcon,
             });
 
@@ -585,6 +520,8 @@ const Map: React.FC = () => {
   };
 
   const onPlaceChangedStart = () => {
+    console.log("onPlaceChangedStart called");
+
     if (autocompleteStart !== null) {
       const places = autocompleteStart.getPlaces();
       if (places && places.length > 0) {
@@ -609,17 +546,15 @@ const Map: React.FC = () => {
         }
       }
     }
-    setIsStartLocationSelected(true);
   };
 
   const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
     setAutocompleteStart(ref);
-    onPlaceChangedStart();
-    // need to set startPointAddress to the address of the selected start point
-    // need to set startPointName to the name of the selected start point
+    ref.addListener("places_changed", onPlaceChangedStart);
 
     setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
   };
+
 
   function getSelectedStartLocation() {
     return selectedStartLocation;
@@ -734,6 +669,7 @@ const Map: React.FC = () => {
               const epsilon = 0.0001;
               const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
               resolve(simplifiedPathPoints);
+              setPathCoordinates(simplifiedPathPoints);
             } else {
               console.error("Directions request failed due to " + status);
               reject(status);
@@ -776,14 +712,18 @@ const Map: React.FC = () => {
     });
   };
 
-
   const getStartPointAdress = async () => {
     if (startPoint) {
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${startPoint.lat},${startPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
       const data = await response.json();
       setSelectedStartLocationAddress(data.results[0].formatted_address);
+
+      console.log("getStartPointAdress called");
+      console.log("selectedStartLocation: ", startPoint);
+      console.log("selectedStartLocationAddress: ", data.results[0].formatted_address);
     }
   };
+
 
   const getEndPointAdress = async () => {
     if (endPoint) {
@@ -794,67 +734,83 @@ const Map: React.FC = () => {
   };
 
   const createRoute = () => {
-    if (selectedStartLocation && selectedEndLocation) {
-      const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer();
-      directionsRenderer.setMap(mapRef.current);
-      directionsService.route(
-        {
-          origin: selectedStartLocation,
-          destination: selectedEndLocation,
-          travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-        },
-        (response, status) => {
-          if (status === "OK") {
-            directionsRenderer.setDirections(response);
-            const route = response?.routes[0];
-            const routeData = {
-              distance: route?.legs[0]?.distance?.value,
-              duration: route?.legs[0]?.duration?.value,
-              arrivalTime: new Date(),
-              travelMode: travelModeSelector,
-              origin: {
-                lat: route?.legs[0]?.start_location?.lat(),
-                lng: route?.legs[0]?.start_location?.lng()
-              },
-              destination: {
-                lat: route?.legs[0]?.end_location?.lat(),
-                lng: route?.legs[0]?.end_location?.lng()
-              },
-              startPointAddress: routeStartFormattedAddress,
-              endPointAddress: routeEndFormattedAddress,
-              startPoint: selectedStartLocation,
-              endPoint: selectedEndLocation,
-              routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
-              startPointName: routeStartName,
-              startPointStreetName: routeStartStreetName,
-              routeEndStreetName: routeEndStreetName,
-              endPointName: routeEndName,
-              routeDescription: description,
-              pathCoordinates: pathCoordinates,
-              isBikeBus: false,
-            };
-            console.log("Route Data: ", routeData);
-            console.log("routeName: ", routeStartName + " to " + routeEndName);
-            handleCreateRouteSubmit();
-          } else {
-            console.error("Directions request failed due to " + status);
-          }
-        }
-      );
-    }
-  };
-
-
-  const handleCreateRouteSubmit = async () => {
-    getEndPointAdress();
-    getStartPointAdress();
     try {
+      getEndPointAdress();
+      getStartPointAdress();
 
       const convertedPathCoordinates = pathCoordinates.map(coord => ({
         lat: coord.latitude,
         lng: coord.longitude,
       }));
+      console.log("convertedPathCoordinates: ", convertedPathCoordinates);
+      if (selectedStartLocation && selectedEndLocation) {
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(mapRef.current);
+        directionsService.route(
+          {
+            origin: selectedStartLocation,
+            destination: selectedEndLocation,
+            travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
+          },
+          (response, status) => {
+            if (status === "OK") {
+              directionsRenderer.setDirections(response);
+              const route = response?.routes[0];
+              const routeData = {
+                distance: route?.legs[0]?.distance?.value,
+                duration: route?.legs[0]?.duration?.value,
+                arrivalTime: new Date(),
+                travelMode: travelModeSelector,
+                origin: {
+                  lat: route?.legs[0]?.start_location?.lat(),
+                  lng: route?.legs[0]?.start_location?.lng()
+                },
+                destination: {
+                  lat: route?.legs[0]?.end_location?.lat(),
+                  lng: route?.legs[0]?.end_location?.lng()
+                },
+                startPointAddress: routeStartFormattedAddress,
+                endPointAddress: routeEndFormattedAddress,
+                startPoint: selectedStartLocation,
+                endPoint: selectedEndLocation,
+                routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
+                startPointName: routeStartName,
+                startPointStreetName: routeStartStreetName,
+                routeEndStreetName: routeEndStreetName,
+                endPointName: routeEndName,
+                routeDescription: description,
+                pathCoordinates: convertedPathCoordinates,
+                isBikeBus: false,
+              };
+              console.log("Route Data: ", routeData);
+              console.log("routeName: ", routeStartName + " to " + routeEndName);
+              handleCreateRouteSubmit();
+            } else {
+              console.error("Directions request failed due to " + status);
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.log("Error: ", error);
+      console.log("createRoute called");
+      console.log("selectedStartLocation: ", selectedStartLocation);
+    }
+  };
+
+
+  const handleCreateRouteSubmit = async (routeType = "") => {
+    try {
+      getEndPointAdress();
+      getStartPointAdress();
+
+      const convertedPathCoordinates = pathCoordinates.map(coord => ({
+        lat: coord.latitude,
+        lng: coord.longitude,
+      }));
+      console.log("convertedPathCoordinates: ", convertedPathCoordinates);
+      console.log("routeType: ", routeType);
 
       const routeDocRef = await addDoc(collection(db, 'routes'), {
         routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
@@ -877,11 +833,13 @@ const Map: React.FC = () => {
         distance: distance,
       });
       console.log("routeName: ", routeStartName + " to " + routeEndName);
+      console.log("routeDocRef: ", routeDocRef);
       // if this is not part of the open trip feature, then redirect to the view route page
       // if route is not "Open Trip", then redirect to the view route page
       // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
-      history.push(`/viewroute/${routeDocRef.id}`);
-
+      if (routeType !== "openTrip") {
+        history.push(`/viewroute/${routeDocRef.id}`);
+      }
       return routeDocRef;
     } catch (error) {
       console.log("Error: ", error);
@@ -1011,75 +969,49 @@ const Map: React.FC = () => {
   // we need to create a new document in the firestore storage document collection "avatars" sub folder "Open Trip Leaders"
 
   const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
-    console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-    console.log("selectedStartLocation: ", selectedStartLocation);
-    console.log("selectedEndLocation: ", selectedEndLocation);
-    console.log("pathCoordinates: ", pathCoordinates);
+
+    // get the convertedPathCoordinates
+    const convertedPathCoordinates = pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({
+      lat: coord.latitude,
+      lng: coord.longitude,
+    }));
 
 
     if (user) {
-      const tripsRef = collection(db, "trips");
-      const docRef = await addDoc(tripsRef, {
-        tripType: "openTrip",
+      const eventTripRef = collection(db, "event");
+      const docRefPromise = await addDoc(eventTripRef, {
+        eventType: "openTrip",
         status: "active",
         userLocation: openTripLeaderLocation,
         startLocation: selectedStartLocation,
         endLocation: endPointAdress,
-        // start in the firestore timestamp format
         start: new Date(),
         startTime: new Date(),
         startTimestamp: new Date(),
         endTime: null,
-        tripLeader: '/users/' + user.uid,
-        tripParticipants: ['/users/' + user.uid],
-        pathCoordinates: pathCoordinates,
+        tripLeader: user.uid,
+        tripParticipants: [user.uid],
+        pathCoordinates: convertedPathCoordinates,
         pathCoordinatesTrip: [''],
       })
-        .then((docRef) => {
-          console.log("Trip Document written with ID: ", docRef.id);
+        .then((docRefPromise) => {
+          console.log("Trip Document written with ID: ", docRefPromise.id);
           // set docRef.id to a new const so that we can use it throughout the rest of the code
-          const openTripId = docRef.id;
+          const openTripId = docRefPromise.id;
           setOpenTripId(openTripId);
           console.log("openTripId: ", openTripId);
           // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
           const userRef = doc(db, "users", user.uid);
           updateDoc(userRef, {
-            trips: arrayUnion(docRef),
+            trips: arrayUnion(docRefPromise),
           });
-          // let's create a new event document in the event document collection "event" with the following fields: eventType: "openTrip", status: "active", eventLocation: userLocation, startTime: new Date(), endTime: null, eventLeader: user.uid, eventParticipants: [user.uid]
-          const eventRef = collection(db, "event");
-          addDoc(eventRef, {
-            eventType: "openTrip",
-            status: "active",
-            startLocation: selectedStartLocation,
-            endLocation: endPointAdress,
-            start: new Date(),
-            startTime: new Date(),
-            startTimestamp: new Date(),
-            endTime: null,
-            eventLeader: '/users/' + user.uid,
-            eventParticipants: ['/users/' + user.uid],
-            pathCoordinates: pathCoordinates,
-            pathCoordinatesTrip: pathCoordinates,
-
-          })
-            .then((docRef) => {
-              console.log("Document written with ID: ", docRef.id);
-              // set the docRef.id to a new const so that we can use it throughout the rest of the code
-              const openTripEventId = docRef.id;
-              setOpenTripEventId(openTripEventId);
-              console.log("openTripEventId: ", openTripEventId);
-            })
-            .catch((error) => {
-              console.error("Error adding document: ", error);
-            });
         })
-
         .catch((error) => {
           console.error("Error adding document: ", error);
         });
-      console.log("docRef: ", docRef)
-      return docRef;
+      console.log("docRef: ", docRefPromise)
+
+      return docRefPromise;
     }
   };
 
@@ -1092,14 +1024,23 @@ const Map: React.FC = () => {
 
   const createRouteDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
     if (user) {
+      // get the convertedPathCoordinates
+      const convertedPathCoordinates = pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({
+        lat: coord.latitude,
+        lng: coord.longitude,
+      }));
+      console.log("routeType: ", routeType);
       const routesRef = collection(db, "routes");
       const docRouteRef = await addDoc(routesRef, {
         routeName: "Open Trip to " + routeEndName,
         description: "Open Trip",
+        startPoint: selectedStartLocation,
+        endPoint: selectedEndLocation,
+        distance: distance,
+        duration: duration,
         isBikeBus: false,
         BikeBusGroupId: "",
         routeType: "openTrip",
-        duration: duration,
         // set a tripId field to the openTripId
         tripId: openTripId,
         eventId: openTripEventId,
@@ -1108,7 +1049,7 @@ const Map: React.FC = () => {
         routeCreator: "/users/" + user.uid,
         routeLeader: "/users/" + user.uid,
         // get the actual path coordinates that the getDirections function returns
-        pathCoordinates: pathCoordinates,
+        pathCoordinates: convertedPathCoordinates,
         pathCoordinatesTrip: [''],
       })
         .then((docRouteRef) => {
@@ -1126,93 +1067,74 @@ const Map: React.FC = () => {
     }
   };
 
-
   const startOpenTrip = async () => {
     // get the user.uid
-    if (user) {
-      // perform uploadAvatar function to get the avatarUrl
-      const avatarUrl = await uploadAvatar(user);
-
-      setIsActiveEvent(true);
-      checkForAvatar();
-    }
     if (user) {
       try {
         const uid = user.uid;
 
         // Check for active trips
-        const activeTripsRef = collection(db, "trips");
+        const activeTripsRef = collection(db, "event");
         const q = query(activeTripsRef, where("tripLeader", "==", `/users/${uid}`), where("status", "==", "active"));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
           console.error("An active trip already exists for this user.");
           return;
         }
+        setIsActiveEvent(true);
 
-        const routeDataTrip = await createRoute();
-        const pathCoordinates = await getDirections();
+        // use the createTripDocument function to create a new trip document in the trip document collection "trips"
+        const docTripRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
+        await updateUserDocument(user, docTripRef);
 
-        const docRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-        await updateUserDocument(user, docRef);
-
-        if (openTripLeaderLocation) {
-          // your Firestore operations here
-          // perform the createTripDocument function to create a new trip document in the trip document collection "trips"
-          const tripDocRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-        } else {
-          console.log("user is not logged in");
-          setShowLoginModal(true);
-        }
       } catch (error) {
         console.log("Error: ", error);
       }
       const routesRef = await createRouteDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-      await updateUserDocument(user, routesRef);
-      
 
-        setTripActive(true);
-        setShowEndOpenTripButton(true);
-      
+      await updateUserDocument(user, routesRef);
+      setTripActive(true);
+      setShowEndOpenTripButton(true);
+
     }
   };
 
   async function endOpenTrip() {
     try {
-      if (user && openTripId && openTripEventId) {
+      console.log(`user: ${user}, openTripId: ${openTripId}`);
+      if (user && openTripId) {
         const uid = user.uid;
-        const tripRef = doc(db, "trips", openTripId);
-        const eventRef = doc(db, "event", openTripEventId);
-        const routeRef = doc(db, "routes", openTripRouteId);
+        const eventDocRef = doc(db, "event", openTripId); // Change this line to use openTripId
+        console.log(`Updating document with reference: ${eventDocRef.path}`);
+
         console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-        console.log("openTripId: ", openTripId);
-        console.log("openTripEventId: ", openTripEventId);
+        console.log("openTripId: ", openTripId); // Log openTripId
 
-        if (openTripLeaderLocation) {  // Check if userLocation is not undefined before using it
-          await updateDoc(tripRef, {
+        if (userLocation) {
+          const updateData = {
             status: "inactive",
-            endLocation: openTripLeaderLocation,
+            endLocation: userLocation,
             endTime: new Date(),
-          });
+          };
+          console.log("Update data: ", updateData);
 
-          await updateDoc(eventRef, {
-            status: "inactive",
-            endLocation: openTripLeaderLocation,
-            endTime: new Date(),
-          });
-
-          await updateDoc(routeRef, {
-            endLocation: openTripLeaderLocation,
-          });
+          const eventUpdateResult = await updateDoc(eventDocRef, updateData); // Update the document in the event collection
+          console.log("Event Update Result: ", eventUpdateResult);
         }
       }
       setIsActiveEvent(false);
       setTripActive(false);
       setShowEndOpenTripButton(false);
+      // take the user to the eventsummary page - use the event doc id to get the event doc and then pass the event doc to the eventsummary page
+      history.push(`/eventsummary/${openTripId}`); // Change this line to use openTripId
     } catch (error) {
       console.error("Error ending trip:", error);
     }
   }
-  
+
+
+
+
   function generateSVG(label: string, avatarUrl: string) {
     const encodedUrl = encodeURIComponent(avatarUrl);
     const svgString = `
@@ -1231,7 +1153,7 @@ const Map: React.FC = () => {
         <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
       </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
-  
+
   }
 
   function generateSVGBikeBus(label: string) {
@@ -1311,1058 +1233,678 @@ const Map: React.FC = () => {
           </>
         )
         }
-        {
-          showMap && !isActiveEvent && (
-            <IonRow className="map-base">
-              <GoogleMap
-                onLoad={(map) => {
-                  mapRef.current = map;
-                }}
-                mapContainerStyle={{
-                  width: "100%",
-                  height: "100%",
-                }}
-                center={mapCenter}
-                zoom={15}
-                options={{
-                  disableDefaultUI: true,
-                  zoomControl: false,
-                  mapTypeControl: true,
-                  disableDoubleClickZoom: true,
-                  maxZoom: 18,
-                  styles: [
-                    {
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#bdbdbd"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#eeeeee"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#e5e5e5"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "color": "#ffd800"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.stroke",
-                      "stylers": [
-                        {
-                          "color": "#ffd800"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 3.5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#ffffff"
-                        },
-                        {
-                          "visibility": "simplified"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.arterial",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#dadada"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "transit",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "saturation": -50
-                        },
-                        {
-                          "lightness": 50
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#c9c9c9"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    }
-                  ],
-                }}
-              >
-                <IonGrid className="search-container">
-                  <IonRow>
-                    <IonCol>
-                      <StandaloneSearchBox
-                        onLoad={onLoadStartingLocation}
-                        onPlacesChanged={onPlaceChangedStart}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
-                          <input
-                            type="text"
-                            autoComplete="on"
-                            placeholder={userLocationAddress}
-                            style={{
-                              width: "350px",
-                              height: "40px",
-                            }}
-                          />
-                        </div>
-                      </StandaloneSearchBox>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <StandaloneSearchBox
-                        onLoad={onLoadDestinationValue}
-                        onPlacesChanged={onPlaceChangedDestination}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
-                          <input
-                            type="text"
-                            autoComplete="on"
-                            placeholder="Enter a Destination"
-                            style={{
-                              width: "350px",
-                              height: "40px",
-                            }}
-                          />
-                        </div>
-                      </StandaloneSearchBox>
-                    </IonCol>
-                  </IonRow>
-                  {showGetDirectionsButton &&
-                    <IonRow>
-                      <IonCol>
-                        <IonLabel>Travel Mode:</IonLabel>
-                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                          setTravelMode(e.detail.value);
-                          setTravelModeSelector(e.detail.value);
-                        }}>
-                          <IonSegmentButton value="WALKING">
-                            <IonIcon icon={walkOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="BICYCLING">
-                            <IonIcon icon={bicycleOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="DRIVING">
-                            <IonIcon icon={carOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="TRANSIT">
-                            <IonIcon icon={busOutline} />
-                          </IonSegmentButton>
-                        </IonSegment>
-                      </IonCol>
-                    </IonRow>
-                  }
-                  <IonRow>
-                    <IonCol>
-                      {showGetDirectionsButton && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                    </IonCol>
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                        <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+        {showMap && (
+          <IonRow className="map-base">
+            <GoogleMap
+              onLoad={(map) => {
+                mapRef.current = map;
+              }}
+              mapContainerStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+              center={mapCenter}
+              zoom={15}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                mapTypeControl: false,
+                disableDoubleClickZoom: true,
+                maxZoom: 18,
+                styles: [
+                  {
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
                       }
-                    </IonCol>
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && !isAnonymous && (
-                        <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
-                      )}
-                    </IonCol>
-                  </IonRow>
+                    ]
+                  },
+                  {
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#bdbdbd"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#eeeeee"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#e5e5e5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.stroke",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 3.5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#ffffff"
+                      },
+                      {
+                        "visibility": "simplified"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.arterial",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#dadada"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "transit",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "saturation": -50
+                      },
+                      {
+                        "lightness": 50
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#c9c9c9"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  }
+                ],
+              }}
+            >
+              <IonGrid className="search-container">
+                <IonRow>
+                  <IonCol>
+                    <StandaloneSearchBox
+                      onLoad={onLoadStartingLocation}
+                      onPlacesChanged={onPlaceChangedStart}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
+                        <input
+                          type="text"
+                          autoComplete="on"
+                          placeholder={userLocationAddress}
+                          style={{
+                            width: "350px",
+                            height: "40px",
+                          }}
+                        />
+                      </div>
+                    </StandaloneSearchBox>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol>
+                    <StandaloneSearchBox
+                      onLoad={onLoadDestinationValue}
+                      onPlacesChanged={onPlaceChangedDestination}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
+                        <input
+                          type="text"
+                          autoComplete="on"
+                          placeholder="Enter a Destination"
+                          style={{
+                            width: "350px",
+                            height: "40px",
+                          }}
+                        />
+                      </div>
+                    </StandaloneSearchBox>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  {isActiveEvent && (
+                    <IonButton onClick={endOpenTrip}>End Open Trip</IonButton>
+                  )}
+                </IonRow>
+                {showGetDirectionsButton && !isActiveEvent && (
                   <IonRow>
                     <IonCol>
-                      {showGetDirectionsButton && directionsFetched && (
-                        <>
-                          <IonRow>
-                            <IonLabel>Distance: {distance} miles </IonLabel>
-                          </IonRow>
-                          <IonRow>
-                            <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                          </IonRow>
-                          <IonRow>
-                            <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                          </IonRow>
-                        </>
-                      )}
+                      <IonLabel>Travel Mode:</IonLabel>
+                      <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                        setTravelMode(e.detail.value);
+                        setTravelModeSelector(e.detail.value);
+                      }}>
+                        <IonSegmentButton value="WALKING">
+                          <IonIcon icon={walkOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="BICYCLING">
+                          <IonIcon icon={bicycleOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="DRIVING">
+                          <IonIcon icon={carOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="TRANSIT">
+                          <IonIcon icon={busOutline} />
+                        </IonSegmentButton>
+                      </IonSegment>
                     </IonCol>
                   </IonRow>
-                </IonGrid>
-                {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
-                  const keyPrefix = route.id || route.routeName;
-                  return (
-                    <div key={`${keyPrefix}`}>
-                      <Polyline
-                        key={`${keyPrefix}-border`}
-                        path={route.pathCoordinates}
-                        options={{
-                          strokeColor: "#000000", // Border color
-                          strokeOpacity: .7,
-                          strokeWeight: 3, // Border thickness
-                          clickable: true,
-                          icons: [
-                            {
-                              icon: {
-                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                strokeColor: "#000000", // Main line color
-                                strokeOpacity: .7,
-                                strokeWeight: 3,
-                                fillColor: "#000000",
-                                fillOpacity: .7,
-                                scale: 3,
-                              },
-                              offset: "100%",
-                              repeat: "100px",
+                )}
+                <IonRow>
+                  <IonCol>
+                    {showGetDirectionsButton && !isActiveEvent && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                      <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                    }
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                      <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                    )}
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && (
+                      <>
+                        <IonRow>
+                          <IonLabel>Distance: {distance} miles </IonLabel>
+                        </IonRow>
+                        <IonRow>
+                          <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                        </IonRow>
+                        <IonRow>
+                          <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                        </IonRow>
+                      </>
+                    )}
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
+              {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
+                const keyPrefix = route.id || route.routeName;
+                return (
+                  <div key={`${keyPrefix}`}>
+                    <Polyline
+                      key={`${keyPrefix}-border`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#000000", // Border color
+                        strokeOpacity: .7,
+                        strokeWeight: 3, // Border thickness
+                        clickable: true,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#000000", // Main line color
+                              strokeOpacity: .7,
+                              strokeWeight: 3,
+                              fillColor: "#000000",
+                              fillOpacity: .7,
+                              scale: 3,
                             },
-                          ],
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                      onClick={() => { handleBikeBusRouteClick(route) }}
+                    />
+                    {infoWindow.isOpen && infoWindow.position && (
+                      <InfoWindow
+                        position={infoWindow.position}
+                        onCloseClick={handleCloseClick}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                      </InfoWindow>
+                    )}
+                    <Polyline
+                      key={`${keyPrefix}-main`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#ffd800", // Main line color
+                        strokeOpacity: 1,
+                        strokeWeight: 2,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#ffd800", // Main line color
+                              strokeOpacity: 1,
+                              strokeWeight: 2,
+                              fillColor: "#ffd800",
+                              fillOpacity: 1,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                    />
+                    {route.startPoint && (
+                      <Marker
+                        key={`${keyPrefix}-start`}
+                        label={`${route.BikeBusName}`}
+                        position={route.startPoint}
+                        icon={{
+                          url: generateSVGBikeBus(route.BikeBusName),
+                          scaledSize: new google.maps.Size(60, 20),
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
-                      {infoWindow.isOpen && infoWindow.position && (
-                        <InfoWindow
-                          position={infoWindow.position}
-                          onCloseClick={handleCloseClick}
-                        >
-                          <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                        </InfoWindow>
-                      )}
-                      <Polyline
-                        key={`${keyPrefix}-main`}
-                        path={route.pathCoordinates}
-                        options={{
-                          strokeColor: "#ffd800", // Main line color
-                          strokeOpacity: 1,
-                          strokeWeight: 2,
-                          icons: [
-                            {
-                              icon: {
-                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                strokeColor: "#ffd800", // Main line color
-                                strokeOpacity: 1,
-                                strokeWeight: 2,
-                                fillColor: "#ffd800",
-                                fillOpacity: 1,
-                                scale: 3,
-                              },
-                              offset: "100%",
-                              repeat: "100px",
-                            },
-                          ],
+                    )}
+                    {route.endPoint && (
+                      <Marker
+                        key={`${keyPrefix}-end`}
+                        label={`${route.BikeBusName}`}
+                        position={route.endPoint}
+                        icon={{
+                          url: generateSVGBikeBus(route.BikeBusName),
+                          scaledSize: new google.maps.Size(60, 20),
                         }}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
                       />
-                      {route.startPoint && (
-                        <Marker
-                          key={`${keyPrefix}-start`}
-                          label={`${route.BikeBusName}`}
-                          position={route.startPoint}
-                          icon={{
-                            url: generateSVGBikeBus(route.BikeBusName),
-                            scaledSize: new google.maps.Size(60, 20),
-                          }}
-                          onClick={() => { handleBikeBusRouteClick(route) }}
-                        />
-                      )}
-                      {route.endPoint && (
-                        <Marker
-                          key={`${keyPrefix}-end`}
-                          label={`${route.BikeBusName}`}
-                          position={route.endPoint}
-                          icon={{
-                            url: generateSVGBikeBus(route.BikeBusName),
-                            scaledSize: new google.maps.Size(60, 20),
-                          }}
-                          onClick={() => { handleBikeBusRouteClick(route) }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-                {openTripsEnabled && openTrips.map((trip: any) => {
-                  const keyPrefix = trip.id || trip.routeName;
-                  return (
-                    <div key={`${keyPrefix}`}>
-                      <Polyline
-                        key={`${keyPrefix}-border`}
-                        path={trip.pathCoordinates}
-                        options={{
-                          strokeColor: "#9e9e9e", // Border color
-                          strokeOpacity: .7,
-                          strokeWeight: 3, // Border thickness
-                          clickable: true,
-                          icons: [
-                            {
-                              icon: {
-                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                // make the stroke color a nice complementary green color to #ffd800
-                                strokeColor: "#9e9e9e", // Main line color
-                                strokeOpacity: .7,
-                                strokeWeight: 3,
-                                fillColor: "#9e9e9e",
-                                fillOpacity: .7,
-                                scale: 3,
-                              },
-                              offset: "100%",
-                              repeat: "100px",
+                    )}
+                  </div>
+                );
+              })}
+              {openTripsEnabled && openTrips.map((trip: any) => {
+                const keyPrefix = trip.id || trip.routeName;
+                return (
+                  <div key={`${keyPrefix}`}>
+                    <Polyline
+                      key={`${keyPrefix}-border`}
+                      path={trip.pathCoordinates}
+                      options={{
+                        strokeColor: "#9e9e9e", // Border color
+                        strokeOpacity: .7,
+                        strokeWeight: 3, // Border thickness
+                        clickable: true,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              // make the stroke color a nice complementary green color to #ffd800
+                              strokeColor: "#9e9e9e", // Main line color
+                              strokeOpacity: .7,
+                              strokeWeight: 3,
+                              fillColor: "#9e9e9e",
+                              fillOpacity: .7,
+                              scale: 3,
                             },
-                          ],
-                        }}
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                      onClick={() => { handleOpenTripRouteClick(trip) }}
+                    />
+                    {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
+                      <InfoWindow
+                        position={infoWindowOpenTrip.position}
+                        onCloseClick={handleCloseOpenTripClick}
+                      >
+                        <div>
+                          <h2>{infoWindowOpenTrip.trip?.routeName}</h2>
+                          <p>Leader: {infoWindowOpenTrip.trip?.tripLeader}</p>
+                          <button onClick={() => infoWindowOpenTrip.trip && handleJoinClick(infoWindowOpenTrip.trip)}>Join</button>
+                        </div>
+                      </InfoWindow>
+                    )}
+
+                    <Polyline
+                      key={`${keyPrefix}-main`}
+                      path={trip.pathCoordinates}
+                      options={{
+                        strokeColor: "#9e9e9e", // Main line color
+                        strokeOpacity: 1,
+                        strokeWeight: 2,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#9e9e9e", // Main line color
+                              strokeOpacity: 1,
+                              strokeWeight: 2,
+                              fillColor: "#9e9e9e",
+                              fillOpacity: 1,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                    />
+                    {trip.startPoint && (
+                      <Marker
+                        key={`${keyPrefix}-start`}
+                        label={`Start of ${trip.routeName}`}
+                        position={trip.startPoint}
                         onClick={() => { handleOpenTripRouteClick(trip) }}
                       />
-                      {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
-                        <InfoWindow
-                          position={infoWindowOpenTrip.position}
-                          onCloseClick={handleCloseOpenTripClick}
-                        >
-                          <div>
-                            <h2>{infoWindowOpenTrip.trip?.routeName}</h2>
-                            <p>Leader: {infoWindowOpenTrip.trip?.tripLeader}</p>
-                            <button onClick={() => infoWindowOpenTrip.trip && handleJoinClick(infoWindowOpenTrip.trip)}>Join</button>
-                          </div>
-                        </InfoWindow>
-                      )}
-
-                      <Polyline
-                        key={`${keyPrefix}-main`}
-                        path={trip.pathCoordinates}
-                        options={{
-                          strokeColor: "#9e9e9e", // Main line color
-                          strokeOpacity: 1,
-                          strokeWeight: 2,
-                          icons: [
-                            {
-                              icon: {
-                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                strokeColor: "#9e9e9e", // Main line color
-                                strokeOpacity: 1,
-                                strokeWeight: 2,
-                                fillColor: "#9e9e9e",
-                                fillOpacity: 1,
-                                scale: 3,
-                              },
-                              offset: "100%",
-                              repeat: "100px",
-                            },
-                          ],
-                        }}
+                    )}
+                    {trip.endPoint && (
+                      <Marker
+                        key={`${keyPrefix}-end`}
+                        label={`End of ${trip.routeName}`}
+                        position={trip.endPoint}
+                        onClick={() => { handleOpenTripRouteClick(trip) }}
                       />
-                      {trip.startPoint && (
-                        <Marker
-                          key={`${keyPrefix}-start`}
-                          label={`Start of ${trip.routeName}`}
-                          position={trip.startPoint}
-                          onClick={() => { handleOpenTripRouteClick(trip) }}
-                        />
-                      )}
-                      {trip.endPoint && (
-                        <Marker
-                          key={`${keyPrefix}-end`}
-                          label={`End of ${trip.routeName}`}
-                          position={trip.endPoint}
-                          onClick={() => { handleOpenTripRouteClick(trip) }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-                <div>
-                  {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-                </div>
-                <div>
-                  {selectedStartLocation && (
-                    <Marker
-                      position={selectedStartLocation}
-                      icon={{
-                        url: "/assets/markers/MarkerA.svg",
-                        scaledSize: new google.maps.Size(20, 20),
-                      }}
-                    />
-                  )}
-                  {selectedEndLocation && (
-                    <Marker position={selectedEndLocation}
-                      icon={{
-                        url: "/assets/markers/MarkerB.svg",
-                        scaledSize: new google.maps.Size(20, 20),
-                      }}
-                    />
-                  )}
-                </div>
-                <div>
-                  <IonGrid className="toggle-bikebus-container">
-                    <IonRow>
-                      <IonCol>
-                        <IonButton onClick={getLocation}>
-                          <IonIcon icon={locateOutline} />
-                        </IonButton>
-                      </IonCol>
-                    </IonRow>
-                    <IonRow>
-                      <IonCol>
-                        <IonLabel>BikeBus</IonLabel>
-                        <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
-                      </IonCol>
-                    </IonRow>
-                    <IonRow>
-                      <IonCol>
-                        <IonLabel>Open Trips</IonLabel>
-                        <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                      </IonCol>
-                    </IonRow>
-                  </IonGrid>
-                </div>
-                <Polyline
-                  path={pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({ lat: coord.latitude, lng: coord.longitude }))}
-                  options={{
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2,
-                    geodesic: true,
-                    editable: true,
-                    draggable: true,
-                  }}
-                />
-              </GoogleMap>
-            </IonRow>
-
-          )
-        }
-        {
-          showMap && isActiveEvent && (
-            <IonRow className="map-base">
-              <GoogleMap
-                onLoad={(map) => {
-                  mapRef.current = map;
-                }}
-                mapContainerStyle={{
-                  width: "100%",
-                  height: "100%",
-                }}
-                center={userLocation}
-                zoom={15}
-                options={{
-                  disableDefaultUI: true,
-                  zoomControl: false,
-                  mapTypeControl: true,
-                  disableDoubleClickZoom: true,
-                  maxZoom: 18,
-                  styles: [
-                    {
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "color": "#f5f5f5"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.land_parcel",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#bdbdbd"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "administrative.neighborhood",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#eeeeee"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#e5e5e5"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.park",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "color": "#ffd800"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "geometry.stroke",
-                      "stylers": [
-                        {
-                          "color": "#ffd800"
-                        },
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "poi.school",
-                      "elementType": "labels.text.stroke",
-                      "stylers": [
-                        {
-                          "visibility": "on"
-                        },
-                        {
-                          "weight": 3.5
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#ffffff"
-                        },
-                        {
-                          "visibility": "simplified"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road",
-                      "elementType": "labels.icon",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.arterial",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#757575"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#dadada"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.highway",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#616161"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels",
-                      "stylers": [
-                        {
-                          "visibility": "off"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "road.local",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "transit",
-                      "elementType": "geometry.fill",
-                      "stylers": [
-                        {
-                          "saturation": -50
-                        },
-                        {
-                          "lightness": 50
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "geometry",
-                      "stylers": [
-                        {
-                          "color": "#c9c9c9"
-                        }
-                      ]
-                    },
-                    {
-                      "featureType": "water",
-                      "elementType": "labels.text.fill",
-                      "stylers": [
-                        {
-                          "color": "#9e9e9e"
-                        }
-                      ]
-                    }
-                  ],
-                }}
-              >
-                <IonGrid>
-                  {showEndOpenTripButton && <IonButton expand="block" onClick={endOpenTrip}>End Open Trip</IonButton>}
+                    )}
+                  </div>
+                );
+              })}
+              <div>
+                {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+                {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+              </div>
+              <div>
+                {selectedStartLocation && (
+                  <Marker
+                    position={selectedStartLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerA.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+                {selectedEndLocation && (
+                  <Marker position={selectedEndLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerB.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+              </div>
+              <div>
+                <IonGrid className="toggle-bikebus-container">
+                  <IonRow>
+                    <IonCol>
+                      <IonButton onClick={getLocation}>
+                        <IonIcon icon={locateOutline} />
+                      </IonButton>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>BikeBus</IonLabel>
+                      <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>Open Trips</IonLabel>
+                      <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
+                    </IonCol>
+                  </IonRow>
                 </IonGrid>
-                <div>
-                  {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-                </div>
-                <div>
-                  {selectedStartLocation && (
-                    <Marker
-                      position={selectedStartLocation}
-                      icon={{
-                        url: "/assets/markers/MarkerA.svg",
-                        scaledSize: new google.maps.Size(20, 20),
-                      }}
-                    />
-                  )}
-                  {selectedEndLocation && (
-                    <Marker
-                      position={selectedEndLocation}
-                      icon={{
-                        url: "/assets/markers/MarkerB.svg",
-                        scaledSize: new google.maps.Size(20, 20),
-                      }}
-                    />
-                  )}
-                </div>
+              </div>
+              <Polyline
+                path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                options={{
+                  strokeColor: "#FF0000",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                  geodesic: true,
+                  editable: true,
+                  draggable: true,
+                }}
+              />
+            </GoogleMap>
+          </IonRow>
 
-                <Polyline
-                  path={pathCoordinates.map((coord: { latitude: any; longitude: any; }) => ({ lat: coord.latitude, lng: coord.longitude }))}
-                  options={{
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2,
-                    geodesic: true,
-                    editable: true,
-                    draggable: true,
-                  }}
-                />
-                <Polyline
-                  path={pathCoordinatesTrip.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                  options={{
-                    strokeColor: "#000",
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2,
-                    geodesic: true,
-                    editable: true,
-                    draggable: true,
-                  }}
-                />
-              </GoogleMap>
-            </IonRow>
-          )
+        )
         }
       </IonContent >
     </IonPage >
@@ -2374,4 +1916,4 @@ const Map: React.FC = () => {
 
 
 
-  export default Map;
+export default Map;

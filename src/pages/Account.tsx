@@ -244,20 +244,6 @@ const Account: React.FC = () => {
                 </IonCard>
                 <IonCard>
                     <IonCardHeader>
-                        <IonCardTitle>Favorite Destinations</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                        {savedDestinations.map((destination, index) => (
-                            <div key={destination.id}>
-                                <Link to={`/map/${destination.id}`}>
-                                    {destination.id}
-                                </Link>
-                            </div>
-                        ))}
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardHeader>
                         <IonCardTitle>My Routes</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
