@@ -12,6 +12,7 @@ import {
   IonModal,
   IonTitle,
   IonCheckbox,
+  IonImg,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
@@ -101,6 +102,13 @@ const EventSummary: React.FC = () => {
   const [routeData, setRouteData] = useState<any>(null);
   const [groupData, setGroupData] = useState<any>(null);
   const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
+  const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
+    lat: startGeo.lat,
+    lng: startGeo.lng,
+  });
+  const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "";
 
 
   useEffect(() => {
@@ -177,6 +185,10 @@ const EventSummary: React.FC = () => {
             };
             fetchBikeBusGroup();
           }
+          // if eventType is 'openTrip', fetch the event document and set it to routeData
+          if (eventData.eventType === 'openTrip') {
+            setRouteData(eventData);
+          }
         }
       };
       fetchEvent();
@@ -231,20 +243,62 @@ const EventSummary: React.FC = () => {
   const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
 
+  console.log(eventData);
+  console.log(mapCenter);
 
+
+  useEffect(() => {
+    if (routeData) {
+      setMapCenter({
+        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+      });
+      setStartGeo(routeData.startPoint);
+      setEndGeo(routeData.endPoint);
+    }
+  }
+    , [routeData]);
+
+
+  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
+    const routeData = RouteId;
+    const center = `${mapCenter.lat},${mapCenter.lng}`;
+    // make the size fill the screen and as a background image
+    const size = `${window.innerWidth}x${window.innerHeight}`;
+    const path = routeData?.pathCoordinates
+      .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
+      .join('|');
+    const markers = [
+      `markers=color:red|label:A|${startGeo.lat},${startGeo.lng}`,
+      `markers=color:red|label:B|${endGeo.lat},${endGeo.lng}`,
+    ];
+    // let's make some markers for the bikebusstops in the route
+    const bikeBusStops = routeData?.BikeBusStop;
+    if (bikeBusStops) {
+      for (let i = 0; i < bikeBusStops.length; i++) {
+        markers.push(`markers=color:blue|label:${i + 1}|${bikeBusStops[i].lat},${bikeBusStops[i].lng}`);
+      }
+    }
+    const styles = "element:geometry%7Ccolor:0xf5f5f5&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative%7Celement:geometry%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Celement:geometry.fill%7Cvisibility:off&style=feature:administrative.neighborhood%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Cvisibility:on&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:geometry.fill%7Cvisibility:on&style=feature:poi.school%7Cvisibility:on&style=feature:poi.school%7Celement:geometry.fill%7Ccolor:0xffd800%7Cvisibility:on&style=feature:poi.school%7Celement:labels%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text.fill%7Cvisibility:on%7Cweight:5&style=feature:poi.school%7Celement:labels.text.stroke%7Cvisibility:on%7Cweight:3.5&style=feature:road%7Celement:geometry%7Ccolor:0xffffff%7Cvisibility:simplified&style=feature:road%7Celement:labels.icon%7Cvisibility:off&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels%7Cvisibility:off&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit%7Celement:geometry.fill%7Csaturation:-50%7Clightness:50&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e";
+    // create markers for bikebusstops along the route
+    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xffd800|weight:3|${path}&${markers.join('&')}&${styles}&key=${apiKey}`;
+    return url;
+  }
 
 
   return (
-    <IonPage>
-      <IonContent fullscreen>
+    <IonPage className="ion-flex-offset-app">
+      <IonContent>
         <IonHeader>
-          <IonToolbar></IonToolbar>
+          <IonToolbar>{eventData?.eventName}</IonToolbar>
         </IonHeader>
         <IonList>
           <IonItem>
             <IonLabel>{startTime} to {endTime}</IonLabel>
           </IonItem>
-        </IonList>
+          </IonList>
+          <IonImg className="event-map" onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
+            src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
       </IonContent>
     </IonPage >
   );

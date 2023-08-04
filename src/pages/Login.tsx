@@ -118,7 +118,7 @@ const Login: React.FC = () => {
       }
     }
   };
-  
+
 
   useEffect(() => {
     const handleRedirectResult = async () => {
@@ -167,9 +167,7 @@ const Login: React.FC = () => {
 
 
   return (
-    <IonPage>
-      <IonHeader>
-      </IonHeader>
+    <IonPage className="ion-flex-offset-app">
       <IonContent className='login-container'>
         <IonRow className="welcome-to-bikebus" background-color="primary">
           <IonText color="secondary">
