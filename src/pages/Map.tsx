@@ -138,6 +138,9 @@ const Map: React.FC = () => {
   const [pathCoordinatesTrip, setPathCoordinatesTrip] = useState<{ latitude: number; longitude: number; }[]>([]);
   const [isStartLocationSelected, setIsStartLocationSelected] = useState(false);
   const [isEndLocationSelected, setIsEndLocationSelected] = useState(false);
+  const [openTripLeaderUsername, setOpenTripLeaderUsername] = useState('');
+  const [joinTripId, setJoinTripId] = useState('');
+  const [focusTripId, setFocusTripId] = useState('');
 
   interface Trip {
     id: string;
@@ -414,18 +417,6 @@ const Map: React.FC = () => {
           trips.push(tripData);
         });
 
-        // set the isActiveEvent to true if the user is the leader of an open trip and the status is active
-        //const openTripLeaderCheck = trips.find((trip) => trip.tripLeader === user.uid);
-        //if (openTripLeaderCheck && openTripLeaderCheck.tripLeader === user.uid) {
-        // set the value of the openTripId to the id of the open trip
-        //setOpenTripId(openTripLeaderCheck.id);
-        //console.log("openTripId: ", openTripLeaderCheck.id);
-        //setShowEndOpenTripButton(true);
-        //setIsActiveEvent(true);
-        //setTripActive(true);
-        //setOpenTripEventId(openTripLeaderCheck.eventId);
-        //}
-
         setOpenTrips(trips);
 
         if (user) {
@@ -447,13 +438,13 @@ const Map: React.FC = () => {
 
             const userIcon = {
               // this should be the avatarElement
-              url: "/assets/markers/Blue.svg",
+              url: "/assets/markers/BlueBicycle.svg",
               scaledSize: new google.maps.Size(26, 26),
             };
 
             const userIconLeader = {
               // this should be the avatarElement of the trip leader
-              url: "/assets/markers/Green.svg",
+              url: "/assets/markers/GreenBicycle.svg",
               scaledSize: new google.maps.Size(26, 26),
             };
 
@@ -851,23 +842,6 @@ const Map: React.FC = () => {
     }
   };
 
-  const handleJoinClick = async (trip: { id: string; }) => {
-    // Get the current user's ID
-    if (user) {
-      const userId = user.uid;
-
-      // Add the user to the trip's list of participants in Firestore
-      const tripRef = doc(db, 'trips', trip.id);
-      await updateDoc(tripRef, {
-        tripParticipants: arrayUnion('/users/' + userId),
-      });
-    }
-
-    // Add any additional actions here, such as displaying a success message
-    // close this info window
-    handleCloseOpenTripClick();
-  };
-
 
 
   const saveDestination = () => {
@@ -956,27 +930,47 @@ const Map: React.FC = () => {
 
   const handleOpenTripRouteClick = (trip: any) => {
     const contentString = `
-      <div class="info-window-content">
+    <div class="info-window-content">
         <h2 class="trip-endpoint-title">Open Trip to ${trip.endPointName}</h2>
-        <p><strong>Event:</strong> ${trip.eventName}</p>
-        <p><strong>Leader:</strong> ${trip.tripLeader}</p>
-        <p><strong>Participants:</strong> ${trip.tripParticipants.join(', ')}</p>
-        <p><strong>Status:</strong> ${trip.status}</p>
-        <button class="btn join-trip-btn" onclick="window.handleJoinClick(${trip.id})">Join</button>
-        <button class="btn focus-leader-btn" onclick="window.handleFocus(${trip.id})">Focus on Leader</button>
-      </div>
+    </div>
     `;
-  
+
+    setJoinTripId(trip.id);
+    setFocusTripId(trip.id);
+
     setInfoWindowOpenTrip({
-      isOpen: true,
-      position: trip.userLocation,
-      trip: trip,
-      content: contentString,
+    isOpen: true,
+    position: trip.userLocation,
+    trip: trip,
+    content: contentString,
     });
+};
+
+const handleJoinClick = async (trip: { id: string; }) => {
+  // Get the current user's ID
+  if (user) {
+    const userId = user.uid;
+
+    // Add the user to the trip's list of participants in Firestore
+    const tripRef = doc(db, 'trips', trip.id);
+    await updateDoc(tripRef, {
+      tripParticipants: arrayUnion('/users/' + userId),
+    });
+  }
+
+  // Add any additional actions here, such as displaying a success message
+  // close this info window
+  handleCloseOpenTripClick();
+};
+
+  // create a function to handle the click "Focus on Leader" - this will center the map on the leader's location
+  const handleFocus = (position: any) => {
+    setMapCenter(position);
+    setMapZoom(15);
+    handleCloseOpenTripClick();
   };
-  
-  
-  
+
+
 
   const handleCloseOpenTripClick = () => {
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
@@ -1158,7 +1152,7 @@ const Map: React.FC = () => {
       history.push({
         pathname: `/EventSummary/${openTripId}`,
         state: { id: openTripId }
-      });      
+      });
     } catch (error) {
       console.error("Error ending trip:", error);
     }
@@ -1796,7 +1790,7 @@ const Map: React.FC = () => {
                       options={{
                         strokeColor: "#80ff00", // Border color
                         strokeOpacity: .7,
-                        strokeWeight: 3, // Border thickness
+                        strokeWeight: 5, // Border thickness
                         clickable: true,
                         icons: [
                           {
@@ -1805,7 +1799,7 @@ const Map: React.FC = () => {
                               // make the stroke color a nice complementary green color to #ffd800
                               strokeColor: "#80ff00", // Main line color
                               strokeOpacity: .7,
-                              strokeWeight: 3,
+                              strokeWeight: 5,
                               fillColor: "#80ff00",
                               fillOpacity: .7,
                               scale: 3,
@@ -1822,11 +1816,7 @@ const Map: React.FC = () => {
                         position={infoWindowOpenTrip.position}
                         onCloseClick={handleCloseOpenTripClick}
                       >
-                        <div>
-                          <h2>{infoWindowOpenTrip.trip?.routeName}</h2>
-                          <p>Leader: {infoWindowOpenTrip.trip?.tripLeader}</p>
-                          <button onClick={() => infoWindowOpenTrip.trip && handleJoinClick(infoWindowOpenTrip.trip)}>Join</button>
-                        </div>
+                        <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
                       </InfoWindow>
                     )}
 
@@ -1855,6 +1845,14 @@ const Map: React.FC = () => {
                         ],
                       }}
                     />
+                    {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
+                      <InfoWindow
+                        position={infoWindowOpenTrip.position}
+                        onCloseClick={handleCloseOpenTripClick}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
+                      </InfoWindow>
+                    )}
                     {trip.startPoint && (
                       <Marker
                         key={`${keyPrefix}-start`}
