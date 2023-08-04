@@ -141,6 +141,8 @@ const Map: React.FC = () => {
   const [openTripLeaderUsername, setOpenTripLeaderUsername] = useState('');
   const [joinTripId, setJoinTripId] = useState('');
   const [focusTripId, setFocusTripId] = useState('');
+  const [map, setMap] = useState(null);
+
 
   interface Trip {
     id: string;
@@ -186,6 +188,7 @@ const Map: React.FC = () => {
     setDetailedDirectionsRow(false);
     setTravelModeRow(false);
   };
+
 
   const watchLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -437,16 +440,17 @@ const Map: React.FC = () => {
             };
 
             const userIcon = {
-              // this should be the avatarElement
-              url: "/assets/markers/BlueBicycle.svg",
+              url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' class='ionicon' viewBox='0 0 512 512'><circle cx='256' cy='256' r='200' fill='%230000ff' /><path d='M388 288a76 76 0 1076 76 76.24 76.24 0 00-76-76zM124 288a76 76 0 1076 76 76.24 76.24 0 00-76-76z' fill='none' stroke='%23ffffff' stroke-miterlimit='10' stroke-width='32'/><path fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='32' d='M256 360v-86l-64-42 80-88 40 72h56'/><path d='M320 136a31.89 31.89 0 0032-32.1A31.55 31.55 0 00320.2 72a32 32 0 10-.2 64z' fill='%23ffffff'/></svg>",
               scaledSize: new google.maps.Size(26, 26),
             };
 
+
+            // this should be the avatarElement of the trip leader
             const userIconLeader = {
-              // this should be the avatarElement of the trip leader
-              url: "/assets/markers/GreenBicycle.svg",
+              url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' class='ionicon' viewBox='0 0 512 512'><circle cx='256' cy='256' r='200' fill='%2380ff00' /><path d='M388 288a76 76 0 1076 76 76.24 76.24 0 00-76-76zM124 288a76 76 0 1076 76 76.24 76.24 0 00-76-76z' fill='none' stroke='%23ffffff' stroke-miterlimit='10' stroke-width='32'/><path fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='32' d='M256 360v-86l-64-42 80-88 40 72h56'/><path d='M320 136a31.89 31.89 0 0032-32.1A31.55 31.55 0 00320.2 72a32 32 0 10-.2 64z' fill='%23ffffff'/></svg>",
               scaledSize: new google.maps.Size(26, 26),
             };
+
 
             const openTripMarker = new google.maps.Marker({
               position: trip.startLocation,
@@ -513,6 +517,26 @@ const Map: React.FC = () => {
 
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
+
+    const map = mapRef.current;
+    if (map) {
+      map.addListener("bounds_changed", () => {
+        const bounds = map.getBounds();
+        if (bounds) {
+          console.log("Map bounds:", bounds.toJSON());
+          ref.setBounds(bounds);
+
+          const searchBoxBounds = ref.getBounds();
+          if (searchBoxBounds) {
+            console.log("Search box bounds set to:", searchBoxBounds.toJSON());
+          }
+        }
+      });
+    }
+
+
+
+
   };
 
   const onPlaceChangedStart = () => {
@@ -529,6 +553,21 @@ const Map: React.FC = () => {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           });
+
+          // After setting the new location, update the map bounds
+          const map = mapRef.current;
+          if (map) {
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng()));
+            map.fitBounds(bounds);
+
+            // Now, set the search box bounds to the map bounds
+            const searchBoxBounds = map.getBounds();
+            if (searchBoxBounds) {
+              autocompleteStart.setBounds(searchBoxBounds);  // Adjusted this line
+            }
+          }
+
           // define place.address_components
           const addressComponents = place.address_components;
           // extract street name
@@ -544,8 +583,29 @@ const Map: React.FC = () => {
     }
   };
 
+
+
   const onLoadStartingLocation = (ref: google.maps.places.SearchBox) => {
     setAutocompleteStart(ref);
+
+    const map = mapRef.current;
+    if (map) {
+      map.addListener("bounds_changed", () => {
+        const bounds = map.getBounds();
+        if (bounds) {
+          console.log("Map bounds:", bounds.toJSON());
+          ref.setBounds(bounds);
+
+          const searchBoxBounds = ref.getBounds();
+          if (searchBoxBounds) {
+            console.log("Search box bounds set to:", searchBoxBounds.toJSON());
+          }
+        }
+      });
+    }
+
+
+
     ref.addListener("places_changed", onPlaceChangedStart);
 
     setSelectedStartLocation({ lat: userLocation.lat, lng: userLocation.lng });
@@ -939,29 +999,29 @@ const Map: React.FC = () => {
     setFocusTripId(trip.id);
 
     setInfoWindowOpenTrip({
-    isOpen: true,
-    position: trip.userLocation,
-    trip: trip,
-    content: contentString,
+      isOpen: true,
+      position: trip.userLocation,
+      trip: trip,
+      content: contentString,
     });
-};
+  };
 
-const handleJoinClick = async (trip: { id: string; }) => {
-  // Get the current user's ID
-  if (user) {
-    const userId = user.uid;
+  const handleJoinClick = async (trip: { id: string; }) => {
+    // Get the current user's ID
+    if (user) {
+      const userId = user.uid;
 
-    // Add the user to the trip's list of participants in Firestore
-    const tripRef = doc(db, 'trips', trip.id);
-    await updateDoc(tripRef, {
-      tripParticipants: arrayUnion('/users/' + userId),
-    });
-  }
+      // Add the user to the trip's list of participants in Firestore
+      const tripRef = doc(db, 'trips', trip.id);
+      await updateDoc(tripRef, {
+        tripParticipants: arrayUnion('/users/' + userId),
+      });
+    }
 
-  // Add any additional actions here, such as displaying a success message
-  // close this info window
-  handleCloseOpenTripClick();
-};
+    // Add any additional actions here, such as displaying a success message
+    // close this info window
+    handleCloseOpenTripClick();
+  };
 
   // create a function to handle the click "Focus on Leader" - this will center the map on the leader's location
   const handleFocus = (position: any) => {
@@ -1677,15 +1737,21 @@ const handleJoinClick = async (trip: { id: string; }) => {
                   <IonCol>
                     {showGetDirectionsButton && directionsFetched && (
                       <>
-                        <IonRow>
-                          <IonLabel>Distance: {distance} miles </IonLabel>
-                        </IonRow>
-                        <IonRow>
-                          <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                        </IonRow>
-                        <IonRow>
-                          <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                        </IonRow>
+                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                          <IonRow>
+                            <IonLabel>Distance: {distance} miles </IonLabel>
+                          </IonRow>
+                        )}
+                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                          <IonRow>
+                            <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                          </IonRow>
+                        )}
+                        {showGetDirectionsButton && directionsFetched && isActiveEvent && (
+                          <IonRow>
+                            <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                          </IonRow>
+                        )}
                       </>
                     )}
                   </IonCol>
