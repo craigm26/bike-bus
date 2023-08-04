@@ -995,11 +995,18 @@ const Map: React.FC = () => {
     if (user) {
       const eventTripRef = collection(db, "event");
       const docRefPromise = await addDoc(eventTripRef, {
+        eventName: "Open Trip to " + routeEndName,
         eventType: "openTrip",
         status: "active",
         userLocation: openTripLeaderLocation,
         startLocation: selectedStartLocation,
         endLocation: endPointAdress,
+        startPoint: selectedStartLocation,
+        startPointName: routeStartName,
+        startPointAddress: routeStartFormattedAddress,
+        endPoint: selectedEndLocation,
+        endPointName: routeEndName,
+        endPointAddress: routeEndFormattedAddress,
         start: new Date(),
         startTime: new Date(),
         startTimestamp: new Date(),
@@ -1041,6 +1048,10 @@ const Map: React.FC = () => {
         routeName: "Open Trip to " + routeEndName,
         description: "Open Trip",
         startPoint: selectedStartLocation,
+        startPointName: routeStartName,
+        startPointAdress: routeStartFormattedAddress,
+        endPointName: routeEndName,
+        endPointAdress: routeEndFormattedAddress,
         endPoint: selectedEndLocation,
         distance: distance,
         duration: duration,
@@ -1064,6 +1075,11 @@ const Map: React.FC = () => {
           const openTripRouteId = docRouteRef.id;
           setOpenTripRouteId(openTripRouteId);
           console.log("openTripRouteId: ", openTripRouteId);
+          // now let's update the trip document with the routeId in the route field of the trip document
+          const eventDocRef = doc(db, "event", openTripId);
+          updateDoc(eventDocRef, {
+            route: docRouteRef,
+          });
         })
         .catch((error) => {
           console.error("Error adding document: ", error);
