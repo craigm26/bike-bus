@@ -955,16 +955,16 @@ const Map: React.FC = () => {
   const handleOpenTripRouteClick = (trip: any) => {
     const contentString = `
       <div>
-        <h2>Start of ${trip.routeName}</h2>
+        <h2>Open Trip to ${trip.routeName}</h2>
         <p>Additional event details here...</p>
-        <button onclick="window.handleJoinClick(${trip.id})">Join</button>
+        <button className="joinOpenTripButton" onclick="window.handleJoinClick(${trip.id})">Join</button>
         <button onclick="window.handleFocus(${trip.id})">Focus on Leader</button>
       </div>
     `;
   
     setInfoWindowOpenTrip({
       isOpen: true,
-      position: { lat: trip.startPoint.lat, lng: trip.startPoint.lng },
+      position: trip.userLocation,
       trip: trip,
       content: contentString,
     });
@@ -1809,19 +1809,20 @@ const Map: React.FC = () => {
 
                     <Polyline
                       key={`${keyPrefix}-main`}
+                      onClick={() => { handleOpenTripRouteClick(trip) }}
                       path={trip.pathCoordinates}
                       options={{
-                        strokeColor: "#9e9e9e", // Main line color
+                        strokeColor: "#80ff00", // Main line color
                         strokeOpacity: 1,
                         strokeWeight: 2,
                         icons: [
                           {
                             icon: {
                               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#9e9e9e", // Main line color
+                              strokeColor: "#80ff00", // Main line color
                               strokeOpacity: 1,
                               strokeWeight: 2,
-                              fillColor: "#9e9e9e",
+                              fillColor: "#80ff00",
                               fillOpacity: 1,
                               scale: 3,
                             },
