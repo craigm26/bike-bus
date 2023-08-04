@@ -164,41 +164,40 @@ const App: React.FC = () => {
       const fetchData = async () => {
         const userRef = doc(db, 'users', user.uid);
         const docSnapshot = await getDoc(userRef);
-
+  
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
           if (userData && userData.bikebusgroups) {
-            const groupRefs = userData.bikebusgroups; // getting the group document references
-            const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref))); // Fetch all group documents in parallel
-
+            const groupRefs = userData.bikebusgroups;
+            const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
+  
             const groups = groupSnapshots.map(snapshot => snapshot.data());
-
-            // Fetch routes and events for each group
+  
             for (const group of groups) {
               if (group && group.BikeBusRoutes) {
                 const routeRef = group.BikeBusRoutes[0];
                 const routeSnapshot = await getDoc(routeRef);
-
+  
                 group.route = routeSnapshot.data();
               }
-
-              if (group && group.event) {
+  
+              if (group && group.event && group.event[0]) {
                 const eventRef = group.event[0];
                 const eventSnapshot = await getDoc(eventRef);
-
+  
                 group.event = eventSnapshot.data();
               }
             }
-
-            // Now groups contains all the data we need
+  
             setGroupData(groups);
           }
         }
       };
-
+  
       fetchData();
     }
   }, [user]);
+  
 
 
   const getUserLocation = useCallback(async () => {
