@@ -864,6 +864,8 @@ const Map: React.FC = () => {
     }
 
     // Add any additional actions here, such as displaying a success message
+    // close this info window
+    handleCloseOpenTripClick();
   };
 
 
@@ -954,11 +956,14 @@ const Map: React.FC = () => {
 
   const handleOpenTripRouteClick = (trip: any) => {
     const contentString = `
-      <div>
-        <h2>Open Trip to ${trip.routeName}</h2>
-        <p>Additional event details here...</p>
-        <button className="joinOpenTripButton" onclick="window.handleJoinClick(${trip.id})">Join</button>
-        <button onclick="window.handleFocus(${trip.id})">Focus on Leader</button>
+      <div class="info-window-content">
+        <h2 class="trip-endpoint-title">Open Trip to ${trip.endPointName}</h2>
+        <p><strong>Event:</strong> ${trip.eventName}</p>
+        <p><strong>Leader:</strong> ${trip.tripLeader}</p>
+        <p><strong>Participants:</strong> ${trip.tripParticipants.join(', ')}</p>
+        <p><strong>Status:</strong> ${trip.status}</p>
+        <button class="btn join-trip-btn" onclick="window.handleJoinClick(${trip.id})">Join</button>
+        <button class="btn focus-leader-btn" onclick="window.handleFocus(${trip.id})">Focus on Leader</button>
       </div>
     `;
   
@@ -969,6 +974,8 @@ const Map: React.FC = () => {
       content: contentString,
     });
   };
+  
+  
   
 
   const handleCloseOpenTripClick = () => {
@@ -1851,7 +1858,7 @@ const Map: React.FC = () => {
                     {trip.startPoint && (
                       <Marker
                         key={`${keyPrefix}-start`}
-                        label={`Start of ${trip.routeName}`}
+                        label={`Start of ${trip.eventName}`}
                         position={trip.startPoint}
                         onClick={() => { handleOpenTripRouteClick(trip) }}
                       />
@@ -1859,7 +1866,7 @@ const Map: React.FC = () => {
                     {trip.endPoint && (
                       <Marker
                         key={`${keyPrefix}-end`}
-                        label={`End of ${trip.routeName}`}
+                        label={`End of ${trip.eventName}`}
                         position={trip.endPoint}
                         onClick={() => { handleOpenTripRouteClick(trip) }}
                       />
