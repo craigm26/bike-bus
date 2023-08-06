@@ -167,7 +167,7 @@ const Login: React.FC = () => {
 
 
   return (
-    <IonPage className="ion-flex-offset-app">
+    <IonPage>
       <IonContent className='login-container'>
         <IonRow className="welcome-to-bikebus" background-color="primary">
           <IonText color="secondary">

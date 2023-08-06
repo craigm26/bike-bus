@@ -20,21 +20,27 @@ import {
   IonGrid,
   IonImg,
   IonText,
+  IonSegment,
+  IonSegmentButton,
+  IonToggle,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
+import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from 'ionicons/icons';
 import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams } from "react-router-dom";
 import { useHistory } from 'react-router-dom';
 import { create } from 'domain';
 import { set } from 'date-fns';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
+import AnonymousAvatarMapMarker from '../components/AnonymousAvatarMapMarker';
+import AvatarMapMarker from '../components/AvatarMapMarker';
+import createRoute from './createRoute';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -140,6 +146,8 @@ interface RouteData {
 const Event: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const [map, setMap] = React.useState<google.maps.Map | null>(null);
   const [members, setMembers] = useState<string[]>([]);
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
@@ -191,11 +199,23 @@ const Event: React.FC = () => {
   const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
   const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [startPointAdress, setStartPointAdress] = useState<string>('');
+  const [selectedEndLocation, setSelectedEndLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [selectedStartLocation, setSelectedStartLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>('');
+  const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>('');
+  const [endPointAdress, setEndPointAdress] = useState<string>('');
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: startGeo.lat,
     lng: startGeo.lng,
   });
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "";
+
+  useEffect(() => {
+    console.log("Google Maps script loaded: ", isLoaded);
+    console.log("Google Maps load error: ", loadError);
+  }, [isLoaded, loadError]);
 
   useEffect(() => {
     const fetchUsernames = async (role: string[], setRole: Function) => {
@@ -620,9 +640,14 @@ const Event: React.FC = () => {
 
   // when page loads, do the checkEventTime function
   useEffect(() => {
+    console.log('checkEventTime is active!');
     const fetchRouteData = async () => {
-      // bring in RouteID from the eventData
-      const RouteId = eventData?.route;
+      console.log('eventData', eventData);
+      console.log('eventData?.route', eventData?.route);
+      // bring in RouteID from the // bring in RouteID from the eventData
+      const RouteId = eventData?.route?._key?.path?.segments[6]; // Extracting the document ID
+      console.log('RouteId', RouteId);
+
       // get the document from the routes collection that matches the RouteId, then set the routeData to that document
       // get the route data from the route document that matches the RouteId
       const docRef = doc(db, 'routes', RouteId);
@@ -630,25 +655,47 @@ const Event: React.FC = () => {
       if (docSnapshot.exists()) {
         const routeData = docSnapshot.data() as Route;
         setrouteData(routeData);
+        console.log('routeData inside fetchRouteData', routeData);
       }
+
+
     };
-  
+
     fetchRouteData();
-  
+    console.log('routeData', routeData);
+
+    // now we need to set the selectedStartLocation and selectedEndLocation to the startGeo and endGeo
+    if (routeData?.startPoint) {
+      setSelectedStartLocation(routeData.startPoint);
+    }
+
+    if (routeData?.endPoint) {
+      setSelectedEndLocation(routeData.endPoint);
+    }
+
+    if (routeData?.pathCoordinates) {
+      const transformedCoordinates = routeData.pathCoordinates.map(coord => ({
+        latitude: coord.lat, // Adjust these property names as per the actual structure of Coordinate
+        longitude: coord.lng
+      }));
+      setPathCoordinates(transformedCoordinates);
+    }
+    
+
     // now get the startTime and endTime from the eventData
     const startTime = eventData?.startTimestamp;
-  
+
     checkEventTime();
     // check the event time every 30 seconds
     const interval = setInterval(() => {
       checkEventTime();
     }, 30000);
-  
+
     // when the page unloads, clear the interval
     return () => clearInterval(interval);
-  
+
   }, [checkEventTime, startTime, eventData?.route, eventData?.startTimestamp]);
-  
+
 
   const toggleJoinEvent = () => {
     const tripsRef = doc(db, 'trips', eventData?.tripId);
@@ -755,10 +802,18 @@ const Event: React.FC = () => {
     return url;
   }
 
+  if (loadError) {
+    return <div>Error loading Google Maps: {loadError.message}</div>;
+  }
+
+  if (!isLoaded) {
+    return <div>Loading Google Maps...</div>;
+  }
+
 
   return (
-    <IonPage  className="ion-flex-offset-app">
-      <IonContent fullscreen>
+    <IonPage className="ion-flex-offset-app">
+      <IonContent>
         <IonGrid>
           <IonRow>
             <IonCol>
@@ -900,25 +955,394 @@ const Event: React.FC = () => {
                 </IonContent>
               </IonModal>
               {isEventLeader && (
-                <IonButton onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+                <IonButton className="startBikeBusEvent" onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
               )}
               {!isEventLeader && isEventActive && (
                 <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
               )}
+              <IonButton
+                onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
+              >Download Map</IonButton>
               {isEventLeader && isEventActive && (
                 <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
               )}
             </IonCol>
           </IonRow>
-          <IonRow className="static-map-event">
+          <IonRow>
             <IonCol>
               <IonLabel>{eventData?.BikeBusName}</IonLabel>
               <IonItem>
                 <IonText>{startTime} to {endTime}</IonText>
               </IonItem>
-              <IonImg className="event-map" onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
-                src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
             </IonCol>
+          </IonRow>
+          <IonRow className="map-base">
+            <GoogleMap
+              onLoad={(map) => {
+                mapRef.current = map;
+              }}
+              mapContainerStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+              center={mapCenter}
+              zoom={13}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                mapTypeControl: false,
+                disableDoubleClickZoom: true,
+                maxZoom: 18,
+                styles: [
+                  {
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#bdbdbd"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#eeeeee"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#e5e5e5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.stroke",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 3.5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#ffffff"
+                      },
+                      {
+                        "visibility": "simplified"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.arterial",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#dadada"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "transit",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "saturation": -50
+                      },
+                      {
+                        "lightness": 50
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#c9c9c9"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  }
+                ],
+              }}
+            >
+              <div>
+                <h2>
+                  {eventData?.BikeBusName}
+                </h2>
+              </div>
+              <div>
+                {selectedStartLocation && (
+                  <Marker
+                    position={selectedStartLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerA.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+                {selectedEndLocation && (
+                  <Marker position={selectedEndLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerB.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+              </div>
+              <div>
+              </div>
+              <Polyline
+                path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
+                options={{
+                  strokeColor: "#FFD800",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                  geodesic: true,
+                  editable: false,
+                  draggable: false,
+                }}
+              />
+            </GoogleMap>
           </IonRow>
         </IonGrid>
       </IonContent>
