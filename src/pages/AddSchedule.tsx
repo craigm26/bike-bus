@@ -148,6 +148,12 @@ const AddSchedule: React.FC = () => {
       const routesData = await Promise.all(selectedRoutes.map((routeRef: any) => getDoc(routeRef)));
       const routes = routesData.map((route: any) => route.data());
       setRoutes(routes);
+      // get the id of the routes from the route document in the database
+      const routeIds = routesData.map((route: any) => route.id);
+      console.log('routeIds:', routeIds);
+      // get the id of the route from the route document in the database
+      const RouteID = bikeBusGroupSnapshot.data()?.BikeBusRoutes[0].id;
+      setRouteID(RouteID);
 
     };
 
@@ -238,6 +244,7 @@ const AddSchedule: React.FC = () => {
     console.log('endDate:', endDate);
     console.log('formattedStartDate:', formattedStartTime);
     console.log('formattedEndDate:', formattedEndTime);
+    console.log('RouteID:', RouteID);
 
     // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
     const startDate = startDateTime.split('T')[0];
@@ -304,6 +311,7 @@ const AddSchedule: React.FC = () => {
       start: start,
       end: endDate.split('T')[0],
       startTime: startTime,
+      route: doc(db, 'routes', RouteID),
       startTimeStamp: startTimestamp,
       endTime: endTimestamp,
       duration: expectedDuration,
@@ -346,6 +354,7 @@ const AddSchedule: React.FC = () => {
         sheepdogs: [],
         caboose: [],
         duration: expectedDuration,
+        route: doc(db, 'routes', RouteID),
         startTime: startTime,
         startTimestamp: startTimestamp,
         endTime: endTimestamp,
@@ -378,6 +387,7 @@ const AddSchedule: React.FC = () => {
           caboose: [],
           duration: expectedDuration,
           groupId: bikeBusGroupRef,
+          route: doc(db, 'routes', RouteID),
           startTime: startTime,
           startTimestamp: startTimestamp,
           endTime: endTimestamp,

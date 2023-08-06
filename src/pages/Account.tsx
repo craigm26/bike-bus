@@ -242,21 +242,6 @@ const Account: React.FC = () => {
                         </IonList>
                     </IonCardContent>
                 </IonCard>
-                <IonCard>
-                    <IonCardHeader>
-                        <IonCardTitle>My Routes</IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                        <IonList>
-                            {routes.map((route) => (
-                                <IonItem key={route.id}>
-                                    <IonLabel>{route.routeName}</IonLabel>
-                                    <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
-                                </IonItem>
-                            ))}
-                        </IonList>
-                    </IonCardContent>
-                </IonCard>
             </IonContent>
         </IonPage>
     );

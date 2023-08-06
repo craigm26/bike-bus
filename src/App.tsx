@@ -413,6 +413,7 @@ const App: React.FC = () => {
 
   return (
     <IonApp>
+        {showHeader && (
       <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
         <IonReactRouter>
           <RouteProvider>
@@ -760,6 +761,7 @@ const App: React.FC = () => {
 
         </IonReactRouter>
       </HeaderContext.Provider>
+        )}
     </IonApp >
   );
 };

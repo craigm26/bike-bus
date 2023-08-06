@@ -435,3 +435,7 @@
   width: 100%;
   overflow: hidden;
 }
+
+.startBikeBusEvent {
+  background-color: #28a745;
+}
