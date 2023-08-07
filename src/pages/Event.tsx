@@ -41,6 +41,8 @@ import React from 'react';
 import AnonymousAvatarMapMarker from '../components/AnonymousAvatarMapMarker';
 import AvatarMapMarker from '../components/AvatarMapMarker';
 import createRoute from './createRoute';
+import html2canvas from 'html2canvas';
+import { group } from 'console';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -51,8 +53,13 @@ interface Coordinate {
   lng: number;
 }
 
+interface BikeBusGroupData {
+  name: string;
+  description: string;
+  BikeBusRoutes: { id: string }[];
+}
+
 interface BikeBusGroup {
-  id: string;
   name: string;
   description: string;
   BikeBusRoutes: { id: string }[];
@@ -105,6 +112,12 @@ interface Route {
 interface FirestoreRef {
   path: string;
 }
+
+type LatLngCoordinate = {
+  lat: number;
+  lng: number;
+};
+
 
 interface FetchedUserData {
   username: string;
@@ -172,7 +185,7 @@ const Event: React.FC = () => {
   const [RouteId, setRouteId] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
-  const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
+  const [eventDataForupdateEvent, setEventDataForupdateEvent] = useState<any>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [leadersId, setLeadersId] = useState<FetchedUserData[]>([]);
   const [membersId, setMembersId] = useState<FetchedUserData[]>([]);
@@ -182,9 +195,9 @@ const Event: React.FC = () => {
   const [parentsId, setParentsId] = useState<FetchedUserData[]>([]);
   const [sheepdogsId, setSheepdogsId] = useState<FetchedUserData[]>([]);
   const [sprintersId, setSprintersId] = useState<FetchedUserData[]>([]);
-  const [tripRefid, setTripRefid] = useState<string>('');
+  const [eventRefid, seteventRefid] = useState<string>('');
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [routeData, setrouteData] = useState<Route | null>(null);
+  const [routeData, setRouteData] = useState<Route | null>(null);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
   const [startAddress, setStartAddress] = useState<string>('');
@@ -199,7 +212,7 @@ const Event: React.FC = () => {
   const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
   const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
-  const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [pathCoordinates, setPathCoordinates] = useState<LatLngCoordinate[]>([]);
   const [startPointAdress, setStartPointAdress] = useState<string>('');
   const [selectedEndLocation, setSelectedEndLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
   const [selectedStartLocation, setSelectedStartLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -211,13 +224,47 @@ const Event: React.FC = () => {
     lng: startGeo.lng,
   });
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "";
+  const [RouteDocId, setRouteDocId] = useState<string>('');
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapZoom, setMapZoom] = useState(13);
+
 
   useEffect(() => {
-    console.log("Google Maps script loaded: ", isLoaded);
-    console.log("Google Maps load error: ", loadError);
-  }, [isLoaded, loadError]);
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData) {
+            setUsername(userData.username);
+            if (userData.accountType) {
+              setaccountType(userData.accountType);
+            }
+          }
+        }
+      });
+    }
 
-  useEffect(() => {
+    const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', username));
+      const querySnapshot = await getDocs(q);
+
+      let user: FetchedUserData | undefined;
+
+      querySnapshot.forEach((doc) => {
+        // doc.data() is never undefined for query doc snapshots
+        // make the id property the same as the in-page uid property
+
+        user = { id: doc.id, uid: doc.data().uid, ...doc.data() } as FetchedUserData; // Include the document's ID and uid
+        // make the uid property the same as the user id property:
+        user.uid = user.id;
+
+      });
+
+      return user;
+    };
+
     const fetchUsernames = async (role: string[], setRole: Function) => {
       if (role) {
         const promises = role.map(fetchUser);
@@ -225,7 +272,6 @@ const Event: React.FC = () => {
         setRole(users.map(user => user?.username));
       }
     };
-
 
     if (eventData) {
       fetchUsernames(eventData.leader || '', setLeader);
@@ -256,110 +302,118 @@ const Event: React.FC = () => {
       fetchUserids(eventData.sheepdogs || '', setSheepdogsId);
       fetchUserids(eventData.sprinters || '', setSprintersId);
     }
-  }, [eventData]);
-
-
-  const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('username', '==', username));
-    const querySnapshot = await getDocs(q);
-
-    let user: FetchedUserData | undefined;
-
-    querySnapshot.forEach((doc) => {
-      // doc.data() is never undefined for query doc snapshots
-      // make the id property the same as the in-page uid property
-
-      user = { id: doc.id, uid: doc.data().uid, ...doc.data() } as FetchedUserData; // Include the document's ID and uid
-      // make the uid property the same as the user id property:
-      user.uid = user.id;
-
-    });
-
-    return user;
-  };
+  }, [eventData, id, user]);
 
   const history = useHistory();
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchEventData = async () => {
       const docRef = doc(db, 'event', id);
       const docSnapshot = await getDoc(docRef);
-
       if (docSnapshot.exists()) {
-        setEventData(docSnapshot.data());
-        // fetch the BikeBusGroup data after the event data has been fetched
-        const fetchBikeBusGroup = async () => {
-          const groupDocSnapshot = await getDoc(docSnapshot.data().BikeBusGroup);
-          if (groupDocSnapshot.exists()) {
-            const bikeBusGroupData = groupDocSnapshot.data() as BikeBusGroup;
-            setBikeBusGroupData(bikeBusGroupData);
-            const RouteId = bikeBusGroupData.BikeBusRoutes[0].id;
-            setRouteId(RouteId);
-            // also set the RouteId to be the routeData
-            const routeData = routes.find((route) => route.id === RouteId);
-            // get the document from the routes collection that matches the RouteId, then set the routeData to that document
-            // get the route data from the route document that matches the RouteId
-            const docRef = doc(db, 'routes', RouteId);
-            const docSnapshot = await getDoc(docRef);
-            if (docSnapshot.exists()) {
-              const routeData = docSnapshot.data() as Route;
-              setrouteData(routeData);
-
-              // set the pathCoordinates to the pathCoordinates in the routeData
-              const pathCoordinates = routeData.pathCoordinates;
-              setPath(pathCoordinates);
-
-              // set the bikeBusStops to the BikeBusStop in the routeData
-              const bikeBusStops = routeData.BikeBusStop;
-              setBikeBusStops(bikeBusStops);
-
-              // set the startAddress to the startPointAddress in the routeData
-              const startAddress = routeData.startPointAddress;
-              setStartAddress(startAddress);
-
-              // set the endAddress to the endPointAddress in the routeData
-              const endAddress = routeData.endPointAddress;
-              setEndAddress(endAddress);
-
-            }
-
-            const groupId = bikeBusGroupData.id;
-            // set the groupId to the groupId
-            setGroupId(groupId);
-          }
-          else {
-          }
-        };
-        fetchBikeBusGroup();
+        const eventData = docSnapshot.data();
+        setEventData(eventData);
+        return eventData; // Return eventData for further use
+      }
+      return null;
+    };
+    const fetchRoute = async (routeId: string) => {
+      const docRouteRef = doc(db, 'routes', routeId);
+      const docRouteSnapshot = await getDoc(docRouteRef);
+      if (docRouteSnapshot.exists()) {
+        const routeData = docRouteSnapshot.data() as Route;
+        setRouteData(routeData);
+        setPath(routeData.pathCoordinates);
+        setBikeBusStops(routeData.BikeBusStop);
+        setStartAddress(routeData.startPointAddress);
+        setEndAddress(routeData.endPointAddress);
       }
     };
-    fetchEvent();
-  }, [id, routes]);
+    const fetchBikeBusGroup = async (bikeBusGroupRef: DocumentReference) => {
+      const groupDocSnapshot = await getDoc(bikeBusGroupRef);
+      if (groupDocSnapshot.exists()) {
+        const bikeBusGroupData = groupDocSnapshot.data() as BikeBusGroupData;
+        if (bikeBusGroupData) {
+          const groupId = groupDocSnapshot.id;
+          setBikeBusGroupId(groupId);
+        }
+      }
+    };
+    fetchEventData().then(eventData => {
+      if (eventData?.route?.id) {
+        fetchRoute(eventData.route.id).then(() => {
+          if (eventData?.BikeBusGroup) {
+            fetchBikeBusGroup(eventData.BikeBusGroup);
+          }
+        });
+      }
+    });
+  }, [id]);
+
 
   useEffect(() => {
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData) {
-            setUsername(userData.username);
-            if (userData.accountType) {
-              setaccountType(userData.accountType);
-            }
-          }
-        }
+    if (routeData) {
+      console.log('routeData', routeData)
+      setBikeBusStops(routeData.BikeBusStop);
+      setPathCoordinates(routeData.pathCoordinates);
+
+      setMapCenter({
+        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
       });
+      setStartGeo(routeData.startPoint);
+      setEndGeo(routeData.endPoint);
+      setSelectedStartLocation(routeData.startPoint);
+      setSelectedEndLocation(routeData.endPoint);
+
+      // let's set the zoom level based on the distance between the start and end points
+      const distance = Math.sqrt(Math.pow(routeData.startPoint.lat - routeData.endPoint.lat, 2) + Math.pow(routeData.startPoint.lng - routeData.endPoint.lng, 2));
+      if (distance < 0.01) {
+        setMapZoom(18);
+      }
+      else if (distance < 0.02) {
+        setMapZoom(18);
+      }
+      else if (distance < 0.03) {
+        setMapZoom(17);
+      }
+      else if (distance < 0.04) {
+        setMapZoom(16);
+      }
+      else if (distance < 0.05) {
+        setMapZoom(15);
+      }
+      else if (distance < 0.06) {
+        setMapZoom(14);
+      }
+      else if (distance < 0.07) {
+        setMapZoom(13);
+      }
+      else if (distance > 0.07) {
+        setMapZoom(13);
+      }
     }
-  }, [user]);
+
+  }
+    , [routeData]);
+
+
+
+  useEffect(() => {
+    const docRef = doc(db, 'event', id);
+
+    const unsubscribe = onSnapshot(docRef, (doc) => {
+      setEventData(doc.data());
+    });
+
+    return () => unsubscribe();  // Clean up listener on unmount
+  }, [id]);
 
   function isRouteData(data: unknown): data is RouteData {
     return !!(data && typeof data === 'object' && 'BikeBusName' in data);
   }
 
-
-  const createTrip = useCallback(async () => {
+  const updateEvent = useCallback(async () => {
 
     let routeData: RouteData | undefined;
     let groupData;
@@ -368,9 +422,9 @@ const Event: React.FC = () => {
     const docEventsnapshot = await getDoc(docRefEvent);
 
     if (docEventsnapshot.exists()) {
-      const eventDataForCreateTrip = docEventsnapshot.data();
-      if (eventDataForCreateTrip) {
-        const groupRef = eventDataForCreateTrip?.BikeBusGroup;
+      const eventDataForupdateEvent = docEventsnapshot.data();
+      if (eventDataForupdateEvent) {
+        const groupRef = eventDataForupdateEvent?.BikeBusGroup;
         const docSnapshotgroup = await getDoc(groupRef);
 
         if (docSnapshotgroup.exists()) {
@@ -378,7 +432,7 @@ const Event: React.FC = () => {
         }
 
 
-        const routeRef = eventDataForCreateTrip?.route;
+        const routeRef = eventDataForupdateEvent?.route;
         const docSnapshotroute = await getDoc(routeRef);
 
 
@@ -390,106 +444,83 @@ const Event: React.FC = () => {
         }
 
         if (routeData && groupData) {
-          const tripsRef = collection(db, 'trips');
-          const docRef = await addDoc(tripsRef, {
-            // wait until all of the values are set in the trip document before continuing
-            // check to see if the trip document has been created and the values for event have been saved
-            eventId: id,
-            BikeBusStops: routeData?.BikeBusStop || [],
-            leader: user?.uid || '',
-            members: eventData?.members || [],
-            caboose: eventData?.caboose || [],
-            captains: eventData?.captains || [],
-            kids: eventData?.kids || [],
-            parents: eventData?.parents || [],
-            sheepdogs: eventData?.sheepdogs || [],
-            sprinters: eventData?.sprinters || [],
-            startTimestamp: eventData?.startTimestamp || '',
-            endTimestamp: eventData?.endTime || null,
-            status: eventData?.status || 'active',
-            BikeBusName: eventData?.BikeBusName || '',
-            route: eventData?.route || '',
-            groupId: eventData?.groupId || '',
+          const updateData = {
             groupSize: '',
-            tripLeader: eventData?.leader || [],
-            tripMembers: eventData?.members || [],
-            tripCaboose: eventData?.caboose || [],
-            tripCaptains: eventData?.captains || [],
-            tripKids: eventData?.kids || [],
-            tripParents: eventData?.parents || [],
-            tripSheepdogs: eventData?.sheepdogs || [],
-            tripSprinters: eventData?.sprinters || [],
-            tripStartTimestamp: eventData?.startTimestamp || '',
-            tripEndTimestamp: eventData?.endTime || null,
-            tripStatus: eventData?.status || 'active',
-            tripBikeBusName: eventData?.BikeBusName || '',
-            tripRoute: eventData?.route || '',
-            tripGroupId: eventData?.groupId || '',
-            tripGroupSize: '',
-            tripCheckInLeader: eventData?.leader || '',
-            tripcheckInLeaderTimeStamp: serverTimestamp(),
-            tripCheckInMembers: '',
-            tripCheckInMembersTimeStamp: '',
-            tripCheckInCaboose: '',
-            tripCheckInCabooseTimeStamp: '',
-            tripCheckInCaptains: '',
-            tripCheckInCaptainsTimeStamp: '',
-            tripCheckInKids: '',
-            tripCheckInKidsTimeStamp: '',
-            tripCheckInParents: '',
-            tripCheckInParentsTimeStamp: '',
-            tripCheckInSheepdogs: '',
-            tripCheckInSheepdogsTimeStamp: '',
-            tripCheckInSprinters: '',
-            tripCheckInSprintersTimeStamp: '',
-            // for the tripCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start Trip" button
-            tripCheckInStartTimestamp: serverTimestamp(),
-            // for the tripCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End Trip" button
-            tripCheckInEndTimestamp: '',
-            tripCheckInStatus: '',
-            tripCheckInBikeBusName: eventData?.BikeBusName || '',
-            tripCheckInRoute: eventData?.route || '',
-            tripCheckInGroupId: eventData?.groupId || '',
-            tripCheckInGroupSize: '',
-            tripEndTripLeader: '',
-            tripEndTripLeaderTimeStamp: '',
-            tripEndTripMembers: '',
-            tripEndTripMembersTimeStamp: '',
-            tripEndTripCaboose: '',
-            tripEndTripCabooseTimeStamp: '',
-            tripEndTripCaptains: '',
-            tripEndTripCaptainsTimeStamp: '',
-            tripEndTripKids: '',
-            tripEndTripKidsTimeStamp: '',
-            tripEndTripParents: '',
-            tripEndTripParentsTimeStamp: '',
-            tripEndTripSheepdogs: '',
-            tripEndTripSheepdogsTimeStamp: '',
-            tripEndTripSprinters: '',
-            tripEndTripSprintersTimeStamp: '',
-            tripEndTripEndTimestamp: '',
-            tripEndTripStatus: '',
-            tripEndTripBikeBusName: '',
-            tripEndTripRoute: '',
-            tripEndTripGroupId: '',
-            tripEndTripGroupSize: '',
-          });
+            eventLeader: eventData?.leader || [],
+            eventMembers: eventData?.members || [],
+            eventCaboose: eventData?.caboose || [],
+            eventCaptains: eventData?.captains || [],
+            eventKids: eventData?.kids || [],
+            eventParents: eventData?.parents || [],
+            eventSheepdogs: eventData?.sheepdogs || [],
+            eventSprinters: eventData?.sprinters || [],
+            eventStartTimestamp: eventData?.startTimestamp || '',
+            eventEndTimestamp: eventData?.endTime || null,
+            eventStatus: eventData?.status || 'active',
+            eventBikeBusName: eventData?.BikeBusName || '',
+            eventRoute: eventData?.route || '',
+            eventGroupId: eventData?.groupId || '',
+            eventGroupSize: '',
+            eventCheckInLeader: user?.uid,
+            eventcheckInLeaderTimeStamp: serverTimestamp(),
+            eventCheckInMembers: '',
+            eventCheckInMembersTimeStamp: '',
+            eventCheckInCaboose: '',
+            eventCheckInCabooseTimeStamp: '',
+            eventCheckInCaptains: '',
+            eventCheckInCaptainsTimeStamp: '',
+            eventCheckInKids: '',
+            eventCheckInKidsTimeStamp: '',
+            eventCheckInParents: '',
+            eventCheckInParentsTimeStamp: '',
+            eventCheckInSheepdogs: '',
+            eventCheckInSheepdogsTimeStamp: '',
+            eventCheckInSprinters: '',
+            eventCheckInSprintersTimeStamp: '',
+            // for the eventCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start event" button
+            eventCheckInStartTimestamp: serverTimestamp(),
+            // for the eventCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End event" button
+            eventCheckInEndTimestamp: '',
+            eventCheckInStatus: '',
+            eventCheckInBikeBusName: eventData?.BikeBusName || '',
+            eventCheckInRoute: eventData?.route || '',
+            eventCheckInGroupId: eventData?.groupId || '',
+            eventCheckInGroupSize: '',
+            eventEndeventLeader: '',
+            eventEndeventLeaderTimeStamp: '',
+            eventEndeventMembers: '',
+            eventEndeventMembersTimeStamp: '',
+            eventEndeventCaboose: '',
+            eventEndeventCabooseTimeStamp: '',
+            eventEndeventCaptains: '',
+            eventEndeventCaptainsTimeStamp: '',
+            eventEndeventKids: '',
+            eventEndeventKidsTimeStamp: '',
+            eventEndeventParents: '',
+            eventEndeventParentsTimeStamp: '',
+            eventEndeventSheepdogs: '',
+            eventEndeventSheepdogsTimeStamp: '',
+            eventEndeventSprinters: '',
+            eventEndeventSprintersTimeStamp: '',
+            eventEndeventEndTimestamp: '',
+            eventEndeventStatus: '',
+            eventEndeventBikeBusName: '',
+            eventEndeventRoute: '',
+            eventEndeventGroupId: '',
+            eventEndeventGroupSize: '',
+          };
 
-          const tripRefid = docRef.id;
-          setTripRefid(tripRefid);
-          // save that trip id to the event document as tripId
-          const eventRef = doc(db, 'event', id);
-          await updateDoc(eventRef, {
-            tripId: tripRefid
-          });
-          // redirect to the trip page with the trip id being the "tripId" parameter
-          history.push(`/trips/${tripRefid}`);
+          await updateDoc(docRefEvent, updateData);
+
+
+          // redirect to the event page with the event id being the "eventId" parameter
+          history.push(`/Map/${docEventsnapshot.id}`);
         }
       } else {
         // doc.data() will be undefined in this case
       }
     }
-  }, [id, user?.uid, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, eventData?.leader, history]);
+  }, [id, eventData?.leader, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, user?.uid, history]);
 
 
 
@@ -563,16 +594,6 @@ const Event: React.FC = () => {
     setShowRSVPModal(false);
   };
 
-  useEffect(() => {
-    const docRef = doc(db, 'event', id);
-
-    const unsubscribe = onSnapshot(docRef, (doc) => {
-      setEventData(doc.data());
-    });
-
-    return () => unsubscribe();  // Clean up listener on unmount
-  }, [id]);
-
   // Date and time formatting options
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
@@ -597,7 +618,7 @@ const Event: React.FC = () => {
     await setDoc(docRef, {
       status: status
     }, { merge: true });
-    // check to see if the event already has the status of active, if not, set the status to active and trigger the createTrip function
+    // check to see if the event already has the status of active, if not, set the status to active and trigger the updateEvent function
     if (status === '' || status === 'inactive') {
       setEventData((prevEventData: any) => ({ ...prevEventData, status: '' }));
       setShowStartBikeBus(true);
@@ -605,202 +626,90 @@ const Event: React.FC = () => {
     } else
       if (status === 'active') {
         setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
-        createTrip();
-        //setShowJoinBikeBus(true);
-        //setShowStartBikeBus(false);
+        updateEvent();
+        setShowJoinBikeBus(true);
+        setShowStartBikeBus(false);
       }
-  }, [createTrip, id]);
-
-  // if toggleEventStatus is equal to active, then set the is eventActive to true
+  }, [id]);
 
   const toggleStartEvent = useCallback(() => (
     toggleEventStatus('active'),
     console.log('toggleStartEvent is active!')
   ), [toggleEventStatus]);
 
-  // in case the leader forgets to manually start the BikeBus, 
-  // create a async function to get the users' current time and date and measure that against the event start time and date
-  const checkEventTime = useCallback(() => {
-    // get the current time and date
-    const now = new Date();
-    // get the event start time and date
-    const eventStart = eventData?.startTimestamp?.toDate();
-    // check to see if the event start time and date is before the current time and date and within 30 minutes of the current time and date
-    if (eventStart && eventStart < now && eventStart > new Date(now.getTime() - 15 * 60000)) {
-      // show the join bikebus button
-      setShowJoinBikeBus(true);
-      // if the event start time and date is before the current time and date and within 30 minutes of the current time and date, toggle the event status to active when it's the eventData?.startTimestamp
-      if (eventData?.startTimestamp) {
-        toggleStartEvent();
-      }
-      // and trigger the createTrip function
-      // build a function to create a new trip document in the trips collection
-    }
-  }, [eventData?.startTimestamp, toggleStartEvent]);
-
-  // when page loads, do the checkEventTime function
-  useEffect(() => {
-    console.log('checkEventTime is active!');
-    const fetchRouteData = async () => {
-      console.log('eventData', eventData);
-      console.log('eventData?.route', eventData?.route);
-      // bring in RouteID from the // bring in RouteID from the eventData
-      const RouteId = eventData?.route?._key?.path?.segments[6]; // Extracting the document ID
-      console.log('RouteId', RouteId);
-
-      // get the document from the routes collection that matches the RouteId, then set the routeData to that document
-      // get the route data from the route document that matches the RouteId
-      const docRef = doc(db, 'routes', RouteId);
-      const docSnapshot = await getDoc(docRef);
-      if (docSnapshot.exists()) {
-        const routeData = docSnapshot.data() as Route;
-        setrouteData(routeData);
-        console.log('routeData inside fetchRouteData', routeData);
-      }
-
-
-    };
-
-    fetchRouteData();
-    console.log('routeData', routeData);
-
-    // now we need to set the selectedStartLocation and selectedEndLocation to the startGeo and endGeo
-    if (routeData?.startPoint) {
-      setSelectedStartLocation(routeData.startPoint);
-    }
-
-    if (routeData?.endPoint) {
-      setSelectedEndLocation(routeData.endPoint);
-    }
-
-    if (routeData?.pathCoordinates) {
-      const transformedCoordinates = routeData.pathCoordinates.map(coord => ({
-        latitude: coord.lat, // Adjust these property names as per the actual structure of Coordinate
-        longitude: coord.lng
-      }));
-      setPathCoordinates(transformedCoordinates);
-    }
-    
-
-    // now get the startTime and endTime from the eventData
-    const startTime = eventData?.startTimestamp;
-
-    checkEventTime();
-    // check the event time every 30 seconds
-    const interval = setInterval(() => {
-      checkEventTime();
-    }, 30000);
-
-    // when the page unloads, clear the interval
-    return () => clearInterval(interval);
-
-  }, [checkEventTime, startTime, eventData?.route, eventData?.startTimestamp]);
-
 
   const toggleJoinEvent = () => {
-    const tripsRef = doc(db, 'trips', eventData?.tripId);
-    setDoc(tripsRef, {
+    const eventRef = doc(db, 'event', eventData?.id);
+    setDoc(eventRef, {
       JoinedMembers: arrayUnion(username)
     }, { merge: true });
     // find any other of user's ids in the event add them to the appropriate role arrays
     // if the user is a parent in the eventData field parents, add them to the parents array
     if (Array.isArray(eventData?.parents) && eventData?.parents.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInParents: arrayUnion(username),
-        tripCheckInParentsTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInParents: arrayUnion(username),
+        eventCheckInParentsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the kids array
     if (Array.isArray(eventData?.kids) && eventData?.kids.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInKids: arrayUnion(username),
-        tripCheckInKidsTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInKids: arrayUnion(username),
+        eventCheckInKidsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the captains array
     if (Array.isArray(eventData?.captains) && eventData?.captains.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInCaptains: arrayUnion(username),
-        tripCheckInCaptainsTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInCaptains: arrayUnion(username),
+        eventCheckInCaptainsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the sheepdogs array
     if (Array.isArray(eventData?.sheepdogs) && eventData?.sheepdogs.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInSheepdogs: arrayUnion(username),
-        tripCheckInSheepdogsTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInSheepdogs: arrayUnion(username),
+        eventCheckInSheepdogsTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the sprinters array
     if (Array.isArray(eventData?.sprinters) && eventData?.sprinters.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInSprinters: arrayUnion(username),
-        tripCheckInSprintersTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInSprinters: arrayUnion(username),
+        eventCheckInSprintersTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the caboose array
     if (Array.isArray(eventData?.caboose) && eventData?.caboose.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInCaboose: arrayUnion(username),
-        tripCheckInCabooseTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInCaboose: arrayUnion(username),
+        eventCheckInCabooseTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the members array
     if (Array.isArray(eventData?.members) && eventData?.members.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInMembers: arrayUnion(username),
-        tripCheckInMembersTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInMembers: arrayUnion(username),
+        eventCheckInMembersTimeStamp: serverTimestamp()
       }, { merge: true });
     }
     // do the same as parents to the leader array
     if (eventData?.leader.includes(username)) {
-      setDoc(tripsRef, {
-        tripCheckInLeader: arrayUnion(username),
-        tripCheckInLeaderTimeStamp: serverTimestamp()
+      setDoc(eventRef, {
+        eventCheckInLeader: arrayUnion(username),
+        eventCheckInLeaderTimeStamp: serverTimestamp()
       }, { merge: true });
     }
-    // re-direct users to the trip page
-    history.push(`/trips/${eventData?.tripId}`);
+    // re-direct users to the event page
+    history.push(`/map/${eventData?.id}`);
   };
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
   useEffect(() => {
-    if (routeData) {
-      setMapCenter({
-        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
-        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
-      });
-      setStartGeo(routeData.startPoint);
-      setEndGeo(routeData.endPoint);
-    }
-  }
-    , [routeData]);
-
-  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
-    const routeData = RouteId;
-    const center = `${mapCenter.lat},${mapCenter.lng}`;
-    // make the size fill the screen and as a background image
-    const size = `${window.innerWidth}x${window.innerHeight}`;
-    const path = routeData?.pathCoordinates
-      .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
-      .join('|');
-    const markers = [
-      `markers=color:red|label:A|${startGeo.lat},${startGeo.lng}`,
-      `markers=color:red|label:B|${endGeo.lat},${endGeo.lng}`,
-    ];
-    // let's make some markers for the bikebusstops in the route
-    const bikeBusStops = routeData?.BikeBusStop;
-    if (bikeBusStops) {
-      for (let i = 0; i < bikeBusStops.length; i++) {
-        markers.push(`markers=color:blue|label:${i + 1}|${bikeBusStops[i].lat},${bikeBusStops[i].lng}`);
-      }
-    }
-    const styles = "element:geometry%7Ccolor:0xf5f5f5&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative%7Celement:geometry%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Celement:geometry.fill%7Cvisibility:off&style=feature:administrative.neighborhood%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Cvisibility:on&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:geometry.fill%7Cvisibility:on&style=feature:poi.school%7Cvisibility:on&style=feature:poi.school%7Celement:geometry.fill%7Ccolor:0xffd800%7Cvisibility:on&style=feature:poi.school%7Celement:labels%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text.fill%7Cvisibility:on%7Cweight:5&style=feature:poi.school%7Celement:labels.text.stroke%7Cvisibility:on%7Cweight:3.5&style=feature:road%7Celement:geometry%7Ccolor:0xffffff%7Cvisibility:simplified&style=feature:road%7Celement:labels.icon%7Cvisibility:off&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels%7Cvisibility:off&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit%7Celement:geometry.fill%7Csaturation:-50%7Clightness:50&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e";
-    // create markers for bikebusstops along the route
-    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xffd800|weight:3|${path}&${markers.join('&')}&${styles}&key=${apiKey}`;
-    return url;
-  }
+    console.log("Google Maps script loaded: ", isLoaded);
+    console.log("Google Maps load error: ", loadError);
+  }, [isLoaded, loadError]);
 
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
@@ -814,179 +723,19 @@ const Event: React.FC = () => {
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-        <IonGrid>
-          <IonRow>
-            <IonCol>
-              <IonButton routerLink={`/bikebusgrouppage/${eventData?.BikeBusGroup.id}`}>Back to BikeBus</IonButton>
-              <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
-              <IonModal isOpen={showRSVPModal}>
-                <IonHeader>
-                  <IonToolbar>
-                    <IonTitle>Select a Role</IonTitle>
-                  </IonToolbar>
-                </IonHeader>
-                <IonContent>
-                  <IonList>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="members" disabled checked />
-                      <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Kids: Be safe and have fun!</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
-                      <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
-                    </IonItem>
-                  </IonList>
-                  <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
-                  <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
-                </IonContent>
-              </IonModal>
-              <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
-              <IonModal isOpen={showRSVPListModal}>
-                <IonHeader>
-                  <IonToolbar>
-                    <IonTitle>RSVP List</IonTitle>
-                  </IonToolbar>
-                </IonHeader>
-                <IonContent>
-                  <IonList>
-                    <IonItem>
-                      <IonLabel>Leader</IonLabel>
-                      {eventData?.leader}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Members</IonLabel>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                          {membersId.slice(0, 5).map((member, index) => (
-                            <IonChip key={index}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar uid={member?.uid} size="extrasmall" />
-                              </div>
-                            </IonChip>
-                          ))}
-                          {membersId.length > 5 && (
-                            <IonChip>
-                              <IonLabel>{membersId.length}</IonLabel>
-                            </IonChip>
-                          )}
-                        </IonButton>
-                      </div>
-                    </IonItem>
-                    <IonModal isOpen={showMembersModal}>
-                      <IonHeader>
-                        <IonToolbar>
-                          <IonTitle>Members</IonTitle>
-                        </IonToolbar>
-                      </IonHeader>
-                      <IonContent>
-                        <IonList>
-                          {membersId.map((member, index) => (
-                            <IonItem key={index}>
-                              <Avatar uid={member?.uid} />
-                              <IonLabel>{username}</IonLabel>
-                            </IonItem>
-                          ))}
-                        </IonList>
-                        <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
-                      </IonContent>
-                    </IonModal>
-                    <IonItem>
-                      <IonLabel>Captains</IonLabel>
-                      {captains.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Sheepdogs</IonLabel>
-                      {sheepdogs.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Sprinters</IonLabel>
-                      {sprinters.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Parents</IonLabel>
-                      {parents.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Kids</IonLabel>
-                      {kids.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Caboose</IonLabel>
-                      {caboose.map((username: string, index: number) => (
-                        <IonLabel key={index}>{username}</IonLabel>
-                      ))}
-                    </IonItem>
-                  </IonList>
-                  <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
-                </IonContent>
-              </IonModal>
-              {isEventLeader && (
-                <IonButton className="startBikeBusEvent" onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
-              )}
-              {!isEventLeader && isEventActive && (
-                <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
-              )}
-              <IonButton
-                onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
-              >Download Map</IonButton>
-              {isEventLeader && isEventActive && (
-                <IonButton routerLink={`/trips/${eventData?.tripId}`}>Go to Trip</IonButton>
-              )}
-            </IonCol>
-          </IonRow>
-          <IonRow>
-            <IonCol>
-              <IonLabel>{eventData?.BikeBusName}</IonLabel>
-              <IonItem>
-                <IonText>{startTime} to {endTime}</IonText>
-              </IonItem>
-            </IonCol>
-          </IonRow>
-          <IonRow className="map-base">
+        <IonGrid className="ion-no-padding">
+          <IonRow className="map-base" id="map-container">
             <GoogleMap
               onLoad={(map) => {
                 mapRef.current = map;
+                setMapLoaded(true);
               }}
               mapContainerStyle={{
                 width: "100%",
                 height: "100%",
               }}
               center={mapCenter}
-              zoom={13}
+              zoom={mapZoom}
               options={{
                 disableDefaultUI: true,
                 zoomControl: false,
@@ -1305,13 +1054,204 @@ const Event: React.FC = () => {
                 ],
               }}
             >
+              {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
+                <div>
+                  <Polyline
+                    path={pathCoordinates.map(coord => ({ lat: coord.lat, lng: coord.lng }))}
+                    options={{
+                      strokeColor: "#FFD800",
+                      strokeOpacity: 1.0,
+                      strokeWeight: 2,
+                      geodesic: true,
+                      editable: false,
+                      draggable: false,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#ffd800", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#ffd800",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                  />
+                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
+                    <Marker
+                      key={index}
+                      position={{ lat: stop.lat, lng: stop.lng }}
+                      icon={{
+                        url: '/assets/markers/stop-outline.svg',
+                        scaledSize: new google.maps.Size(30, 30),
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
               <div>
-                <h2>
-                  {eventData?.BikeBusName}
-                </h2>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol>
+                      {isBikeBus && (
+                        <IonButton routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
+                      )}
+                      <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+                      <IonModal isOpen={showRSVPModal}>
+                        <IonHeader>
+                          <IonToolbar>
+                            <IonTitle>Select a Role</IonTitle>
+                          </IonToolbar>
+                        </IonHeader>
+                        <IonContent>
+                          <IonList>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="leader" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Leader: Schedules the BikeBus, makes adjustments to the route and starts the BikeBus in the app. </IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="members" disabled checked />
+                              <IonLabel>Members: Everyone is considered a member of the BikeBus Event when they make an RSVP to an Event.</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="captains" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Captains: Front of the BikeBus and keeping track of time.</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="sheepdogs" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Sheepdogs: Ride alongside the BikeBus, keeping the group together.</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="sprinters" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Sprinters: Ride back and forth to help block intersections when encountered. When the BikeBus has cleared the intersection, head to the front.</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="parents" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Parents: Parents can help their Kid RSVP for an event or help other kids enjoy the BikeBus.</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="kids" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Kids: Be safe and have fun!</IonLabel>
+                            </IonItem>
+                            <IonItem>
+                              <IonCheckbox slot="start" value="caboose" onIonChange={e => handleRoleChange(e.detail.value)} />
+                              <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
+                            </IonItem>
+                          </IonList>
+                          <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
+                          <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
+                        </IonContent>
+                      </IonModal>
+                      <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+                      <IonModal isOpen={showRSVPListModal}>
+                        <IonHeader>
+                          <IonToolbar>
+                            <IonTitle>RSVP List</IonTitle>
+                          </IonToolbar>
+                        </IonHeader>
+                        <IonContent>
+                          <IonList>
+                            <IonItem>
+                              <IonLabel>Leader</IonLabel>
+                              {eventData?.leader}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Members</IonLabel>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                                  {membersId.slice(0, 5).map((member, index) => (
+                                    <IonChip key={index}>
+                                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <Avatar uid={member?.uid} size="extrasmall" />
+                                      </div>
+                                    </IonChip>
+                                  ))}
+                                  {membersId.length > 5 && (
+                                    <IonChip>
+                                      <IonLabel>{membersId.length}</IonLabel>
+                                    </IonChip>
+                                  )}
+                                </IonButton>
+                              </div>
+                            </IonItem>
+                            <IonModal isOpen={showMembersModal}>
+                              <IonHeader>
+                                <IonToolbar>
+                                  <IonTitle>Members</IonTitle>
+                                </IonToolbar>
+                              </IonHeader>
+                              <IonContent>
+                                <IonList>
+                                  {membersId.map((member, index) => (
+                                    <IonItem key={index}>
+                                      <Avatar uid={member?.uid} />
+                                      <IonLabel>{username}</IonLabel>
+                                    </IonItem>
+                                  ))}
+                                </IonList>
+                                <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                              </IonContent>
+                            </IonModal>
+                            <IonItem>
+                              <IonLabel>Captains</IonLabel>
+                              {captains.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Sheepdogs</IonLabel>
+                              {sheepdogs.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Sprinters</IonLabel>
+                              {sprinters.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Parents</IonLabel>
+                              {parents.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Kids</IonLabel>
+                              {kids.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Caboose</IonLabel>
+                              {caboose.map((username: string, index: number) => (
+                                <IonLabel key={index}>{username}</IonLabel>
+                              ))}
+                            </IonItem>
+                          </IonList>
+                          <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
+                        </IonContent>
+                      </IonModal>
+                      {isEventLeader && (
+                        <IonButton color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+                      )}
+                      {!isEventLeader && isEventActive && (
+                        <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+                      )}
+                      {isEventLeader && isEventActive && (
+                        <IonButton routerLink={`/Map/${id}`}>Go to Event</IonButton>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
               </div>
               <div>
-                {selectedStartLocation && (
+                {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
                   <Marker
                     position={selectedStartLocation}
                     icon={{
@@ -1320,7 +1260,7 @@ const Event: React.FC = () => {
                     }}
                   />
                 )}
-                {selectedEndLocation && (
+                {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
                   <Marker position={selectedEndLocation}
                     icon={{
                       url: "/assets/markers/MarkerB.svg",
@@ -1331,17 +1271,40 @@ const Event: React.FC = () => {
               </div>
               <div>
               </div>
-              <Polyline
-                path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                options={{
-                  strokeColor: "#FFD800",
-                  strokeOpacity: 1.0,
-                  strokeWeight: 2,
-                  geodesic: true,
-                  editable: false,
-                  draggable: false,
-                }}
-              />
+              <div>
+                <IonGrid className="bikebus-event-name">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{eventData?.BikeBusName}</IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-route">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{routeData?.routeName}</IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-time">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{startTime} to
+                      </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{endTime}
+                      </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
             </GoogleMap>
           </IonRow>
         </IonGrid>

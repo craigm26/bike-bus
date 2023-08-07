@@ -47,6 +47,18 @@ const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualiz
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
+interface BikeBusEvent {
+  id: string;
+  startTime: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  startTimestamp: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}
+
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
   const history = useHistory();
@@ -974,12 +986,79 @@ const Map: React.FC = () => {
 
   };
 
-  const handleBikeBusRouteClick = (route: any) => {
-    // Set content to whatever you want to display inside the InfoWindow
-    const content = `<a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
-    View ${route.BikeBusName}
-    </a>`
+  const handleBikeBusRouteClick = async (route: any) => {
 
+    // let's get the events for this bikebus group
+    const bikeBusGroupId = route.BikeBusGroupId.id;
+    console.log("bikeBusGroupId: ", bikeBusGroupId);
+    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
+
+    // get the events for this bikebus group
+    const eventsRef = query(
+      collection(db, "event"),
+      where('BikeBusGroup', '==', bikeBusGroupRef),
+    );
+    const querySnapshot = getDocs(eventsRef);
+    // once we have the docs, let's figure out the next 3 events for this bikebus group in order of start time
+    const events: BikeBusEvent[] = [];
+    const currentTime = new Date().getTime(); // Get the current time in milliseconds
+    (await querySnapshot).forEach((doc) => {
+      const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
+      const eventStartTime = eventData.startTimestamp.seconds * 1000;
+      if (eventStartTime > currentTime) {
+        events.push(eventData);
+      }
+    });
+    // sort the events by start time
+    events.sort((a, b) => (a.startTimestamp > b.startTimestamp) ? 1 : -1);
+    // get the next 3 events
+    const next3Events = events.slice(0, 3);
+    // get the next 3 events' start times
+    const next3EventsStartTimes = next3Events.map((event) => {
+      const eventStartTime = event.startTime;
+      return eventStartTime;
+    });
+
+    let next3EventsHTML = '<span style="color: black;">No Events Scheduled</span>'; // Default message
+
+    if (next3Events.length > 0) {
+      const next3EventsLinks = next3Events.map((event) => {
+        const eventId = event.id;
+
+        // Convert the Timestamp to a Date object
+        const eventStartDate = new Date(event.startTimestamp.seconds * 1000);
+
+        // Format the date
+        const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
+
+        return `<a href="/event/${eventId}" style="color: black;">${eventStartFormatted}</a>`;
+      });
+      next3EventsHTML = next3EventsLinks.join('<br>');
+    }
+
+    // for each of the qualified next3Events, let's create a link to the event page for that event /event/id
+    const next3EventsLinks = next3Events.map((event) => {
+      const eventId = event.id;
+
+      // Convert the Timestamp to a Date object
+      const eventStartDate = new Date(event.startTimestamp.seconds * 1000);
+
+      // Format the date
+      const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
+
+      return `<a href="/event/${eventId}">${eventStartFormatted}</a>`;
+    });
+
+
+    // Set content to whatever you want to display inside the InfoWindow
+    const content = `  
+    <div style="margin-top: 10px;">
+    <h4>Upcoming Events:</h4>
+    ${next3EventsHTML}
+  </div>
+    <a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    View ${route.BikeBusName}
+  </a>`
       ;
 
     // Set position to the startPoint of the route (or any other point you prefer)
@@ -1068,6 +1147,7 @@ const Map: React.FC = () => {
         endPoint: selectedEndLocation,
         endPointName: routeEndName,
         endPointAddress: routeEndFormattedAddress,
+        route: null,
         start: new Date(),
         startTime: new Date(),
         startTimestamp: new Date(),
@@ -1136,8 +1216,10 @@ const Map: React.FC = () => {
           const openTripRouteId = docRouteRef.id;
           setOpenTripRouteId(openTripRouteId);
           console.log("openTripRouteId: ", openTripRouteId);
+          console.log("docRouteRef: ", docRouteRef);
+          console.log("openTripId: ", openTripId)
           // now let's update the trip document with the routeId in the route field of the trip document
-          const eventDocRef = doc(db, "event", openTripId);
+          const eventDocRef = doc(db, "event", openTripRouteId);
           updateDoc(eventDocRef, {
             route: docRouteRef,
           });
@@ -1243,7 +1325,7 @@ const Map: React.FC = () => {
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
       <defs>
-        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id="glow" x="-50%" y="-50%" width="300%" height="300%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
           <feMerge>
             <feMergeNode in="blur"/>
@@ -1251,7 +1333,7 @@ const Map: React.FC = () => {
           </feMerge>
         </filter>
       </defs>
-      <circle cx="50" cy="50" r="40" fill="#ffd800" filter="url(#glow)"/>
+      <circle cx="50" cy="50" r="50" fill="#ffd800" filter="url(#glow)"/>
       <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;

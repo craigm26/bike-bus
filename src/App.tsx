@@ -413,7 +413,6 @@ const App: React.FC = () => {
 
   return (
     <IonApp>
-        {showHeader && (
       <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
         <IonReactRouter>
           <RouteProvider>
@@ -484,8 +483,8 @@ const App: React.FC = () => {
                 </IonContent>
               </IonMenu>
               <IonPage id="main-content" >
+                
                 <IonContent fullscreen>
-                  {showHeader && (
                     <IonHeader>
                       <IonToolbar color="primary" >
                         <IonButtons color="secondary" slot="start">
@@ -583,7 +582,6 @@ const App: React.FC = () => {
                         </IonButtons>
                       </IonToolbar>
                     </IonHeader>
-                  )}
                   <IonRouterOutlet>
                     <React.Fragment>
                       <Route path="/bikebusgrouppage/:groupId">
@@ -761,7 +759,6 @@ const App: React.FC = () => {
 
         </IonReactRouter>
       </HeaderContext.Provider>
-        )}
     </IonApp >
   );
 };

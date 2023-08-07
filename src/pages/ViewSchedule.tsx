@@ -105,11 +105,17 @@ const ViewSchedule: React.FC = () => {
             eventsSnapshot.forEach((docSnapshot) => {
                 const eventData = docSnapshot.data();
                 if (eventData?.groupId && typeof eventData.groupId === 'object') { // only process events related to the current group
-                    const startDate = eventData.start.toDate();
+                    // use the eventData.startTimestamp to get the UTC start time and convert to local time zone
+                    const startDate = eventData.startTimestamp.toDate();
                     const startTimeParts = eventData.startTime.split(/[:\s]/);
                     let startTimeHours = parseInt(startTimeParts[0]);
                     const startTimeMinutes = parseInt(startTimeParts[1]);
                     const startTimePeriod = startTimeParts[2];
+
+                    console.log('startTimeHours', startTimeHours);
+                    console.log('startTimeMinutes', startTimeMinutes);
+                    console.log('startTimePeriod', startTimePeriod);
+                    console.log('startDate', startDate);
 
                     if (startTimePeriod === 'PM' && startTimeHours !== 12) {
                         startTimeHours += 12;
@@ -117,6 +123,7 @@ const ViewSchedule: React.FC = () => {
                         startTimeHours = 0;
                     }
 
+                    
                     const startEventDate = new Date(startDate.setHours(startTimeHours, startTimeMinutes));
                     const formattedStartDate = Timestamp.fromDate(startEventDate);
 
@@ -129,6 +136,9 @@ const ViewSchedule: React.FC = () => {
 
                     const endEventDate = new Date(startDate.setHours(endTimeHours, endTimeMinutes));
                     const formattedEndDate = Timestamp.fromDate(endEventDate);
+
+                    console.log('start', startEventDate);
+                    console.log('end', formattedEndDate.toDate());
 
                     const event: Event = {
                         start: startEventDate,
@@ -161,6 +171,7 @@ const ViewSchedule: React.FC = () => {
 
 
             setEvents(eventDocs);
+            console.log(eventDocs);
             // check the start and end times for the event
             const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
             const startTime = eventDocs?.[0]?.startTimestamp ? new Date(eventDocs?.[0]?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
@@ -171,7 +182,7 @@ const ViewSchedule: React.FC = () => {
             console.log(endTime);
         };
         fetchDetailedEvents();
-    }, [id]);
+    }, [id, timeZone]);
 
     const handleSelectEvent = (event: Event) => {
         const eventLink = `/event/${event.id}`;
@@ -194,6 +205,13 @@ const ViewSchedule: React.FC = () => {
         setShowEventModal(false); // Close the modal
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
+
+    console.log("Events: ", events.map(event => ({
+        start: event.start.toString(),
+        end: event.end.toString(),
+        title: event.title,
+    })));
+    
 
     return (
         <IonPage className="ion-flex-offset-app">
@@ -264,7 +282,7 @@ const ViewSchedule: React.FC = () => {
                                 </IonItem>
                             </IonCardContent>
                         </IonCard>
-                        <IonButton onClick={handleEditEvent}>Edit Event</IonButton>
+                        <IonButton onClick={handleEditEvent}>Go to Event</IonButton>
                         <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
                     </IonContent>
                 </IonModal>
