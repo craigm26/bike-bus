@@ -709,7 +709,7 @@ const App: React.FC = () => {
                         <Welcome />
                       </Route>
                       <Route exact path="/">
-                        <Redirect to="/Map" />
+                        <Redirect to="/Map/:id?" />
                       </Route>
                     </React.Fragment>
                   </IonRouterOutlet>
