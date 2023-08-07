@@ -15,6 +15,7 @@
   align-items: center;
   padding-top: 62px;
   overflow: hidden;
+  background-color: #ffd800;
 }
 
 .static-map-event {
@@ -399,6 +400,51 @@
   width: 100%;
   overflow: hidden;
 }
+/* General Styles for the Event Details */
+.bikebus-event-name, .bikebus-event-route, .bikebus-event-time {
+  background-color: #ffd800; /* Bright yellow background */
+  border-radius: 10px;
+  margin: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Darker shadow to contrast with yellow */
+}
+
+/* Specific Styles for Each Element */
+.bikebus-event-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333; /* Dark text color */
+  border-bottom: 2px solid #333; /* Separator line */
+}
+
+.bikebus-event-route {
+  font-size: 20px;
+  color: #555;
+  border-bottom: 1px dashed #333; /* Dashed separator line */
+}
+
+.bikebus-event-time {
+  font-size: 18px;
+  color: #555;
+}
+
+/* Style for the map container */
+.map-container {
+  position: relative;
+}
+
+/* Style to overlay the event details on the map */
+.event-overlay {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 250px; /* Fixed width for the flyer */
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)); /* Subtle gradient */
+  border: 2px solid #333; /* Outer border */
+  border-radius: 10px;
+}
+
+
 
 .right-align {
   text-align: right;
@@ -434,8 +480,4 @@
   height: 440px;
   width: 100%;
   overflow: hidden;
-}
-
-.startBikeBusEvent {
-  background-color: #28a745;
 }

@@ -418,10 +418,8 @@ const BikeBusGroupPage: React.FC = () => {
 
 
   const validEvents = (eventData || []).filter((event: Event) =>
-    event.startTimestamp
+    event && event.startTimestamp
   );
-
-
 
 
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {

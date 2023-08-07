@@ -167,16 +167,8 @@ const Login: React.FC = () => {
 
 
   return (
-    <IonPage>
+    <IonPage className="ion-flex-offset-app">
       <IonContent className='login-container'>
-        <IonRow className="welcome-to-bikebus" background-color="primary">
-          <IonText color="secondary">
-            <h1>BikeBus</h1>
-          </IonText>
-        </IonRow>
-        <IonRow className="welcome-to-bikebus-about">
-          <IonText className="ion-align-items-center">BikeBus is an app to help BikeBus Leaders organize BikeBus trips.</IonText>
-        </IonRow>
         <IonText className="signup">
           <p>
             Don't have an account?{' '}
@@ -244,9 +236,6 @@ const Login: React.FC = () => {
               Login Anonymously
             </IonButton>
           </p>
-        </IonText>
-        <IonText>
-          <p>Copyright 2023 for Craig Merry</p>
         </IonText>
       </IonContent>
     </IonPage>
