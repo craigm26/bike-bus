@@ -1,6 +1,5 @@
 import {
   IonContent,
-  IonHeader,
   IonPage,
   IonButton,
   IonIcon,
@@ -8,26 +7,24 @@ import {
   IonRow,
   IonGrid,
   IonCol,
-  IonToolbar,
   IonAvatar,
   IonSegment,
   IonSegmentButton,
-  IonTitle,
   IonItem,
   IonList,
   IonText,
   IonCardTitle,
   IonToggle,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useRef, useContext, useMemo } from "react";
+import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import { get, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { DocumentSnapshot, Firestore, FirestoreError, QueryDocumentSnapshot, QuerySnapshot, arrayUnion, getDoc, query, doc, getDocs, onSnapshot, updateDoc, where } from "firebase/firestore";
-import { useHistory } from "react-router-dom";
+import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where } from "firebase/firestore";
+import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { BicyclingLayer, GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
@@ -40,8 +37,7 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { getStorage, ref as storageRef, getDownloadURL, uploadString } from 'firebase/storage';
-import { tr } from "date-fns/locale";
+import { getStorage } from 'firebase/storage';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -62,6 +58,7 @@ interface BikeBusEvent {
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
   const history = useHistory();
+  const { id } = useParams<{ id: string }>();
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -168,6 +165,11 @@ const Map: React.FC = () => {
     position: { lat: number; lng: number; } | null;
     trip: Trip | null;
   }
+
+  //if (id) {
+
+  //}
+  // else {
 
   // uploadString is the string that will be uploaded to the database
 
@@ -1342,6 +1344,8 @@ const Map: React.FC = () => {
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
+
+// }
 
   return (
     <IonPage className="ion-flex-offset-app">
