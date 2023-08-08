@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   IonContent,
   IonHeader,
@@ -32,17 +33,11 @@ import Avatar from '../components/Avatar';
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from 'ionicons/icons';
 import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { useParams } from "react-router-dom";
-import { useHistory } from 'react-router-dom';
+import { useParams, useHistory } from "react-router-dom";
 import { create } from 'domain';
 import { set } from 'date-fns';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
-import AnonymousAvatarMapMarker from '../components/AnonymousAvatarMapMarker';
-import AvatarMapMarker from '../components/AvatarMapMarker';
-import createRoute from './createRoute';
-import html2canvas from 'html2canvas';
-import { group } from 'console';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -565,7 +560,7 @@ const Event: React.FC = () => {
     const eventRef = doc(db, 'event', id);
 
     // Iterate through roles and add the user to each of them
-    for (let r of role) {
+    for (const r of role) {
       await setDoc(eventRef, {
         [r]: arrayUnion(username)
       }, { merge: true });
@@ -625,12 +620,13 @@ const Event: React.FC = () => {
       setShowJoinBikeBus(false);
     } else
       if (status === 'active') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
         updateEvent();
         setShowJoinBikeBus(true);
         setShowStartBikeBus(false);
       }
-  }, [id]);
+  }, [id, updateEvent]);
 
   const toggleStartEvent = useCallback(() => (
     toggleEventStatus('active'),

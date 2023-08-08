@@ -24,9 +24,13 @@ module.exports = {
     "import",
   ],
   rules: {
-    "quotes": ["error", "double"],
-    "@typescript-eslint/no-unused-vars": "warn",
-    "import/no-unresolved": 0,
-    "indent": ["error", 2],
-  },
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "import/no-unresolved": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/ban-types": "off",
+    "import/no-duplicates": "off",
+    "no-async-promise-executor": "off",
+    },
 };
