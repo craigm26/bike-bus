@@ -322,6 +322,7 @@ const AddSchedule: React.FC = () => {
       schedule: doc(db, 'schedules', scheduleNewId),
       BikeBusGroup: bikeBusGroupRef,
       status: '',
+      eventType: 'BikeBus',
       days: Object.entries(selectedDays).reduce<number[]>((acc, [day, isSelected]) => {
         if (isSelected) acc.push(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day));
         return acc;
@@ -364,6 +365,7 @@ const AddSchedule: React.FC = () => {
         BikeBusStopTimes: [],
         schedule: doc(db, 'schedules', scheduleNewId),
         status: '',
+        eventType: 'BikeBus',
       };
 
       // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
@@ -396,6 +398,7 @@ const AddSchedule: React.FC = () => {
           BikeBusStopTimes: [],
           schedule: doc(db, 'schedules', scheduleNewId),
           status: '',
+          eventType: 'BikeBus',
         });
         // save the event document id to the bikebusgroup document in firestore as an array of references called event
         const bikeBusGroupRef2 = bikeBusGroupRef;
