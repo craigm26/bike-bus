@@ -32,5 +32,15 @@ module.exports = {
     "@typescript-eslint/ban-types": "off",
     "import/no-duplicates": "off",
     "no-async-promise-executor": "off",
+    "no-var": "off",
+    "prefer-const": "off",
+    "no-useless-constructor": "off",
+    "no-empty-function": "off",
+    "no-constant-condition": "off",
+    "no-empty": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+    
     },
 };
