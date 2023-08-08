@@ -167,7 +167,6 @@ const Event: React.FC = () => {
   const [showRSVPListModal, setShowRSVPListModal] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
-
   const [caboose, setCaboose] = useState<string[]>([]);
   const [captains, setCaptains] = useState<string[]>([]);
   const [kids, setKids] = useState<string[]>([]);
@@ -175,7 +174,7 @@ const Event: React.FC = () => {
   const [sheepdogs, setSheepdogs] = useState<string[]>([]);
   const [sprinters, setSprinters] = useState<string[]>([]);
   const [role, setRole] = useState<string[]>([]);
-  const [leader, setLeader] = useState<string>('');
+  const [leader, setLeader] = useState<string[]>([]);
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
   const [RouteId, setRouteId] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
@@ -223,6 +222,12 @@ const Event: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
 
+  type SetRoleFunction = (role: string[]) => void;
+
+  type SetRoleDataFunction = (role: FetchedUserData[]) => void;
+
+
+
 
   useEffect(() => {
     if (user) {
@@ -260,17 +265,18 @@ const Event: React.FC = () => {
       return user;
     };
 
-    const fetchUsernames = async (role: string[], setRole: Function) => {
+    const fetchUsernames = async (role: string[], setRole: SetRoleFunction) => {
       if (role) {
         const promises = role.map(fetchUser);
         const users = await Promise.all(promises);
-        setRole(users.map(user => user?.username));
+        const usernames = users.filter(user => user !== undefined).map(user => user?.username !== undefined ? user.username : '');
+        setRole(usernames);
       }
     };
 
     if (eventData) {
-      fetchUsernames(eventData.leader || '', setLeader);
-      fetchUsernames(eventData.members || [], setMembers);
+      fetchUsernames([eventData.leader], setLeader);
+      fetchUsernames(eventData.members, setMembers);
       fetchUsernames(eventData.caboose || [], setCaboose);
       fetchUsernames(eventData.captains || [], setCaptains);
       fetchUsernames(eventData.kids || [], setKids);
@@ -279,17 +285,17 @@ const Event: React.FC = () => {
       fetchUsernames(eventData.sprinters || [], setSprinters);
     }
 
-    const fetchUserids = async (role: string[], setRole: Function) => {
+    const fetchUserids = async (role: string[], setRole: SetRoleDataFunction) => {
       if (role) {
         const promises = role.map(fetchUser);
-        const users = await Promise.all(promises);
-        setRole(users);
+        const users = (await Promise.all(promises)).filter(user => user !== undefined);
+        setRole(users as FetchedUserData[]);
       }
-    }
+    };
 
     if (eventData) {
-      fetchUserids(eventData.leader || '', setLeadersId);
-      fetchUserids(eventData.members || '', setMembersId);
+      fetchUserids([eventData.leader], setLeadersId);
+      fetchUserids(eventData.members, setMembersId);
       fetchUserids(eventData.caboose || '', setCabooseId);
       fetchUserids(eventData.captains || '', setCaptainsId);
       fetchUserids(eventData.kids || '', setKidsId);
