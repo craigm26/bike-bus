@@ -24,11 +24,10 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
-import { StandaloneSearchBox } from "@react-google-maps/api";
 import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
@@ -66,7 +65,7 @@ const Map: React.FC = () => {
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
-  const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });;
+  const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
   const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
@@ -525,6 +524,23 @@ const Map: React.FC = () => {
   );
 
   useEffect(() => {
+    if (user) {
+      const uid = user.uid;
+      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+
+      // Set up a real-time subscription
+      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
+        const newLocation = snapshot.val();
+        if (newLocation) {
+          setOpenTripLeaderLocation(newLocation);
+        }
+      });
+
+      // Clean up the subscription when the component unmounts
+      return () => {
+        unsubscribe();
+      };
+    }
   }, [isLoaded, loadError]);
 
 

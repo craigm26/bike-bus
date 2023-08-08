@@ -124,8 +124,6 @@ const Trip: React.FC = () => {
   const headerContext = useContext(HeaderContext);
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setaccountType] = useState<string>('');
-  const [showPopover, setShowPopover] = useState(false);
-  const [popoverEvent, setPopoverEvent] = useState<any>(null);
   const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const { isLoaded, loadError } = useJsApiLoader({
@@ -165,7 +163,7 @@ const Trip: React.FC = () => {
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
   const [userLocation, setUserLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
 
-  let { tripDataId } = useParams<RouteParams>();
+  const { tripDataId } = useParams<RouteParams>();
 
   const history = useHistory();
 
@@ -194,23 +192,6 @@ const Trip: React.FC = () => {
     return user;
   };
 
-
-  const togglePopover = (e: any) => {
-    setPopoverEvent(e.nativeEvent);
-    setShowPopover((prevState) => !prevState);
-  };
-
-  const avatarElement = user ? (
-    avatarUrl ? (
-      <IonAvatar>
-        <Avatar uid={user.uid} size="extrasmall" />
-      </IonAvatar>
-    ) : (
-      <IonIcon icon={personCircleOutline} />
-    )
-  ) : (
-    <IonIcon icon={personCircleOutline} />
-  );
 
   // use the default value of startGeo to set the initial map center location
   const [leaderLocation, setLeaderLocation] = useState<Coordinate>({ lat: startGeo.lat, lng: startGeo.lng });
