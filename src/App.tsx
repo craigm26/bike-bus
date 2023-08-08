@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Route, Redirect, useParams } from 'react-router-dom';
+import { Route, Redirect, useParams, Switch } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
@@ -164,40 +164,40 @@ const App: React.FC = () => {
       const fetchData = async () => {
         const userRef = doc(db, 'users', user.uid);
         const docSnapshot = await getDoc(userRef);
-  
+
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
           if (userData && userData.bikebusgroups) {
             const groupRefs = userData.bikebusgroups;
             const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
-  
+
             const groups = groupSnapshots.map(snapshot => snapshot.data());
-  
+
             for (const group of groups) {
               if (group && group.BikeBusRoutes) {
                 const routeRef = group.BikeBusRoutes[0];
                 const routeSnapshot = await getDoc(routeRef);
-  
+
                 group.route = routeSnapshot.data();
               }
-  
+
               if (group && group.event && group.event[0]) {
                 const eventRef = group.event[0];
                 const eventSnapshot = await getDoc(eventRef);
-  
+
                 group.event = eventSnapshot.data();
               }
             }
-  
+
             setGroupData(groups);
           }
         }
       };
-  
+
       fetchData();
     }
   }, [user]);
-  
+
 
 
   const getUserLocation = useCallback(async () => {
@@ -344,9 +344,9 @@ const App: React.FC = () => {
 
     // Fetch all event documents from their references in parallel
     const eventFetchPromises = fetchedGroups.flatMap((group) =>
-    group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
-  );
-  
+      group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
+    );
+
 
     Promise.all(eventFetchPromises).then((eventSnapshots) => {
       // Extract event data from snapshots
@@ -364,7 +364,7 @@ const App: React.FC = () => {
         }
         return new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now();
       });
-      
+
       // Sort all the future events by startTimestamp in ascending order
       const sortedEvents = [...futureEvents].sort(
         (a, b) =>
@@ -483,105 +483,105 @@ const App: React.FC = () => {
                 </IonContent>
               </IonMenu>
               <IonPage id="main-content" >
-                
+
                 <IonContent fullscreen>
-                    <IonHeader>
-                      <IonToolbar color="primary" >
-                        <IonButtons color="secondary" slot="start">
-                          <IonMenuButton></IonMenuButton>
-                        </IonButtons>
-                        <IonText slot="start" color="secondary" class="BikeBusFont">
-                          <h1>BikeBus</h1>
-                        </IonText>
-                        <IonPopover
-                          isOpen={showPopover}
-                          event={popoverEvent}
-                          onDidDismiss={() => setShowPopover(false)}
-                          className="my-popover"
-                        >
-                          <Profile />
-                        </IonPopover>
-                        <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                          <IonChip>
-                            {avatarElement}
-                            <IonLabel>{label}</IonLabel>
-                          </IonChip>
+                  <IonHeader>
+                    <IonToolbar color="primary" >
+                      <IonButtons color="secondary" slot="start">
+                        <IonMenuButton></IonMenuButton>
+                      </IonButtons>
+                      <IonText slot="start" color="secondary" class="BikeBusFont">
+                        <h1>BikeBus</h1>
+                      </IonText>
+                      <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                      >
+                        <Profile />
+                      </IonPopover>
+                      <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                        <IonChip>
+                          {avatarElement}
+                          <IonLabel>{label}</IonLabel>
+                        </IonChip>
+                      </IonButton>
+                      <IonPopover
+                        isOpen={showPopover}
+                        event={popoverEvent}
+                        onDidDismiss={() => setShowPopover(false)}
+                        className="my-popover"
+                      >
+                        <Profile />
+                      </IonPopover>
+                      <IonButtons slot="primary">
+                        <IonActionSheet
+                          isOpen={showActionSheet}
+                          onDidDismiss={() => setShowActionSheet(false)}
+                          buttons={[
+                            {
+                              text: 'Share via Text Message',
+                              icon: phonePortraitOutline,
+                              handler: () => {
+                                Share.share({
+                                  title: 'Check out my BikeBus link!',
+                                  text: 'I found this link on the BikeBus app',
+                                  url: window.location.href,
+                                });
+                              }
+                            },
+                            {
+                              text: 'Share on Twitter',
+                              icon: logoTwitter,
+                              handler: () => {
+                                Share.share({
+                                  title: 'Check out my BikeBus link!',
+                                  text: 'I found this link on the BikeBus app',
+                                  url: window.location.href,
+                                });
+                              }
+                            },
+                            {
+                              text: 'Share on Instagram',
+                              icon: logoInstagram,
+                              handler: () => {
+                                Share.share({
+                                  title: 'Check out my BikeBus link!',
+                                  text: 'I found this link on the BikeBus app',
+                                  url: window.location.href,
+                                });
+                              }
+                            },
+                            {
+                              text: 'Share via Email',
+                              icon: mailOutline,
+                              handler: () => {
+                                Share.share({
+                                  title: 'Check out my BikeBus link!',
+                                  text: 'I found this link on the BikeBus app',
+                                  url: window.location.href,
+                                });
+                              }
+                            },
+                            {
+                              text: 'Cancel',
+                              role: 'cancel',
+                              handler: () => {
+                                console.log('Cancel clicked');
+                              }
+                            },
+                          ]}
+                        />
+                        <IonButton onClick={() => setShowActionSheet(true)}>
+                          <IonIcon slot="end" icon={shareOutline}></IonIcon>
                         </IonButton>
-                        <IonPopover
-                          isOpen={showPopover}
-                          event={popoverEvent}
-                          onDidDismiss={() => setShowPopover(false)}
-                          className="my-popover"
-                        >
-                          <Profile />
-                        </IonPopover>
-                        <IonButtons slot="primary">
-                          <IonActionSheet
-                            isOpen={showActionSheet}
-                            onDidDismiss={() => setShowActionSheet(false)}
-                            buttons={[
-                              {
-                                text: 'Share via Text Message',
-                                icon: phonePortraitOutline,
-                                handler: () => {
-                                  Share.share({
-                                    title: 'Check out my BikeBus link!',
-                                    text: 'I found this link on the BikeBus app',
-                                    url: window.location.href,
-                                  });
-                                }
-                              },
-                              {
-                                text: 'Share on Twitter',
-                                icon: logoTwitter,
-                                handler: () => {
-                                  Share.share({
-                                    title: 'Check out my BikeBus link!',
-                                    text: 'I found this link on the BikeBus app',
-                                    url: window.location.href,
-                                  });
-                                }
-                              },
-                              {
-                                text: 'Share on Instagram',
-                                icon: logoInstagram,
-                                handler: () => {
-                                  Share.share({
-                                    title: 'Check out my BikeBus link!',
-                                    text: 'I found this link on the BikeBus app',
-                                    url: window.location.href,
-                                  });
-                                }
-                              },
-                              {
-                                text: 'Share via Email',
-                                icon: mailOutline,
-                                handler: () => {
-                                  Share.share({
-                                    title: 'Check out my BikeBus link!',
-                                    text: 'I found this link on the BikeBus app',
-                                    url: window.location.href,
-                                  });
-                                }
-                              },
-                              {
-                                text: 'Cancel',
-                                role: 'cancel',
-                                handler: () => {
-                                  console.log('Cancel clicked');
-                                }
-                              },
-                            ]}
-                          />
-                          <IonButton onClick={() => setShowActionSheet(true)}>
-                            <IonIcon slot="end" icon={shareOutline}></IonIcon>
-                          </IonButton>
-                          <IonButton routerLink='/help'>
-                            <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
-                          </IonButton>
-                        </IonButtons>
-                      </IonToolbar>
-                    </IonHeader>
+                        <IonButton routerLink='/help'>
+                          <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                        </IonButton>
+                      </IonButtons>
+                    </IonToolbar>
+                  </IonHeader>
                   <IonRouterOutlet>
                     <React.Fragment>
                       <Route path="/bikebusgrouppage/:groupId">
@@ -708,9 +708,12 @@ const App: React.FC = () => {
                       <Route exact path="/Welcome">
                         <Welcome />
                       </Route>
-                      <Route exact path="/">
-                        <Redirect to="/Map/:id?" />
-                      </Route>
+                      <Switch>
+                        <Route exact path="/Map/:id?" component={Map} />
+                        <Route exact path="/">
+                          <Redirect to="/Map/" />
+                        </Route>
+                      </Switch>
                     </React.Fragment>
                   </IonRouterOutlet>
                 </IonContent>
@@ -725,31 +728,31 @@ const App: React.FC = () => {
                     </IonFab>
                   </div>
                   {upcomingGroup && user.uid !== 'anonymous' && (
-                  <div className="bikebusname-button-container">
-                    {upcomingGroup ? (
-                      <div className="button-group">
-                        <IonButton
-                          className="group-button"
-                          shape="round"
-                          size="large"
-                          key={upcomingGroup.id}
-                          routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${upcomingGroup.id}`}
-                          routerDirection="none"
-                        >
-                          <IonLabel className="BikeBusFont" text-wrap>
-                            {upcomingGroup.BikeBusName}
-                            {upcomingEvent && (
-                              <IonText className="EventTimeFont">
-                                {formatDate(upcomingEvent.startTimestamp)}
-                              </IonText>
-                            )}
-                          </IonLabel>
-                        </IonButton>
-                      </div>
-                    ) : (
-                      <p>Loading BikeBus Event...</p>
-                    )}
-                  </div>
+                    <div className="bikebusname-button-container">
+                      {upcomingGroup ? (
+                        <div className="button-group">
+                          <IonButton
+                            className="group-button"
+                            shape="round"
+                            size="large"
+                            key={upcomingGroup.id}
+                            routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${upcomingGroup.id}`}
+                            routerDirection="none"
+                          >
+                            <IonLabel className="BikeBusFont" text-wrap>
+                              {upcomingGroup.BikeBusName}
+                              {upcomingEvent && (
+                                <IonText className="EventTimeFont">
+                                  {formatDate(upcomingEvent.startTimestamp)}
+                                </IonText>
+                              )}
+                            </IonLabel>
+                          </IonButton>
+                        </div>
+                      ) : (
+                        <p>Loading BikeBus Event...</p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

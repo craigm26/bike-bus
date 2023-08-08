@@ -1,34 +1,23 @@
-import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
 import {
   IonContent,
   IonPage,
-  IonLabel,
   IonButton,
-  IonHeader,
-  IonToolbar,
   IonCol,
   IonGrid,
   IonRow,
-  IonRouterLink,
-  IonAvatar,
-  IonIcon,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, DocumentSnapshot, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { DocumentReference, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { GeoPoint } from 'firebase/firestore';
-import { useParams, useHistory, Link } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
-import { getDatabase, ref, onValue, serverTimestamp } from 'firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
 import AvatarMapMarker from "../components/AvatarMapMarker";
-import { get } from 'http';
-import { event } from 'firebase-functions/v1/analytics';
-import { hi } from 'date-fns/locale';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -290,7 +279,9 @@ const Trip: React.FC = () => {
             const leaderLocationData = snapshot.val();
             if (leaderLocationData) {
               setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
+              // update the event document with the leader location
             }
+
             if (leaderLocationData && selectedRoute) {
               setMapCenter({
                 lat: leaderLocation.lat,

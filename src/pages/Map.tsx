@@ -19,9 +19,9 @@ import {
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { get, onValue, ref, set } from "firebase/database";
+import { get, getDatabase, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where } from "firebase/firestore";
+import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
@@ -42,7 +42,43 @@ const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualiz
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
+interface RouteData {
+  startPoint: { lat: number; lng: number };
+  endPoint: { lat: number; lng: number };
+  pathCoordinates: { lat: number; lng: number }[];
+  startPointName: string;
+  endPointName: string;
+  startPointAddress: string;
+  endPointAddress: string;
+  routeName: string;
+  routeType: string;
+  routeCreator: string;
+  routeLeader: string;
+  description: string;
+  travelMode: string;
+  isBikeBus: boolean;
+  BikeBusName: string;
+  BikeBusStopName: string[];
+  BikeBusStop: Coordinate[];
+  BikeBusStops: Coordinate[];
+  BikeBusStationsIds: string[];
+  BikeBusGroupId: DocumentReference;
+  id: string;
+  accountType: string;
+  routeId: string;
+  name: string;
+}
+
+interface FetchedUserData {
+  username: string;
+  enabledAccountModes: string[];
+  uid: string;
+  accountType?: string;
+}
+
+
 interface BikeBusEvent {
+  status: string;
   id: string;
   startTime: {
     seconds: number;
@@ -52,6 +88,11 @@ interface BikeBusEvent {
     seconds: number;
     nanoseconds: number;
   };
+}
+
+interface Coordinate {
+  lat: number;
+  lng: number;
 }
 
 const Map: React.FC = () => {
@@ -73,9 +114,11 @@ const Map: React.FC = () => {
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
   const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
   const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
+  const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 0,
-    lng: 0,
+    lat: startGeo.lat,
+    lng: startGeo.lng,
   });
   const [mapZoom, setMapZoom] = useState(15);
   const storage = getStorage();
@@ -105,13 +148,10 @@ const Map: React.FC = () => {
   const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
   const [route, setRoute] = useState<DocumentData | null>(null);
 
-
-
   type Point = {
     lat: number;
     lng: number;
   };
-
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [endPoint, setEndPoint] = useState<Point | null>(null);
   const [currentLocation, setCurrentLocation] = useState({ lat: null, lng: null });
@@ -150,6 +190,18 @@ const Map: React.FC = () => {
   const [joinTripId, setJoinTripId] = useState('');
   const [focusTripId, setFocusTripId] = useState('');
   const [map, setMap] = useState(null);
+  // use the default value of startGeo to set the initial map center location
+  const [leaderLocation, setLeaderLocation] = useState<Coordinate>({ lat: startGeo.lat, lng: startGeo.lng });
+  // the leaderUID is the user.uid of the leader which is stored in the selectedRoute.routeLeader
+  const [leaderUID, setLeaderUID] = useState<string>('');
+  const [bikeBusEvents, setBikeBusEvents] = useState<BikeBusEvent[]>([]);
+  const isEventLeader = user?.uid === leaderUID;
+  const [isEventLeaderActive, setIsEventLeaderActive] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
+  const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
+  const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [path, setPath] = useState<Coordinate[]>([]);
+  const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
 
 
   interface Trip {
@@ -165,10 +217,7 @@ const Map: React.FC = () => {
     trip: Trip | null;
   }
 
-  //if (id) {
-
-  //}
-  // else {
+  // if (!id) {
 
   // uploadString is the string that will be uploaded to the database
 
@@ -200,6 +249,307 @@ const Map: React.FC = () => {
     setCreateRouteRow(false);
     setDetailedDirectionsRow(false);
     setTravelModeRow(false);
+    getBikeBusEvents();
+  };
+
+  const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+
+    let user: FetchedUserData | undefined;
+
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      user = doc.data() as FetchedUserData;
+    });
+
+    return user;
+  };
+  
+  useEffect(() => {
+    
+    const fetchData = async () => {
+      if (!user) return;
+
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnapshot = await getDoc(userRef);
+
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          if (userData) {
+            // get the uid of the user
+            const uid = user.uid;
+          }
+        }
+
+        if (id) {
+
+        const tripsRef = doc(db, 'event', id);
+        const tripSnapshot = await getDoc(tripsRef);
+
+        if (tripSnapshot.exists()) {
+          const tripData = tripSnapshot.data();
+          const eventDataId = tripData?.eventId;
+
+          if (eventDataId) {
+            const eventDataRef = doc(db, 'event', eventDataId);
+            const eventSnapshot = await getDoc(eventDataRef);
+
+            if (eventSnapshot.exists()) {
+              const eventData = eventSnapshot.data();
+              const selectedRouteRef = eventData?.route;
+              if (selectedRouteRef) {
+                const routeSnapshot = await getDoc(selectedRouteRef);
+                const routeData = routeSnapshot.data() as RouteData;
+
+                if (routeData) {
+                  setSelectedRoute(routeData);
+                  setBikeBusGroupId(routeData.BikeBusGroupId.id);
+                  setPath(routeData.pathCoordinates);
+                  setBikeBusStops(routeData.BikeBusStops);
+                  setStartGeo(routeData.startPoint);
+                  setEndGeo(routeData.endPoint);
+                }
+              } else {
+                console.error('selectedRouteRef is undefined');
+              }
+            }
+          }
+          // also get the avatar of the leader and use the avatar element to display it
+          const leaderUser = await fetchUser(selectedRoute?.routeLeader || '');
+          if (leaderUser) {
+            const leaderAvatar = await fetchUser(leaderUser.username);
+            if (leaderAvatar) {
+              setLeaderAvatarUrl(leaderAvatar.username);
+            }
+          }
+        }
+
+
+        if (selectedRoute) {
+          // Extract only the UID from the path
+          const extractedUID = selectedRoute.routeLeader.split('/').pop() || '';
+          setLeaderUID(extractedUID);
+        }
+
+        // get the user location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              setUserLocation(userLocation);
+            },
+            (error) => {
+              console.error(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0,
+            }
+          );
+        }
+
+
+        if (leaderUID) {
+          const rtdb = getDatabase();
+          const leaderLocationRef = ref(rtdb, 'userLocations/' + leaderUID);
+          onValue(leaderLocationRef, (snapshot) => {
+            const leaderLocationData = snapshot.val();
+            if (leaderLocationData) {
+              setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
+              // update the event document with the leader location
+            }
+
+            if (leaderLocationData && selectedRoute) {
+              setMapCenter({
+                lat: leaderLocation.lat,
+                lng: leaderLocation.lng,
+              });
+            }
+          });
+        }
+      }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }
+    , [user, id, selectedRoute, leaderUID, leaderLocation.lat, leaderLocation.lng]);
+
+    const endTripAndCheckOutAll = async () => {
+      const tripDataIdDoc = doc(db, 'event', id);
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      // get the serverTimeStamp() and set it as TripEndTimeStamp
+      const serverTimestamp = () => {
+        return new Date();
+      };
+      await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
+      const tripSnapshot = await getDoc(tripDataIdDoc);
+      console.log('tripSnapshot', tripSnapshot)
+      const tripData = tripSnapshot.data();
+      console.log('tripData', tripData)
+      const eventDataId = tripData?.eventId;
+      console.log('eventDataId', eventDataId)
+  
+      const eventDataIdDoc = doc(db, 'event', eventDataId);
+      console.log('eventDataIdDoc', eventDataIdDoc)
+      await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
+      const eventSnapshot = await getDoc(eventDataIdDoc);
+      console.log('eventSnapshot', eventSnapshot)
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+      console.log('tripDataIdDoc', tripDataIdDoc)
+  
+      // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      // find any other of user's ids in the event add them to the appropriate role arrays
+      // if the user is a parent in the eventData field parents, add them to the parents array
+      if (tripData?.parents) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripParents: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.kids) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripKids: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sheepdogs) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSheepdogs: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sprinters) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSprinters: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.captains) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaptains: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.caboose) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaboose: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.members) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripMembers: arrayUnion(username),
+        }, { merge: true });
+      }
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
+      console.log('tripData?.members', tripData?.members)
+      console.log('username', username)
+      console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
+      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+      history.push(eventSummaryUrl);
+  
+    };
+  
+    const endTripAndCheckOut = async () => {
+      const tripDataIdDoc = doc(db, 'event', id);
+  
+      const tripSnapshot = await getDoc(tripDataIdDoc);
+      const tripData = tripSnapshot.data();
+      const eventDataId = tripData?.eventId;
+  
+  
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+  
+      if (tripData?.tripCheckInParents.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripParents: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.kids.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripKids: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sheepdogs.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSheepdogs: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sprinters.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSprinters: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.captains.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaptains: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.caboose.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaboose: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.members.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripMembers: arrayUnion(username),
+        }, { merge: true });
+        console.log('members', tripData?.members)
+        console.log('username', username)
+        console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
+      }
+  
+      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+      history.push(eventSummaryUrl);
+  
+    };
+
+
+
+  // need to build a boolean to help us determine if the bikebusgroup event is active or not
+
+  const [isActiveBikeBusEvent, setIsActiveBikeBusEvent] = useState(false);
+
+  // make the const a conditional render based on the isActiveBikeBusEvent boolean
+  const getBikeBusEvents = async () => {
+    const eventsRef = collection(db, "event");
+    const q = query(eventsRef, where("eventType", "==", "BikeBus"), where("status", "==", "active"));
+    const querySnapshot = await getDocs(q);
+    const events: BikeBusEvent[] = [];
+    const currentTime = new Date().getTime(); // Get the current time in milliseconds
+    querySnapshot.forEach((doc) => {
+      const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
+      const eventStartTime = eventData.startTimestamp.seconds * 1000;
+      if (eventStartTime > currentTime) {
+        events.push(eventData);
+      }
+    });
+    // check each event to see if it is active or not
+    const activeEvents = events.filter((event) => event.status === "active");
+    console.log("activeEvents: ", activeEvents);
+    // if there are active events, then set the isActiveBikeBusEvent to true for that particular BikeBusGroup
+    if (activeEvents.length > 0) {
+      setIsActiveBikeBusEvent(true);
+    }
+    // if there are no active events, then set the isActiveBikeBusEvent to false for that particular BikeBusGroup
+    if (activeEvents.length === 0) {
+      setIsActiveBikeBusEvent(false);
+    }
   };
 
 
@@ -1357,11 +1707,16 @@ const Map: React.FC = () => {
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
 
+
+
+  // once we have the events, we need to mark the polylines on the map with
+
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
-// }
+  // }
 
   return (
     <IonPage className="ion-flex-offset-app">
@@ -1748,118 +2103,120 @@ const Map: React.FC = () => {
                 ],
               }}
             >
-              <IonGrid className="search-container">
-                <IonRow>
-                  <IonCol>
-                    <StandaloneSearchBox
-                      onLoad={onLoadStartingLocation}
-                      onPlacesChanged={onPlaceChangedStart}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
-                        <input
-                          type="text"
-                          autoComplete="on"
-                          placeholder={userLocationAddress}
-                          style={{
-                            width: "350px",
-                            height: "40px",
-                          }}
-                        />
-                      </div>
-                    </StandaloneSearchBox>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol>
-                    <StandaloneSearchBox
-                      onLoad={onLoadDestinationValue}
-                      onPlacesChanged={onPlaceChangedDestination}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
-                        <input
-                          type="text"
-                          autoComplete="on"
-                          placeholder="Enter a Destination"
-                          style={{
-                            width: "350px",
-                            height: "40px",
-                          }}
-                        />
-                      </div>
-                    </StandaloneSearchBox>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  {isActiveEvent && (
-                    <IonButton onClick={endOpenTrip}>End Open Trip</IonButton>
-                  )}
-                </IonRow>
-                {showGetDirectionsButton && !isActiveEvent && (
+              {!id && (
+                <IonGrid className="search-container">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>Travel Mode:</IonLabel>
-                      <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                        setTravelMode(e.detail.value);
-                        setTravelModeSelector(e.detail.value);
-                      }}>
-                        <IonSegmentButton value="WALKING">
-                          <IonIcon icon={walkOutline} />
-                        </IonSegmentButton>
-                        <IonSegmentButton value="BICYCLING">
-                          <IonIcon icon={bicycleOutline} />
-                        </IonSegmentButton>
-                        <IonSegmentButton value="DRIVING">
-                          <IonIcon icon={carOutline} />
-                        </IonSegmentButton>
-                        <IonSegmentButton value="TRANSIT">
-                          <IonIcon icon={busOutline} />
-                        </IonSegmentButton>
-                      </IonSegment>
+                      <StandaloneSearchBox
+                        onLoad={onLoadStartingLocation}
+                        onPlacesChanged={onPlaceChangedStart}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder={userLocationAddress}
+                            style={{
+                              width: "350px",
+                              height: "40px",
+                            }}
+                          />
+                        </div>
+                      </StandaloneSearchBox>
                     </IonCol>
                   </IonRow>
-                )}
-                <IonRow>
-                  <IonCol>
-                    {showGetDirectionsButton && !isActiveEvent && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
-                  </IonCol>
-                  <IonCol>
-                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                      <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
-                    }
-                  </IonCol>
-                  <IonCol>
-                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                      <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                  <IonRow>
+                    <IonCol>
+                      <StandaloneSearchBox
+                        onLoad={onLoadDestinationValue}
+                        onPlacesChanged={onPlaceChangedDestination}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
+                          <input
+                            type="text"
+                            autoComplete="on"
+                            placeholder="Enter a Destination"
+                            style={{
+                              width: "350px",
+                              height: "40px",
+                            }}
+                          />
+                        </div>
+                      </StandaloneSearchBox>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    {isActiveEvent && (
+                      <IonButton onClick={endOpenTrip}>End Open Trip</IonButton>
                     )}
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol>
-                    {showGetDirectionsButton && directionsFetched && (
-                      <>
-                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
-                          <IonRow>
-                            <IonLabel>Distance: {distance} miles </IonLabel>
-                          </IonRow>
-                        )}
-                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
-                          <IonRow>
-                            <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                          </IonRow>
-                        )}
-                        {showGetDirectionsButton && directionsFetched && isActiveEvent && (
-                          <IonRow>
-                            <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                          </IonRow>
-                        )}
-                      </>
-                    )}
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-              {bikeBusEnabled && bikeBusRoutes.map((route: any) => {
+                  </IonRow>
+                  {showGetDirectionsButton && !isActiveEvent && !id && (
+                    <IonRow>
+                      <IonCol>
+                        <IonLabel>Travel Mode:</IonLabel>
+                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                          setTravelMode(e.detail.value);
+                          setTravelModeSelector(e.detail.value);
+                        }}>
+                          <IonSegmentButton value="WALKING">
+                            <IonIcon icon={walkOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="BICYCLING">
+                            <IonIcon icon={bicycleOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="DRIVING">
+                            <IonIcon icon={carOutline} />
+                          </IonSegmentButton>
+                          <IonSegmentButton value="TRANSIT">
+                            <IonIcon icon={busOutline} />
+                          </IonSegmentButton>
+                        </IonSegment>
+                      </IonCol>
+                    </IonRow>
+                  )}
+                  <IonRow>
+                    <IonCol>
+                      {showGetDirectionsButton && !isActiveEvent && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                    </IonCol>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                        <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                      }
+                    </IonCol>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                        <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      {showGetDirectionsButton && directionsFetched && (
+                        <>
+                          {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                            <IonRow>
+                              <IonLabel>Distance: {distance} miles </IonLabel>
+                            </IonRow>
+                          )}
+                          {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                            <IonRow>
+                              <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                            </IonRow>
+                          )}
+                          {showGetDirectionsButton && directionsFetched && isActiveEvent && (
+                            <IonRow>
+                              <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                            </IonRow>
+                          )}
+                        </>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              )}
+              {!isActiveBikeBusEvent && bikeBusEnabled && bikeBusRoutes.map((route: any) => {
                 const keyPrefix = route.id || route.routeName;
                 return (
                   <div key={`${keyPrefix}`}>
@@ -1889,14 +2246,6 @@ const Map: React.FC = () => {
                       }}
                       onClick={() => { handleBikeBusRouteClick(route) }}
                     />
-                    {infoWindow.isOpen && infoWindow.position && (
-                      <InfoWindow
-                        position={infoWindow.position}
-                        onCloseClick={handleCloseClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                      </InfoWindow>
-                    )}
                     <Polyline
                       key={`${keyPrefix}-main`}
                       path={route.pathCoordinates}
@@ -1921,6 +2270,15 @@ const Map: React.FC = () => {
                         ],
                       }}
                     />
+                    {infoWindow.isOpen && infoWindow.position && (
+                      <InfoWindow
+                        position={infoWindow.position}
+                        onCloseClick={handleCloseClick}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                      </InfoWindow>
+                    )}
+
                     {route.startPoint && (
                       <Marker
                         key={`${keyPrefix}-start`}
@@ -1948,6 +2306,98 @@ const Map: React.FC = () => {
                   </div>
                 );
               })}
+              {isActiveBikeBusEvent && bikeBusRoutes.map((route: any) => {
+                const keyPrefix = route.id || route.routeName;
+                return (
+                  <div key={`${keyPrefix}`}>
+                    <Polyline
+                      key={`${keyPrefix}-border`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#80ff00",
+                        strokeOpacity: .7,
+                        strokeWeight: 3, // Border thickness
+                        clickable: true,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#80ff00", // Main line color
+                              strokeOpacity: .7,
+                              strokeWeight: 3,
+                              fillColor: "#80ff00",
+                              fillOpacity: .7,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                      onClick={() => { handleBikeBusRouteClick(route) }}
+                    />
+                    <Polyline
+                      key={`${keyPrefix}-main`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#80ff00", // Main line color
+                        strokeOpacity: 1,
+                        strokeWeight: 2,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#80ff00", // Main line color
+                              strokeOpacity: 1,
+                              strokeWeight: 2,
+                              fillColor: "#80ff00",
+                              fillOpacity: 1,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                    />
+                    {infoWindow.isOpen && infoWindow.position && (
+                      <InfoWindow
+                        position={infoWindow.position}
+                        onCloseClick={handleCloseClick}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                      </InfoWindow>
+                    )}
+
+                    {route.startPoint && (
+                      <Marker
+                        key={`${keyPrefix}-start`}
+                        label={`${route.BikeBusName}`}
+                        position={route.startPoint}
+                        icon={{
+                          url: generateSVGBikeBus(route.BikeBusName),
+                          scaledSize: new google.maps.Size(60, 20),
+                        }}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
+                      />
+                    )}
+                    {route.endPoint && (
+                      <Marker
+                        key={`${keyPrefix}-end`}
+                        label={`${route.BikeBusName}`}
+                        position={route.endPoint}
+                        icon={{
+                          url: generateSVGBikeBus(route.BikeBusName),
+                          scaledSize: new google.maps.Size(60, 20),
+                        }}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
+                      />
+                    )}
+                  </div>
+                );
+              }
+              )
+              }
               {openTripsEnabled && openTrips.map((trip: any) => {
                 const keyPrefix = trip.id || trip.routeName;
                 return (
@@ -2045,6 +2495,18 @@ const Map: React.FC = () => {
                 {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
               </div>
               <div>
+                {isEventLeader && id && (
+                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                    <IonButton onClick={endTripAndCheckOutAll}>End Trip</IonButton>
+                  </div>
+                )}
+                {!isEventLeader && id && (
+                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                    <IonButton onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
+                  </div>
+                )}
+              </div>
+              <div>
                 {selectedStartLocation && (
                   <Marker
                     position={selectedStartLocation}
@@ -2107,9 +2569,5 @@ const Map: React.FC = () => {
   );
 
 }
-
-
-
-
 
 export default Map;
