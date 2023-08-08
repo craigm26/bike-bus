@@ -3,27 +3,6 @@ import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 admin.initializeApp();
 
-exports.endLongRunningTrips = functions.pubsub.schedule("every 60 minutes").onRun(async (_context) => {
-  const currentTime = admin.firestore.Timestamp.now();
-  const sixHoursInMilliseconds = 6 * 60 * 60 * 1000;
-
-  const tripsRef = admin.firestore().collection("trips");
-  const snapshot = await tripsRef.where("status", "==", "active").get();
-
-  snapshot.forEach(async (doc) => {
-    const trip = doc.data();
-    const tripDuration = currentTime.toMillis() - trip.start.toMillis();
-
-    if (tripDuration > sixHoursInMilliseconds) {
-      await tripsRef.doc(doc.id).update({
-        status: "inactive"
-      });
-    }
-  });
-
-  return null;
-});
-
 // Set your SendGrid API key
 sgMail.setApiKey("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");
 
