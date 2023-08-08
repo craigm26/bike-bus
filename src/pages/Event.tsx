@@ -636,6 +636,9 @@ const Event: React.FC = () => {
 
   const toggleStartEvent = useCallback(() => (
     toggleEventStatus('active'),
+    // update the event document field "leader" with the user.uid value
+    setEventData((prevEventData: any) => ({ ...prevEventData, leader: user?.uid })),
+    // update the event document field "startTimestamp" with the current time
     console.log('toggleStartEvent is active!')
   ), [toggleEventStatus]);
 

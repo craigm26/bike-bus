@@ -43,6 +43,7 @@ const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualiz
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
 interface RouteData {
+  eventCheckInLeader: any;
   startPoint: { lat: number; lng: number };
   endPoint: { lat: number; lng: number };
   pathCoordinates: { lat: number; lng: number }[];
@@ -318,7 +319,7 @@ const Map: React.FC = () => {
             }
           }
           // also get the avatar of the leader and use the avatar element to display it
-          const leaderUser = await fetchUser(selectedRoute?.routeLeader || '');
+          const leaderUser = await fetchUser(selectedRoute?.eventCheckInLeader || '');
           if (leaderUser) {
             const leaderAvatar = await fetchUser(leaderUser.username);
             if (leaderAvatar) {
@@ -330,7 +331,7 @@ const Map: React.FC = () => {
 
         if (selectedRoute) {
           // Extract only the UID from the path
-          const extractedUID = selectedRoute.routeLeader.split('/').pop() || '';
+          const extractedUID = selectedRoute.eventCheckInLeader ? selectedRoute.eventCheckInLeader.id : '';
           setLeaderUID(extractedUID);
         }
 
