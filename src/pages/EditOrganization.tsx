@@ -13,6 +13,8 @@ import {
     IonSpinner,
     IonSelect,
     IonSelectOption,
+    IonModal,
+    IonHeader,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -54,6 +56,9 @@ const EditOrganization: React.FC = () => {
         LastUpdatedBy: user?.uid,
         LastUpdatedOn: Timestamp.now(),
     };
+    const [showModal, setShowModal] = useState(false);
+    const [bikeBusGroups, setBikeBusGroups] = useState<any[]>([]);
+    const [selectedBikeBusGroup, setSelectedBikeBusGroup] = useState<string>('');
 
 
     useEffect(() => {
@@ -104,6 +109,22 @@ const EditOrganization: React.FC = () => {
         if (id) fetchSingleOrganization(id);
     }, [id, user, setIsCreator]);
 
+    useEffect(() => {
+        const fetchBikeBusGroups = async () => {
+            const q = query(collection(db, 'bikeBusGroups'), where('leader', '==', user?.uid));
+            const querySnapshot = await getDocs(q);
+            setBikeBusGroups(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        };
+
+        fetchBikeBusGroups();
+    }, [user?.uid]);
+
+    const handleAddBikeBusGroup = async () => {
+        const bikeBusGroupRef = doc(db, 'bikeBusGroups', selectedBikeBusGroup);
+        await updateDoc(bikeBusGroupRef, { Organization: doc(db, 'organizations', id) });
+        alert('BikeBusGroup updated');
+        setShowModal(false);
+    };
 
 
     const handleSave = async () => {
@@ -140,68 +161,75 @@ const EditOrganization: React.FC = () => {
                             <IonRow>
                                 <IonCol>
                                     <IonButton>Add Staff</IonButton>
-                                    <IonButton>Add BikeBusGroup</IonButton>
+                                    <IonButton onClick={() => setShowModal(true)}>Add BikeBusGroup</IonButton>
+                                    <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                                        <IonHeader>
+                                            <IonTitle>Select a BikeBusGroup</IonTitle>
+                                        </IonHeader>
+                                        <IonContent>
+                                            <IonList>
+                                                {bikeBusGroups.map(group => (
+                                                    <IonItem key={group.id} button onClick={() => setSelectedBikeBusGroup(group.id)}>
+                                                        {group.BikeBusName}
+                                                    </IonItem>
+                                                ))}
+                                            </IonList>
+                                            <IonButton onClick={handleAddBikeBusGroup}>Add Selected BikeBusGroup</IonButton>
+                                            <IonButton onClick={() => setShowModal(false)}>Cancel</IonButton>
+                                        </IonContent>
+                                    </IonModal>
+
                                     <IonButton>Add Schools</IonButton>
                                 </IonCol>
                             </IonRow>
                             <IonRow>
                                 <IonCol>
-                                    <IonItem>
-                                        {
-                                            isLoading ?
-                                                <IonSpinner /> :
-                                                <IonList>
-                                                    <IonCol>
-                                                        <IonItem>
-                                                            <IonLabel position="stacked">Organization Name:</IonLabel>
-                                                            <IonInput
-                                                                key={selectedOrganization?.id}
-                                                                value={selectedOrganization?.NameOfOrg || ''}
-                                                                onIonChange={e => {
-                                                                    if (selectedOrganization) {
-                                                                        const updatedOrganization = {
-                                                                            ...selectedOrganization,
-                                                                            NameOfOrg: e.detail.value!
-                                                                        };
-                                                                        setselectedOrganization(updatedOrganization);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </IonItem>
-                                                    </IonCol>
-                                                </IonList>
-                                        }
-                                        <IonCol>
-                                            <IonItem>
-                                                <IonLabel position="stacked">Organization Type:</IonLabel>
-                                                <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)}>
-                                                    <IonSelectOption value="School">School</IonSelectOption>
-                                                    <IonSelectOption value="School District">School District</IonSelectOption>
-                                                    <IonSelectOption value="Work">Work</IonSelectOption>
-                                                    <IonSelectOption value="Social">Social</IonSelectOption>
-                                                    <IonSelectOption value="Club">Club</IonSelectOption>
-                                                </IonSelect>
-                                            </IonItem>
-                                        </IonCol>
-                                        <IonCol>
-                                            <IonItem>
-                                                <IonLabel position="stacked">Contact Name:</IonLabel>
+                                    {isLoading ? <IonSpinner /> :
+                                        <IonList>
+                                            <IonCol>
+                                                <IonLabel position="stacked">Organization Name:</IonLabel>
                                                 <IonInput
                                                     key={selectedOrganization?.id}
-                                                    value={selectedOrganization?.ContactName || ''}
+                                                    value={selectedOrganization?.NameOfOrg || ''}
                                                     onIonChange={e => {
                                                         if (selectedOrganization) {
                                                             const updatedOrganization = {
                                                                 ...selectedOrganization,
-                                                                ContactName: e.detail.value!
+                                                                NameOfOrg: e.detail.value!
                                                             };
                                                             setselectedOrganization(updatedOrganization);
                                                         }
                                                     }}
                                                 />
-                                            </IonItem>
-                                        </IonCol>
-                                    </IonItem>
+                                            </IonCol>
+                                        </IonList>
+                                    }
+                                    <IonCol>
+                                        <IonLabel position="stacked">Organization Type:</IonLabel>
+                                        <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)}>
+                                            <IonSelectOption value="School">School</IonSelectOption>
+                                            <IonSelectOption value="School District">School District</IonSelectOption>
+                                            <IonSelectOption value="Work">Work</IonSelectOption>
+                                            <IonSelectOption value="Social">Social</IonSelectOption>
+                                            <IonSelectOption value="Club">Club</IonSelectOption>
+                                        </IonSelect>
+                                    </IonCol>
+                                    <IonCol>
+                                        <IonLabel position="stacked">Contact Name:</IonLabel>
+                                        <IonInput
+                                            key={selectedOrganization?.id}
+                                            value={selectedOrganization?.ContactName || ''}
+                                            onIonChange={e => {
+                                                if (selectedOrganization) {
+                                                    const updatedOrganization = {
+                                                        ...selectedOrganization,
+                                                        ContactName: e.detail.value!
+                                                    };
+                                                    setselectedOrganization(updatedOrganization);
+                                                }
+                                            }}
+                                        />
+                                    </IonCol>
                                     <IonButton onClick={handleSave}>Save</IonButton>
                                     <IonButton routerLink={`/ViewOrganization/${id}`}>Cancel</IonButton>
                                 </IonCol>

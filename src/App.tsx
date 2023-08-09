@@ -33,7 +33,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { arrowUp, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
+import { arrowUp, chatbubblesOutline, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -73,6 +73,7 @@ import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
 import { type } from 'os';
+import { CurrentLocationProvider } from './components/CurrentLocationContext';
 
 setupIonicReact();
 
@@ -124,6 +125,10 @@ const App: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [upcomingEvent, setUpcomingEvent] = useState<Group['event'] | null>(null);
   const [upcomingGroup, setUpcomingGroup] = useState<Group | null>(null);
+  const [startPoint, setStartPoint] = useState<{ lat: number; lng: number }>({
+    lat: 0,
+    lng: 0,
+  });
 
 
 
@@ -573,6 +578,9 @@ const App: React.FC = () => {
                             },
                           ]}
                         />
+                        <IonButton routerLink='/BulletinBoards'>
+                          <IonIcon slot="end" icon={chatbubblesOutline}></IonIcon>
+                        </IonButton>
                         <IonButton onClick={() => setShowActionSheet(true)}>
                           <IonIcon slot="end" icon={shareOutline}></IonIcon>
                         </IonButton>
@@ -591,7 +599,9 @@ const App: React.FC = () => {
                         <SearchForBikeBus />
                       </Route>
                       <Route path="/BulletinBoards">
+                      <CurrentLocationProvider>
                         <BulletinBoards />
+                        </CurrentLocationProvider>
                       </Route>
                       <Route path="/viewroute/:id" exact>
                         <ViewRoute />
@@ -723,7 +733,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="start" slot="fixed">
                       <IonFabButton routerLink="/Map" routerDirection="none">
-                        <IonIcon icon={homeOutline} />
+                        <IonIcon color="#ffd800" icon={homeOutline} />
                       </IonFabButton>
                     </IonFab>
                   </div>

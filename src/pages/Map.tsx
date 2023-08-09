@@ -197,6 +197,7 @@ const Map: React.FC = () => {
   const [leaderUID, setLeaderUID] = useState<string>('');
   const [bikeBusEvents, setBikeBusEvents] = useState<BikeBusEvent[]>([]);
   const isEventLeader = user?.uid === leaderUID;
+  const [isBikeBusEventLeader, setIsBikeBusEventLeader] = useState(false);
   const [isEventLeaderActive, setIsEventLeaderActive] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
@@ -465,6 +466,139 @@ const Map: React.FC = () => {
     };
   
     const endTripAndCheckOut = async () => {
+      const tripDataIdDoc = doc(db, 'event', id);
+  
+      const tripSnapshot = await getDoc(tripDataIdDoc);
+      const tripData = tripSnapshot.data();
+      const eventDataId = tripData?.eventId;
+  
+  
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+  
+      if (tripData?.tripCheckInParents.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripParents: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.kids.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripKids: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sheepdogs.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSheepdogs: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sprinters.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSprinters: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.captains.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaptains: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.caboose.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaboose: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.members.includes(username)) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripMembers: arrayUnion(username),
+        }, { merge: true });
+        console.log('members', tripData?.members)
+        console.log('username', username)
+        console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
+      }
+  
+      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+      history.push(eventSummaryUrl);
+  
+    };
+
+    const endBikeBusAndCheckOutAll = async () => {
+      const tripDataIdDoc = doc(db, 'event', id);
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      // get the serverTimeStamp() and set it as TripEndTimeStamp
+      const serverTimestamp = () => {
+        return new Date();
+      };
+      await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
+      const tripSnapshot = await getDoc(tripDataIdDoc);
+      console.log('tripSnapshot', tripSnapshot)
+      const tripData = tripSnapshot.data();
+      console.log('tripData', tripData)
+      const eventDataId = tripData?.eventId;
+      console.log('eventDataId', eventDataId)
+  
+      const eventDataIdDoc = doc(db, 'event', eventDataId);
+      console.log('eventDataIdDoc', eventDataIdDoc)
+      await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
+      const eventSnapshot = await getDoc(eventDataIdDoc);
+      console.log('eventSnapshot', eventSnapshot)
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+      console.log('tripDataIdDoc', tripDataIdDoc)
+  
+      // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+      await setDoc(tripDataIdDoc, {
+        JoinedMembersCheckOut: arrayUnion(username)
+      }, { merge: true });
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      // find any other of user's ids in the event add them to the appropriate role arrays
+      // if the user is a parent in the eventData field parents, add them to the parents array
+      if (tripData?.parents) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripParents: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.kids) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripKids: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sheepdogs) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSheepdogs: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.sprinters) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripSprinters: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.captains) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaptains: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.caboose) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripCaboose: arrayUnion(username),
+        }, { merge: true });
+      }
+      if (tripData?.members) {
+        await setDoc(tripDataIdDoc, {
+          tripEndTripMembers: arrayUnion(username),
+        }, { merge: true });
+      }
+      console.log('tripDataIdDoc', tripDataIdDoc)
+      console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
+      console.log('tripData?.members', tripData?.members)
+      console.log('username', username)
+      console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
+      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+      history.push(eventSummaryUrl);
+  
+    };
+  
+    const endBikeBusAndCheckOut = async () => {
       const tripDataIdDoc = doc(db, 'event', id);
   
       const tripSnapshot = await getDoc(tripDataIdDoc);
@@ -1722,7 +1856,7 @@ const Map: React.FC = () => {
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-        {!showMap && (
+        {!showMap && !id && (
           <>
             <IonGrid className="location-app-intro-container">
               <IonRow>
@@ -2496,14 +2630,26 @@ const Map: React.FC = () => {
                 {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
               </div>
               <div>
-                {isEventLeader && id && (
+                {isEventLeader && !id && !isActiveBikeBusEvent && isActiveEvent && (
                   <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton onClick={endTripAndCheckOutAll}>End Trip</IonButton>
+                    <IonButton color="danger" onClick={endTripAndCheckOutAll}>End Trip For All</IonButton>
                   </div>
                 )}
-                {!isEventLeader && id && (
+                {!isEventLeader && !isActiveBikeBusEvent && isActiveEvent && !id && (
                   <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
+                    <IonButton color="danger" onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
+                  </div>
+                )}
+              </div>
+              <div>
+                {isEventLeader && id && isActiveBikeBusEvent && (
+                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                    <IonButton color="danger" onClick={endBikeBusAndCheckOutAll}>End BikeBus Event For All</IonButton>
+                  </div>
+                )}
+                {!isEventLeader && id && isActiveBikeBusEvent && (
+                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                    <IonButton color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
                   </div>
                 )}
               </div>
