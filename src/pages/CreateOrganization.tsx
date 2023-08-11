@@ -168,6 +168,9 @@ const CreateOrganization: React.FC = () => {
 
     const bulletinBoardData = {
       Organization: doc(db, 'organizations', newOrgId),
+      bulletinboardType: 'Organization',
+      bulletinboardName: orgName,
+      bulletinboardCreator: doc(db, 'users', user.uid),
       Messages: [],
     };
 

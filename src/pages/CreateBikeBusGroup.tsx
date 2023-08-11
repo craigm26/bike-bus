@@ -124,6 +124,7 @@ const CreateBikeBusGroup: React.FC = () => {
     // create a new BikeBus group in firestore with the schedule id
     const bikeBusData = {
       BikeBusName: BikeBusName,
+      bulletinboardType: 'BikeBus',
       BikeBusDescription: BikeBusDescription,
       BikeBusType: BikeBusType,
       BikeBusRoutes: [doc(db, 'routes', RouteID)],

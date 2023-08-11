@@ -481,53 +481,8 @@
   width: 100%;
   overflow: hidden;
 }
-.chat-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-item-right,
-.chat-item-left {
-  display: flex;
-  align-items: center;
-}
-
-.chat-item-right {
-  justify-content: flex-end;
-  flex-direction: row-reverse;
-}
-
-.chat-item-left {
-  justify-content: flex-start;
-}
-
-.chat-message {
-  background-color: #f1f1f1; /* Default background for other users */
-  color: black;
-  border-radius: 15px;
-  padding: 10px;
-  white-space: normal; /* Controls how whitespace inside the element is handled */
-  word-wrap: break-word; /* Allows unbreakable words to be broken */
-  flex-wrap: wrap; /* This might be unnecessary unless you have specific flexbox requirements */
-}
-
-.chat-item-right .chat-message {
-  background-color: #007bff; /* Blue background for logged-in user */
-  color: white;
-  border-radius: 15px;
-}
 
 
-.chat-item-right .chat-message {
-  background-color: #007bff; /* Blue background for logged-in user */
-  color: white;
-  border-radius: 15px;
-  
-}
 
-.extrasmall-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 10px;
-  margin: 5px; /* Add some spacing around the avatar */
-}
+
+

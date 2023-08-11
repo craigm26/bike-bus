@@ -6,10 +6,6 @@ import {
     IonInput,
     IonLabel,
     IonButton,
-    IonHeader,
-    IonToolbar,
-    IonCard,
-    IonCardContent,
     IonCardTitle,
     IonSelect,
     IonSelectOption,
@@ -19,20 +15,29 @@ import {
     IonRow,
     IonAvatar,
     IonIcon,
-    IonTitle,
-    IonAlert
+    IonRouterLink,
+    IonItemDivider,
+    IonSplitPane
 } from '@ionic/react';
-import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { DocumentReference, addDoc, arrayUnion, collection, doc, orderBy, startAt, endAt, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, GeoPoint } from 'firebase/firestore';
+import { DocumentReference, addDoc, arrayUnion, collection, doc, orderBy, startAt, endAt, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
 import { useCurrentLocation } from '../components/CurrentLocationContext';
 import { DocumentData } from '@firebase/firestore-types';
-import { personCircleOutline } from 'ionicons/icons';
+import { locationOutline, personCircleOutline } from 'ionicons/icons';
+import { set } from 'date-fns';
+import { get } from 'http';
+
+
+interface UserDocument {
+    username: string;
+    avatarUrl: string;
+}
 
 
 interface Coordinate {
@@ -87,6 +92,7 @@ interface SelectOption {
 }
 
 interface BulletinBoard {
+    bulletinboardType: string;
     Messages: DocumentReference[];
 }
 
@@ -101,6 +107,7 @@ interface Message {
     BikeBusGroup?: DocumentReference | null;
     Organization?: DocumentReference | null;
     timestamp: FieldValue;
+    bulletinboardType: string;
     bulletinboard: DocumentReference | string;
     geoHash?: string;
     userLocationSentMessage?: UserLocation;
@@ -111,9 +118,10 @@ const BulletinBoards: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
     const [accountType, setAccountType] = useState<string>('');
-    const [groupType, setGroupType] = useState<string>('Organization');
+    const [groupType, setGroupType] = useState<string>('');
+    const [bulletinboardType, setBulletinboardType] = useState<string>('');
     const [combinedList, setCombinedList] = useState<SelectOption[]>([]);
-    const [selectedValue, setSelectedValue] = useState<string>("Community");
+    const [selectedBBOROrgValue, setselectedBBOROrgValue] = useState<string>('') || undefined;
     const [groupId, setGroupId] = useState<string | undefined>('');
     const [groupData, setGroupData] = useState<any | undefined>(undefined);
     const [username, setUsername] = useState<string | undefined>('');
@@ -124,13 +132,8 @@ const BulletinBoards: React.FC = () => {
     const [geoConsent, setGeoConsent] = useState<boolean>(false);
     const [showAlert, setShowAlert] = useState(true);
     const [anonAccess, setAnonAccess] = useState(false);
-
-
-    async function searchNext($event: CustomEvent<void>) {
-        fetchMessages({ lat: 0, lng: 0 });
-
-        ($event.target as HTMLIonInfiniteScrollElement).complete();
-    }
+    const [bulletinBoardOrgMessagesArray, setBulletinBoardOrgMessagesArray] = useState<Message[]>([]);
+    const [bulletinboardBikeBusMessagesArray, setBulletinBoardBikeBusMessagesArray] = useState<Message[]>([]);
 
     useEffect(() => {
         if (user) {
@@ -154,145 +157,294 @@ const BulletinBoards: React.FC = () => {
             setAnonAccess(true);
         }
 
-    }, [user]);
+        console.log('useEffect was called');
+        const communityOption = { value: "Community", label: "Community" };
 
-    const avatarElement = useMemo(() => {
-        return user ? (
-            avatarUrl ? (
-                <IonAvatar>
-                    <Avatar uid={user.uid} size="extrasmall" />
-                </IonAvatar>
-            ) : (
-                <IonIcon icon={personCircleOutline} />
-            )
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        );
-    }, [user, avatarUrl]);
+        const fetchGroups = () => {
+            Promise.all([fetchOrganizations(), fetchBikeBus()]).then(([orgs, bikebus]) => {
+                setCombinedList([communityOption, ...orgs, ...bikebus]);
+            });
+        };
 
-
-    const transformCommunityMessages = (communityMessages: DocumentData[]): Message[] => {
-
-        return communityMessages.map((doc) => {
-            const messageData = doc.data();
-            return {
-                message: messageData.message,
-                user: messageData.user,
-                BikeBusGroup: messageData.BikeBusGroup,
-                Organization: messageData.Organization,
-                timestamp: messageData.timestamp,
-                bulletinboard: messageData.bulletinboard,
-            };
-        });
-    };
-
-    const handleCommunitySelection = async () => {
-        if (geoConsent === true) {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const userLocation = { lat: latitude, lng: longitude };
-                    console.log('User Location:', userLocation);
-
-                    const communityMessagesRef = collection(db, 'messages');
-                    const communityMessagesQuery = query(communityMessagesRef, where('bulletinboard', '==', 'Community'));
-                    const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
-                    console.log('Community Messages Snapshot:', communityMessagesSnapshot)
-                    console.log('bullentinboard:', communityMessagesSnapshot.docs[0].data().bulletinboard)
-                    const communityMessagesData = communityMessagesSnapshot.docs.map(doc => ({
-                        ...doc.data(),
-                        id: doc.id,
-                        message: doc.data().message as string,
-                        timestamp: doc.data().timestamp as FieldValue,
-                        user: doc.data().user.path,
-                        bulletinboard: doc.data().bulletinboard || "Community",
-                        geoHash: doc.data().geoHash as string,
-                        userLocationSentMessage: doc.data().userLocationSentMessage as UserLocation,
-                    }));
-
-
-                    console.log('Community Messages Data:', communityMessagesData);
-
-                    // Find community boards from the communityMessagesData that are within 25-mile radius
-                    const communityMessages = communityMessagesData.filter((message) => {
-                        const messageLocation = message.userLocationSentMessage as UserLocation;
-                        const distanceInKm = geofire.distanceBetween([messageLocation.lat, messageLocation.lng], [userLocation.lat, userLocation.lng]);
-                        const distanceInM = distanceInKm * 1000;
-                        const radiusInM = 25 * 1609.34; // Convert miles to meters if radius is in miles
-                        return distanceInM <= radiusInM;
-                    });
-                    //const communityMessages = await findCommunityMessagesWithinRadius(userLocation, 25);
-                    console.log('Community Messages:', communityMessages);
-
-                    // Transform communityMessages to match Message[] type
-                    const transformedMessages = communityMessagesData.map((doc) => ({
-                        message: doc.message,
-                        user: doc.user,
-                        timestamp: doc.timestamp,
-                        bulletinboard: doc.bulletinboard,
-                        geoHash: doc.geoHash,
-                        userLocationSentMessage: doc.userLocationSentMessage,
-                    }));
-
-                    // Update the messagesData state with the transformed community messages
-                    setMessagesData(transformedMessages);
+        if (geoConsent) {
+            if (groupType === 'Community') {
+                getLocation()
+                Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+                    setCombinedList([communityOption, ...orgs, ...bikebus]);
                 });
-            }
-        }
-    };
-
-    useEffect(() => {
-        if (selectedValue) {
-            if (selectedValue === 'Community') {
-                // Handle community messages
-                handleCommunitySelection();
             } else {
-                // Fetch from organizations and bikebusgroups in parallel
-                const orgSnapshotPromise = getDoc(doc(db, 'organizations', selectedValue));
-                const busSnapshotPromise = getDoc(doc(db, 'bikebusgroups', selectedValue));
+                fetchGroups();
+            }
+        } else {
+            fetchGroups();
+        }
 
-                Promise.all([orgSnapshotPromise, busSnapshotPromise]).then(([orgSnapshot, busSnapshot]) => {
-                    if (orgSnapshot.exists()) {
-                        const groupData = orgSnapshot.data();
-                        if (groupData) {
-                            setGroupData(groupData);
-                            console.log('Org Data:', groupData);
-                            console.log('Org ID:', selectedValue);
-                            // find the bulletinboard for this org
-                            const bulletinBoardRef = groupData.bulletinboard;
-                            if (bulletinBoardRef) {
-                                getDoc(bulletinBoardRef).then((bulletinBoardSnapshot) => {
-                                    if (bulletinBoardSnapshot.exists()) {
-                                        const bulletinBoardData = bulletinBoardSnapshot.data();
-                                        if (bulletinBoardData) {
-                                            console.log('Org Bulletin Board Data:', bulletinBoardData);
-                                            // show me the document reference for the id of the bulletinboard
-                                            console.log('Org Bulletin Board ID:', bulletinBoardSnapshot.id);
+        console.log('selectedBBOROrgValue:', selectedBBOROrgValue);
+
+        if (selectedBBOROrgValue) {
+            if (selectedBBOROrgValue === 'Community') {
+                // Handle community messages
+                getLocation()
+                console.log('Community Selected');
+                console.log('Selected Value:', selectedBBOROrgValue);
+                handleCommunitySelection();
+                console.log('handleCommunitySelection was called');
+            } else {
+
+                // first let's determine what kind of group it is - organization or bikebus. This can be determined by the bulletinboardType property on the bulletinboard document
+                selectedBBOROrgValue && console.log('Selected BB or Org Value:', selectedBBOROrgValue);
+                // selectedBBOROrgValue is actually the id of the bikebusgroup or organization and either one of those contains a bulletinboard document reference
+
+                const bikebusgroupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue);
+                console.log('bikebusgroupRef:', bikebusgroupRef);
+                getDoc(bikebusgroupRef).then((docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const bikebusgroupData = docSnapshot.data();
+                        console.log('bikebusgroupData:', bikebusgroupData);
+                        if (bikebusgroupData) {
+                            const bulletinboard = bikebusgroupData.bulletinboard;
+                            console.log('bulletinboard:', bulletinboard);
+                            if (bulletinboard) {
+                                const bulletinboardRef: DocumentReference = bulletinboard;
+                                console.log('bulletinboardRef:', bulletinboardRef);
+                                getDoc(bulletinboardRef).then((docSnapshot) => {
+                                    if (docSnapshot.exists()) {
+                                        const bulletinboardData = docSnapshot.data();
+                                        console.log('bulletinboardData:', bulletinboardData);
+
+                                        if (bulletinboardData) {
+                                            const fetchBikeBus = async () => {
+                                                const bulletinboardBikeBusMessages = bulletinboardData.Messages;
+                                                const bulletinboardBikeBusMessagesPromises = bulletinboardBikeBusMessages.map(async (docRef: DocumentReference) => {
+                                                    const docSnapshot = await getDoc(docRef);
+                                                    const docData = docSnapshot.data() as Message;
+                                                    const userUID = docData?.user?.id || docData?.user;
+
+                                                    return {
+                                                        message: docData?.message,
+                                                        user: {
+                                                            id: userUID,
+                                                            // ... other user properties if needed
+                                                        },
+                                                        timestamp: docData?.timestamp,
+                                                        bulletinboard: docData?.bulletinboard,
+                                                        bulletinboardType: docData?.bulletinboardType,
+                                                    };
+                                                });
+                                                const bulletinboardBikeBusMessagesData = await Promise.all(bulletinboardBikeBusMessagesPromises);
+                                                setMessagesData(bulletinboardBikeBusMessagesData);
+                                            };
+                                            fetchBikeBus();
                                         }
-                                    } else {
                                     }
                                 });
                             }
                         }
-                    } else if (busSnapshot.exists()) {
-                        const groupData = busSnapshot.data();
-                        if (groupData) {
-                            setGroupData(groupData);
-                            console.log('Bus Data:', groupData);
-                            console.log('Bus ID:', selectedValue);
+                    }
+                });
+
+                // if the bikebusgroupRef does not exist, then we know it is an organization, and we can get the bulletinboard document reference from the organization document
+
+                const organizationRef = doc(db, 'organizations', selectedBBOROrgValue);
+                console.log('organizationRef:', organizationRef);
+                getDoc(organizationRef).then((docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const organizationData = docSnapshot.data();
+                        console.log('organizationData:', organizationData);
+                        if (organizationData) {
+                            const bulletinboard = organizationData.bulletinboard;
+                            console.log('bulletinboard:', bulletinboard);
+                            if (bulletinboard) {
+                                const bulletinboardRef: DocumentReference = bulletinboard;
+                                console.log('bulletinboardRef:', bulletinboardRef);
+                                getDoc(bulletinboardRef).then((docSnapshot) => {
+                                    if (docSnapshot.exists()) {
+                                        const bulletinboardData = docSnapshot.data();
+                                        console.log('bulletinboardData:', bulletinboardData);
+
+                                        if (bulletinboardData) {
+                                            const fetchOrganizations = async () => {
+                                                const bulletinboardOrgMessages = bulletinboardData.Messages;
+                                                const bulletinboardOrgMessagesPromises = bulletinboardOrgMessages.map(async (docRef: DocumentReference) => {
+                                                    const docSnapshot = await getDoc(docRef);
+                                                    const docData = docSnapshot.data() as Message;
+                                                    const userRef = docData?.user;
+
+                                                    // Check if userRef is not null and has the correct structure
+                                                    if (userRef && 'id' in userRef) {
+                                                        // Handle case where userRef is an object with id, username, etc.
+                                                        return {
+                                                            message: docData?.message,
+                                                            user: {
+                                                                id: userRef.id,
+                                                                username: userRef.username,
+                                                                // ... other user properties
+                                                            },
+                                                            timestamp: docData?.timestamp,
+                                                            bulletinboard: docData?.bulletinboard,
+                                                            bulletinboardType: docData?.bulletinboardType,
+                                                        };
+                                                    } else if (userRef) {
+                                                        // Handle case where userRef is a DocumentReference
+                                                        const userDoc = await getDoc(userRef);
+                                                        const userData = userDoc.data() as UserDocument;
+                                                        const userUID = userDoc.id;
+
+                                                        return {
+                                                            message: docData?.message,
+                                                            user: {
+                                                                id: userUID,
+                                                                username: userData?.username,
+                                                                // ... other user properties
+                                                            },
+                                                            timestamp: docData?.timestamp,
+                                                            bulletinboard: docData?.bulletinboard,
+                                                            bulletinboardType: docData?.bulletinboardType,
+                                                        };
+                                                    }
+
+                                                    // Handle other cases if needed
+                                                    return null;
+                                                });
+                                                const bulletinboardOrgMessagesData = await Promise.all(bulletinboardOrgMessagesPromises);
+                                                setMessagesData(bulletinboardOrgMessagesData.filter(message => message !== null));
+                                            };
+                                            fetchOrganizations();
+
+
+                                        }
+                                    }
+                                });
+                            }
                         }
                     }
                 });
             }
         }
-    }, [selectedValue]);
+        console.log('selectedBBOROrgValue:', selectedBBOROrgValue);
+        console.log('groupData:', groupData);
+        console.log('messagesData:', messagesData);
 
+    }, [user, accountType, selectedBBOROrgValue, groupType, geoConsent, groupData]);
+
+
+    const getAvatarElement = (userId: string | undefined) => {
+        // You can replace this with the logic to get the avatar URL for the given user ID
+        const avatarUrl = user?.uid
+
+        return avatarUrl ? (
+            <IonAvatar>
+                <Avatar uid={userId} />
+            </IonAvatar>
+        ) : (
+            <IonIcon icon={personCircleOutline} />
+        );
+    };
+
+    const currentUserAvatarElement = useMemo(() => getAvatarElement(user?.uid), [user]);
+
+
+    const getLocation = () => {
+        console.log('getLocation was called')
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            const userLocation = { lat: latitude, lng: longitude };
+            console.log('User Location:', userLocation);
+
+            setGeoConsent(true);
+            console.log('GeoConsent:', geoConsent);
+            // we want to automatically set the selectedBBOROrgValue to Community and then call the findCommunityMessagesWithinRadius function to display the messages for community
+            setselectedBBOROrgValue("Community");
+            console.log('Selected Value:', selectedBBOROrgValue);
+        }, (error) => {
+            console.error("Error getting geolocation:", error);
+            setGeoConsent(false);
+            console.log('GeoConsent:', geoConsent);
+        });
+    };
+
+    const handleCommunitySelection = async () => {
+        return new Promise<Message[]>(async (resolve, reject) => {
+            console.log('Community Selected');
+            console.log('Selected Value:', selectedBBOROrgValue);
+            console.log('handleCommunitySelection was called');
+            if (geoConsent === true) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const userLocation = { lat: latitude, lng: longitude };
+                        console.log('User Location:', userLocation);
+
+                        const communityMessagesRef = collection(db, 'messages');
+                        const communityMessagesQuery = query(communityMessagesRef, where('bulletinboardType', '==', 'Community'));
+                        const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
+                        console.log('Community Messages Snapshot:', communityMessagesSnapshot)
+                        console.log('bullentinboard:', communityMessagesSnapshot.docs[0].data().bulletinboard)
+                        const communityMessagesDataPromises = communityMessagesSnapshot.docs.map(async doc => {
+                            const userDataRef = doc.data().user; // Get the user document reference
+                            const userDoc = await getDoc(userDataRef); // Fetch the user document
+                            const userData = userDoc.data() as UserDocument; // Cast to the expected shape
+
+                            return {
+                                ...doc.data(),
+                                id: doc.id,
+                                message: doc.data().message as string,
+                                timestamp: doc.data().timestamp as FieldValue,
+                                user: {
+                                    id: userDoc.id, // Include the document ID as the user ID
+                                    username: userData.username, // Extract the username
+                                    avatarUrl: userData.avatarUrl, // Include the avatar URL if it's needed
+                                },
+                                bulletinboard: doc.data().bulletinboard || "Community",
+                                bulletinboardType: doc.data().bulletinboardType || "Community",
+                                geoHash: doc.data().geoHash as string,
+                                userLocationSentMessage: doc.data().userLocationSentMessage as UserLocation,
+                            };
+                        });
+
+                        const communityMessagesData = await Promise.all(communityMessagesDataPromises);
+                        console.log('Community Messages Data:', communityMessagesData);
+
+
+                        // Find community boards from the communityMessagesData that are within 25-mile radius
+                        const communityMessages = communityMessagesData.filter((message) => {
+                            const messageLocation = message.userLocationSentMessage as UserLocation;
+                            const distanceInKm = geofire.distanceBetween([messageLocation.lat, messageLocation.lng], [userLocation.lat, userLocation.lng]);
+                            const distanceInM = distanceInKm * 1000;
+                            const radiusInM = 25 * 1609.34; // Convert miles to meters if radius is in miles
+                            return distanceInM <= radiusInM;
+                        });
+                        //const communityMessages = await findCommunityMessagesWithinRadius(userLocation, 25);
+                        console.log('Community Messages:', communityMessages);
+
+                        // Transform communityMessages to match Message[] type
+                        const transformedMessages = communityMessagesData.map((doc) => ({
+                            message: doc.message,
+                            user: doc.user,
+                            timestamp: doc.timestamp,
+                            bulletinboard: doc.bulletinboard,
+                            bulletinboardType: doc.bulletinboardType,
+                            geoHash: doc.geoHash,
+                            userLocationSentMessage: doc.userLocationSentMessage,
+                        }));
+
+                        // Update the messagesData state with the transformed community messages
+                        resolve(transformedMessages);
+                        setMessagesData(transformedMessages);
+                        console.log('Messages Data:', messagesData);
+                        console.log('transformedMessages:', transformedMessages);
+                    });
+                }
+            }
+        });
+    };
 
     const fetchOrganizations = useCallback(async () => {
+        console.log('fetchOrganizations was called');
         let formattedData: { value: string, label: string }[] = [];
         try {
             const uid = user?.uid;
-            console.log('UID:', uid);
 
             if (!uid) {
                 return formattedData;
@@ -323,6 +475,7 @@ const BulletinBoards: React.FC = () => {
 
 
     const fetchBikeBus = useCallback(async () => {
+        console.log('fetchBikeBus was called');
         let formattedData: { value: string, label: string }[] = [];
         const uid = user?.uid;
         if (!uid) {
@@ -331,7 +484,6 @@ const BulletinBoards: React.FC = () => {
 
         const BikeBusCollection = collection(db, 'bikebusgroups');
         const q = query(BikeBusCollection, where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
-        console.log('Query:', q);
         const querySnapshot = await getDocs(q);
 
         const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
@@ -347,108 +499,13 @@ const BulletinBoards: React.FC = () => {
         return formattedData;
     }, [user]);
 
-    const findCommunityMessagesWithinRadius = async (userLocation: { lat: number, lng: number }, radius: number) => {
-        // Convert the user location to the expected array format
-        const center: geofire.Geopoint = [userLocation.lat, userLocation.lng];
-        const radiusInM = radius * 1609.34; // Convert miles to meters if radius is in miles
-
-        const bounds = geofire.geohashQueryBounds(center, radiusInM);
-        const promises = [];
-        for (const b of bounds) {
-            const q = query(
-                collection(db, 'messages'), // Change 'cities' to 'messages' or your specific collection
-                orderBy('geohash'),
-                startAt(b[0]),
-                endAt(b[1])
-            );
-
-            promises.push(getDocs(q));
-        }
-
-        // Collect all the query results together into a single list
-        const snapshots = await Promise.all(promises);
-
-        const matchingDocs = [];
-        for (const snap of snapshots) {
-            for (const doc of snap.docs) {
-                const lat = doc.get('lat');
-                const lng = doc.get('lng');
-
-                // Filter out false positives due to GeoHash accuracy
-                const distanceInKm = geofire.distanceBetween([lat, lng], center);
-                const distanceInM = distanceInKm * 1000;
-                if (distanceInM <= radiusInM) {
-                    matchingDocs.push(doc.data()); // Change this to fit your needs
-                }
-            }
-        }
-
-        return matchingDocs; // Return the results as needed
-    };
-
-    const fetchMessages = useCallback(async (userLocation: { lat: number; lng: number; }) => {
-
-        if (selectedValue === 'Community') {
-
-            findCommunityMessagesWithinRadius(userLocation, 25)
-                .then((communityMessages) => {
-                    const transformedMessages = communityMessages.map(doc => ({
-                        message: doc.message,
-                        user: doc.user,
-                        timestamp: doc.timestamp,
-                        bulletinboard: doc.bulletinboard,
-                        geoHash: doc.geoHash,
-                        userLocationSentMessage: doc.userLocationSentMessage,
-                    }));
-                    setMessagesData(transformedMessages);
-                });
-
-
-        } else if (groupData?.bulletinboard) {
-            const bulletinBoardRef = doc(db, groupData.bulletinboard.path);
-            const bulletinBoardDoc = await getDoc(bulletinBoardRef);
-
-            if (bulletinBoardDoc.exists()) {
-                const bulletinBoardData = bulletinBoardDoc.data() as BulletinBoard;
-                const messagesData = bulletinBoardData?.Messages || [];
-
-                const messagesPromises = messagesData.map(async (messageRef: DocumentReference) => {
-                    const messageDoc = await getDoc(messageRef);
-                    if (messageDoc.exists()) {
-                        const messageData = messageDoc.data();
-
-                        if (messageData?.user) {
-                            const userDoc = await getDoc(messageData.user);
-                            const userData = userDoc.data();
-
-                            return {
-                                ...messageData,
-                                user: userData ? {
-                                    ...userData,
-                                    id: userDoc.id,
-                                } : null,
-                            };
-                        } else {
-                        }
-                    } else {
-                    }
-                });
-
-                const resolvedMessages = await Promise.all(messagesPromises);
-                setMessagesData(resolvedMessages.filter((item): item is Message => Boolean(item)));
-
-            } else {
-            }
-        } else {
-        }
-    }, [groupData]);
-
 
     const { startPoint } = useCurrentLocation();
     const latitude = startPoint.lat;
     const longitude = startPoint.lng;
 
     const getBulletinBoardInfoFromDocRef = (bulletinBoardRef: DocumentReference | null) => {
+        console.log('getBulletinBoardInfoFromDocRef was called')
         if (!bulletinBoardRef) return null; // Handle null case
 
         // Assuming bulletinBoardRef contains a path to the bulletin board document
@@ -463,81 +520,37 @@ const BulletinBoards: React.FC = () => {
     };
 
     const extractBulletinBoardNameFromPath = (bulletinBoardPath: string) => {
+        console.log('extractBulletinBoardNameFromPath was called')
         // Assuming bulletinBoardPath is in the format "organizations/{orgId}/bulletinboards/{bulletinBoardId}"
         const bulletinBoardId = bulletinBoardPath.split('/')[3];
         return bulletinBoardId;
     };
 
-
-    useEffect(() => {
-        const communityOption = { value: "Community", label: "Community" };
-
-        if (geoConsent) {
-            if (groupType === 'BikeBus') {
-                Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                    setCombinedList([communityOption, ...bikebus]);
-                });
-            } else if (groupType === 'Community') {
-                findCommunityMessagesWithinRadius({ lat: latitude, lng: longitude }, 25)
-                    .then((communityMessages) => {
-                        const transformedCommunityMessages = communityMessages.map(doc => ({
-                            value: doc.id,
-                            label: doc.message
-                        }));
-
-                        Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                            setCombinedList([communityOption, ...bikebus, ...transformedCommunityMessages]);
-                        });
-                    });
-            } else {
-                Promise.all([fetchOrganizations(), fetchBikeBus()]).then(([orgs, bikebus]) => {
-                    setCombinedList([communityOption, ...orgs, ...bikebus]);
-                });
-            }
-        } else {
-            Promise.all([fetchOrganizations(), fetchBikeBus()]).then(([orgs, bikebus]) => {
-                setCombinedList([...orgs, ...bikebus]);
-            });
-
-        }
-
-
-
-        fetchMessages({ lat: latitude, lng: longitude });
-
-
-    }, [fetchBikeBus, fetchOrganizations, groupType, selectedValue, latitude, longitude, fetchMessages, selectedValue]);
-
     const submitMessage = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('submitMessage was called')
 
-        // first check to see what selectedValue is set to. If it is set to Community, then we need to post to the community board only
+        // first check to see what selectedBBOROrgValue is set to. If it is set to Community, then we need to post to the community board only
         // If it is set to an organization or bikebus, then we need to post to that board only
         // If it is set to nothing, then we need to post to the community board only
 
-        console.log('Selected Value:', selectedValue);
+        console.log('Selected Value:', selectedBBOROrgValue);
+        console.log('Message Input:', messageInput);
 
-        if (selectedValue === 'Community') {
+        if (selectedBBOROrgValue === 'Community') {
             // Post to the community board only
             await postToCommunityBoard();
             setMessageInput('');
             setPostToCommunity(false); // Reset the community board selection
-            // fetchMessages with userLocation
-            fetchMessages({ lat: latitude, lng: longitude });
+            // refresh the messages
+            const communityOption = { value: "Community", label: "Community" };
+            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
+                setCombinedList([communityOption, ...bikebus]);
+            });
             return;
         }
 
-        if (selectedValue === '') {
-            // Post to the community board only
-            await postToCommunityBoard();
-            setMessageInput('');
-            setPostToCommunity(false); // Reset the community board selection
-            // fetchMessages with out userLocation
-            fetchMessages({ lat: 0, lng: 0 });
-            return;
-        }
-
-        if (selectedValue !== 'Comunnity' && selectedValue !== '') {
+        if (selectedBBOROrgValue !== 'Comunnity' && selectedBBOROrgValue !== '') {
 
             if (messageInput.trim() === '' || !user || !avatarUrl) {
                 return;
@@ -556,21 +569,15 @@ const BulletinBoards: React.FC = () => {
             await updateDoc(bulletinBoardRef, {
                 Messages: arrayUnion(messageRef),
             });
-
-            // If the user selected to post to the community board, call the appropriate function
-            if (postToCommunity) {
-                await postToCommunityBoard();
-            }
-
-            setMessageInput('');
-            setPostToCommunity(false); // Reset the community board selection
-            fetchMessages({ lat: latitude, lng: longitude });
         }
     };
 
     // whenever a user posts a message, we need to add it to the community board when the selects the checkbox next to the send button
     const postToCommunityBoard = async () => {
+        console.log('postToCommunityBoard was called')
         // Get the user's current location
+        console.log('Message Input before posting:', messageInput); // Log the message input
+        console.log(messageInput)
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
@@ -582,91 +589,93 @@ const BulletinBoards: React.FC = () => {
                     message: messageInput,
                     user: doc(db, 'users', `${user?.uid}`),
                     timestamp: serverTimestamp(),
-                    bulletinboard: 'Community',
+                    // set the bulletinboard field to be the document reference for the community board, which is bulletinboard/{geohash}
+                    bulletinboard: doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng])),
+                    bulletinboardType: 'Community',
                     userLocationSentMessage: userLocation,
                     geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
                 });
                 console.log(messageRef)
+                console.log('Message...', messageRef);
+
+                // we're going to add this message to the community board in the document collection "bulletinboard"
+                // first we need to get the document reference for the community board
+                const communityBoardRef = doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng]));
+                console.log('Community Board Ref:', communityBoardRef);
+                // does it exist? if so updateDoc, if not, createDoc
+                const communityBoardDoc = await getDoc(communityBoardRef);
+                console.log('Community Board Doc:', communityBoardDoc);
+                if (communityBoardDoc.exists()) {
+                    console.log('Community Board Doc Exists');
+                    await updateDoc(communityBoardRef, {
+                        Messages: arrayUnion(messageRef),
+                    });
+                }
+                else {
+                    console.log('Community Board Doc Does Not Exist');
+                    await setDoc(communityBoardRef, {
+                        Messages: arrayUnion(messageRef),
+                        geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
+                        bulletinboardType: 'Community',
+                    });
+                }
+                // fetchMessages with userLocation
+                // refresh the messages
+                // After adding the message, refresh and log the messages
+                const communityOption = { value: "Community", label: "Community" };
+                getLocation();
+                Promise.all([fetchBikeBus()]).then(([bikebus]) => {
+                    setCombinedList([communityOption, ...bikebus]);
+                    console.log('Messages after posting:', messagesData); // Log the messages data after posting
+                });
             }
             );
         }
     };
 
-    // let's create a conditional rendering mechanism that will render the "Community" once the user agrees to getLocation and then we will render the organizations and bikebusgroups once the user selects the organization or bikebusgroup from the dropdown
-    const isGeoLocationAvailable = navigator.geolocation ? true : false;
+    const loadMoreData = (event: CustomEvent<void>) => {
+        // Logic to load more chat messages
 
-    const getLocation = () => {
-        if (isGeoLocationAvailable) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
-                const userLocation = { lat: latitude, lng: longitude };
+        // Get the last message in the list
 
-                setGeoConsent(true);
-                console.log('User Location:', userLocation);
-                fetchMessages(userLocation);
-                findCommunityMessagesWithinRadius(userLocation, 25)
+        // Get the timestamp of the last message
 
-            });
-        } else {
-            console.log('GeoLocation is not available');
-            setGeoConsent(false);
-        }
+        // Complete the infinite scroll loading (replace 'false' with a condition to disable further loading if necessary)
+        event.target && (event.target as HTMLIonInfiniteScrollElement).complete();
     };
-
-
 
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
-                <IonCardTitle>Bulletin Boards</IonCardTitle>
-                <IonButton
-                    onClick={() => {
-                        setGeoConsent(true);
-                        getLocation();
-                    }}
-                >
-                    Share Location to Enable Community Boards
-                </IonButton>
-                {!geoConsent && !anonAccess && (
+                {anonAccess && (
                     <>
-                        <IonSelect
-                            className="custom-ion-select"
-                            value={selectedValue}
-                            placeholder="Select Organization or BikeBus:"
-                            onIonChange={e => setSelectedValue(e.detail.value)}
+                        <IonCardTitle>Anonymous Access</IonCardTitle>
+                        <IonButton
+                            routerLink='/login'
                         >
-                            {combinedList.map((item, index) => (
-                                <IonSelectOption key={index} value={item.value}>
-                                    {item.label}
-                                </IonSelectOption>
-                            ))}
-                        </IonSelect>
-                        <IonList className="chat-list">
-                            {messagesData.map((message, index) => {
-                                let bulletinBoardInfo: ReactNode;
-                                if (typeof message.bulletinboard !== 'string') {
-                                    bulletinBoardInfo = getBulletinBoardInfoFromDocRef(message.bulletinboard);
-                                }
-                                return (
-                                    <IonItem key={index} className={username === message?.user?.username ? 'chat-item-right' : 'chat-item-left'}>
-                                        {username !== message?.user?.username && avatarElement}
-                                        <IonLabel className="chat-message">
-                                            {message?.message}
-                                        </IonLabel>
-                                        {username === message?.user?.username && avatarElement}
-                                    </IonItem>
-                                );
-                            })}
-                        </IonList>
+                            Sign In
+                        </IonButton>
                     </>
                 )}
-                {geoConsent && !anonAccess && (
+                <IonCardTitle>Bulletin Boards
+                    {!geoConsent && !anonAccess && (
+                        <IonButton color="success" className="share-location-button-chat"
+                            onClick={() => {
+                                getLocation();
+                            }}
+                        >
+                            Share Location to Enable Community Boards
+                            <IonIcon icon={locationOutline} slot="start" />
+                        </IonButton>
+                    )}
+                </IonCardTitle>
+                {!anonAccess && (
                     <>
                         <IonSelect
                             className="custom-ion-select"
-                            value={selectedValue}
-                            placeholder="Select Organization, BikeBus or Community:"
-                            onIonChange={e => setSelectedValue(e.detail.value)}
+                            value={selectedBBOROrgValue}
+                            placeholder="Choose a Bulletin Board"
+                            onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
                         >
                             {combinedList.map((item, index) => (
                                 <IonSelectOption key={index} value={item.value}>
@@ -674,25 +683,40 @@ const BulletinBoards: React.FC = () => {
                                 </IonSelectOption>
                             ))}
                         </IonSelect>
-                        <IonList className="chat-list">
-                            {messagesData.map((message, index) => {
-                                let bulletinBoardInfo: ReactNode;
-                                if (selectedValue === 'Community') {
-                                    bulletinBoardInfo = message.bulletinboard as string;
-                                } else if (typeof message.bulletinboard !== 'string') {
-                                    bulletinBoardInfo = getBulletinBoardInfoFromDocRef(message.bulletinboard);
-                                }
-                                return (
-                                    <IonItem key={index} className={username === message?.user?.username ? 'chat-item-right' : 'chat-item-left'}>
-                                        {username !== message?.user?.username && avatarElement}
-                                        <IonLabel className="chat-message">
-                                            {message?.message}
-                                        </IonLabel>
-                                        {username === message?.user?.username && avatarElement}
-                                    </IonItem>
-                                );
-                            })}
-                        </IonList>
+                        <IonInfiniteScroll threshold="100px" onIonInfinite={loadMoreData}>
+                            <IonInfiniteScrollContent
+                                loadingText="Loading more messages..."
+                                loadingSpinner={null}>
+                            </IonInfiniteScrollContent>
+                            <IonList className="chat-list">
+                                {messagesData.map((message, index) => {
+                                    const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                    const avatarElement = isCurrentUserMessage
+                                        ? currentUserAvatarElement
+                                        : getAvatarElement(message?.user?.id);
+
+                                    return (
+                                        <IonItem lines="none" key={index}>
+                                            {!isCurrentUserMessage && (
+                                                <div slot="start" className="avatarChat">
+                                                    {avatarElement}
+                                                </div>
+                                            )}
+                                            <div className="chat-message-wrapper">
+                                                <div className={`chat-message ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
+                                                    {message?.message}
+                                                </div>
+                                            </div>
+                                            {isCurrentUserMessage && (
+                                                <div slot="end" className="avatarChat">
+                                                    {avatarElement}
+                                                </div>
+                                            )}
+                                        </IonItem>
+                                    );
+                                })}
+                            </IonList>
+                        </IonInfiniteScroll>
                     </>
                 )}
                 <form onSubmit={submitMessage} className="chat-input-form">
@@ -702,7 +726,7 @@ const BulletinBoards: React.FC = () => {
                         placeholder="Enter your message"
                         onIonChange={e => setMessageInput(e.detail.value || '')}
                     />
-                    {selectedValue !== 'Community' && (
+                    {selectedBBOROrgValue !== 'Community' && (
                         <IonLabel>
                             Post to Community Board?
                             <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
@@ -712,13 +736,6 @@ const BulletinBoards: React.FC = () => {
                         <IonButton type="submit">Post Bulletin Board Message</IonButton>
                     </IonRow>
                 </form>
-                <IonInfiniteScroll threshold="100px" disabled={disableInfiniteScroll}
-                    onIonInfinite={(e: CustomEvent<void>) => searchNext(e)}>
-                    <IonInfiniteScrollContent
-                        loadingText="Loading more messages...">
-                    </IonInfiniteScrollContent>
-                </IonInfiniteScroll>
-
             </IonContent>
         </IonPage>
     );
