@@ -1,3 +1,73 @@
-.custom-ion-select {
-    min-width: min-content;
-}
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .avatarChat {
+    margin: 5px;
+    flex-shrink: 0; /* Prevent the avatar from shrinking */
+  }
+  
+  .chat-message-wrapper {
+    display: flex;
+    max-width: 60%; /* Control the maximum width of the chat bubble */
+    flex-grow: 1; /* Allow the wrapper to grow */
+  }
+  
+  .chat-message {
+    background-color: #f1f1f1;
+    color: black;
+    border-radius: 15px;
+    padding: 10px;
+    white-space: normal;
+    word-wrap: break-word;
+    display: inline-flex; /* Change to inline-flex to allow the bubble to shrink and grow with content */
+  }
+  
+  .chat-item-right {
+    background-color: #007bff;
+    color: white;
+    text-align: right;
+  }
+  
+  .chat-item-left {
+    text-align: left;
+  }
+  
+  /* Additional adjustments for the infinite scroll if needed */
+  .ion-infinite-scroll-content {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .ion-infinite-scroll-content .spinner {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .infinite-scroll-enabled {
+    display: flex !important;
+    padding: 0;
+    margin: 0;
+  }
+  
+
+  .chat-message-wrapper {
+    justify-content: flex-end; /* Align content to the right */
+  }
+  
+  .chat-item-right .chat-message-wrapper {
+    justify-content: flex-end; /* Align content to the right for logged-in user */
+  }
+  
+  .chat-item-left .chat-message-wrapper {
+    justify-content: flex-start; /* Align content to the left for other users */
+  }
+  
+  .chat-item-right .chat-message {
+    background-color: #007bff;
+    color: white;
+    text-align: left; /* Align text to the left inside the right-aligned bubble */
+  }
+  
