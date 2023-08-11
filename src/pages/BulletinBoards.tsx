@@ -623,7 +623,6 @@ const BulletinBoards: React.FC = () => {
                 // refresh the messages
                 // After adding the message, refresh and log the messages
                 const communityOption = { value: "Community", label: "Community" };
-                getLocation();
                 Promise.all([fetchBikeBus()]).then(([bikebus]) => {
                     setCombinedList([communityOption, ...bikebus]);
                     console.log('Messages after posting:', messagesData); // Log the messages data after posting
