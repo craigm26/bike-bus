@@ -618,11 +618,18 @@ const BulletinBoards: React.FC = () => {
                 // refresh the messages
                 // After adding the message, refresh and log the messages
                 handleCommunitySelection();
-                }
+            }
 
             );
         }
     };
+
+    const sortedMessagesData = [...messagesData].sort((b, a) => {
+        return Number(a.timestamp) - Number(b.timestamp);
+    });
+    
+    
+
 
     const loadMoreData = (event: CustomEvent<void>) => {
         // Logic to load more chat messages
@@ -674,13 +681,30 @@ const BulletinBoards: React.FC = () => {
                                 </IonSelectOption>
                             ))}
                         </IonSelect>
+                        <form onSubmit={submitMessage} className="chat-input-form">
+                            <IonInput
+                                required={true}
+                                value={messageInput}
+                                placeholder="Enter your message"
+                                onIonChange={e => setMessageInput(e.detail.value || '')}
+                            />
+                            {selectedBBOROrgValue !== 'Community' && (
+                                <IonLabel>
+                                    Post to Community Board?
+                                    <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                </IonLabel>
+                            )}
+                            <IonRow className="chat-button-row">
+                                <IonButton type="submit">Post Bulletin Board Message</IonButton>
+                            </IonRow>
+                        </form>
                         <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
                             <IonInfiniteScrollContent
                                 loadingText="Loading more messages..."
                                 loadingSpinner={null}>
                             </IonInfiniteScrollContent>
                             <IonList className="chat-list">
-                                {messagesData.map((message, index) => {
+                                {sortedMessagesData.map((message, index) => {
                                     const isCurrentUserMessage = user?.uid === message?.user?.id;
                                     const avatarElement = isCurrentUserMessage
                                         ? currentUserAvatarElement
@@ -711,23 +735,6 @@ const BulletinBoards: React.FC = () => {
 
                     </>
                 )}
-                <form onSubmit={submitMessage} className="chat-input-form">
-                    <IonInput
-                        required={true}
-                        value={messageInput}
-                        placeholder="Enter your message"
-                        onIonChange={e => setMessageInput(e.detail.value || '')}
-                    />
-                    {selectedBBOROrgValue !== 'Community' && (
-                        <IonLabel>
-                            Post to Community Board?
-                            <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                        </IonLabel>
-                    )}
-                    <IonRow className="chat-button-row">
-                        <IonButton type="submit">Post Bulletin Board Message</IonButton>
-                    </IonRow>
-                </form>
             </IonContent>
         </IonPage>
     );
