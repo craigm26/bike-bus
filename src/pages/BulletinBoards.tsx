@@ -17,7 +17,8 @@ import {
     IonIcon,
     IonRouterLink,
     IonItemDivider,
-    IonSplitPane
+    IonSplitPane,
+    IonCard
 } from '@ionic/react';
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -132,6 +133,7 @@ const BulletinBoards: React.FC = () => {
     const [geoConsent, setGeoConsent] = useState<boolean>(false);
     const [showAlert, setShowAlert] = useState(true);
     const [anonAccess, setAnonAccess] = useState(false);
+    const [userLocation, setUserLocation] = useState<UserLocation | undefined>(undefined);
     const [bulletinBoardOrgMessagesArray, setBulletinBoardOrgMessagesArray] = useState<Message[]>([]);
     const [bulletinboardBikeBusMessagesArray, setBulletinBoardBikeBusMessagesArray] = useState<Message[]>([]);
 
@@ -350,37 +352,27 @@ const BulletinBoards: React.FC = () => {
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
             const userLocation = { lat: latitude, lng: longitude };
-            console.log('User Location:', userLocation);
-
+            setUserLocation(userLocation);
             setGeoConsent(true);
-            console.log('GeoConsent:', geoConsent);
             // we want to automatically set the selectedBBOROrgValue to Community and then call the findCommunityMessagesWithinRadius function to display the messages for community
             setselectedBBOROrgValue("Community");
-            console.log('Selected Value:', selectedBBOROrgValue);
         }, (error) => {
             console.error("Error getting geolocation:", error);
             setGeoConsent(false);
-            console.log('GeoConsent:', geoConsent);
         });
     };
 
     const handleCommunitySelection = async () => {
         return new Promise<Message[]>(async (resolve, reject) => {
-            console.log('Community Selected');
-            console.log('Selected Value:', selectedBBOROrgValue);
-            console.log('handleCommunitySelection was called');
             if (geoConsent === true) {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(async (position) => {
                         const { latitude, longitude } = position.coords;
                         const userLocation = { lat: latitude, lng: longitude };
-                        console.log('User Location:', userLocation);
 
                         const communityMessagesRef = collection(db, 'messages');
                         const communityMessagesQuery = query(communityMessagesRef, where('bulletinboardType', '==', 'Community'));
                         const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
-                        console.log('Community Messages Snapshot:', communityMessagesSnapshot)
-                        console.log('bullentinboard:', communityMessagesSnapshot.docs[0].data().bulletinboard)
                         const communityMessagesDataPromises = communityMessagesSnapshot.docs.map(async doc => {
                             const userDataRef = doc.data().user; // Get the user document reference
                             const userDoc = await getDoc(userDataRef); // Fetch the user document
@@ -432,8 +424,6 @@ const BulletinBoards: React.FC = () => {
                         // Update the messagesData state with the transformed community messages
                         resolve(transformedMessages);
                         setMessagesData(transformedMessages);
-                        console.log('Messages Data:', messagesData);
-                        console.log('transformedMessages:', transformedMessages);
                     });
                 }
             }
@@ -441,7 +431,6 @@ const BulletinBoards: React.FC = () => {
     };
 
     const fetchOrganizations = useCallback(async () => {
-        console.log('fetchOrganizations was called');
         let formattedData: { value: string, label: string }[] = [];
         try {
             const uid = user?.uid;
@@ -475,7 +464,6 @@ const BulletinBoards: React.FC = () => {
 
 
     const fetchBikeBus = useCallback(async () => {
-        console.log('fetchBikeBus was called');
         let formattedData: { value: string, label: string }[] = [];
         const uid = user?.uid;
         if (!uid) {
@@ -520,7 +508,6 @@ const BulletinBoards: React.FC = () => {
     };
 
     const extractBulletinBoardNameFromPath = (bulletinBoardPath: string) => {
-        console.log('extractBulletinBoardNameFromPath was called')
         // Assuming bulletinBoardPath is in the format "organizations/{orgId}/bulletinboards/{bulletinBoardId}"
         const bulletinBoardId = bulletinBoardPath.split('/')[3];
         return bulletinBoardId;
@@ -550,7 +537,7 @@ const BulletinBoards: React.FC = () => {
             return;
         }
 
-        if (selectedBBOROrgValue !== 'Comunnity' && selectedBBOROrgValue !== '') {
+        if (selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '') {
 
             if (messageInput.trim() === '' || !user || !avatarUrl) {
                 return;
@@ -627,7 +614,12 @@ const BulletinBoards: React.FC = () => {
                     setCombinedList([communityOption, ...bikebus]);
                     console.log('Messages after posting:', messagesData); // Log the messages data after posting
                 });
-            }
+                // refresh the combinedList on the page so that the messages refresh
+                // refresh the messages
+                // After adding the message, refresh and log the messages
+                handleCommunitySelection();
+                }
+
             );
         }
     };
@@ -682,7 +674,7 @@ const BulletinBoards: React.FC = () => {
                                 </IonSelectOption>
                             ))}
                         </IonSelect>
-                        <IonInfiniteScroll threshold="100px" onIonInfinite={loadMoreData}>
+                        <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
                             <IonInfiniteScrollContent
                                 loadingText="Loading more messages..."
                                 loadingSpinner={null}>
@@ -716,6 +708,7 @@ const BulletinBoards: React.FC = () => {
                                 })}
                             </IonList>
                         </IonInfiniteScroll>
+
                     </>
                 )}
                 <form onSubmit={submitMessage} className="chat-input-form">
