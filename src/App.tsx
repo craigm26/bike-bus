@@ -74,6 +74,8 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import { type } from 'os';
 import { CurrentLocationProvider } from './components/CurrentLocationContext';
+import PostMessageModal from './components/BulletinBoard/PostMessageModal';
+
 
 setupIonicReact();
 
@@ -129,7 +131,11 @@ const App: React.FC = () => {
     lat: 0,
     lng: 0,
   });
+  const [showPostMessageModal, setShowPostMessageModal] = useState(false);
 
+  const toggleModal = () => {
+    setShowPostMessageModal(!showPostMessageModal);
+  };
 
 
   function formatDate(timestamp: Timestamp) {
@@ -599,8 +605,8 @@ const App: React.FC = () => {
                         <SearchForBikeBus />
                       </Route>
                       <Route path="/BulletinBoards">
-                      <CurrentLocationProvider>
-                        <BulletinBoards />
+                        <CurrentLocationProvider>
+                          <BulletinBoards />
                         </CurrentLocationProvider>
                       </Route>
                       <Route path="/viewroute/:id" exact>
@@ -764,6 +770,14 @@ const App: React.FC = () => {
                       )}
                     </div>
                   )}
+                  <div className='map-button-container footer-content'>
+                    <IonFab vertical="bottom" horizontal="end" slot="fixed">
+                      <IonFabButton onClick={toggleModal}>
+                        <IonIcon color="#ffd800" icon={chatbubblesOutline} />
+                      </IonFabButton>
+                    </IonFab>
+                    <PostMessageModal isOpen={showPostMessageModal} toggleModal={toggleModal} />
+                  </div>
                 </div>
               )}
             </React.Fragment>
