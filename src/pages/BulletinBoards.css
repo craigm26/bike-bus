@@ -82,8 +82,7 @@
 }
 
 .chat-input-form {
-    position: fixed;
-    bottom: 80px;
+    justify-content: flex-start;
     width: 100%;
 }
 
