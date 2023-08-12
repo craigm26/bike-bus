@@ -772,11 +772,10 @@ const App: React.FC = () => {
                   )}
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                      <IonFabButton onClick={toggleModal}>
+                    <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
                         <IonIcon color="#ffd800" icon={chatbubblesOutline} />
                       </IonFabButton>
                     </IonFab>
-                    <PostMessageModal isOpen={showPostMessageModal} toggleModal={toggleModal} />
                   </div>
                 </div>
               )}

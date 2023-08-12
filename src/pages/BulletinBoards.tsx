@@ -521,45 +521,7 @@ const BulletinBoards: React.FC = () => {
         // If it is set to an organization or bikebus, then we need to post to that board only
         // If it is set to nothing, then we need to post to the community board only
 
-        console.log('Selected Value:', selectedBBOROrgValue);
-        console.log('Message Input:', messageInput);
-
-        if (selectedBBOROrgValue === 'Community') {
-            // Post to the community board only
-            await postToCommunityBoard();
-            setMessageInput('');
-            setPostToCommunity(false); // Reset the community board selection
-            // refresh the messages
-            const communityOption = { value: "Community", label: "Community" };
-            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                setCombinedList([communityOption, ...bikebus]);
-            });
-            return;
-        }
-
-        if (selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '') {
-
-            if (messageInput.trim() === '' || !user || !avatarUrl) {
-                return;
-            }
-
-            const bulletinBoardRef = doc(db, groupData.bulletinboard.path);
-            const userRef = doc(db, 'users', user.uid);
-
-            const messageRef = await addDoc(collection(db, 'messages'), {
-                message: messageInput,
-                user: userRef,
-                timestamp: serverTimestamp(),
-                bulletinboard: bulletinBoardRef,
-            });
-
-            await updateDoc(bulletinBoardRef, {
-                Messages: arrayUnion(messageRef),
-            });
-        }
-    };
-
-    // whenever a user posts a message, we need to add it to the community board when the selects the checkbox next to the send button
+            // whenever a user posts a message, we need to add it to the community board when the selects the checkbox next to the send button
     const postToCommunityBoard = async () => {
         console.log('postToCommunityBoard was called')
         // Get the user's current location
@@ -623,6 +585,46 @@ const BulletinBoards: React.FC = () => {
             );
         }
     };
+
+        console.log('Selected Value:', selectedBBOROrgValue);
+        console.log('Message Input:', messageInput);
+
+        if (selectedBBOROrgValue === 'Community') {
+            // Post to the community board only
+            await postToCommunityBoard();
+            setMessageInput('');
+            setPostToCommunity(false); // Reset the community board selection
+            // refresh the messages
+            const communityOption = { value: "Community", label: "Community" };
+            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
+                setCombinedList([communityOption, ...bikebus]);
+            });
+            return;
+        }
+
+        if (selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '') {
+
+            if (messageInput.trim() === '' || !user || !avatarUrl) {
+                return;
+            }
+
+            const bulletinBoardRef = doc(db, groupData.bulletinboard.path);
+            const userRef = doc(db, 'users', user.uid);
+
+            const messageRef = await addDoc(collection(db, 'messages'), {
+                message: messageInput,
+                user: userRef,
+                timestamp: serverTimestamp(),
+                bulletinboard: bulletinBoardRef,
+            });
+
+            await updateDoc(bulletinBoardRef, {
+                Messages: arrayUnion(messageRef),
+            });
+        }
+    };
+
+
 
     const sortedMessagesData = [...messagesData].sort((b, a) => {
         return Number(a.timestamp) - Number(b.timestamp);
