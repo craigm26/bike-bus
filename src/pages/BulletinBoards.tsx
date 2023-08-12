@@ -514,77 +514,88 @@ const BulletinBoards: React.FC = () => {
     };
 
     const submitMessage = async (e: React.FormEvent) => {
+        console.log('Message Input:', messageInput);
         e.preventDefault();
         console.log('submitMessage was called')
+        console.log('Selected Value:', selectedBBOROrgValue);
+        console.log('Message Input:', messageInput);
 
         // first check to see what selectedBBOROrgValue is set to. If it is set to Community, then we need to post to the community board only
         // If it is set to an organization or bikebus, then we need to post to that board only
         // If it is set to nothing, then we need to post to the community board only
 
-            // whenever a user posts a message, we need to add it to the community board when the selects the checkbox next to the send button
-    const postToCommunityBoard = async () => {
-        console.log('postToCommunityBoard was called')
-        // Get the user's current location
-        console.log('Message Input before posting:', messageInput); // Log the message input
-        console.log(messageInput)
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
-                const userLocation = { lat: latitude, lng: longitude };
-                console.log('User Location:', userLocation);
+        // whenever a user posts a message, we need to add it to the community board when the selects the checkbox next to the send button
+        const postToCommunityBoard = async () => {
+            console.log('postToCommunityBoard was called')
+            // Get the user's current location
+            console.log('Message Input before posting:', messageInput); // Log the message input
+            console.log(messageInput)
+            try {
+                console.log('postToCommunityBoard was called')
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const userLocation = { lat: latitude, lng: longitude };
+                        console.log('User Location:', userLocation);
 
-                // Add the message to the messages document collection
-                const messageRef = await addDoc(collection(db, 'messages'), {
-                    message: messageInput,
-                    user: doc(db, 'users', `${user?.uid}`),
-                    timestamp: serverTimestamp(),
-                    // set the bulletinboard field to be the document reference for the community board, which is bulletinboard/{geohash}
-                    bulletinboard: doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng])),
-                    bulletinboardType: 'Community',
-                    userLocationSentMessage: userLocation,
-                    geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
-                });
-                console.log(messageRef)
-                console.log('Message...', messageRef);
+                        // Add the message to the messages document collection
+                        const messageRef = await addDoc(collection(db, 'messages'), {
+                            message: messageInput,
+                            user: doc(db, 'users', `${user?.uid}`),
+                            timestamp: serverTimestamp(),
+                            // set the bulletinboard field to be the document reference for the community board, which is bulletinboard/{geohash}
+                            bulletinboard: doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng])),
+                            bulletinboardType: 'Community',
+                            userLocationSentMessage: userLocation,
+                            geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
+                        });
+                        console.log(messageRef)
+                        console.log('Message...', messageRef);
 
-                // we're going to add this message to the community board in the document collection "bulletinboard"
-                // first we need to get the document reference for the community board
-                const communityBoardRef = doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng]));
-                console.log('Community Board Ref:', communityBoardRef);
-                // does it exist? if so updateDoc, if not, createDoc
-                const communityBoardDoc = await getDoc(communityBoardRef);
-                console.log('Community Board Doc:', communityBoardDoc);
-                if (communityBoardDoc.exists()) {
-                    console.log('Community Board Doc Exists');
-                    await updateDoc(communityBoardRef, {
-                        Messages: arrayUnion(messageRef),
-                    });
+                        // we're going to add this message to the community board in the document collection "bulletinboard"
+                        // first we need to get the document reference for the community board
+                        const communityBoardRef = doc(db, 'bulletinboard', geofire.geohashForLocation([userLocation.lat, userLocation.lng]));
+                        console.log('geoHash:', geofire.geohashForLocation([userLocation.lat, userLocation.lng]));
+                        console.log('messageRef:', messageRef)
+                        console.log('Community Board Ref:', communityBoardRef);
+                        // does it exist? if so updateDoc, if not, createDoc
+                        const communityBoardDoc = await getDoc(communityBoardRef);
+                        console.log('Community Board Doc:', communityBoardDoc);
+                        if (communityBoardDoc.exists()) {
+                            console.log('Community Board Doc Exists');
+                            await updateDoc(communityBoardRef, {
+                                Messages: arrayUnion(messageRef),
+                            });
+                        }
+                        else {
+                            console.log('Community Board Doc Does Not Exist');
+                            await setDoc(communityBoardRef, {
+                                Messages: arrayUnion(messageRef),
+                                geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
+                                bulletinboardType: 'Community',
+                            });
+                        }
+                        // fetchMessages with userLocation
+                        // refresh the messages
+                        // After adding the message, refresh and log the messages
+                        const communityOption = { value: "Community", label: "Community" };
+                        Promise.all([fetchBikeBus()]).then(([bikebus]) => {
+                            setCombinedList([communityOption, ...bikebus]);
+                            console.log('Messages after posting:', messagesData); // Log the messages data after posting
+                        });
+                        // refresh the combinedList on the page so that the messages refresh
+                        // refresh the messages
+                        // After adding the message, refresh and log the messages
+                        handleCommunitySelection();
+                    }
+
+                    );
                 }
-                else {
-                    console.log('Community Board Doc Does Not Exist');
-                    await setDoc(communityBoardRef, {
-                        Messages: arrayUnion(messageRef),
-                        geoHash: geofire.geohashForLocation([userLocation.lat, userLocation.lng]),
-                        bulletinboardType: 'Community',
-                    });
-                }
-                // fetchMessages with userLocation
-                // refresh the messages
-                // After adding the message, refresh and log the messages
-                const communityOption = { value: "Community", label: "Community" };
-                Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                    setCombinedList([communityOption, ...bikebus]);
-                    console.log('Messages after posting:', messagesData); // Log the messages data after posting
-                });
-                // refresh the combinedList on the page so that the messages refresh
-                // refresh the messages
-                // After adding the message, refresh and log the messages
-                handleCommunitySelection();
+            } catch (error) {
+                console.log('Error posting to community board:', error);
             }
 
-            );
-        }
-    };
+        };
 
         console.log('Selected Value:', selectedBBOROrgValue);
         console.log('Message Input:', messageInput);
@@ -592,13 +603,13 @@ const BulletinBoards: React.FC = () => {
         if (selectedBBOROrgValue === 'Community') {
             // Post to the community board only
             await postToCommunityBoard();
-            setMessageInput('');
             setPostToCommunity(false); // Reset the community board selection
             // refresh the messages
             const communityOption = { value: "Community", label: "Community" };
             Promise.all([fetchBikeBus()]).then(([bikebus]) => {
                 setCombinedList([communityOption, ...bikebus]);
             });
+            setMessageInput(''); 
             return;
         }
 
@@ -622,6 +633,97 @@ const BulletinBoards: React.FC = () => {
                 Messages: arrayUnion(messageRef),
             });
         }
+        // let's handle the case where the "post to community" checkbox is checked
+        if (postToCommunity === true) {
+            await postToCommunityBoard();
+            setPostToCommunity(false); // Reset the community board selection
+            // refresh the messages
+            const communityOption = { value: "Community", label: "Community" };
+            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
+                setCombinedList([communityOption, ...bikebus]);
+            }
+            );
+        }
+        // let's handle the case where we need to post only to the organization or bikebus
+        if (selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '') {
+            if (messageInput.trim() === '' || !user || !avatarUrl) {
+                return;
+            }
+
+            const bulletinBoardRef = doc(db, groupData.bulletinboard.path);
+            const userRef = doc(db, 'users', user.uid);
+
+            const messageRef = await addDoc(collection(db, 'messages'), {
+                message: messageInput,
+                user: userRef,
+                timestamp: serverTimestamp(),
+                bulletinboard: bulletinBoardRef,
+            });
+
+
+            await updateDoc(bulletinBoardRef, {
+                Messages: arrayUnion(messageRef),
+            });
+        }
+
+        // refresh the messages in the chat-list by calling the fetchMessages function for the given dropdown selection
+        // first let's determine what kind of group it is - organization or bikebus. This can be determined by the bulletinboardType property on the bulletinboard document
+        selectedBBOROrgValue && console.log('Selected BB or Org Value:', selectedBBOROrgValue);
+        // selectedBBOROrgValue is actually the id of the bikebusgroup or organization and either one of those contains a bulletinboard document reference
+
+        const bikebusgroupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue);
+        console.log('bikebusgroupRef:', bikebusgroupRef);
+        getDoc(bikebusgroupRef).then((docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const bikebusgroupData = docSnapshot.data();
+                console.log('bikebusgroupData:', bikebusgroupData);
+                if (bikebusgroupData) {
+                    const bulletinboard = bikebusgroupData.bulletinboard;
+                    console.log('bulletinboard:', bulletinboard);
+                    if (bulletinboard) {
+                        const bulletinboardRef: DocumentReference = bulletinboard;
+                        console.log('bulletinboardRef:', bulletinboardRef);
+                        getDoc(bulletinboardRef).then((docSnapshot) => {
+                            if (docSnapshot.exists()) {
+                                const bulletinboardData = docSnapshot.data();
+                                console.log('bulletinboardData:', bulletinboardData);
+
+                                if (bulletinboardData) {
+                                    const fetchBikeBus = async () => {
+                                        const bulletinboardBikeBusMessages = bulletinboardData.Messages;
+                                        const bulletinboardBikeBusMessagesPromises = bulletinboardBikeBusMessages.map(async (docRef: DocumentReference) => {
+                                            const docSnapshot = await getDoc(docRef);
+                                            const docData = docSnapshot.data() as Message;
+                                            const userUID = docData?.user?.id || docData?.user;
+
+                                            return {
+                                                message: docData?.message,
+                                                user: {
+                                                    id: userUID,
+                                                    // ... other user properties if needed
+                                                },
+                                                timestamp: docData?.timestamp,
+                                                bulletinboard: docData?.bulletinboard,
+                                                bulletinboardType: docData?.bulletinboardType,
+                                            };
+                                        });
+                                        const bulletinboardBikeBusMessagesData = await Promise.all(bulletinboardBikeBusMessagesPromises);
+                                        setMessagesData(bulletinboardBikeBusMessagesData);
+                                    };
+                                    fetchBikeBus();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        );
+
+
+        
+        
+        setMessageInput('');
     };
 
 
@@ -629,8 +731,8 @@ const BulletinBoards: React.FC = () => {
     const sortedMessagesData = [...messagesData].sort((b, a) => {
         return Number(a.timestamp) - Number(b.timestamp);
     });
-    
-    
+
+
 
 
     const loadMoreData = (event: CustomEvent<void>) => {
@@ -692,7 +794,7 @@ const BulletinBoards: React.FC = () => {
                             />
                             {selectedBBOROrgValue !== 'Community' && (
                                 <IonLabel>
-                                    Post to Community Board?
+                                    Cross-Post to Community Board?
                                     <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
                                 </IonLabel>
                             )}

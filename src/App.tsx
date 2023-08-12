@@ -584,9 +584,6 @@ const App: React.FC = () => {
                             },
                           ]}
                         />
-                        <IonButton routerLink='/BulletinBoards'>
-                          <IonIcon slot="end" icon={chatbubblesOutline}></IonIcon>
-                        </IonButton>
                         <IonButton onClick={() => setShowActionSheet(true)}>
                           <IonIcon slot="end" icon={shareOutline}></IonIcon>
                         </IonButton>
