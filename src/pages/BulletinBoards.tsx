@@ -19,18 +19,20 @@ import {
     IonItemDivider,
     IonSplitPane,
     IonCard,
-    IonActionSheet
+    IonActionSheet,
+    IonSpinner
 } from '@ionic/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove } from 'firebase/firestore';
+import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
 import { useCurrentLocation } from '../components/CurrentLocationContext';
 import { closeOutline, createOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
+import { set } from 'date-fns';
 
 
 interface UserDocument {
@@ -143,9 +145,13 @@ const BulletinBoards: React.FC = () => {
 
 
     useEffect(() => {
+        setIsLoading(true);
+
+        let unsubscribeUser: () => void;
+
         if (user) {
             const userRef = doc(db, 'users', user.uid);
-            getDoc(userRef).then((docSnapshot) => {
+            unsubscribeUser = onSnapshot(userRef, (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const userData = docSnapshot.data();
                     if (userData && userData.accountType) {
@@ -188,6 +194,12 @@ const BulletinBoards: React.FC = () => {
         console.log('selectedBBOROrgValue:', selectedBBOROrgValue);
 
         console.log('Group Data:', groupData);
+        setIsLoading(false);
+
+        return () => {
+            // Unsubscribe on unmount
+            unsubscribeUser?.();
+        };
 
     }, [user, accountType, selectedBBOROrgValue, groupType, geoConsent, groupData]);
 
@@ -275,6 +287,10 @@ const BulletinBoards: React.FC = () => {
     };
 
     useEffect(() => {
+        setIsLoading(true);
+
+        let unsubscribeBikebusgroup: () => void;
+        let unsubscribeOrganization: () => void;
 
         if (selectedBBOROrgValue) {
             if (selectedBBOROrgValue === 'Community') {
@@ -289,7 +305,7 @@ const BulletinBoards: React.FC = () => {
                 // selectedBBOROrgValue is actually the id of the bikebusgroup or organization and either one of those contains a bulletinboard document reference
 
                 const bikebusgroupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue);
-                getDoc(bikebusgroupRef).then((docSnapshot) => {
+                unsubscribeBikebusgroup = onSnapshot(bikebusgroupRef, (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const bikebusgroupData = docSnapshot.data();
                         if (bikebusgroupData) {
@@ -337,7 +353,7 @@ const BulletinBoards: React.FC = () => {
                 // if the bikebusgroupRef does not exist, then we know it is an organization, and we can get the bulletinboard document reference from the organization document
 
                 const organizationRef = doc(db, 'organizations', selectedBBOROrgValue);
-                getDoc(organizationRef).then((docSnapshot) => {
+                unsubscribeOrganization = onSnapshot(organizationRef, (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const organizationData = docSnapshot.data();
                         if (organizationData) {
@@ -406,6 +422,13 @@ const BulletinBoards: React.FC = () => {
                 });
             }
         }
+        setIsLoading(false);
+
+        return () => {
+            // Unsubscribe on unmount
+            unsubscribeBikebusgroup?.();
+            unsubscribeOrganization?.();
+        };
 
     }, [selectedBBOROrgValue]);
 
@@ -685,15 +708,15 @@ const BulletinBoards: React.FC = () => {
                 // first we need to get the message from the message document reference
                 getDoc(messageRef).then((docSnapshot) => {
                     if (docSnapshot.exists()) {
-                      const messageData = docSnapshot.data();
-                      if (messageData) {
-                        // Set edit mode to true and populate editMessage with the existing message
-                        setEditMode(true);
-                        setEditMessage(messageData.message);
-                      }
+                        const messageData = docSnapshot.data();
+                        if (messageData) {
+                            // Set edit mode to true and populate editMessage with the existing message
+                            setEditMode(true);
+                            setEditMessage(messageData.message);
+                        }
                     }
-                    });
-                    
+                });
+
             } else if (action === 'delete') {
                 // Handle the delete action here
                 // We can use the messageId to get the message document reference and delete the messageId message and the message document reference in the bulletinboard document
@@ -791,9 +814,10 @@ const BulletinBoards: React.FC = () => {
                                 </IonLabel>
                             )}
                             <IonRow className="chat-button-row">
-                                {isLoading && (
-                                    <IonButton type="submit" disabled={isLoading}>Post Bulletin Board Message</IonButton>
-                                )}
+                                <IonButton type="submit" disabled={isLoading}>
+                                    Post Bulletin Board Message
+                                </IonButton>
+                                {isLoading && <IonSpinner name="crescent" />}
                             </IonRow>
                         </form>
                         <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
