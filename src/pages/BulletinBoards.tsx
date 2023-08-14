@@ -18,7 +18,8 @@ import {
     IonRouterLink,
     IonItemDivider,
     IonSplitPane,
-    IonCard
+    IonCard,
+    IonActionSheet
 } from '@ionic/react';
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -112,6 +113,7 @@ interface Message {
     bulletinboard: DocumentReference | string;
     geoHash?: string;
     userLocationSentMessage?: UserLocation;
+    id: string;
 }
 
 
@@ -136,6 +138,9 @@ const BulletinBoards: React.FC = () => {
     const [userLocation, setUserLocation] = useState<UserLocation | undefined>(undefined);
     const [bulletinBoardOrgMessagesArray, setBulletinBoardOrgMessagesArray] = useState<Message[]>([]);
     const [bulletinboardBikeBusMessagesArray, setBulletinBoardBikeBusMessagesArray] = useState<Message[]>([]);
+    const [showActionSheet, setShowActionSheet] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+
 
     useEffect(() => {
         if (user) {
@@ -256,6 +261,7 @@ const BulletinBoards: React.FC = () => {
                             bulletinboard: doc.bulletinboard,
                             bulletinboardType: doc.bulletinboardType,
                             geoHash: doc.geoHash,
+                            id: doc.id,
                             userLocationSentMessage: doc.userLocationSentMessage,
                         }));
 
@@ -409,7 +415,7 @@ const BulletinBoards: React.FC = () => {
 
         return avatarUrl ? (
             <IonAvatar>
-                <Avatar uid={userId} />
+                <Avatar uid={userId} size="medium" />
             </IonAvatar>
         ) : (
             <IonIcon icon={personCircleOutline} />
@@ -554,17 +560,16 @@ const BulletinBoards: React.FC = () => {
                         // refresh the messages
                         // After adding the message, refresh and log the messages
                         const communityOption = { value: "Community", label: "Community" };
-                        Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                            setCombinedList([communityOption, ...bikebus]);
-                            console.log('Messages after posting:', messagesData); // Log the messages data after posting
-                        });
-                        // refresh the combinedList on the page so that the messages refresh
-                        // refresh the messages
-                        // After adding the message, refresh and log the messages
-                        handleCommunitySelection();
-                    }
 
-                    );
+                        Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+                            setCombinedList([communityOption, ...orgs, ...bikebus]);
+                        });
+                        console.log('Messages after posting:', messagesData); // Log the messages data after posting
+                    });
+                    // refresh the combinedList on the page so that the messages refresh
+                    // refresh the messages
+                    // After adding the message, refresh and log the messages
+                    handleCommunitySelection();
                 }
             } catch (error) {
                 console.log('Error posting to community board:', error);
@@ -579,8 +584,8 @@ const BulletinBoards: React.FC = () => {
             setPostToCommunity(false); // Reset the community board selection
             // refresh the messages
             const communityOption = { value: "Community", label: "Community" };
-            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                setCombinedList([communityOption, ...bikebus]);
+            Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+                setCombinedList([communityOption, ...orgs, ...bikebus]);
             });
             setMessageInput('');
             return;
@@ -638,10 +643,9 @@ const BulletinBoards: React.FC = () => {
             setPostToCommunity(false); // Reset the community board selection
             // refresh the messages
             const communityOption = { value: "Community", label: "Community" };
-            Promise.all([fetchBikeBus()]).then(([bikebus]) => {
-                setCombinedList([communityOption, ...bikebus]);
-            }
-            );
+            Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+                setCombinedList([communityOption, ...orgs, ...bikebus]);
+            });
         }
         setMessageInput('');
     };
@@ -650,115 +654,180 @@ const BulletinBoards: React.FC = () => {
         return Number(a.timestamp) - Number(b.timestamp);
     });
 
-    const loadMoreData = (event: CustomEvent<void>) => {
-        // Logic to load more chat messages
+    const handleAction = (action: string) => {
+        // Handle the edit action here
+        // We can use the selectedMessage state to get the message ID
+        // Then we can use the message ID to get the message document reference
 
-        // Get the last message in the list
+        // get the message ID from the selectedMessage state
+        if (!selectedMessage) return;
 
-        // Get the timestamp of the last message
+        if (selectedMessage && selectedMessage.id) {
+            const MessageId = selectedMessage?.id;
+            // get the message document reference
+            const messageRef = doc(db, 'messages', MessageId);
+            // get the bulletinboard document reference
+            const bulletinboardRef = selectedMessage?.bulletinboard;
 
-        // Complete the infinite scroll loading (replace 'false' with a condition to disable further loading if necessary)
-        event.target && (event.target as HTMLIonInfiniteScrollElement).complete();
+            if (action === 'edit') {
+
+                // allow the user to edit the message with their new message
+                // Then we can use the message document reference to update the message
+                // Then we can use the message document reference to update the message in the bulletin board document
+
+
+
+
+            } else if (action === 'delete') {
+                // Handle the delete action here
+            }
+        }
+
+            // Close the action sheet
+            setShowActionSheet(false);
+        };
+
+
+        const loadMoreData = (event: CustomEvent<void>) => {
+            // Logic to load more chat messages
+
+            // Get the last message in the list
+
+            // Get the timestamp of the last message
+
+            // Complete the infinite scroll loading (replace 'false' with a condition to disable further loading if necessary)
+            event.target && (event.target as HTMLIonInfiniteScrollElement).complete();
+        };
+
+        return (
+            <IonPage className="ion-flex-offset-app">
+                <IonContent fullscreen>
+                    {anonAccess && (
+                        <>
+                            <IonCardTitle>Anonymous Access</IonCardTitle>
+                            <IonButton
+                                routerLink='/login'
+                            >
+                                Sign In
+                            </IonButton>
+                        </>
+                    )}
+                    <IonCardTitle>Bulletin Boards
+                        {!geoConsent && !anonAccess && (
+                            <IonButton color="success" className="share-location-button-chat"
+                                onClick={() => {
+                                    getLocation();
+                                }}
+                            >
+                                Share Location to Enable Community Boards
+                                <IonIcon icon={locationOutline} slot="start" />
+                            </IonButton>
+                        )}
+                    </IonCardTitle>
+                    {!anonAccess && (
+                        <>
+                            <IonSelect
+                                className="custom-ion-select"
+                                value={selectedBBOROrgValue}
+                                placeholder="Choose a Bulletin Board"
+                                onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
+                            >
+                                {combinedList.map((item, index) => (
+                                    <IonSelectOption key={index} value={item.value}>
+                                        {item.label}
+                                    </IonSelectOption>
+                                ))}
+                            </IonSelect>
+                            <form onSubmit={submitMessage} className="chat-input-form">
+                                <IonInput
+                                    required={true}
+                                    aria-label='Message'
+                                    type='text'
+                                    value={messageInput}
+                                    placeholder="Enter your message"
+                                    onIonChange={e => setMessageInput(e.detail.value || '')}
+                                />
+                                {selectedBBOROrgValue !== 'Community' && (
+                                    <IonLabel>
+                                        Cross-Post to Community Board?
+                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                    </IonLabel>
+                                )}
+                                <IonRow className="chat-button-row">
+                                    <IonButton type="submit">Post Bulletin Board Message</IonButton>
+                                </IonRow>
+                            </form>
+                            <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
+                                <IonInfiniteScrollContent
+                                    loadingText="Loading more messages..."
+                                    loadingSpinner={null}>
+                                </IonInfiniteScrollContent>
+                                <IonList className="chat-list">
+                                    {sortedMessagesData.map((message, index) => {
+                                        const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                        const avatarElement = isCurrentUserMessage
+                                            ? currentUserAvatarElement
+                                            : getAvatarElement(message?.user?.id);
+
+                                        return (
+                                            <IonItem lines="none" key={index}>
+                                                {!isCurrentUserMessage && (
+                                                    <div slot="start" className="avatarChat">
+                                                        {avatarElement}
+                                                    </div>
+                                                )}
+                                                <div className={`chat-message-wrapper ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
+                                                    <div className="chat-message"
+                                                        onClick={() => {
+                                                            if (isCurrentUserMessage) {
+                                                                setSelectedMessage(message);
+                                                                setShowActionSheet(true);
+                                                            }
+                                                        }}>
+                                                        {message?.message}
+                                                    </div>
+                                                </div>
+                                                {isCurrentUserMessage && (
+                                                    <div slot="end" className="avatarChat">
+                                                        {avatarElement}
+                                                    </div>
+                                                )}
+                                            </IonItem>
+                                        );
+                                    })}
+                                </IonList>
+                            </IonInfiniteScroll>
+
+                        </>
+                    )}
+                    <IonActionSheet
+                        isOpen={showActionSheet}
+                        onDidDismiss={() => setShowActionSheet(false)}
+                        buttons={[
+                            {
+                                text: 'Edit',
+                                role: 'destructive',
+                                icon: 'create-outline',
+                                handler: () => handleAction('edit'),
+                            },
+                            {
+                                text: 'Delete',
+                                role: 'destructive',
+                                icon: 'trash-outline',
+                                handler: () => handleAction('delete'),
+                            },
+                            {
+                                text: 'Cancel',
+                                role: 'cancel',
+                                icon: 'close',
+                                handler: () => setShowActionSheet(false),
+                            },
+                        ]}
+                    />
+
+                </IonContent>
+            </IonPage>
+        );
     };
 
-    return (
-        <IonPage className="ion-flex-offset-app">
-            <IonContent fullscreen>
-                {anonAccess && (
-                    <>
-                        <IonCardTitle>Anonymous Access</IonCardTitle>
-                        <IonButton
-                            routerLink='/login'
-                        >
-                            Sign In
-                        </IonButton>
-                    </>
-                )}
-                <IonCardTitle>Bulletin Boards
-                    {!geoConsent && !anonAccess && (
-                        <IonButton color="success" className="share-location-button-chat"
-                            onClick={() => {
-                                getLocation();
-                            }}
-                        >
-                            Share Location to Enable Community Boards
-                            <IonIcon icon={locationOutline} slot="start" />
-                        </IonButton>
-                    )}
-                </IonCardTitle>
-                {!anonAccess && (
-                    <>
-                        <IonSelect
-                            className="custom-ion-select"
-                            value={selectedBBOROrgValue}
-                            placeholder="Choose a Bulletin Board"
-                            onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
-                        >
-                            {combinedList.map((item, index) => (
-                                <IonSelectOption key={index} value={item.value}>
-                                    {item.label}
-                                </IonSelectOption>
-                            ))}
-                        </IonSelect>
-                        <form onSubmit={submitMessage} className="chat-input-form">
-                            <IonInput
-                                required={true}
-                                aria-label='Message'
-                                type='text'
-                                value={messageInput}
-                                placeholder="Enter your message"
-                                onIonChange={e => setMessageInput(e.detail.value || '')}
-                            />
-                            {selectedBBOROrgValue !== 'Community' && (
-                                <IonLabel>
-                                    Cross-Post to Community Board?
-                                    <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                </IonLabel>
-                            )}
-                            <IonRow className="chat-button-row">
-                                <IonButton type="submit">Post Bulletin Board Message</IonButton>
-                            </IonRow>
-                        </form>
-                        <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
-                            <IonInfiniteScrollContent
-                                loadingText="Loading more messages..."
-                                loadingSpinner={null}>
-                            </IonInfiniteScrollContent>
-                            <IonList className="chat-list">
-                                {sortedMessagesData.map((message, index) => {
-                                    const isCurrentUserMessage = user?.uid === message?.user?.id;
-                                    const avatarElement = isCurrentUserMessage
-                                        ? currentUserAvatarElement
-                                        : getAvatarElement(message?.user?.id);
-
-                                    return (
-                                        <IonItem lines="none" key={index}>
-                                            {!isCurrentUserMessage && (
-                                                <div slot="start" className="avatarChat">
-                                                    {avatarElement}
-                                                </div>
-                                            )}
-                                            <div className="chat-message-wrapper">
-                                                <div className={`chat-message ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
-                                                    {message?.message}
-                                                </div>
-                                            </div>
-                                            {isCurrentUserMessage && (
-                                                <div slot="end" className="avatarChat">
-                                                    {avatarElement}
-                                                </div>
-                                            )}
-                                        </IonItem>
-                                    );
-                                })}
-                            </IonList>
-                        </IonInfiniteScroll>
-
-                    </>
-                )}
-            </IonContent>
-        </IonPage>
-    );
-};
-
-export default BulletinBoards;
+    export default BulletinBoards;

@@ -7,16 +7,20 @@
 }
 
 .avatarChat {
-    margin: 5px;
-    flex-shrink: 0;
-    /* Prevent the avatar from shrinking */
+    /* allow the avatar to shrink when needed */
+    flex-shrink: 1;
+    display: flex;
+    align-items: center;
+    margin-left: 0px;
+    margin-right: 0px;
+    
 }
 
 .chat-message-wrapper {
     display: flex;
-    /* Control the maximum width of the chat bubble */
+    flex-direction: row;
     flex-grow: 1;
-    /* Allow the wrapper to grow */
+    width: 100%;
 }
 
 .chat-message {
@@ -26,18 +30,52 @@
     padding: 10px;
     white-space: normal;
     word-wrap: break-word;
-    display: inline-flex;
-    /* Change to inline-flex to allow the bubble to shrink and grow with content */
+    max-width: 80%;
 }
 
 .chat-item-right {
-    background-color: #007bff;
     color: white;
     text-align: right;
+    flex-direction: row-reverse !important;
 }
 
 .chat-item-left {
     text-align: left;
+    flex-direction: row !important;
+}
+
+.chat-item-left .chat-message-wrapper {
+    width: 10%;
+    text-align: left;
+    flex-direction: row !important;
+}
+
+.chat-item-right .chat-message-wrapper {
+    order: -1;
+    /* Reverse the order for the right-aligned items */
+    background-color: #007bff;
+    color: white;
+    text-align: right !important;
+    width: 90%;
+    flex-direction: row-reverse !important;
+
+    /* Align text to the left inside the right-aligned bubble */
+}
+
+.chat-item-right .chat-message {
+    background-color: #007bff;
+    color: white;
+}
+
+.chat-item-left .chat-message {
+    margin-right: auto; /* Align to the left */
+}
+
+.chat-input-form {
+    justify-content: flex-start;
+    width: 100%;
+    padding-left: 2% !important;
+    padding-bottom: 5px !important;
 }
 
 /* Additional adjustments for the infinite scroll if needed */
@@ -57,43 +95,14 @@
     margin: 0;
 }
 
-
-.chat-message-wrapper {
-    display: flex;
-    /* Align content to the right */
-}
-
-.chat-item-left .chat-message-wrapper {
-    width: 10%;
-    text-align: right;
-    /* Align content to the left for other users */
-}
-
-.chat-item-right .chat-message {
-    order: -1; /* Reverse the order for the right-aligned items */
-    background-color: #007bff;
-    color: white;
-    text-align: left;
-    width: 90%;
-    /* Align text to the left inside the right-aligned bubble */
-}
-
-.chat-input-form {
-    justify-content: flex-start;
-    width: 100%;
-}
-
 .IonCard-containing-chat {
-    max-height: calc(100% - 120px); /* Adjust based on the height of the chat-input-form */
-    overflow-y: scroll; /* Enable scrolling within the card if needed */
-  }
-
-  .avatarChat {
-    margin: 5px;
-    width: 10%;
+    max-height: calc(100% - 120px);
+    /* Adjust based on the height of the chat-input-form */
+    overflow-y: scroll;
+    /* Enable scrolling within the card if needed */
 }
 
-  
+
 .sc-ion-alert-md-h {
     min-width: 350px !important;
 }
