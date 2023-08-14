@@ -14,7 +14,6 @@
 
 .chat-message-wrapper {
     display: flex;
-    max-width: 60%;
     /* Control the maximum width of the chat bubble */
     flex-grow: 1;
     /* Allow the wrapper to grow */
@@ -60,24 +59,22 @@
 
 
 .chat-message-wrapper {
-    justify-content: flex-end;
+    display: flex;
     /* Align content to the right */
 }
 
-.chat-item-right .chat-message-wrapper {
-    justify-content: flex-end;
-    /* Align content to the right for logged-in user */
-}
-
 .chat-item-left .chat-message-wrapper {
-    justify-content: flex-start;
+    width: 10%;
+    text-align: right;
     /* Align content to the left for other users */
 }
 
 .chat-item-right .chat-message {
+    order: -1; /* Reverse the order for the right-aligned items */
     background-color: #007bff;
     color: white;
     text-align: left;
+    width: 90%;
     /* Align text to the left inside the right-aligned bubble */
 }
 
@@ -90,4 +87,13 @@
     max-height: calc(100% - 120px); /* Adjust based on the height of the chat-input-form */
     overflow-y: scroll; /* Enable scrolling within the card if needed */
   }
+
+  .avatarChat {
+    margin: 5px;
+    width: 10%;
+}
+
   
+.sc-ion-alert-md-h {
+    min-width: 350px !important;
+}
