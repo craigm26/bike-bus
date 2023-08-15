@@ -204,6 +204,11 @@ const Map: React.FC = () => {
   const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
+  const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
+  const transitLayerRef = useRef(null);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(true);
+
+
 
 
   interface Trip {
@@ -261,7 +266,7 @@ const Map: React.FC = () => {
 
 
   const requestLocationPermission = () => {
-    const permission = window.confirm("We need your location to provide directions. Allow?");
+    const permission = window.confirm("We need your location to provide directions, routes, Open Trips and BikeBus locations. Allow?");
     if (permission) {
       getLocation();
     } else {
@@ -1896,6 +1901,15 @@ const Map: React.FC = () => {
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
 
+  const handleBicyclingLayerToggle = (enabled: boolean) => {
+    if (bicyclingLayerRef.current && mapRef.current) {
+      if (enabled) {
+        bicyclingLayerRef.current.setMap(mapRef.current); // Show the layer
+      } else {
+        bicyclingLayerRef.current.setMap(null); // Hide the layer
+      }
+    }
+  };
 
 
   // once we have the events, we need to mark the polylines on the map with
@@ -1971,6 +1985,7 @@ const Map: React.FC = () => {
             <GoogleMap
               onLoad={(map) => {
                 mapRef.current = map;
+                bicyclingLayerRef.current = new google.maps.BicyclingLayer();
               }}
               mapContainerStyle={{
                 width: "100%",
@@ -1980,9 +1995,17 @@ const Map: React.FC = () => {
               zoom={15}
               options={{
                 disableDefaultUI: true,
-                zoomControl: false,
-                mapTypeControl: false,
+                mapTypeControl: true,
+                mapTypeControlOptions: {
+                  position: window.google.maps.ControlPosition.RIGHT_TOP, // Position of map type control
+                  mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                },
+                zoomControl: true,
+                zoomControlOptions: {
+                  position: window.google.maps.ControlPosition.LEFT_CENTER
+                },
                 disableDoubleClickZoom: true,
+                minZoom: 8,
                 maxZoom: 18,
                 styles: [
                   {
@@ -2753,6 +2776,24 @@ const Map: React.FC = () => {
                   </IonRow>
                 </IonGrid>
               </div>
+              <div>
+                <IonGrid className="toggle-bicycling-map-layer">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>Bicycling Layer</IonLabel>
+                      <IonToggle
+                        checked={bicyclingLayerEnabled}
+                        onIonChange={(e) => {
+                          const enabled = e.detail.checked;
+                          setBicyclingLayerEnabled(enabled);
+                          handleBicyclingLayerToggle(enabled);
+                        }}
+                      />
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+
               <Polyline
                 path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                 options={{
