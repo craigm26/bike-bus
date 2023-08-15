@@ -1997,7 +1997,7 @@ const Map: React.FC = () => {
                 disableDefaultUI: true,
                 mapTypeControl: true,
                 mapTypeControlOptions: {
-                  position: window.google.maps.ControlPosition.RIGHT_TOP, // Position of map type control
+                  position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
                   mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
                 },
                 zoomControl: true,
