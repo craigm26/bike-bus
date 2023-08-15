@@ -206,7 +206,7 @@ const Map: React.FC = () => {
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
   const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
   const transitLayerRef = useRef(null);
-  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(true);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
 
 
 
@@ -1995,14 +1995,14 @@ const Map: React.FC = () => {
               zoom={15}
               options={{
                 disableDefaultUI: true,
+                zoomControl: true,
+                zoomControlOptions: {
+                  position: window.google.maps.ControlPosition.LEFT_CENTER
+                },
                 mapTypeControl: true,
                 mapTypeControlOptions: {
                   position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
                   mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
-                },
-                zoomControl: true,
-                zoomControlOptions: {
-                  position: window.google.maps.ControlPosition.LEFT_CENTER
                 },
                 disableDoubleClickZoom: true,
                 minZoom: 8,
@@ -2012,7 +2012,7 @@ const Map: React.FC = () => {
                     "elementType": "geometry",
                     "stylers": [
                       {
-                        "color": "#f5f5f5"
+                        "color": "#e5e5e5"
                       }
                     ]
                   },
@@ -2225,7 +2225,7 @@ const Map: React.FC = () => {
                     "elementType": "geometry",
                     "stylers": [
                       {
-                        "color": "#ffffff"
+                        "color": "#4a90e2"
                       },
                       {
                         "visibility": "simplified"
@@ -2273,7 +2273,7 @@ const Map: React.FC = () => {
                     "elementType": "labels",
                     "stylers": [
                       {
-                        "visibility": "off"
+                        "visibility": "on"
                       }
                     ]
                   },
