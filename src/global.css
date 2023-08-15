@@ -242,10 +242,10 @@
   z-index: 1000;
   background-color: transparent;
   border: 1px solid transparent;
-  width: 155px;
+  width: 175px;
   outline: none;
   right: 0;
-  bottom: 45px;
+  bottom: 85px;
 }
 
 .toggle-bicycling-map-layer IonLabel {
