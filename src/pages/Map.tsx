@@ -23,7 +23,7 @@ import { get, getDatabase, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, businessOutline, carOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, businessOutline, carOutline, clipboardOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -239,10 +239,15 @@ const Map: React.FC = () => {
     libraries,
   });
 
-  const getLocation = () => {
+  const userLocationDefault = {
+    lat: 41.8781,
+    lng: -87.6298, // Coordinates for Chicago
+  };
+
+  const renderMap = (location: React.SetStateAction<{ lat: number; lng: number; }>) => {
     setGetLocationClicked(true);
     setShowMap(true);
-    setMapCenter(userLocation);
+    setMapCenter(location);
     watchLocation();
     onPlaceChangedStart();
     setCurrentLocationRow(false);
@@ -253,6 +258,55 @@ const Map: React.FC = () => {
     setTravelModeRow(false);
     getBikeBusEvents();
   };
+
+
+  const requestLocationPermission = () => {
+    const permission = window.confirm("We need your location to provide directions. Allow?");
+    if (permission) {
+      getLocation();
+    } else {
+      console.log("User denied location permission.");
+      setUserLocation(userLocationDefault);
+      renderMap(userLocationDefault);
+    }
+  };
+
+
+  const getLocation = () => {
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userLocation);
+          renderMap(userLocation);
+        },
+        (error) => {
+          alert("An error occurred while fetching your location. Please enable location services in your browser settings.");
+          console.error(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      // return the user to the home page "/"
+      history.push("/");
+    }
+  }
+
+  // You can call this function when the "start map" button is clicked
+  const handleStartMap = () => {
+    requestLocationPermission();
+    // Other logic
+  };
+
 
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
     const usersRef = collection(db, 'users');
@@ -268,9 +322,9 @@ const Map: React.FC = () => {
 
     return user;
   };
-  
+
   useEffect(() => {
-    
+
     const fetchData = async () => {
       if (!user) return;
 
@@ -288,95 +342,95 @@ const Map: React.FC = () => {
 
         if (id) {
 
-        const tripsRef = doc(db, 'event', id);
-        const tripSnapshot = await getDoc(tripsRef);
+          const tripsRef = doc(db, 'event', id);
+          const tripSnapshot = await getDoc(tripsRef);
 
-        if (tripSnapshot.exists()) {
-          const tripData = tripSnapshot.data();
-          const eventDataId = tripData?.eventId;
+          if (tripSnapshot.exists()) {
+            const tripData = tripSnapshot.data();
+            const eventDataId = tripData?.eventId;
 
-          if (eventDataId) {
-            const eventDataRef = doc(db, 'event', eventDataId);
-            const eventSnapshot = await getDoc(eventDataRef);
+            if (eventDataId) {
+              const eventDataRef = doc(db, 'event', eventDataId);
+              const eventSnapshot = await getDoc(eventDataRef);
 
-            if (eventSnapshot.exists()) {
-              const eventData = eventSnapshot.data();
-              const selectedRouteRef = eventData?.route;
-              if (selectedRouteRef) {
-                const routeSnapshot = await getDoc(selectedRouteRef);
-                const routeData = routeSnapshot.data() as RouteData;
+              if (eventSnapshot.exists()) {
+                const eventData = eventSnapshot.data();
+                const selectedRouteRef = eventData?.route;
+                if (selectedRouteRef) {
+                  const routeSnapshot = await getDoc(selectedRouteRef);
+                  const routeData = routeSnapshot.data() as RouteData;
 
-                if (routeData) {
-                  setSelectedRoute(routeData);
-                  setBikeBusGroupId(routeData.BikeBusGroupId.id);
-                  setPath(routeData.pathCoordinates);
-                  setBikeBusStops(routeData.BikeBusStops);
-                  setStartGeo(routeData.startPoint);
-                  setEndGeo(routeData.endPoint);
+                  if (routeData) {
+                    setSelectedRoute(routeData);
+                    setBikeBusGroupId(routeData.BikeBusGroupId.id);
+                    setPath(routeData.pathCoordinates);
+                    setBikeBusStops(routeData.BikeBusStops);
+                    setStartGeo(routeData.startPoint);
+                    setEndGeo(routeData.endPoint);
+                  }
+                } else {
+                  console.error('selectedRouteRef is undefined');
                 }
-              } else {
-                console.error('selectedRouteRef is undefined');
+              }
+            }
+            // also get the avatar of the leader and use the avatar element to display it
+            const leaderUser = await fetchUser(selectedRoute?.eventCheckInLeader || '');
+            if (leaderUser) {
+              const leaderAvatar = await fetchUser(leaderUser.username);
+              if (leaderAvatar) {
+                setLeaderAvatarUrl(leaderAvatar.username);
               }
             }
           }
-          // also get the avatar of the leader and use the avatar element to display it
-          const leaderUser = await fetchUser(selectedRoute?.eventCheckInLeader || '');
-          if (leaderUser) {
-            const leaderAvatar = await fetchUser(leaderUser.username);
-            if (leaderAvatar) {
-              setLeaderAvatarUrl(leaderAvatar.username);
-            }
+
+
+          if (selectedRoute) {
+            // Extract only the UID from the path
+            const extractedUID = selectedRoute.eventCheckInLeader ? selectedRoute.eventCheckInLeader.id : '';
+            setLeaderUID(extractedUID);
+          }
+
+          // get the user location
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const userLocation = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                };
+                setUserLocation(userLocation);
+              },
+              (error) => {
+                console.error(error);
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0,
+              }
+            );
+          }
+
+
+          if (leaderUID) {
+            const rtdb = getDatabase();
+            const leaderLocationRef = ref(rtdb, 'userLocations/' + leaderUID);
+            onValue(leaderLocationRef, (snapshot) => {
+              const leaderLocationData = snapshot.val();
+              if (leaderLocationData) {
+                setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
+                // update the event document with the leader location
+              }
+
+              if (leaderLocationData && selectedRoute) {
+                setMapCenter({
+                  lat: leaderLocation.lat,
+                  lng: leaderLocation.lng,
+                });
+              }
+            });
           }
         }
-
-
-        if (selectedRoute) {
-          // Extract only the UID from the path
-          const extractedUID = selectedRoute.eventCheckInLeader ? selectedRoute.eventCheckInLeader.id : '';
-          setLeaderUID(extractedUID);
-        }
-
-        // get the user location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const userLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              };
-              setUserLocation(userLocation);
-            },
-            (error) => {
-              console.error(error);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 5000,
-              maximumAge: 0,
-            }
-          );
-        }
-
-
-        if (leaderUID) {
-          const rtdb = getDatabase();
-          const leaderLocationRef = ref(rtdb, 'userLocations/' + leaderUID);
-          onValue(leaderLocationRef, (snapshot) => {
-            const leaderLocationData = snapshot.val();
-            if (leaderLocationData) {
-              setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
-              // update the event document with the leader location
-            }
-
-            if (leaderLocationData && selectedRoute) {
-              setMapCenter({
-                lat: leaderLocation.lat,
-                lng: leaderLocation.lng,
-              });
-            }
-          });
-        }
-      }
       } catch (error) {
         console.error(error);
       } finally {
@@ -388,271 +442,271 @@ const Map: React.FC = () => {
   }
     , [user, id, selectedRoute, leaderUID, leaderLocation.lat, leaderLocation.lng]);
 
-    const endTripAndCheckOutAll = async () => {
-      const tripDataIdDoc = doc(db, 'event', id);
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      // get the serverTimeStamp() and set it as TripEndTimeStamp
-      const serverTimestamp = () => {
-        return new Date();
-      };
-      await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
-      const tripSnapshot = await getDoc(tripDataIdDoc);
-      console.log('tripSnapshot', tripSnapshot)
-      const tripData = tripSnapshot.data();
-      console.log('tripData', tripData)
-      const eventDataId = tripData?.eventId;
-      console.log('eventDataId', eventDataId)
-  
-      const eventDataIdDoc = doc(db, 'event', eventDataId);
-      console.log('eventDataIdDoc', eventDataIdDoc)
-      await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
-      const eventSnapshot = await getDoc(eventDataIdDoc);
-      console.log('eventSnapshot', eventSnapshot)
-      await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
-      }, { merge: true });
-      console.log('tripDataIdDoc', tripDataIdDoc)
-  
-      // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
-      await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
-      }, { merge: true });
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      // find any other of user's ids in the event add them to the appropriate role arrays
-      // if the user is a parent in the eventData field parents, add them to the parents array
-      if (tripData?.parents) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripParents: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.kids) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripKids: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sheepdogs) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSheepdogs: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sprinters) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSprinters: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.captains) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaptains: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.caboose) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaboose: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.members) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripMembers: arrayUnion(username),
-        }, { merge: true });
-      }
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
-      console.log('tripData?.members', tripData?.members)
-      console.log('username', username)
-      console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
-      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
-      history.push(eventSummaryUrl);
-  
+  const endTripAndCheckOutAll = async () => {
+    const tripDataIdDoc = doc(db, 'event', id);
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    // get the serverTimeStamp() and set it as TripEndTimeStamp
+    const serverTimestamp = () => {
+      return new Date();
     };
-  
-    const endTripAndCheckOut = async () => {
-      const tripDataIdDoc = doc(db, 'event', id);
-  
-      const tripSnapshot = await getDoc(tripDataIdDoc);
-      const tripData = tripSnapshot.data();
-      const eventDataId = tripData?.eventId;
-  
-  
-      await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
-      }, { merge: true });
-  
-      if (tripData?.tripCheckInParents.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripParents: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.kids.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripKids: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sheepdogs.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSheepdogs: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sprinters.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSprinters: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.captains.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaptains: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.caboose.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaboose: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.members.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripMembers: arrayUnion(username),
-        }, { merge: true });
-        console.log('members', tripData?.members)
-        console.log('username', username)
-        console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
-      }
-  
-      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
-      history.push(eventSummaryUrl);
-  
-    };
+    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    console.log('tripSnapshot', tripSnapshot)
+    const tripData = tripSnapshot.data();
+    console.log('tripData', tripData)
+    const eventDataId = tripData?.eventId;
+    console.log('eventDataId', eventDataId)
 
-    const endBikeBusAndCheckOutAll = async () => {
-      const tripDataIdDoc = doc(db, 'event', id);
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      // get the serverTimeStamp() and set it as TripEndTimeStamp
-      const serverTimestamp = () => {
-        return new Date();
-      };
-      await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
-      const tripSnapshot = await getDoc(tripDataIdDoc);
-      console.log('tripSnapshot', tripSnapshot)
-      const tripData = tripSnapshot.data();
-      console.log('tripData', tripData)
-      const eventDataId = tripData?.eventId;
-      console.log('eventDataId', eventDataId)
-  
-      const eventDataIdDoc = doc(db, 'event', eventDataId);
-      console.log('eventDataIdDoc', eventDataIdDoc)
-      await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
-      const eventSnapshot = await getDoc(eventDataIdDoc);
-      console.log('eventSnapshot', eventSnapshot)
+    const eventDataIdDoc = doc(db, 'event', eventDataId);
+    console.log('eventDataIdDoc', eventDataIdDoc)
+    await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
+    const eventSnapshot = await getDoc(eventDataIdDoc);
+    console.log('eventSnapshot', eventSnapshot)
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    console.log('tripDataIdDoc', tripDataIdDoc)
+
+    // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    // find any other of user's ids in the event add them to the appropriate role arrays
+    // if the user is a parent in the eventData field parents, add them to the parents array
+    if (tripData?.parents) {
       await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
+        tripEndTripParents: arrayUnion(username),
       }, { merge: true });
-      console.log('tripDataIdDoc', tripDataIdDoc)
-  
-      // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+    }
+    if (tripData?.kids) {
       await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
+        tripEndTripKids: arrayUnion(username),
       }, { merge: true });
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      // find any other of user's ids in the event add them to the appropriate role arrays
-      // if the user is a parent in the eventData field parents, add them to the parents array
-      if (tripData?.parents) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripParents: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.kids) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripKids: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sheepdogs) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSheepdogs: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sprinters) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSprinters: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.captains) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaptains: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.caboose) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaboose: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.members) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripMembers: arrayUnion(username),
-        }, { merge: true });
-      }
-      console.log('tripDataIdDoc', tripDataIdDoc)
-      console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
-      console.log('tripData?.members', tripData?.members)
+    }
+    if (tripData?.sheepdogs) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSheepdogs: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sprinters) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSprinters: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.captains) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaptains: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.caboose) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaboose: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.members) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripMembers: arrayUnion(username),
+      }, { merge: true });
+    }
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
+    console.log('tripData?.members', tripData?.members)
+    console.log('username', username)
+    console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
+    const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+    history.push(eventSummaryUrl);
+
+  };
+
+  const endTripAndCheckOut = async () => {
+    const tripDataIdDoc = doc(db, 'event', id);
+
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    const tripData = tripSnapshot.data();
+    const eventDataId = tripData?.eventId;
+
+
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+
+    if (tripData?.tripCheckInParents.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripParents: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.kids.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripKids: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sheepdogs.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSheepdogs: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sprinters.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSprinters: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.captains.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaptains: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.caboose.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaboose: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.members.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripMembers: arrayUnion(username),
+      }, { merge: true });
+      console.log('members', tripData?.members)
       console.log('username', username)
-      console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
-      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
-      history.push(eventSummaryUrl);
-  
+      console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
+    }
+
+    const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+    history.push(eventSummaryUrl);
+
+  };
+
+  const endBikeBusAndCheckOutAll = async () => {
+    const tripDataIdDoc = doc(db, 'event', id);
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    // get the serverTimeStamp() and set it as TripEndTimeStamp
+    const serverTimestamp = () => {
+      return new Date();
     };
-  
-    const endBikeBusAndCheckOut = async () => {
-      const tripDataIdDoc = doc(db, 'event', id);
-  
-      const tripSnapshot = await getDoc(tripDataIdDoc);
-      const tripData = tripSnapshot.data();
-      const eventDataId = tripData?.eventId;
-  
-  
+    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', tripEndTripEndTimeStamp: serverTimestamp() }, { merge: true });
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    console.log('tripSnapshot', tripSnapshot)
+    const tripData = tripSnapshot.data();
+    console.log('tripData', tripData)
+    const eventDataId = tripData?.eventId;
+    console.log('eventDataId', eventDataId)
+
+    const eventDataIdDoc = doc(db, 'event', eventDataId);
+    console.log('eventDataIdDoc', eventDataIdDoc)
+    await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
+    const eventSnapshot = await getDoc(eventDataIdDoc);
+    console.log('eventSnapshot', eventSnapshot)
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    console.log('tripDataIdDoc', tripDataIdDoc)
+
+    // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    // find any other of user's ids in the event add them to the appropriate role arrays
+    // if the user is a parent in the eventData field parents, add them to the parents array
+    if (tripData?.parents) {
       await setDoc(tripDataIdDoc, {
-        JoinedMembersCheckOut: arrayUnion(username)
+        tripEndTripParents: arrayUnion(username),
       }, { merge: true });
-  
-      if (tripData?.tripCheckInParents.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripParents: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.kids.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripKids: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sheepdogs.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSheepdogs: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.sprinters.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripSprinters: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.captains.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaptains: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.caboose.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripCaboose: arrayUnion(username),
-        }, { merge: true });
-      }
-      if (tripData?.members.includes(username)) {
-        await setDoc(tripDataIdDoc, {
-          tripEndTripMembers: arrayUnion(username),
-        }, { merge: true });
-        console.log('members', tripData?.members)
-        console.log('username', username)
-        console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
-      }
-  
-      const eventSummaryUrl = `/eventsummary/${eventDataId}`;
-      history.push(eventSummaryUrl);
-  
-    };
+    }
+    if (tripData?.kids) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripKids: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sheepdogs) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSheepdogs: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sprinters) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSprinters: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.captains) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaptains: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.caboose) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaboose: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.members) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripMembers: arrayUnion(username),
+      }, { merge: true });
+    }
+    console.log('tripDataIdDoc', tripDataIdDoc)
+    console.log('tripData?.tripEndTripMembers', tripData?.tripEndTripMembers)
+    console.log('tripData?.members', tripData?.members)
+    console.log('username', username)
+    console.log('tripEndTripEndTimeStamp', tripData?.tripEndTripEndTimeStamp)
+    const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+    history.push(eventSummaryUrl);
+
+  };
+
+  const endBikeBusAndCheckOut = async () => {
+    const tripDataIdDoc = doc(db, 'event', id);
+
+    const tripSnapshot = await getDoc(tripDataIdDoc);
+    const tripData = tripSnapshot.data();
+    const eventDataId = tripData?.eventId;
+
+
+    await setDoc(tripDataIdDoc, {
+      JoinedMembersCheckOut: arrayUnion(username)
+    }, { merge: true });
+
+    if (tripData?.tripCheckInParents.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripParents: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.kids.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripKids: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sheepdogs.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSheepdogs: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.sprinters.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripSprinters: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.captains.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaptains: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.caboose.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripCaboose: arrayUnion(username),
+      }, { merge: true });
+    }
+    if (tripData?.members.includes(username)) {
+      await setDoc(tripDataIdDoc, {
+        tripEndTripMembers: arrayUnion(username),
+      }, { merge: true });
+      console.log('members', tripData?.members)
+      console.log('username', username)
+      console.log('tripEndTripMembers', tripData?.tripEndTripMembers)
+    }
+
+    const eventSummaryUrl = `/eventsummary/${eventDataId}`;
+    history.push(eventSummaryUrl);
+
+  };
 
 
 
@@ -1873,6 +1927,10 @@ const Map: React.FC = () => {
                         <IonText>Find, Create, and Join:</IonText>
                         <IonList>
                           <IonItem>
+                            <IonIcon icon={clipboardOutline} slot="start" />
+                            <IonLabel>Community Bulletin Boards</IonLabel>
+                          </IonItem>
+                          <IonItem>
                             <IonIcon icon={mapOutline} slot="start" />
                             <IonLabel>Routes</IonLabel>
                           </IonItem>
@@ -1893,7 +1951,7 @@ const Map: React.FC = () => {
                     </IonItem>
                   </IonList>
                   <IonLabel>
-                    <IonItem button color="primary" onClick={getLocation} lines="none">
+                    <IonItem button color="primary" onClick={handleStartMap} lines="none">
                       <IonText color="secondary">Start Map</IonText>
                     </IonItem>
                     or Visit

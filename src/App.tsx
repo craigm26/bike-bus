@@ -33,7 +33,7 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { arrowUp, chatbubblesOutline, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
+import { arrowUp, chatbubblesOutline, clipboardOutline, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -770,7 +770,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="end" slot="fixed">
                     <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
-                        <IonIcon color="#ffd800" icon={chatbubblesOutline} />
+                        <IonIcon color="#ffd800" icon={clipboardOutline} />
                       </IonFabButton>
                     </IonFab>
                   </div>

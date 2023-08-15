@@ -22,7 +22,7 @@ import {
     IonActionSheet,
     IonSpinner
 } from '@ionic/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
@@ -142,6 +142,7 @@ const BulletinBoards: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
     const [editMessage, setEditMessage] = useState('');
+    const locationFetchedRef = useRef(false);
 
 
     useEffect(() => {
@@ -203,7 +204,9 @@ const BulletinBoards: React.FC = () => {
 
     }, [user, accountType, selectedBBOROrgValue, groupType, geoConsent, groupData]);
 
-    const getLocation = () => {
+    const getLocation = (callback?: () => void) => {
+        if (locationFetchedRef.current) return;
+
 
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
@@ -212,6 +215,9 @@ const BulletinBoards: React.FC = () => {
             setGeoConsent(true);
             // we want to automatically set the selectedBBOROrgValue to Community and then call the findCommunityMessagesWithinRadius function to display the messages for community
             setselectedBBOROrgValue("Community");
+            locationFetchedRef.current = true;
+            callback?.();
+            await handleCommunitySelection();
         }, (error) => {
             console.error("Error getting geolocation:", error);
             setGeoConsent(false);
@@ -286,6 +292,14 @@ const BulletinBoards: React.FC = () => {
         });
     };
 
+    const handleCommunitySelectionWithLocation = async () => {
+        setIsLoading(true); // Set loading state
+        await getLocation(); // Get the location
+        await handleCommunitySelection(); // Handle community selection
+        setIsLoading(false); // Reset loading state
+    };
+    
+
     useEffect(() => {
         setIsLoading(true);
 
@@ -295,8 +309,7 @@ const BulletinBoards: React.FC = () => {
         if (selectedBBOROrgValue) {
             if (selectedBBOROrgValue === 'Community') {
                 // Handle community messages
-                getLocation()
-                handleCommunitySelection();
+                handleCommunitySelectionWithLocation();
                 return;
             } else {
 
@@ -438,7 +451,7 @@ const BulletinBoards: React.FC = () => {
 
         return avatarUrl ? (
             <IonAvatar>
-                <Avatar uid={userId} />
+                <Avatar uid={userId} size={"small"}></Avatar>
             </IonAvatar>
         ) : (
             <IonIcon icon={personCircleOutline} />
@@ -682,14 +695,17 @@ const BulletinBoards: React.FC = () => {
     });
 
     const handleAction = (action: string) => {
-        // Handle the edit action here
-        // We can use the selectedMessage state to get the message ID
-        // Then we can use the message ID to get the message document reference
+
+        console.log('Action:', action);
+        console.log('Selected Message:', selectedMessage);
+        // get the firestore document id from the selectedMessage
+        const MessageId = selectedMessage?.id;
+        console.log('Message ID:', MessageId);
 
         // get the message ID from the selectedMessage state
         if (!selectedMessage) return;
 
-        if (selectedMessage && selectedMessage.id) {
+        if (selectedMessage) {
             const MessageId = selectedMessage?.id;
             console.log('Message ID:', MessageId);
             // get the message document reference
@@ -868,12 +884,6 @@ const BulletinBoards: React.FC = () => {
                     onDidDismiss={() => setShowActionSheet(false)}
                     buttons={[
                         {
-                            text: 'Edit',
-                            role: 'destructive',
-                            icon: createOutline,
-                            handler: () => handleAction('edit'),
-                        },
-                        {
                             text: 'Delete',
                             role: 'destructive',
                             icon: trashOutline,
@@ -887,7 +897,6 @@ const BulletinBoards: React.FC = () => {
                         },
                     ]}
                 />
-
             </IonContent>
         </IonPage>
     );
