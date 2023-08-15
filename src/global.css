@@ -236,6 +236,25 @@
   text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5); /* more prominent shadow */
 }
 
+.toggle-bicycling-map-layer {
+  position: fixed;
+  width: max-content;
+  z-index: 1000;
+  background-color: transparent;
+  border: 1px solid transparent;
+  width: 155px;
+  outline: none;
+  right: 0;
+  bottom: 45px;
+}
+
+.toggle-bicycling-map-layer IonLabel {
+  background-color: rgba(255, 255, 255, 0.5); /* semi-transparent white */
+  padding: 2px 4px; /* some padding to give the background some space around the text */
+  border-radius: 4px; /* rounded corners for the background */
+  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5); /* more prominent shadow */
+}
+
 
 .end-open-trip {
   position: fixed;
