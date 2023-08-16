@@ -1,10 +1,49 @@
-.chat-list {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding-bottom: 0px !important;
-    padding-top: 0px !important;
+.ion-flex-offset-app, .ion-page, ion-content {
+    height: 100%;
 }
+
+.ion-page .chat-list {
+    display: flex !important;
+    flex-grow: 1 !important;
+}
+
+
+.ion-list {
+    display: flex !important;
+    flex-grow: 1 !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+
+.chat-list {
+    flex-grow: 1;
+    display: flex !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.chat-list::-webkit-scrollbar {
+    display: flex !important;
+}
+
+.chat-container {
+    display: flex !important;
+    height: 400px;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.chat-input-form {
+    display: block; 
+}
+
+
 
 .avatarChat .avatarChat.small.md {
     /* allow the avatar to shrink when needed */
@@ -70,17 +109,36 @@
 }
 
 .chat-item-left .chat-message {
-    margin-right: auto; /* Align to the left */
+    margin-right: auto;
+    /* Align to the left */
 }
 
-.ion-items-messages {
+.ion-content-scroll-host {
+    flex-grow: 1 !important;
+}
+
+.chat-item {
     display: flex;
     flex-direction: column;
-    width: 100%;
+    flex-grow: 1;
+    /* Make it take up remaining space */
     padding-bottom: 0px !important;
     padding-top: 0px !important;
-    height: 50px;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    overflow-x: hidden;
+    /* Disable horizontal scrolling */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.chat-item::-webkit-scrollbar {
+    display: none;
+}
+
 
 .chat-input-form {
     justify-content: flex-start;

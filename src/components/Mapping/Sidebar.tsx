@@ -1,5 +1,5 @@
 import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonGrid, IonRow, IonCol, IonText, IonPage } from '@ionic/react';
-import { arrowForward, arrowBack, locateOutline } from 'ionicons/icons';
+import { arrowForward, arrowBack, locateOutline, pulseOutline, addOutline, removeOutline } from 'ionicons/icons';
 import { useState } from 'react';
 
 type SidebarProps = {
@@ -59,18 +59,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <IonIcon icon={isOpen ? arrowBack : arrowForward} />
             </IonButton>
             <IonContent className="sidebar-content">
+            <div className="content-wrapper">
                 <div>
                     <IonText>Map Options</IonText>
                 </div>
                 <div>
                     <div className="zoom-controls">
-                        <IonButton onClick={handleZoomIn}>Zoom In</IonButton>
-                        <IonButton onClick={handleZoomOut}>Zoom Out</IonButton>
+                        <IonLabel>Zoom</IonLabel>
+                        <IonButton onClick={handleZoomIn}>
+                            <IonIcon icon={addOutline} />
+                        </IonButton>
+                        <IonButton onClick={handleZoomOut}>
+                            <IonIcon icon={removeOutline} />
+                        </IonButton>
                     </div>
-
-                    <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
-                    <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
-
+                    <div className="map-type-controls">
+                        <IonLabel>Map Type</IonLabel>
+                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
+                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
+                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
+                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
+                    </div>
                     <IonRow>
                         <IonCol>
                             <IonLabel>BikeBus</IonLabel>
@@ -97,6 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </IonCol>
                     </IonRow>
                 </div>
+            </div>
             </IonContent>
         </div>
     );

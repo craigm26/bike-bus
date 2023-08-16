@@ -515,14 +515,18 @@
 .sidebar-container.open {
   right: 0;
   padding-top: 10px;
-  height: 260px;
+  height: auto; /* Adjust height to auto */
 }
 
 .sidebar-content {
   width: 200px;
   background-color: rgba(255, 255, 255, 0.9);
+  overflow-y: auto; /* Add scrolling if content is too long */
+}
+
+.content-wrapper {
   padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 .toggle-button {
@@ -535,19 +539,17 @@
   height: 40px;
 }
 
-.sidebar-container.closed .sidebar-content {
-  display: none;
-}
-
-.sidebar-container.open .sidebar-content {
-  display: block;
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-.sidebar-content .zoom-controls {
+.sidebar-content .zoom-controls,
+.sidebar-content .map-type-controls { /* Apply to both zoom and map type controls */
   display: flex;
-  justify-content: space-between;
+  flex-direction: column; /* Stack vertically */
+  align-items: flex-start;
   margin-bottom: 10px;
+}
+
+.sidebar-content .map-type-controls IonButton {
+  margin: 3px 0;
+  width: 100%; /* Full width of the container */
 }
 
 .sidebar-content IonRow {

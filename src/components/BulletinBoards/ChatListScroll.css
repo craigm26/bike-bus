@@ -1,0 +1,36 @@
+.ion-content-scroll-host {
+    flex-grow: 1;
+}
+
+.ion-flex-offset-app, .ion-page, ion-content {
+    height: 100%;
+}
+
+.ion-list {
+    display: flex !important;
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+
+.chat-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.chat-list::-webkit-scrollbar {
+    display: flex !important;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}

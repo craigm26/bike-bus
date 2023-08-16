@@ -9,16 +9,10 @@ import {
     IonCardTitle,
     IonSelect,
     IonSelectOption,
-    IonInfiniteScroll,
-    IonInfiniteScrollContent,
     IonCheckbox,
     IonRow,
     IonAvatar,
     IonIcon,
-    IonRouterLink,
-    IonItemDivider,
-    IonSplitPane,
-    IonCard,
     IonActionSheet,
     IonSpinner
 } from '@ionic/react';
@@ -30,9 +24,8 @@ import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
-import { useCurrentLocation } from '../components/CurrentLocationContext';
-import { closeOutline, createOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
-import { set } from 'date-fns';
+import { closeOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
+import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
 
 
 interface UserDocument {
@@ -137,12 +130,13 @@ const BulletinBoards: React.FC = () => {
     const [userLocation, setUserLocation] = useState<UserLocation | undefined>(undefined);
     const [bulletinBoardOrgMessagesArray, setBulletinBoardOrgMessagesArray] = useState<Message[]>([]);
     const [bulletinboardBikeBusMessagesArray, setBulletinBoardBikeBusMessagesArray] = useState<Message[]>([]);
-    const [showActionSheet, setShowActionSheet] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
     const [editMessage, setEditMessage] = useState('');
     const locationFetchedRef = useRef(false);
+    const [showActionSheet, setShowActionSheet] = useState(false);
+
 
 
     useEffect(() => {
@@ -298,7 +292,7 @@ const BulletinBoards: React.FC = () => {
         await handleCommunitySelection(); // Handle community selection
         setIsLoading(false); // Reset loading state
     };
-    
+
 
     useEffect(() => {
         setIsLoading(true);
@@ -517,11 +511,6 @@ const BulletinBoards: React.FC = () => {
         return formattedData;
     }, [user]);
 
-
-    const { startPoint } = useCurrentLocation();
-    const latitude = startPoint.lat;
-    const longitude = startPoint.lng;
-
     const getBulletinBoardInfoFromDocRef = (bulletinBoardRef: DocumentReference | null) => {
         if (!bulletinBoardRef) return null; // Handle null case
 
@@ -694,7 +683,12 @@ const BulletinBoards: React.FC = () => {
         return Number(a.timestamp) - Number(b.timestamp);
     });
 
-    const handleAction = (action: string) => {
+    const handleSelectedMessage = useCallback((message: Message) => {
+        setSelectedMessage(message);
+        setShowActionSheet(true);
+    }, []);
+
+    const handleAction = useCallback((action: string) => {
 
         console.log('Action:', action);
         console.log('Selected Message:', selectedMessage);
@@ -762,7 +756,7 @@ const BulletinBoards: React.FC = () => {
 
         // Close the action sheet
         setShowActionSheet(false);
-    };
+    }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
 
     const loadMoreData = (event: CustomEvent<void>) => {
         // Logic to load more chat messages
@@ -814,68 +808,58 @@ const BulletinBoards: React.FC = () => {
                                 </IonSelectOption>
                             ))}
                         </IonSelect>
-                        <form onSubmit={submitMessage} className="chat-input-form">
-                            <IonInput
-                                required={true}
-                                aria-label='Message'
-                                type='text'
-                                value={messageInput}
-                                placeholder="Enter your message"
-                                onIonChange={e => setMessageInput(e.detail.value || '')}
-                            />
-                            {selectedBBOROrgValue !== 'Community' && (
-                                <IonLabel>
-                                    Cross-Post to Community Board?
-                                    <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                </IonLabel>
-                            )}
-                            <IonRow className="chat-button-row">
-                                <IonButton type="submit" disabled={isLoading}>
-                                    Post Bulletin Board Message
-                                </IonButton>
-                                {isLoading && <IonSpinner name="crescent" />}
-                            </IonRow>
-                        </form>
-                        <IonInfiniteScroll threshold="80px" onIonInfinite={loadMoreData}>
-                            <IonInfiniteScrollContent
-                                loadingText="Loading more messages..."
-                                loadingSpinner={null}>
-                            </IonInfiniteScrollContent>
-                            <IonList className="chat-list">
-                                {sortedMessagesData.map((message, index) => {
-                                    const isCurrentUserMessage = user?.uid === message?.user?.id;
-                                    const avatarElement = isCurrentUserMessage
-                                        ? currentUserAvatarElement
-                                        : getAvatarElement(message?.user?.id);
+                        <div className="chat-container">
+                            <form onSubmit={submitMessage} className="chat-input-form">
+                                <IonInput
+                                    required={true}
+                                    aria-label='Message'
+                                    type='text'
+                                    value={messageInput}
+                                    placeholder="Enter your message"
+                                    onIonChange={e => setMessageInput(e.detail.value || '')}
+                                />
+                                {selectedBBOROrgValue !== 'Community' && (
+                                    <IonLabel>
+                                        Cross-Post to Community Board?
+                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                    </IonLabel>
+                                )}
+                                <IonRow className="chat-button-row">
+                                    <IonButton type="submit" disabled={isLoading}>
+                                        Post Bulletin Board Message
+                                    </IonButton>
+                                    {isLoading && <IonSpinner name="crescent" />}
+                                </IonRow>
+                            </form>
+                        <IonList className="chat-list">
+                            {sortedMessagesData.map((message, index) => {
+                                const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                const avatarElement = isCurrentUserMessage
+                                    ? currentUserAvatarElement
+                                    : getAvatarElement(message?.user?.id);
 
-                                    return (
-                                        <IonItem className="ion-items-messages" lines="none" key={index}>
-                                            {!isCurrentUserMessage && (
-                                                <div className="avatarChat">
-                                                    {avatarElement}
-                                                </div>
-                                            )}
-                                            <div className={`chat-message-wrapper ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
-                                                <div className="chat-message"
-                                                    onClick={() => {
-                                                        if (isCurrentUserMessage) {
-                                                            setSelectedMessage(message);
-                                                            setShowActionSheet(true);
-                                                        }
-                                                    }}>
-                                                    {message?.message}
-                                                </div>
-                                            </div>
-                                            {isCurrentUserMessage && (
-                                                <div className="avatarChat">
-                                                    {avatarElement}
-                                                </div>
-                                            )}
-                                        </IonItem>
-                                    );
-                                })}
-                            </IonList>
-                        </IonInfiniteScroll>
+                                return (
+                                    <div className="chat-item" key={index}>
+                                        <ChatListScroll
+                                            key={index}
+                                            avatarElement={avatarElement}
+                                            user={user}
+                                            selectedBBOROrgValue={selectedBBOROrgValue}
+                                            combinedList={combinedList}
+                                            groupData={groupData}
+                                            sortedMessagesData={sortedMessagesData}
+                                            isCurrentUserMessage={isCurrentUserMessage}
+                                            selectedMessage={null}
+                                            isLoading={isLoading}
+                                            onMessageSelected={handleSelectedMessage}
+                                            setShowActionSheet={setShowActionSheet}
+                                            handleAction={handleAction}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </IonList>
+                        </div>
 
                     </>
                 )}
