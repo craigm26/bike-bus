@@ -501,7 +501,69 @@
   overflow: hidden;
 }
 
+.sidebar-container {
+  position: absolute;
+  top: 0;
+  right: -200px;
+  padding-top: 62px;
+  transition: right 0.3s ease;
+  z-index: 1000;
+  border-radius: 0 0 0 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
+.sidebar-container.open {
+  right: 0;
+  padding-top: 10px;
+  height: 260px;
+}
 
+.sidebar-content {
+  width: 200px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
+.toggle-button {
+  position: absolute;
+  left: -40px;
+  top: 10px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
 
+.sidebar-container.closed .sidebar-content {
+  display: none;
+}
+
+.sidebar-container.open .sidebar-content {
+  display: block;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-content .zoom-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sidebar-content IonRow {
+  margin: 10px 0;
+}
+
+.sidebar-content IonButton {
+  margin: 5px 0;
+}
+
+.sidebar-content IonText {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.sidebar-content IonLabel {
+  font-size: 14px;
+}
