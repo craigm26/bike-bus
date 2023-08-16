@@ -27,6 +27,7 @@ import { bicycleOutline, busOutline, businessOutline, carOutline, clipboardOutli
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
+import Sidebar from "../components/Mapping/Sidebar";
 import { HeaderContext } from "../components/HeaderContext";
 import React from "react";
 import Avatar from "../components/Avatar";
@@ -1912,9 +1913,6 @@ const Map: React.FC = () => {
   };
 
 
-  // once we have the events, we need to mark the polylines on the map with
-
-
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -1995,11 +1993,11 @@ const Map: React.FC = () => {
               zoom={15}
               options={{
                 disableDefaultUI: true,
-                zoomControl: true,
+                zoomControl: false,
                 zoomControlOptions: {
                   position: window.google.maps.ControlPosition.LEFT_CENTER
                 },
-                mapTypeControl: true,
+                mapTypeControl: false,
                 mapTypeControlOptions: {
                   position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
                   mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
@@ -2762,38 +2760,19 @@ const Map: React.FC = () => {
                       </IonButton>
                     </IonCol>
                   </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <IonLabel>BikeBus</IonLabel>
-                      <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <IonLabel>Open Trips</IonLabel>
-                      <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                    </IonCol>
-                  </IonRow>
                 </IonGrid>
               </div>
-              <div>
-                <IonGrid className="toggle-bicycling-map-layer">
-                  <IonRow>
-                    <IonCol>
-                      <IonLabel>Bicycling Layer</IonLabel>
-                      <IonToggle
-                        checked={bicyclingLayerEnabled}
-                        onIonChange={(e) => {
-                          const enabled = e.detail.checked;
-                          setBicyclingLayerEnabled(enabled);
-                          handleBicyclingLayerToggle(enabled);
-                        }}
-                      />
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </div>
-
+              <Sidebar
+                mapRef={mapRef}
+                getLocation={getLocation}
+                bikeBusEnabled={bikeBusEnabled}
+                setBikeBusEnabled={setBikeBusEnabled}
+                openTripsEnabled={openTripsEnabled}
+                setOpenTripsEnabled={setOpenTripsEnabled}
+                bicyclingLayerEnabled={bicyclingLayerEnabled}
+                setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+                handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+              />
               <Polyline
                 path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
                 options={{
@@ -2807,7 +2786,6 @@ const Map: React.FC = () => {
               />
             </GoogleMap>
           </IonRow>
-
         )
         }
       </IonContent >
