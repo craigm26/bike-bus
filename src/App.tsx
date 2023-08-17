@@ -352,13 +352,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!fetchedGroups || fetchedGroups.length === 0) return;
-
+  
     // Fetch all event documents from their references in parallel
     const eventFetchPromises = fetchedGroups.flatMap((group) =>
       group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
     );
-
-
+  
     Promise.all(eventFetchPromises).then((eventSnapshots) => {
       // Extract event data from snapshots
       const allEvents = eventSnapshots.map((eventSnapshot, index) => ({
@@ -366,34 +365,37 @@ const App: React.FC = () => {
         id: eventSnapshot.id,
         groupId: fetchedGroups[Math.floor(index / fetchedGroups[0].event.length)].id,
       }));
-
+  
       // Filter out events in the past
       const futureEvents = allEvents.filter(event => {
-        if (!event.startTimestamp || typeof event.startTimestamp.seconds === 'undefined') {
+        if (!event.start || typeof event.start.seconds === 'undefined') {
           console.error('Invalid timestamp:', event);
           return false;
         }
-        return new Date(event.startTimestamp.seconds * 1000).getTime() > Date.now();
+        return new Date(event.start.seconds * 1000).getTime() > Date.now();
       });
-
-      // Sort all the future events by startTimestamp in ascending order
+  
+      // Sort all the future events by start in ascending order
       const sortedEvents = [...futureEvents].sort(
         (a, b) =>
-          new Date(a.startTimestamp.seconds * 1000).getTime() - new Date(b.startTimestamp.seconds * 1000).getTime()
+          new Date(a.start.seconds * 1000).getTime() - new Date(b.start.seconds * 1000).getTime()
       );
-
+  
+      console.log(sortedEvents);
+  
       // Now, the first event in sortedEvents is the upcoming event
       const upcomingEvent = sortedEvents[0];
-
+  
       // Find the group that the upcoming event belongs to
       const upcomingGroup = upcomingEvent
         ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId)
         : null;
-
+  
       setUpcomingEvent(upcomingEvent);
       setUpcomingGroup(upcomingGroup);
     });
   }, [fetchedGroups]);
+  
 
 
 

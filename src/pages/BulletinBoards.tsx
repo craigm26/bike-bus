@@ -695,19 +695,29 @@ const BulletinBoards: React.FC = () => {
 
         console.log('Action:', action);
         console.log('Selected Message:', selectedMessage);
-        // get the firestore document id from the selectedMessage
-        const MessageId = selectedMessage?.id;
-        console.log('Message ID:', MessageId);
+
+
 
         // get the message ID from the selectedMessage state
         if (!selectedMessage) return;
 
         if (selectedMessage) {
+            // we have the selectedMessage as a firestore document object in the messages document collection, now let's query for the document and get the id of the document
+            const messageRef = query(collection(db, 'messages'), where('message', '==', selectedMessage.message));
+            getDocs(messageRef).then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    console.log('Message ID:', doc.id);
+                    setSelectedMessage({
+                        ...selectedMessage,
+                        id: doc.id,
+                    });
+                });
+            });
+
             const MessageId = selectedMessage?.id;
             console.log('Message ID:', MessageId);
+
             // get the message document reference
-            const messageRef = doc(db, 'messages', MessageId);
-            console.log('Message Ref:', messageRef);
             // get the bulletinboard document reference
             const bulletinboardRef = selectedMessage?.bulletinboard;
             console.log('Bulletinboard Ref:', bulletinboardRef);
@@ -719,11 +729,11 @@ const BulletinBoards: React.FC = () => {
                 // Then we can use the message document reference to update the message in the bulletin board document
 
                 // first we need to get the message from the message document reference
+                const messageRef = doc(db, 'messages', MessageId);
                 getDoc(messageRef).then((docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const messageData = docSnapshot.data();
                         if (messageData) {
-                            // Set edit mode to true and populate editMessage with the existing message
                             setEditMode(true);
                             setEditMessage(messageData.message);
                         }
@@ -731,12 +741,11 @@ const BulletinBoards: React.FC = () => {
                 });
 
             } else if (action === 'delete') {
-                // Handle the delete action here
-                // We can use the messageId to get the message document reference and delete the messageId message and the message document reference in the bulletinboard document
-                // Then we can use the message document reference to delete the message in the bulletin board document
+                console.log('Delete Message');
                 console.log('Message ID:', MessageId);
-                console.log('Message Ref:', messageRef);
-                console.log('Bulletinboard Ref:', bulletinboardRef);
+
+                const messageRef = doc(db, 'messages', MessageId);
+
                 // delete the message document reference in the bulletinboard document
                 if (bulletinboardRef instanceof DocumentReference) {
                     updateDoc(bulletinboardRef, {
@@ -745,16 +754,19 @@ const BulletinBoards: React.FC = () => {
                 } else {
                     console.error('bulletinboardRef is not a DocumentReference:', bulletinboardRef);
                 }
-                // delete the message document
-                deleteDoc(messageRef);
-                // refresh the messages
-                const communityOption = { value: "Community", label: "Community" };
-                Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
-                    setCombinedList([communityOption, ...orgs, ...bikebus]);
-                }
-                );
 
+                // delete the message document
+                deleteDoc(messageRef).then(() => { // Use messageRef instead of selectedMessage
+                    console.log('Message successfully deleted!');
+                }).catch((error) => {
+                    console.error('Error removing message:', error);
+                });
             }
+            // refresh the messages
+            const communityOption = { value: "Community", label: "Community" };
+            Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+                setCombinedList([communityOption, ...orgs, ...bikebus]);
+            });
         }
 
         // Close the action sheet
