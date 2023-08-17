@@ -734,18 +734,10 @@ const Map: React.FC = () => {
         events.push(eventData);
       }
     });
-    // check each event to see if it is active or not
-    const activeEvents = events.filter((event) => event.status === "active");
-    console.log("activeEvents: ", activeEvents);
-    // if there are active events, then set the isActiveBikeBusEvent to true for that particular BikeBusGroup
-    if (activeEvents.length > 0) {
-      setIsActiveBikeBusEvent(true);
-    }
-    // if there are no active events, then set the isActiveBikeBusEvent to false for that particular BikeBusGroup
-    if (activeEvents.length === 0) {
-      setIsActiveBikeBusEvent(false);
-    }
+    // Set the isActiveBikeBusEvent based on the number of active events
+    setIsActiveBikeBusEvent(events.length > 0);
   };
+  
 
 
   const watchLocation = useCallback(() => {
