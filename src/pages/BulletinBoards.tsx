@@ -231,55 +231,57 @@ const BulletinBoards: React.FC = () => {
                         const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
                         const communityMessagesDataPromises = communityMessagesSnapshot.docs.map(async doc => {
                             const userDataRef = doc.data().user; // Get the user document reference
+                            console.log('User Data Ref:', userDataRef);
                             const userDoc = await getDoc(userDataRef); // Fetch the user document
-                            const userData = userDoc.data() as UserDocument; // Cast to the expected shape
+                            console.log('User Doc:', userDoc);
+                            if (!userDoc.exists()) {
+                                console.warn('User document does not exist for reference:', userDataRef);
+                            }
 
-                            return {
-                                ...doc.data(),
-                                id: doc.id,
-                                message: doc.data().message as string,
-                                timestamp: doc.data().timestamp as FieldValue,
-                                user: {
-                                    id: userDoc.id, // Include the document ID as the user ID
-                                    username: userData.username, // Extract the username
-                                    avatarUrl: userData.avatarUrl, // Include the avatar URL if it's needed
-                                },
-                                bulletinboard: doc.data().bulletinboard || "Community",
-                                bulletinboardType: doc.data().bulletinboardType || "Community",
-                                geoHash: doc.data().geoHash as string,
-                                userLocationSentMessage: doc.data().userLocationSentMessage as UserLocation,
-                            };
+
+                            if (userDoc.exists()) {
+
+                                const userData = userDoc.data() as UserDocument; // Cast to the expected shape
+                                console.log('User Data:', userData);
+
+                                return {
+                                    ...doc.data(),
+                                    id: doc.id,
+                                    message: doc.data().message as string,
+                                    timestamp: doc.data().timestamp as FieldValue,
+                                    user: {
+                                        id: userDoc.id, // Include the document ID as the user ID
+                                        username: userData.username, // Extract the username
+                                        avatarUrl: userData.avatarUrl, // Include the avatar URL if it's needed
+                                    },
+                                    bulletinboard: doc.data().bulletinboard || "Community",
+                                    bulletinboardType: doc.data().bulletinboardType || "Community",
+                                    geoHash: doc.data().geoHash as string,
+                                    userLocationSentMessage: doc.data().userLocationSentMessage as UserLocation,
+                                };
+                            } else {
+                                console.warn('User document does not exist');
+                            }
                         });
 
                         const communityMessagesData = await Promise.all(communityMessagesDataPromises);
 
+                        // Filter out messages with valid 'message' and 'user' properties
+                        const validCommunityMessagesData = communityMessagesData.filter(message => message !== undefined && message.message && message.user) as Message[];
 
-                        // Find community boards from the communityMessagesData that are within 25-mile radius
-                        const communityMessages = communityMessagesData.filter((message) => {
+                        // Find community boards from the validCommunityMessagesData that are within a 25-mile radius
+                        const communityMessages = validCommunityMessagesData.filter(message => {
                             const messageLocation = message.userLocationSentMessage as UserLocation;
                             const distanceInKm = geofire.distanceBetween([messageLocation.lat, messageLocation.lng], [userLocation.lat, userLocation.lng]);
                             const distanceInM = distanceInKm * 1000;
                             const radiusInM = 25 * 1609.34; // Convert miles to meters if radius is in miles
                             return distanceInM <= radiusInM;
                         });
-                        console.log('Community Messages:', communityMessages);
-                        //const communityMessages = await findCommunityMessagesWithinRadius(userLocation, 25);
 
-                        // Transform communityMessages to match Message[] type
-                        const transformedMessages = communityMessagesData.map((doc) => ({
-                            message: doc.message,
-                            user: doc.user,
-                            timestamp: doc.timestamp,
-                            bulletinboard: doc.bulletinboard,
-                            bulletinboardType: doc.bulletinboardType,
-                            geoHash: doc.geoHash,
-                            id: doc.id,
-                            userLocationSentMessage: doc.userLocationSentMessage,
-                        }));
+                        // Update the messagesData state with the community messages
+                        resolve(communityMessages);
+                        setMessagesData(communityMessages);
 
-                        // Update the messagesData state with the transformed community messages
-                        resolve(transformedMessages);
-                        setMessagesData(transformedMessages);
                     });
                 }
             }
@@ -617,6 +619,7 @@ const BulletinBoards: React.FC = () => {
                 setCombinedList([communityOption, ...orgs, ...bikebus]);
             });
             handleCommunitySelection();
+            setMessageInput('');
             return;
         }
 
@@ -831,34 +834,34 @@ const BulletinBoards: React.FC = () => {
                                     {isLoading && <IonSpinner name="crescent" />}
                                 </IonRow>
                             </form>
-                        <IonList className="chat-list">
-                            {sortedMessagesData.map((message, index) => {
-                                const isCurrentUserMessage = user?.uid === message?.user?.id;
-                                const avatarElement = isCurrentUserMessage
-                                    ? currentUserAvatarElement
-                                    : getAvatarElement(message?.user?.id);
+                            <IonList className="chat-list">
+                                {sortedMessagesData.map((message, index) => {
+                                    const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                    const avatarElement = isCurrentUserMessage
+                                        ? currentUserAvatarElement
+                                        : getAvatarElement(message?.user?.id);
 
-                                return (
-                                    <div className="chat-item" key={index}>
-                                        <ChatListScroll
-                                            key={index}
-                                            avatarElement={avatarElement}
-                                            user={user}
-                                            selectedBBOROrgValue={selectedBBOROrgValue}
-                                            combinedList={combinedList}
-                                            groupData={groupData}
-                                            sortedMessagesData={sortedMessagesData}
-                                            isCurrentUserMessage={isCurrentUserMessage}
-                                            selectedMessage={null}
-                                            isLoading={isLoading}
-                                            onMessageSelected={handleSelectedMessage}
-                                            setShowActionSheet={setShowActionSheet}
-                                            handleAction={handleAction}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </IonList>
+                                    return (
+                                        <div className="chat-item" key={index}>
+                                            <ChatListScroll
+                                                key={index}
+                                                avatarElement={avatarElement}
+                                                user={user}
+                                                selectedBBOROrgValue={selectedBBOROrgValue}
+                                                combinedList={combinedList}
+                                                groupData={groupData}
+                                                sortedMessagesData={sortedMessagesData}
+                                                isCurrentUserMessage={isCurrentUserMessage}
+                                                selectedMessage={null}
+                                                isLoading={isLoading}
+                                                onMessageSelected={handleSelectedMessage}
+                                                setShowActionSheet={setShowActionSheet}
+                                                handleAction={handleAction}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </IonList>
                         </div>
 
                     </>
