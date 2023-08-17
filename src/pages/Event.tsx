@@ -610,6 +610,8 @@ const Event: React.FC = () => {
   // Check to see if the event field of the eventData document is set to 'active'
   const isEventActive = eventData?.status === 'active';
 
+  const isEventEnded = eventData?.status === 'ended';
+
   const setShowStartBikeBus = (value: boolean) => {
     setShowJoinBikeBus(value);
   };
@@ -1242,7 +1244,7 @@ const Event: React.FC = () => {
                           <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
                         </IonContent>
                       </IonModal>
-                      {isEventLeader && (
+                      {isEventLeader && !isEventActive && !isEventEnded && (
                         <IonButton color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
                       )}
                       {!isEventLeader && isEventActive && (

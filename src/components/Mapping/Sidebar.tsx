@@ -26,11 +26,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     handleBicyclingLayerToggle
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    console.log('Sidebar render');
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
-        console.log('toggleSidebar');
     };
 
     const handleZoomIn = () => {
