@@ -272,11 +272,9 @@ const Map: React.FC = () => {
     const permission = window.confirm("We need your location to provide directions, routes, Open Trips and BikeBus locations. Allow?");
     if (permission) {
       // set a new boolean to true to indicate that the user has given permission
-      setPermissions(true);
       getLocation();
     } else {
       console.log("User denied location permission.");
-      setPermissions(false);
       setUserLocation(userLocationDefault);
       setMapCenter(userLocationDefault);
       renderMap(userLocationDefault);
@@ -286,42 +284,37 @@ const Map: React.FC = () => {
 
   const getLocation = () => {
 
-    // if permission was cancelled, let the user view the map with the default location userLocationDefault
-    if (permissions)
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            setUserLocation(userLocation);
-            renderMap(userLocation);
-          },
-          (error) => {
-            alert("An error occurred while fetching your location. Please enable location services in your browser settings.");
-            console.error(error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 50000,
-            maximumAge: 0,
-          }
-        );
-      } else {
-        console.error("Geolocation is not supported by this browser.");
-        // return the user to the home page "/"
-        history.push("/");
-      }
-    else {
-      setUserLocation(userLocationDefault);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userLocation);
+          renderMap(userLocation);
+        },
+        (error) => {
+          alert("An error occurred while fetching your location. Please enable location services in your browser settings.");
+          console.error(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 50000,
+          maximumAge: 30,
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      // return the user to the home page "/"
+      history.push("/");
     }
-  }
+  };
 
   // You can call this function when the "start map" button is clicked
   const handleStartMap = () => {
+    console.log("handleStartMap called");
     requestLocationPermission();
-    // Other logic
   };
 
 
