@@ -59,24 +59,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             <IonContent className="sidebar-content">
             <div className="content-wrapper">
                 <div>
-                    <IonText>Map Options</IonText>
+                    <IonLabel>Map Options</IonLabel>
                 </div>
                 <div>
                     <div className="zoom-controls">
                         <IonLabel>Zoom</IonLabel>
-                        <IonButton onClick={handleZoomIn}>
+                        <IonButton size="small" onClick={handleZoomIn}>
                             <IonIcon icon={addOutline} />
                         </IonButton>
-                        <IonButton onClick={handleZoomOut}>
+                        <IonButton size="small" onClick={handleZoomOut}>
                             <IonIcon icon={removeOutline} />
                         </IonButton>
                     </div>
                     <div className="map-type-controls">
                         <IonLabel>Map Type</IonLabel>
-                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
-                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
-                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
-                        <IonButton onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
+                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
+                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
+                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
+                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
                     </div>
                     <IonRow>
                         <IonCol>

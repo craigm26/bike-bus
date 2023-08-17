@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
-import { IonAvatar, IonContent, IonIcon, IonItem, IonLabel, IonPage } from '@ionic/react';
+import { IonAvatar, IonContent, IonIcon, IonItem, IonLabel, IonPage, IonRefresher, IonRefresherContent, RefresherEventDetail } from '@ionic/react';
 import { personCircleOutline } from 'ionicons/icons';
 import useAuth from "../../useAuth";
 import { useAvatar } from "../useAvatar";
@@ -178,15 +178,21 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
         return formattedData;
     }, [user]);
 
+    const handleRefresh = (event: CustomEvent<RefresherEventDetail>) => {
+        console.log('Refreshing data');
+        // Simulate a trip to the server that takes 1 seconds
+        setTimeout(() => {
+            event.detail.complete();
+        }, 1000);
 
-
-
-
-
+    };
 
     return (
         <IonPage>
             <IonContent scrollY={false}>
+                <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+                    <IonRefresherContent></IonRefresherContent>
+                </IonRefresher>
                 <Virtuoso className="ion-content-scroll-host"
                     style={{ height: '100%' }}
                     totalCount={sortedMessagesData.length}
@@ -196,7 +202,7 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
                         const avatarElement = isCurrentUserMessage
                             ? currentUserAvatarElement
                             : getAvatarElement(message?.user?.id);
-    
+
                         return (
                             <div className={`chat-message-wrapper ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
                                 {!isCurrentUserMessage && (
@@ -223,7 +229,7 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
             </IonContent>
         </IonPage>
     );
-    
+
 };
 
 

@@ -91,6 +91,10 @@ interface BikeBusEvent {
     seconds: number;
     nanoseconds: number;
   };
+  start: {
+    seconds: number;
+    nanoseconds: number;
+  };
 }
 
 interface Coordinate {
@@ -1560,10 +1564,24 @@ const Map: React.FC = () => {
     const currentTime = new Date().getTime(); // Get the current time in milliseconds
     (await querySnapshot).forEach((doc) => {
       const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
-      console.log("eventData: ", eventData);
-      const eventStartTime = eventData.startTimestamp.seconds * 1000;
-      if (eventStartTime > currentTime) {
-        events.push(eventData);
+  
+      // Extract the date from the 'start' field
+      const eventStartDate = new Date(eventData.start.seconds * 1000);
+      const eventStartTime = new Date(eventData.startTimestamp.seconds * 1000);
+  
+      // Combine the date and time
+      eventStartDate.setHours(eventStartTime.getHours());
+      eventStartDate.setMinutes(eventStartTime.getMinutes());
+      eventStartDate.setSeconds(eventStartTime.getSeconds());
+  
+      // Convert the combined date and time back to seconds
+      const combinedStartTimestamp = {
+        seconds: Math.floor(eventStartDate.getTime() / 1000),
+        nanoseconds: 0 // Assuming no nanoseconds needed; otherwise, you can calculate based on the original timestamps
+      };
+  
+      if (eventStartDate.getTime() > currentTime) {
+        events.push({ ...eventData, startTimestamp: combinedStartTimestamp }); // Update the startTimestamp with the combined date and time
       }
     });
     console.log("events: ", events);
