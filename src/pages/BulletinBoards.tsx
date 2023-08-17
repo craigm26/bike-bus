@@ -169,7 +169,7 @@ const BulletinBoards: React.FC = () => {
 
         const fetchGroups = () => {
             Promise.all([fetchOrganizations(), fetchBikeBus()]).then(([orgs, bikebus]) => {
-                setCombinedList([communityOption, ...orgs, ...bikebus]);
+                setCombinedList(geoConsent ? [communityOption, ...orgs, ...bikebus] : [...orgs, ...bikebus]);
             });
         };
 
@@ -760,17 +760,6 @@ const BulletinBoards: React.FC = () => {
         // Close the action sheet
         setShowActionSheet(false);
     }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
-
-    const loadMoreData = (event: CustomEvent<void>) => {
-        // Logic to load more chat messages
-
-        // Get the last message in the list
-
-        // Get the timestamp of the last message
-
-        // Complete the infinite scroll loading (replace 'false' with a condition to disable further loading if necessary)
-        event.target && (event.target as HTMLIonInfiniteScrollElement).complete();
-    };
 
     return (
         <IonPage className="ion-flex-offset-app">
