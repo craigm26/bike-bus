@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 import {
     IonContent,
     IonPage,
@@ -44,8 +45,6 @@ const localizer = dateFnsLocalizer({
 })
 
 type Event = {
-    formattedStartDate: Timestamp,
-    formattedEndDate: Timestamp,
     id: string,
     start: Date,
     end: Date,
@@ -104,45 +103,34 @@ const ViewSchedule: React.FC = () => {
             console.log(eventDocs)
             eventsSnapshot.forEach((docSnapshot) => {
                 const eventData = docSnapshot.data();
-                if (eventData?.groupId && typeof eventData.groupId === 'object') { // only process events related to the current group
-                    // use the eventData.startTimestamp to get the UTC start time and convert to local time zone
-                    const startDate = eventData.startTimestamp.toDate();
+                if (eventData?.groupId && typeof eventData.groupId === 'object') {
+                    // Get the startDate from eventData.start
+                    const startDate = eventData.start.toDate();
+                    const endTimeDate = eventData.endTime.toDate();
+                    console.log(startDate);
+
+
+                    // Step 1: Parse startTime
                     const startTimeParts = eventData.startTime.split(/[:\s]/);
-                    let startTimeHours = parseInt(startTimeParts[0]);
-                    const startTimeMinutes = parseInt(startTimeParts[1]);
-                    const startTimePeriod = startTimeParts[2];
+                    const startTimeDate = new Date();
+                    console.log(startTimeParts)
+                    console.log(startTimeDate)
+                    startTimeDate.setHours(startTimeParts[2] === 'PM' ? parseInt(startTimeParts[0]) + 12 : parseInt(startTimeParts[0]), parseInt(startTimeParts[1]));
+                    console.log(startTimeDate)
 
-                    console.log('startTimeHours', startTimeHours);
-                    console.log('startTimeMinutes', startTimeMinutes);
-                    console.log('startTimePeriod', startTimePeriod);
-                    console.log('startDate', startDate);
+                    // Step 2: Compose start and end dates
+                    const startEventDate = new Date(startDate);
+                    console.log(startEventDate)
+                    startEventDate.setHours(startTimeDate.getHours(), startTimeDate.getMinutes());
+                    console.log(startEventDate)
 
-                    if (startTimePeriod === 'PM' && startTimeHours !== 12) {
-                        startTimeHours += 12;
-                    } else if (startTimePeriod === 'AM' && startTimeHours === 12) {
-                        startTimeHours = 0;
-                    }
+                    const endEventDate = new Date(startDate); // Using the start date for the end date
+                    endEventDate.setHours(endTimeDate.getHours(), endTimeDate.getMinutes());
 
-                    
-                    const startEventDate = new Date(startDate.setHours(startTimeHours, startTimeMinutes));
-                    const formattedStartDate = Timestamp.fromDate(startEventDate);
-
-                    // Get the UTC endTime and convert to local time zone
-                    const endDate = eventData.endTime.toDate();
-                    const localEndDate = utcToZonedTime(endDate, timeZone);
-
-                    let endTimeHours = localEndDate.getHours();
-                    const endTimeMinutes = localEndDate.getMinutes();
-
-                    const endEventDate = new Date(startDate.setHours(endTimeHours, endTimeMinutes));
-                    const formattedEndDate = Timestamp.fromDate(endEventDate);
-
-                    console.log('start', startEventDate);
-                    console.log('end', formattedEndDate.toDate());
-
+                    // Step 3: Update the event object
                     const event: Event = {
                         start: startEventDate,
-                        end: formattedEndDate.toDate(),
+                        end: endEventDate,
                         title: eventData.title,
                         route: eventData.route,
                         schedule: eventData.schedule,
@@ -162,8 +150,6 @@ const ViewSchedule: React.FC = () => {
                         sprinters: eventData.sprinters,
                         id: docSnapshot.id,
                         startTimestamp: eventData.startTimestamp,
-                        formattedStartDate: formattedStartDate,
-                        formattedEndDate: formattedEndDate,
                     };
                     eventDocs.push(event);
                 }
@@ -206,12 +192,6 @@ const ViewSchedule: React.FC = () => {
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
 
-    console.log("Events: ", events.map(event => ({
-        start: event.start.toString(),
-        end: event.end.toString(),
-        title: event.title,
-    })));
-    
 
     return (
         <IonPage className="ion-flex-offset-app">

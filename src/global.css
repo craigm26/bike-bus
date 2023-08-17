@@ -1,9 +1,9 @@
 @font-face {
-    font-family: 'Indie-Flower';
-    src: url('./assets/fonts/IndieFlower-Regular.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-  }
+  font-family: 'Indie-Flower';
+  src: url('./assets/fonts/IndieFlower-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 .BikeBusFont {
   font-family: 'Indie-Flower', sans-serif;
@@ -38,7 +38,7 @@
 .EventTimeFont {
   font-size: .8em;
   font-family: 'Indie-Flower', sans-serif;
-  display: block; 
+  display: block;
 }
 
 .login-container {
@@ -46,7 +46,7 @@
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-color:#ffd800;
+  background-color: #ffd800;
 }
 
 .email-input {
@@ -68,7 +68,9 @@
   align-items: center;
 }
 
-.use-google, .use-anonymously, .signup {
+.use-google,
+.use-anonymously,
+.signup {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -82,7 +84,8 @@
   right: 0;
   display: flex;
   justify-content: center;
-  padding: 10px; /* optional: for some space from the bottom */
+  padding: 10px;
+  /* optional: for some space from the bottom */
 }
 
 
@@ -118,7 +121,8 @@
   align-items: center;
   height: 100%;
   width: 100%;
-  padding: 0 15px; /* Adjust padding as needed */
+  padding: 0 15px;
+  /* Adjust padding as needed */
 }
 
 .footer-content {
@@ -130,8 +134,10 @@
 .button {
   padding: 0;
   margin: 0;
-  border: none;  /* If you don't want button to have border */
-  background: none;  /* If you don't want button to have background */
+  border: none;
+  /* If you don't want button to have border */
+  background: none;
+  /* If you don't want button to have background */
 }
 
 
@@ -175,7 +181,7 @@
 .welcome-to-bikebus-buttons {
   justify-content: center;
   align-items: center;
-  display:inline;
+  display: inline;
 }
 
 .img-center {
@@ -230,10 +236,14 @@
 }
 
 .toggle-bikebus-container IonLabel {
-  background-color: rgba(255, 255, 255, 0.5); /* semi-transparent white */
-  padding: 2px 4px; /* some padding to give the background some space around the text */
-  border-radius: 4px; /* rounded corners for the background */
-  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5); /* more prominent shadow */
+  background-color: rgba(255, 255, 255, 0.5);
+  /* semi-transparent white */
+  padding: 2px 4px;
+  /* some padding to give the background some space around the text */
+  border-radius: 4px;
+  /* rounded corners for the background */
+  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+  /* more prominent shadow */
 }
 
 .toggle-bicycling-map-layer {
@@ -249,10 +259,14 @@
 }
 
 .toggle-bicycling-map-layer IonLabel {
-  background-color: rgba(255, 255, 255, 0.5); /* semi-transparent white */
-  padding: 2px 4px; /* some padding to give the background some space around the text */
-  border-radius: 4px; /* rounded corners for the background */
-  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5); /* more prominent shadow */
+  background-color: rgba(255, 255, 255, 0.5);
+  /* semi-transparent white */
+  padding: 2px 4px;
+  /* some padding to give the background some space around the text */
+  border-radius: 4px;
+  /* rounded corners for the background */
+  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+  /* more prominent shadow */
 }
 
 
@@ -271,7 +285,7 @@
   padding: 1em;
   background-color: #f4f4f4;
   border-radius: 10px;
-  box-shadow: 0px 0px 5px rgba(0,0,0,0.2);
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
 }
 
 .trip-endpoint-title {
@@ -291,7 +305,8 @@
 }
 
 .btn:focus {
-  outline: 1px solid #aaa; /* Replace the default focus style */
+  outline: 1px solid #aaa;
+  /* Replace the default focus style */
 }
 
 .join-trip-btn {
@@ -299,7 +314,7 @@
   margin-right: 0.5em;
 }
 
-.join-trip-btn:hover, 
+.join-trip-btn:hover,
 .join-trip-btn:focus {
   background-color: #0056b3;
 }
@@ -407,8 +422,8 @@
 
 @media screen and (max-width: 600px) {
   .search-container {
-    top: 1vh; 
-    width: 80%; 
+    top: 1vh;
+    width: 80%;
   }
 }
 
@@ -419,27 +434,35 @@
   width: 100%;
   overflow: hidden;
 }
+
 /* General Styles for the Event Details */
-.bikebus-event-name, .bikebus-event-route, .bikebus-event-time {
-  background-color: #ffd800; /* Bright yellow background */
+.bikebus-event-name,
+.bikebus-event-route,
+.bikebus-event-time {
+  background-color: #ffd800;
+  /* Bright yellow background */
   border-radius: 10px;
   margin: 10px;
   padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Darker shadow to contrast with yellow */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  /* Darker shadow to contrast with yellow */
 }
 
 /* Specific Styles for Each Element */
 .bikebus-event-name {
   font-size: 24px;
   font-weight: bold;
-  color: #333; /* Dark text color */
-  border-bottom: 2px solid #333; /* Separator line */
+  color: #333;
+  /* Dark text color */
+  border-bottom: 2px solid #333;
+  /* Separator line */
 }
 
 .bikebus-event-route {
   font-size: 20px;
   color: #555;
-  border-bottom: 1px dashed #333; /* Dashed separator line */
+  border-bottom: 1px dashed #333;
+  /* Dashed separator line */
 }
 
 .bikebus-event-time {
@@ -457,9 +480,12 @@
   position: absolute;
   top: 20px;
   left: 20px;
-  width: 250px; /* Fixed width for the flyer */
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)); /* Subtle gradient */
-  border: 2px solid #333; /* Outer border */
+  width: 250px;
+  /* Fixed width for the flyer */
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  /* Subtle gradient */
+  border: 2px solid #333;
+  /* Outer border */
   border-radius: 10px;
 }
 
@@ -515,13 +541,18 @@
 .sidebar-container.open {
   right: 0;
   padding-top: 10px;
-  height: auto; /* Adjust height to auto */
+  height: auto;
+  /* Adjust height to auto */
 }
 
 .sidebar-content {
   width: 200px;
+  height: 450px;
   background-color: rgba(255, 255, 255, 0.9);
-  overflow-y: auto; /* Add scrolling if content is too long */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 0 10px;
+  overflow-y: auto;
+  /* Add scrolling if content is too long */
 }
 
 .content-wrapper {
@@ -540,16 +571,19 @@
 }
 
 .sidebar-content .zoom-controls,
-.sidebar-content .map-type-controls { /* Apply to both zoom and map type controls */
+.sidebar-content .map-type-controls {
+  /* Apply to both zoom and map type controls */
   display: flex;
-  flex-direction: column; /* Stack vertically */
+  flex-direction: column;
+  /* Stack vertically */
   align-items: flex-start;
   margin-bottom: 10px;
 }
 
 .sidebar-content .map-type-controls IonButton {
   margin: 3px 0;
-  width: 100%; /* Full width of the container */
+  width: 100%;
+  /* Full width of the container */
 }
 
 .sidebar-content IonRow {
