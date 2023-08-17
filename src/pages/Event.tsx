@@ -598,8 +598,32 @@ const Event: React.FC = () => {
   // Date and time formatting options
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-  const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+
+  // Extract date from "start" field
+  const startDate = eventData?.start ? new Date(eventData?.start.toDate()) : null;
+  
+  // Combine date from "start" with time from "startTimestamp" for startTime
+  const startTime = startDate && eventData?.startTimestamp
+    ? new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        new Date(eventData.startTimestamp.toDate()).getHours(),
+        new Date(eventData.startTimestamp.toDate()).getMinutes()
+      ).toLocaleString(undefined, dateOptions)
+    : 'Loading...';
+  
+  // Combine date from "start" with time from "endTime" for endTime
+  const endTime = startDate && eventData?.endTime
+    ? new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        new Date(eventData.endTime.toDate()).getHours(),
+        new Date(eventData.endTime.toDate()).getMinutes()
+      ).toLocaleString(undefined, dateOptions)
+    : 'Loading...';
+  
 
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
