@@ -15,6 +15,7 @@ import {
     IonSelectOption,
     IonModal,
     IonHeader,
+    IonIcon,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -25,6 +26,8 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 import { set } from 'date-fns';
+import { checkmark } from 'ionicons/icons';
+import './EditOrganization.css';
 
 
 interface Organization {
@@ -57,6 +60,7 @@ const EditOrganization: React.FC = () => {
         LastUpdatedOn: Timestamp.now(),
     };
     const [showModal, setShowModal] = useState(false);
+    const [showBikeBusModal, setShowBikeBusModal] = useState(false);
     const [bikeBusGroups, setBikeBusGroups] = useState<any[]>([]);
     const [selectedBikeBusGroup, setSelectedBikeBusGroup] = useState<string>('');
 
@@ -109,22 +113,43 @@ const EditOrganization: React.FC = () => {
         if (id) fetchSingleOrganization(id);
     }, [id, user, setIsCreator]);
 
-    useEffect(() => {
-        const fetchBikeBusGroups = async () => {
-            const q = query(collection(db, 'bikeBusGroups'), where('leader', '==', user?.uid));
-            const querySnapshot = await getDocs(q);
-            setBikeBusGroups(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        };
-
-        fetchBikeBusGroups();
-    }, [user?.uid]);
-
     const handleAddBikeBusGroup = async () => {
+
         const bikeBusGroupRef = doc(db, 'bikeBusGroups', selectedBikeBusGroup);
         await updateDoc(bikeBusGroupRef, { Organization: doc(db, 'organizations', id) });
-        alert('BikeBusGroup updated');
+        alert('Organization updated with BikeBusGroup');
         setShowModal(false);
     };
+
+    const fetchBikeBusGroups = useCallback(async () => {
+        try {
+            if (!user || !user.uid) {
+                console.error("User or user's UID is undefined");
+                return; // Exit the function if user or user's UID is undefined
+            }
+            console.log(user.uid);
+
+            // userRef should be a document reference to the user's document
+            const userRef = doc(db, 'users', user.uid);
+            console.log(userRef);
+            const q = query(collection(db, 'bikebusgroups'), where('BikeBusLeader', '==', userRef));
+            console.log(q);
+            const querySnapshot = await getDocs(q);
+            querySnapshot.docs.forEach(doc => {
+                console.log(`Document ID: ${doc.id}`);
+            });
+
+            setBikeBusGroups(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            console.log(bikeBusGroups);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [user]);
+
+
+    useEffect(() => {
+        fetchBikeBusGroups();
+    }, [fetchBikeBusGroups]);
 
 
     const handleSave = async () => {
@@ -146,10 +171,10 @@ const EditOrganization: React.FC = () => {
 
     return (
         <IonPage className="ion-flex-offset-app">
-            {
-                isLoading ?
-                    <IonSpinner /> :
-                    <IonContent fullscreen>
+            <IonContent>
+                {
+                    isLoading ?
+                        <IonSpinner /> :
                         <IonGrid>
                             <IonRow>
                                 <IonCol>
@@ -161,21 +186,28 @@ const EditOrganization: React.FC = () => {
                             <IonRow>
                                 <IonCol>
                                     <IonButton>Add Staff</IonButton>
-                                    <IonButton onClick={() => setShowModal(true)}>Add BikeBusGroup</IonButton>
-                                    <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                                    <IonButton onClick={() => setShowBikeBusModal(true)}>Add BikeBusGroup</IonButton>
+                                    <IonModal isOpen={showBikeBusModal} onDidDismiss={() => setShowBikeBusModal(false)}>
                                         <IonHeader>
                                             <IonTitle>Select a BikeBusGroup</IonTitle>
                                         </IonHeader>
                                         <IonContent>
                                             <IonList>
                                                 {bikeBusGroups.map(group => (
-                                                    <IonItem key={group.id} button onClick={() => setSelectedBikeBusGroup(group.id)}>
+                                                    <IonItem
+                                                        key={group.id}
+                                                        button
+                                                        onClick={() => setSelectedBikeBusGroup(group.id)}
+                                                        className={group.id === selectedBikeBusGroup ? 'selected-group' : ''}
+                                                    >
+                                                        {group.id === selectedBikeBusGroup && <IonIcon icon={checkmark} />} {/* Optional icon */}
                                                         {group.BikeBusName}
                                                     </IonItem>
                                                 ))}
                                             </IonList>
+
                                             <IonButton onClick={handleAddBikeBusGroup}>Add Selected BikeBusGroup</IonButton>
-                                            <IonButton onClick={() => setShowModal(false)}>Cancel</IonButton>
+                                            <IonButton onClick={() => setShowBikeBusModal(false)}>Cancel</IonButton>
                                         </IonContent>
                                     </IonModal>
 
@@ -235,9 +267,8 @@ const EditOrganization: React.FC = () => {
                                 </IonCol>
                             </IonRow>
                         </IonGrid>
-
-                    </IonContent >
-            }
+                }
+            </IonContent>
         </IonPage >
     );
 
