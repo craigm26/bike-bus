@@ -63,13 +63,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <div>
                     <div className="zoom-controls">
+                        <IonGrid>
+                            
                         <IonLabel>Zoom</IonLabel>
+                        <IonCol>
                         <IonButton size="small" onClick={handleZoomIn}>
-                            <IonIcon icon={addOutline} />
+                            <IonIcon slot="icon-only" icon={addOutline} />
                         </IonButton>
                         <IonButton size="small" onClick={handleZoomOut}>
-                            <IonIcon icon={removeOutline} />
+                            <IonIcon slot="icon-only" icon={removeOutline} />
                         </IonButton>
+                        </IonCol>
+                        </IonGrid>
                     </div>
                     <div className="map-type-controls">
                         <IonLabel>Map Type</IonLabel>

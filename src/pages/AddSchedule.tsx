@@ -256,9 +256,11 @@ const AddSchedule: React.FC = () => {
 
     // set the startTime to match the hh:mm value of the startTimestamp
     const startTime = startTimestamp.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+    console.log('startTime:', startTime);
 
     // set the start value of the schedule to be the startTimestamp
     const start = startTimestamp;
+    console.log('start:', start);
 
     const endTimestamp = Timestamp.fromDate(new Date(endTime));
     console.log('endTimestamp:', endTimestamp);
@@ -315,7 +317,7 @@ const AddSchedule: React.FC = () => {
       startTimeStamp: startTimestamp,
       endTime: endTimestamp,
       duration: expectedDuration,
-      eventDays: getRecurringDates(new Date(startDate), new Date(endDate), selectedDays),
+      eventDays: getRecurringDates(new Date(startDateTime), new Date(endDate), selectedDays),
       recurring: isRecurring,
       groupId: bikeBusGroupRef,
       selectedDays: selectedDays,
@@ -341,14 +343,10 @@ const AddSchedule: React.FC = () => {
     });
 
     // Create event documents based on eventDays
-    const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
+    const eventDays = getRecurringDates(new Date(startDateTime), new Date(endDate), selectedDays);
+    console.log('eventDays:', eventDays);
 
     for (const day of eventDays) {
-      const startTimestampRecurring = Timestamp.fromDate(day);
-      const endTimestampRecurring = new Date(day);
-      endTimestampRecurring.setMinutes(endTimestampRecurring.getMinutes() + expectedDuration);
-      const endTimestamp = Timestamp.fromDate(endTimestampRecurring);    
-
       const eventData = {
         title: BikeBusName,
         BikeBusName: BikeBusName,
@@ -362,10 +360,10 @@ const AddSchedule: React.FC = () => {
         caboose: [],
         duration: expectedDuration,
         route: doc(db, 'routes', RouteID),
-        startTime: startTime,
-        startTimestamp: startTimestampRecurring,
+        startTime: startTimestamp,
+        startTimestamp: startTimestamp,
         endTime: endTimestamp,
-        endTimestamp: endTimestampRecurring,
+        endTimestamp: endTimestamp,
         groupId: bikeBusGroupRef,
         BikeBusGroup: bikeBusGroupRef,
         BikeBusStops: [],
