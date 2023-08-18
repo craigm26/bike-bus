@@ -30,6 +30,7 @@ import startOfWeek from 'date-fns/startOfWeek'
 import getDay from 'date-fns/getDay'
 import enUS from 'date-fns/locale/en-US'
 import { utcToZonedTime } from 'date-fns-tz';
+import { set } from 'date-fns';
 
 const locales = {
     'en-US': enUS,
@@ -65,6 +66,7 @@ type Event = {
     members: [],
     sheepdogs: [],
     sprinters: [],
+    status: string,
 };
 
 
@@ -81,6 +83,8 @@ const ViewSchedule: React.FC = () => {
     const history = useHistory();
     const [startTime, setStartTime] = useState<string>('');
     const [endTime, setEndTime] = useState<string>('');
+    const [eventSummaryLink, setEventSummaryLink] = useState<string>('');
+    const [isEventDone, setIsEventDone] = useState<boolean>(false);
 
     const parseDate = (dateString: string) => {
         const dateFormat = "MMMM d, yyyy 'at' h:mm:ss a 'UTC'XXX";
@@ -143,6 +147,7 @@ const ViewSchedule: React.FC = () => {
                         sheepdogs: eventData.sheepdogs,
                         sprinters: eventData.sprinters,
                         id: docSnapshot.id,
+                        status: eventData.status,
                         startTimestamp: eventData.startTimestamp,
                     };
                     eventDocs.push(event);
@@ -171,6 +176,15 @@ const ViewSchedule: React.FC = () => {
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
+
+        // make a const for eventSummarlink
+        const eventSummaryLink = `/eventsummary/${event.id}`;
+        console.log(eventSummaryLink);
+        setEventSummaryLink(eventSummaryLink);
+
+        // check the status of the event
+        const isEventDone = event.status === 'ended' ? true : false;
+        setIsEventDone(isEventDone);
 
         const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
@@ -264,6 +278,7 @@ const ViewSchedule: React.FC = () => {
                         </IonCard>
                         <IonButton onClick={handleEditEvent}>Go to Event</IonButton>
                         <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                        {(isEventDone) ?<IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
                     </IonContent>
                 </IonModal>
 

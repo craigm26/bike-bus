@@ -370,7 +370,6 @@ const Map: React.FC = () => {
             const eventData = eventSnapshot.data();
             console.log('eventData', eventData)
             // find the eventCheckInLeader and set the leaderUID to the user.uid of the leader
-            console.log('eventData.eventCheckInLeader', eventData.eventCheckInLeader)
             const extractedUID = eventData.eventCheckInLeader;
             setLeaderUID(extractedUID);
 
@@ -406,17 +405,9 @@ const Map: React.FC = () => {
       }
     }
 
-
-    if (selectedRoute) {
-      // Extract only the UID from the path
-      const extractedUID = selectedRoute.eventCheckInLeader ? selectedRoute.eventCheckInLeader.id : '';
-      setLeaderUID(extractedUID);
-      console.log('extractedUID', extractedUID)
-    }
-
     fetchData();
 
-  }, [user, id, selectedRoute,]);
+  }, [user, id,]);
 
   useEffect(() => {
 
@@ -430,7 +421,7 @@ const Map: React.FC = () => {
           // update the event document with the leader location
         }
 
-        if (leaderLocationData && selectedRoute) {
+        if (leaderLocationData) {
           setMapCenter({
             lat: leaderLocation.lat,
             lng: leaderLocation.lng,
@@ -439,7 +430,7 @@ const Map: React.FC = () => {
       });
     }
 
-  }, [leaderUID, selectedRoute, leaderLocation]);
+  }, [leaderUID, leaderLocation]);
 
 
   const endTripAndCheckOutAll = async () => {
@@ -866,6 +857,21 @@ const Map: React.FC = () => {
           console.log("Error fetching open trips:", error);
         }
         );
+      const uid = user.uid;
+      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+
+      // Set up a real-time subscription
+      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
+        const newLocation = snapshot.val();
+        if (newLocation) {
+          setOpenTripLeaderLocation(newLocation);
+        }
+      });
+
+      // Clean up the subscription when the component unmounts
+      return () => {
+        unsubscribe();
+      };
 
     }
   }, [user]);
@@ -921,28 +927,6 @@ const Map: React.FC = () => {
       }
     };
   }, [tripActive, user, openTripId, openTripEventId]);
-
-
-  useEffect(() => {
-    if (user) {
-      const uid = user.uid;
-      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
-
-      // Set up a real-time subscription
-      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
-        const newLocation = snapshot.val();
-        if (newLocation) {
-          setOpenTripLeaderLocation(newLocation);
-        }
-      });
-
-      // Clean up the subscription when the component unmounts
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [user]);
-
 
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
@@ -1564,22 +1548,22 @@ const Map: React.FC = () => {
     const currentTime = new Date().getTime(); // Get the current time in milliseconds
     (await querySnapshot).forEach((doc) => {
       const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
-  
+
       // Extract the date from the 'start' field
       const eventStartDate = new Date(eventData.start.seconds * 1000);
       const eventStartTime = new Date(eventData.startTimestamp.seconds * 1000);
-  
+
       // Combine the date and time
       eventStartDate.setHours(eventStartTime.getHours());
       eventStartDate.setMinutes(eventStartTime.getMinutes());
       eventStartDate.setSeconds(eventStartTime.getSeconds());
-  
+
       // Convert the combined date and time back to seconds
       const combinedStartTimestamp = {
         seconds: Math.floor(eventStartDate.getTime() / 1000),
         nanoseconds: 0 // Assuming no nanoseconds needed; otherwise, you can calculate based on the original timestamps
       };
-  
+
       if (eventStartDate.getTime() > currentTime) {
         events.push({ ...eventData, startTimestamp: combinedStartTimestamp }); // Update the startTimestamp with the combined date and time
       }

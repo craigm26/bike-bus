@@ -1108,7 +1108,12 @@ const Event: React.FC = () => {
                       {isBikeBus && (
                         <IonButton routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
                       )}
+                      {!isBikeBus && (
+                        <IonButton routerLink="/map">Back to Map</IonButton>
+                      )}
+                      {!isEventEnded && (
                       <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+                      )}
                       <IonModal isOpen={showRSVPModal}>
                         <IonHeader>
                           <IonToolbar>
@@ -1154,7 +1159,10 @@ const Event: React.FC = () => {
                           <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
                         </IonContent>
                       </IonModal>
+                      
+                      {!isEventEnded && (
                       <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+                      )}
                       <IonModal isOpen={showRSVPListModal}>
                         <IonHeader>
                           <IonToolbar>
@@ -1244,6 +1252,9 @@ const Event: React.FC = () => {
                           <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
                         </IonContent>
                       </IonModal>
+                      {isEventEnded && (
+                        <IonButton routerLink="/eventsummary/:id">Event Summary</IonButton>
+                      )}
                       {isEventLeader && !isEventActive && !isEventEnded && (
                         <IonButton color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
                       )}
