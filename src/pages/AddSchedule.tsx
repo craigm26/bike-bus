@@ -342,7 +342,13 @@ const AddSchedule: React.FC = () => {
 
     // Create event documents based on eventDays
     const eventDays = getRecurringDates(new Date(startDate), new Date(endDate), selectedDays);
+
     for (const day of eventDays) {
+      const startTimestampRecurring = Timestamp.fromDate(day);
+      const endTimestampRecurring = new Date(day);
+      endTimestampRecurring.setMinutes(endTimestampRecurring.getMinutes() + expectedDuration);
+      const endTimestamp = Timestamp.fromDate(endTimestampRecurring);    
+
       const eventData = {
         title: BikeBusName,
         BikeBusName: BikeBusName,
@@ -357,8 +363,9 @@ const AddSchedule: React.FC = () => {
         duration: expectedDuration,
         route: doc(db, 'routes', RouteID),
         startTime: startTime,
-        startTimestamp: startTimestamp,
+        startTimestamp: startTimestampRecurring,
         endTime: endTimestamp,
+        endTimestamp: endTimestampRecurring,
         groupId: bikeBusGroupRef,
         BikeBusGroup: bikeBusGroupRef,
         BikeBusStops: [],
