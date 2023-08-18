@@ -1551,7 +1551,7 @@ const Map: React.FC = () => {
 
       // Extract the date from the 'start' field
       const eventStartDate = new Date(eventData.start.seconds * 1000);
-      const eventStartTime = new Date(eventData.startTimestamp.seconds * 1000);
+      const eventStartTime = new Date(eventData.start.seconds * 1000);
 
       // Combine the date and time
       eventStartDate.setHours(eventStartTime.getHours());
@@ -1565,17 +1565,17 @@ const Map: React.FC = () => {
       };
 
       if (eventStartDate.getTime() > currentTime) {
-        events.push({ ...eventData, startTimestamp: combinedStartTimestamp }); // Update the startTimestamp with the combined date and time
+        events.push(eventData);
       }
     });
     console.log("events: ", events);
     // sort the events by start time
-    events.sort((a, b) => (a.startTimestamp > b.startTimestamp) ? 1 : -1);
+    events.sort((a, b) => (a.start.seconds - b.start.seconds));
     // get the next 3 events
     const next3Events = events.slice(0, 3);
     // get the next 3 events' start times
     const next3EventsStartTimes = next3Events.map((event) => {
-      const eventStartTime = event.startTime;
+      const eventStartTime = event.start;
       return eventStartTime;
     });
 
@@ -1586,7 +1586,7 @@ const Map: React.FC = () => {
         const eventId = event.id;
 
         // Convert the Timestamp to a Date object
-        const eventStartDate = new Date(event.startTimestamp.seconds * 1000);
+        const eventStartDate = new Date(event.start.seconds * 1000);
 
         // Format the date
         const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
@@ -1601,7 +1601,7 @@ const Map: React.FC = () => {
       const eventId = event.id;
 
       // Convert the Timestamp to a Date object
-      const eventStartDate = new Date(event.startTimestamp.seconds * 1000);
+      const eventStartDate = new Date(event.start.seconds * 1000);
 
       // Format the date
       const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
