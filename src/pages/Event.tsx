@@ -1253,7 +1253,7 @@ const Event: React.FC = () => {
                         </IonContent>
                       </IonModal>
                       {isEventEnded && (
-                        <IonButton routerLink="/eventsummary/:id">Event Summary</IonButton>
+                        <IonButton routerLink={`/EventSummary/${id}`}>Event Summary</IonButton>
                       )}
                       {isEventLeader && !isEventActive && !isEventEnded && (
                         <IonButton color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>

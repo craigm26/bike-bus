@@ -380,9 +380,7 @@ const App: React.FC = () => {
         (a, b) =>
           new Date(a.start.seconds * 1000).getTime() - new Date(b.start.seconds * 1000).getTime()
       );
-  
-      console.log(sortedEvents);
-  
+    
       // Now, the first event in sortedEvents is the upcoming event
       const upcomingEvent = sortedEvents[0];
   
