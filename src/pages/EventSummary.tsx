@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   IonContent,
   IonHeader,
@@ -12,19 +13,52 @@ import {
   IonModal,
   IonTitle,
   IonCheckbox,
+  IonChip,
+  IonCol,
+  IonRow,
+  IonCard,
+  IonCardContent,
+  IonGrid,
   IonImg,
+  IonText,
+  IonSegment,
+  IonSegmentButton,
+  IonToggle,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
+import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from 'ionicons/icons';
 import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory } from "react-router-dom";
 import { create } from 'domain';
 import { set } from 'date-fns';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
+import React from 'react';
+
+
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+
+
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
+
+interface BikeBusGroupData {
+  name: string;
+  description: string;
+  BikeBusRoutes: { id: string }[];
+}
+
+interface BikeBusGroup {
+  name: string;
+  description: string;
+  BikeBusRoutes: { id: string }[];
+}
 
 interface event {
   title: string;
@@ -41,9 +75,50 @@ interface event {
   BikeBusGroup: string;
 }
 
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
+
+interface Route {
+  BikeBusName: string;
+  BikeBusStopName: string[];
+  BikeBusStop: Coordinate[];
+  id: string;
+  BikeBusStationsIds: string[];
+  BikeBusGroupId: DocumentReference;
+  accountType: string;
+  description: string;
+  endPoint: Coordinate;
+  routeCreator: string;
+  routeLeader: string;
+  routeName: string;
+  routeType: string;
+  startPoint: Coordinate;
+  startPointName: string;
+  endPointName: string;
+  startPointAddress: string;
+  endPointAddress: string;
+  travelMode: string;
+  pathCoordinates: Coordinate[];
+  isBikeBus: boolean;
+}
+
+interface FirestoreRef {
+  path: string;
+}
+
+type LatLngCoordinate = {
+  lat: number;
+  lng: number;
+};
+
+
 interface FetchedUserData {
   username: string;
   accountType?: string;
+  id: string;
+  uid?: string;
 }
 
 interface Coordinate {
@@ -75,19 +150,23 @@ interface RouteData {
 }
 
 
+
 const EventSummary: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const [map, setMap] = React.useState<google.maps.Map | null>(null);
+  const [members, setMembers] = useState<string[]>([]);
   const [accountType, setaccountType] = useState<string>('');
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
   const { id } = useParams<{ id: string }>();
   const [eventData, setEventData] = useState<any>(null);
   const [bikeBusGroupData, setBikeBusGroupData] = useState<any>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showRSVPModal, setShowRSVPModal] = useState(false);
+  const [showRSVPListModal, setShowRSVPListModal] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [usernames, setUsernames] = useState<string[]>([]);
-  const [members, setMembers] = useState<string[]>([]);
   const [caboose, setCaboose] = useState<string[]>([]);
   const [captains, setCaptains] = useState<string[]>([]);
   const [kids, setKids] = useState<string[]>([]);
@@ -95,61 +174,58 @@ const EventSummary: React.FC = () => {
   const [sheepdogs, setSheepdogs] = useState<string[]>([]);
   const [sprinters, setSprinters] = useState<string[]>([]);
   const [role, setRole] = useState<string[]>([]);
-  const [leader, setLeader] = useState<string>('');
+  const [leader, setLeader] = useState<string[]>([]);
   const [showJoinBikeBus, setShowJoinBikeBus] = useState<boolean>(false);
-  const [routeId, setRouteId] = useState<string>('');
+  const [RouteId, setRouteId] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
-  const [routeData, setRouteData] = useState<any>(null);
   const [groupData, setGroupData] = useState<any>(null);
-  const [eventDataForCreateTrip, setEventDataForCreateTrip] = useState<any>(null);
+  const [eventDataForupdateEvent, setEventDataForupdateEvent] = useState<any>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [leadersId, setLeadersId] = useState<FetchedUserData[]>([]);
+  const [membersId, setMembersId] = useState<FetchedUserData[]>([]);
+  const [cabooseId, setCabooseId] = useState<FetchedUserData[]>([]);
+  const [captainsId, setCaptainsId] = useState<FetchedUserData[]>([]);
+  const [kidsId, setKidsId] = useState<FetchedUserData[]>([]);
+  const [parentsId, setParentsId] = useState<FetchedUserData[]>([]);
+  const [sheepdogsId, setSheepdogsId] = useState<FetchedUserData[]>([]);
+  const [sprintersId, setSprintersId] = useState<FetchedUserData[]>([]);
+  const [eventRefid, seteventRefid] = useState<string>('');
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routeData, setRouteData] = useState<Route | null>(null);
+  const [path, setPath] = useState<Coordinate[]>([]);
+  const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [startAddress, setStartAddress] = useState<string>('');
+  const [endAddress, setEndAddress] = useState<string>('');
+  const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
+  const [bikeBusGroupName, setBikeBusGroupName] = useState<string>('');
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries,
+  });
+  const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
   const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [pathCoordinates, setPathCoordinates] = useState<LatLngCoordinate[]>([]);
+  const [startPointAdress, setStartPointAdress] = useState<string>('');
+  const [selectedEndLocation, setSelectedEndLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [selectedStartLocation, setSelectedStartLocation] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [selectedEndLocationAddress, setSelectedEndLocationAddress] = useState<string>('');
+  const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>('');
+  const [endPointAdress, setEndPointAdress] = useState<string>('');
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: startGeo.lat,
     lng: startGeo.lng,
   });
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "";
+  const [RouteDocId, setRouteDocId] = useState<string>('');
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapZoom, setMapZoom] = useState(13);
 
+  type SetRoleFunction = (role: string[]) => void;
 
-  useEffect(() => {
-    const fetchUsernames = async (role: string[], setRole: Function) => {
-      if (role) {
-        const promises = role.map(fetchUser);
-        const users = await Promise.all(promises);
-        setRole(users.map(user => user?.username));
-      }
-    };
+  type SetRoleDataFunction = (role: FetchedUserData[]) => void;
 
-
-    if (eventData) {
-      fetchUsernames(eventData.leader || '', setLeader);
-      fetchUsernames(eventData.members || [], setMembers);
-      fetchUsernames(eventData.caboose || [], setCaboose);
-      fetchUsernames(eventData.captains || [], setCaptains);
-      fetchUsernames(eventData.kids || [], setKids);
-      fetchUsernames(eventData.parents || [], setParents);
-      fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
-      fetchUsernames(eventData.sprinters || [], setSprinters);
-    }
-  }, [eventData]);
-
-
-  const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('username', '==', username));
-    const querySnapshot = await getDocs(q);
-
-    let user: FetchedUserData | undefined;
-
-    querySnapshot.forEach((doc) => {
-      // doc.data() is never undefined for query doc snapshots
-      user = doc.data() as FetchedUserData;
-    });
-
-    return user;
-  };
-
-  const history = useHistory();
 
 
 
@@ -167,37 +243,286 @@ const EventSummary: React.FC = () => {
           }
         }
       });
-      const fetchEvent = async () => {
-        const docRef = doc(db, 'event', id);
-        const docSnapshot = await getDoc(docRef);
-
-        if (docSnapshot.exists()) {
-          const eventData = docSnapshot.data();
-          setEventData(eventData);
-
-          // fetch the BikeBusGroup data only if eventType is not 'openTrip'
-          if (eventData.eventType !== 'openTrip') {
-            const fetchBikeBusGroup = async () => {
-              const groupDocSnapshot = await getDoc(eventData.BikeBusGroup);
-              if (groupDocSnapshot.exists()) {
-                setBikeBusGroupData(groupDocSnapshot.data());
-              }
-            };
-            fetchBikeBusGroup();
-          }
-          // if eventType is 'openTrip', fetch the event document and set it to routeData
-          if (eventData.eventType === 'openTrip') {
-            setRouteData(eventData);
-          }
-        }
-      };
-      fetchEvent();
     }
-  }, [id, user]);
+
+    const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', username));
+      const querySnapshot = await getDocs(q);
+
+      let user: FetchedUserData | undefined;
+
+      querySnapshot.forEach((doc) => {
+        // doc.data() is never undefined for query doc snapshots
+        // make the id property the same as the in-page uid property
+
+        user = { id: doc.id, uid: doc.data().uid, ...doc.data() } as FetchedUserData; // Include the document's ID and uid
+        // make the uid property the same as the user id property:
+        user.uid = user.id;
+
+      });
+
+      return user;
+    };
+
+    const fetchUsernames = async (role: string[], setRole: SetRoleFunction) => {
+      if (role) {
+        const promises = role.map(fetchUser);
+        const users = await Promise.all(promises);
+        const usernames = users.filter(user => user !== undefined).map(user => user?.username !== undefined ? user.username : '');
+        setRole(usernames);
+      }
+    };
+
+    if (eventData) {
+      fetchUsernames([eventData.leader], setLeader);
+      fetchUsernames(eventData.members, setMembers);
+      fetchUsernames(eventData.caboose || [], setCaboose);
+      fetchUsernames(eventData.captains || [], setCaptains);
+      fetchUsernames(eventData.kids || [], setKids);
+      fetchUsernames(eventData.parents || [], setParents);
+      fetchUsernames(eventData.sheepdogs || [], setSheepdogs);
+      fetchUsernames(eventData.sprinters || [], setSprinters);
+    }
+
+    const fetchUserids = async (role: string[], setRole: SetRoleDataFunction) => {
+      if (role) {
+        const promises = role.map(fetchUser);
+        const users = (await Promise.all(promises)).filter(user => user !== undefined);
+        setRole(users as FetchedUserData[]);
+      }
+    };
+
+    if (eventData) {
+      fetchUserids([eventData.leader], setLeadersId);
+      fetchUserids(eventData.members, setMembersId);
+      fetchUserids(eventData.caboose || '', setCabooseId);
+      fetchUserids(eventData.captains || '', setCaptainsId);
+      fetchUserids(eventData.kids || '', setKidsId);
+      fetchUserids(eventData.parents || '', setParentsId);
+      fetchUserids(eventData.sheepdogs || '', setSheepdogsId);
+      fetchUserids(eventData.sprinters || '', setSprintersId);
+    }
+  }, [eventData, id, user]);
+
+  const history = useHistory();
+
+  useEffect(() => {
+    const fetchEventData = async () => {
+      const docRef = doc(db, 'event', id);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        const eventData = docSnapshot.data();
+        setEventData(eventData);
+        return eventData; // Return eventData for further use
+      }
+      return null;
+    };
+    const fetchRoute = async (routeId: string) => {
+      const docRouteRef = doc(db, 'routes', routeId);
+      const docRouteSnapshot = await getDoc(docRouteRef);
+      if (docRouteSnapshot.exists()) {
+        const routeData = docRouteSnapshot.data() as Route;
+        setRouteData(routeData);
+        setPath(routeData.pathCoordinates);
+        setBikeBusStops(routeData.BikeBusStop);
+        setStartAddress(routeData.startPointAddress);
+        setEndAddress(routeData.endPointAddress);
+      }
+    };
+    const fetchBikeBusGroup = async (bikeBusGroupRef: DocumentReference) => {
+      const groupDocSnapshot = await getDoc(bikeBusGroupRef);
+      if (groupDocSnapshot.exists()) {
+        const bikeBusGroupData = groupDocSnapshot.data() as BikeBusGroupData;
+        if (bikeBusGroupData) {
+          const groupId = groupDocSnapshot.id;
+          setBikeBusGroupId(groupId);
+        }
+      }
+    };
+    fetchEventData().then(eventData => {
+      if (eventData?.route?.id) {
+        fetchRoute(eventData.route.id).then(() => {
+          if (eventData?.BikeBusGroup) {
+            fetchBikeBusGroup(eventData.BikeBusGroup);
+          }
+        });
+      }
+    });
+  }, [id]);
+
+
+  useEffect(() => {
+    if (routeData) {
+      console.log('routeData', routeData)
+      setBikeBusStops(routeData.BikeBusStop);
+      setPathCoordinates(routeData.pathCoordinates);
+
+      setMapCenter({
+        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+      });
+      setStartGeo(routeData.startPoint);
+      setEndGeo(routeData.endPoint);
+      setSelectedStartLocation(routeData.startPoint);
+      setSelectedEndLocation(routeData.endPoint);
+
+      // let's set the zoom level based on the distance between the start and end points
+      const distance = Math.sqrt(Math.pow(routeData.startPoint.lat - routeData.endPoint.lat, 2) + Math.pow(routeData.startPoint.lng - routeData.endPoint.lng, 2));
+      if (distance < 0.01) {
+        setMapZoom(18);
+      }
+      else if (distance < 0.02) {
+        setMapZoom(18);
+      }
+      else if (distance < 0.03) {
+        setMapZoom(17);
+      }
+      else if (distance < 0.04) {
+        setMapZoom(16);
+      }
+      else if (distance < 0.05) {
+        setMapZoom(15);
+      }
+      else if (distance < 0.06) {
+        setMapZoom(14);
+      }
+      else if (distance < 0.07) {
+        setMapZoom(13);
+      }
+      else if (distance > 0.07) {
+        setMapZoom(13);
+      }
+    }
+
+  }
+    , [routeData]);
+
+
+
+  useEffect(() => {
+    const docRef = doc(db, 'event', id);
+
+    const unsubscribe = onSnapshot(docRef, (doc) => {
+      setEventData(doc.data());
+    });
+
+    return () => unsubscribe();  // Clean up listener on unmount
+  }, [id]);
 
   function isRouteData(data: unknown): data is RouteData {
     return !!(data && typeof data === 'object' && 'BikeBusName' in data);
   }
+
+  const updateEvent = useCallback(async () => {
+
+    let routeData: RouteData | undefined;
+    let groupData;
+
+    const docRefEvent = doc(db, 'event', id);
+    const docEventsnapshot = await getDoc(docRefEvent);
+
+    if (docEventsnapshot.exists()) {
+      const eventDataForupdateEvent = docEventsnapshot.data();
+      if (eventDataForupdateEvent) {
+        const groupRef = eventDataForupdateEvent?.BikeBusGroup;
+        const docSnapshotgroup = await getDoc(groupRef);
+
+        if (docSnapshotgroup.exists()) {
+          groupData = docSnapshotgroup.data();
+        }
+
+
+        const routeRef = eventDataForupdateEvent?.route;
+        const docSnapshotroute = await getDoc(routeRef);
+
+
+        if (docSnapshotroute.exists()) {
+          const data = docSnapshotroute.data();
+          if (isRouteData(data)) {
+            routeData = data as RouteData;
+          }
+        }
+
+        if (routeData && groupData) {
+          const updateData = {
+            groupSize: '',
+            eventLeader: eventData?.leader || [],
+            eventMembers: eventData?.members || [],
+            eventCaboose: eventData?.caboose || [],
+            eventCaptains: eventData?.captains || [],
+            eventKids: eventData?.kids || [],
+            eventParents: eventData?.parents || [],
+            eventSheepdogs: eventData?.sheepdogs || [],
+            eventSprinters: eventData?.sprinters || [],
+            eventStartTimestamp: eventData?.startTimestamp || '',
+            eventEndTimestamp: eventData?.endTime || null,
+            eventStatus: eventData?.status || 'active',
+            eventBikeBusName: eventData?.BikeBusName || '',
+            eventRoute: eventData?.route || '',
+            eventGroupId: eventData?.groupId || '',
+            eventGroupSize: '',
+            eventCheckInLeader: user?.uid,
+            eventcheckInLeaderTimeStamp: serverTimestamp(),
+            eventCheckInMembers: '',
+            eventCheckInMembersTimeStamp: '',
+            eventCheckInCaboose: '',
+            eventCheckInCabooseTimeStamp: '',
+            eventCheckInCaptains: '',
+            eventCheckInCaptainsTimeStamp: '',
+            eventCheckInKids: '',
+            eventCheckInKidsTimeStamp: '',
+            eventCheckInParents: '',
+            eventCheckInParentsTimeStamp: '',
+            eventCheckInSheepdogs: '',
+            eventCheckInSheepdogsTimeStamp: '',
+            eventCheckInSprinters: '',
+            eventCheckInSprintersTimeStamp: '',
+            // for the eventCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start event" button
+            eventCheckInStartTimestamp: serverTimestamp(),
+            // for the eventCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End event" button
+            eventCheckInEndTimestamp: '',
+            eventCheckInStatus: '',
+            eventCheckInBikeBusName: eventData?.BikeBusName || '',
+            eventCheckInRoute: eventData?.route || '',
+            eventCheckInGroupId: eventData?.groupId || '',
+            eventCheckInGroupSize: '',
+            eventEndeventLeader: '',
+            eventEndeventLeaderTimeStamp: '',
+            eventEndeventMembers: '',
+            eventEndeventMembersTimeStamp: '',
+            eventEndeventCaboose: '',
+            eventEndeventCabooseTimeStamp: '',
+            eventEndeventCaptains: '',
+            eventEndeventCaptainsTimeStamp: '',
+            eventEndeventKids: '',
+            eventEndeventKidsTimeStamp: '',
+            eventEndeventParents: '',
+            eventEndeventParentsTimeStamp: '',
+            eventEndeventSheepdogs: '',
+            eventEndeventSheepdogsTimeStamp: '',
+            eventEndeventSprinters: '',
+            eventEndeventSprintersTimeStamp: '',
+            eventEndeventEndTimestamp: '',
+            eventEndeventStatus: '',
+            eventEndeventBikeBusName: '',
+            eventEndeventRoute: '',
+            eventEndeventGroupId: '',
+            eventEndeventGroupSize: '',
+          };
+
+          await updateDoc(docRefEvent, updateData);
+
+
+          // redirect to the event page with the event id being the "eventId" parameter
+          history.push(`/Map/${docEventsnapshot.id}`);
+        }
+      } else {
+        // doc.data() will be undefined in this case
+      }
+    }
+  }, [id, eventData?.leader, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, user?.uid, history]);
+
 
 
   const togglePopover = (e: any) => {
@@ -227,78 +552,576 @@ const EventSummary: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const docRef = doc(db, 'event', id);
+  const handleRSVP = async () => {
+    if (!user || !username) {
+      return;
+    }
 
-    const unsubscribe = onSnapshot(docRef, (doc) => {
-      setEventData(doc.data());
-    });
+    if (!role || role.length === 0) {
+      // set the role to members if no role is selected
+      setRole(['members']);
+      return;
+    }
 
-    return () => unsubscribe();  // Clean up listener on unmount
-  }, [id]);
+    const eventRef = doc(db, 'event', id);
+
+    // Iterate through roles and add the user to each of them
+    for (const r of role) {
+      await setDoc(eventRef, {
+        [r]: arrayUnion(username)
+      }, { merge: true });
+    }
+
+    // check to see if the user is already in the role array as a members, if not, add them to the end of the members array
+    if (!role.includes('members')) {
+      if (!eventData.members.includes(username)) {
+        await setDoc(eventRef, {
+          members: arrayUnion(username)
+        }, { merge: true });
+      }
+    }
+
+    // if the role "choice" is only set to members, then add the user to the members array if they aren't already in it. It's a valid response.
+    if (role.length === 1 && role.includes('members')) {
+      if (!eventData.members.includes(username)) {
+        await setDoc(eventRef, {
+          members: arrayUnion(username)
+        }, { merge: true });
+      }
+    }
+
+    // Clear the role selection and hide the modal
+    setRole([]);
+    setShowRSVPModal(false);
+  };
 
   // Date and time formatting options
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-  const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
 
-  console.log(eventData);
-  console.log(mapCenter);
+  // Extract date from "start" field
+  const startDate = eventData?.start ? new Date(eventData?.start.toDate()) : null;
+  
+  // Combine date from "start" with time from "startTimestamp" for startTime
+  const startTime = startDate && eventData?.startTimestamp
+    ? new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        new Date(eventData.startTimestamp.toDate()).getHours(),
+        new Date(eventData.startTimestamp.toDate()).getMinutes()
+      ).toLocaleString(undefined, dateOptions)
+    : 'Loading...';
+  
+  // Combine date from "start" with time from "endTime" for endTime
+  const endTime = startDate && eventData?.endTime
+    ? new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        new Date(eventData.endTime.toDate()).getHours(),
+        new Date(eventData.endTime.toDate()).getMinutes()
+      ).toLocaleString(undefined, dateOptions)
+    : 'Loading...';
+  
 
+  // Check to see if the user is the event leader (a single string) in the eventData?.leader array
+  const isEventLeader = username && eventData?.leader.includes(username);
+
+  // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
+  //const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
+
+  // Check to see if the event field of the eventData document is set to 'active'
+  const isEventActive = eventData?.status === 'active';
+
+  const isEventEnded = eventData?.status === 'ended';
+
+  const setShowStartBikeBus = (value: boolean) => {
+    setShowJoinBikeBus(value);
+  };
+
+  const toggleEventStatus = useCallback(async (status: string) => {
+    const docRef = doc(db, 'event', id);
+    await setDoc(docRef, {
+      status: status
+    }, { merge: true });
+    // check to see if the event already has the status of active, if not, set the status to active and trigger the updateEvent function
+    if (status === '' || status === 'inactive') {
+      setEventData((prevEventData: any) => ({ ...prevEventData, status: '' }));
+      setShowStartBikeBus(true);
+      setShowJoinBikeBus(false);
+    } else
+      if (status === 'active') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setEventData((prevEventData: any) => ({ ...prevEventData, status: 'active' }));
+        updateEvent();
+        setShowJoinBikeBus(true);
+        setShowStartBikeBus(false);
+      }
+  }, [id, updateEvent]);
+
+  const isBikeBus = routeData?.isBikeBus ?? false;
 
   useEffect(() => {
-    if (routeData) {
-      setMapCenter({
-        lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
-        lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
-      });
-      setStartGeo(routeData.startPoint);
-      setEndGeo(routeData.endPoint);
-    }
+    console.log("Google Maps script loaded: ", isLoaded);
+    console.log("Google Maps load error: ", loadError);
+  }, [isLoaded, loadError]);
+
+  if (loadError) {
+    return <div>Error loading Google Maps: {loadError.message}</div>;
   }
-    , [routeData]);
 
-
-  function createStaticMapUrl(mapCenter: { lat: number; lng: number }, RouteId: RouteData | null, startGeo: Coordinate, endGeo: Coordinate, apiKey: string) {
-    const routeData = RouteId;
-    const center = `${mapCenter.lat},${mapCenter.lng}`;
-    // make the size fill the screen and as a background image
-    const size = `${window.innerWidth}x${window.innerHeight}`;
-    const path = routeData?.pathCoordinates
-      .map((coord: { lat: any; lng: any; }) => `${coord.lat},${coord.lng}`)
-      .join('|');
-    const markers = [
-      `markers=color:red|label:A|${startGeo.lat},${startGeo.lng}`,
-      `markers=color:red|label:B|${endGeo.lat},${endGeo.lng}`,
-    ];
-    // let's make some markers for the bikebusstops in the route
-    const bikeBusStops = routeData?.BikeBusStop;
-    if (bikeBusStops) {
-      for (let i = 0; i < bikeBusStops.length; i++) {
-        markers.push(`markers=color:blue|label:${i + 1}|${bikeBusStops[i].lat},${bikeBusStops[i].lng}`);
-      }
-    }
-    const styles = "element:geometry%7Ccolor:0xf5f5f5&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative%7Celement:geometry%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Celement:geometry.fill%7Cvisibility:off&style=feature:administrative.neighborhood%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Cvisibility:on&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:geometry.fill%7Cvisibility:on&style=feature:poi.school%7Cvisibility:on&style=feature:poi.school%7Celement:geometry.fill%7Ccolor:0xffd800%7Cvisibility:on&style=feature:poi.school%7Celement:labels%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text%7Cvisibility:on&style=feature:poi.school%7Celement:labels.text.fill%7Cvisibility:on%7Cweight:5&style=feature:poi.school%7Celement:labels.text.stroke%7Cvisibility:on%7Cweight:3.5&style=feature:road%7Celement:geometry%7Ccolor:0xffffff%7Cvisibility:simplified&style=feature:road%7Celement:labels.icon%7Cvisibility:off&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels%7Cvisibility:off&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit%7Celement:geometry.fill%7Csaturation:-50%7Clightness:50&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e";
-    // create markers for bikebusstops along the route
-    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=12&size=${size}&path=color:0x00000000|weight:5|${path}&path=color:0xffd800|weight:3|${path}&${markers.join('&')}&${styles}&key=${apiKey}`;
-    return url;
+  if (!isLoaded) {
+    return <div>Loading Google Maps...</div>;
   }
 
 
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-        <IonHeader>
-          <IonToolbar>{eventData?.eventName}</IonToolbar>
-        </IonHeader>
-        <IonList>
-          <IonItem>
-            <IonLabel>{startTime} to {endTime}</IonLabel>
-          </IonItem>
-          </IonList>
-          <IonImg className="event-map" onClick={() => window.open(createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey), '_blank')}
-            src={createStaticMapUrl(mapCenter, routeData, startGeo, endGeo, apiKey)} />
+        <IonGrid className="ion-no-padding">
+          <IonRow className="map-base" id="map-container">
+            <GoogleMap
+              onLoad={(map) => {
+                mapRef.current = map;
+                setMapLoaded(true);
+              }}
+              mapContainerStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+              center={mapCenter}
+              zoom={mapZoom}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                mapTypeControl: false,
+                disableDoubleClickZoom: true,
+                maxZoom: 18,
+                styles: [
+                  {
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "color": "#f5f5f5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.land_parcel",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#bdbdbd"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "administrative.neighborhood",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#eeeeee"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#e5e5e5"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.park",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "geometry.stroke",
+                    "stylers": [
+                      {
+                        "color": "#ffd800"
+                      },
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "poi.school",
+                    "elementType": "labels.text.stroke",
+                    "stylers": [
+                      {
+                        "visibility": "on"
+                      },
+                      {
+                        "weight": 3.5
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#ffffff"
+                      },
+                      {
+                        "visibility": "simplified"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road",
+                    "elementType": "labels.icon",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.arterial",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#757575"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#dadada"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.highway",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#616161"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels",
+                    "stylers": [
+                      {
+                        "visibility": "off"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "road.local",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "transit",
+                    "elementType": "geometry.fill",
+                    "stylers": [
+                      {
+                        "saturation": -50
+                      },
+                      {
+                        "lightness": 50
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "geometry",
+                    "stylers": [
+                      {
+                        "color": "#c9c9c9"
+                      }
+                    ]
+                  },
+                  {
+                    "featureType": "water",
+                    "elementType": "labels.text.fill",
+                    "stylers": [
+                      {
+                        "color": "#9e9e9e"
+                      }
+                    ]
+                  }
+                ],
+              }}
+            >
+              {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
+                <div>
+                  <Polyline
+                    path={pathCoordinates.map(coord => ({ lat: coord.lat, lng: coord.lng }))}
+                    options={{
+                      strokeColor: "#FFD800",
+                      strokeOpacity: 1.0,
+                      strokeWeight: 2,
+                      geodesic: true,
+                      editable: false,
+                      draggable: false,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#ffd800", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#ffd800",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                  />
+                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
+                    <Marker
+                      key={index}
+                      position={{ lat: stop.lat, lng: stop.lng }}
+                      icon={{
+                        url: '/assets/markers/stop-outline.svg',
+                        scaledSize: new google.maps.Size(30, 30),
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              <div>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol>
+                      <IonTitle className="bikebus-event-title">Event Summary</IonTitle>
+                    </IonCol>
+                    <IonCol>
+                      {isBikeBus && (
+                        <IonButton routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
+                  <Marker
+                    position={selectedStartLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerA.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+                {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
+                  <Marker position={selectedEndLocation}
+                    icon={{
+                      url: "/assets/markers/MarkerB.svg",
+                      scaledSize: new google.maps.Size(20, 20),
+                    }}
+                  />
+                )}
+              </div>
+              <div>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-name">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{eventData?.BikeBusName}</IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-route">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{routeData?.routeName}</IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-time">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{startTime} to
+                      </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{endTime}
+                      </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+            </GoogleMap>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage >
   );
