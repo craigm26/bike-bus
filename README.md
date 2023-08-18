@@ -27,6 +27,13 @@ We think technology could help make this a smoother, more fun experience while p
 -"Bulletin Boards" allow users in a BikeBus or Organization to send messages
 -Account page allows users to see their details and change them
 
+## Here's how the initial builds of BikeBus are being developed and pushed out:
+
+- We're using Ionic Framework to build the app:
+- Ionic Serve to see it locally
+- Then push to Firebase Hosting for production builds by doing "firebase deploy"
+- There's also a TON of potential warnings for iOS/Android builds with me ignoring some linting rules. Should be src\eslint.rc.js to see what's being ignored.
+
 ## To develop
 
 -npm 18.20.0
@@ -75,6 +82,4 @@ Make a plan to create different user roles (free and premium) and ensure that on
 
 Make it clear which features are part of the free and premium plans. This will help users understand the benefits of upgrading to a paid subscription. Use a dedicated pricing or subscription page within the app to showcase the benefits of upgrading.
 
-Continuously monitor and improve the app based on user feedback and analytics. Iterate on the premium features to ensure they provide significant value to your users and encourage upgrades.
-
-Promote app through marketing channels such as social media, content marketing, app store optimization, and advertising to attract more users to your app.
+We will use Stripe to help manage payments and subscriptions. They also have some "preview" pages that we can use to help with the UI.

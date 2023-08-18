@@ -74,7 +74,6 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import { type } from 'os';
 import { CurrentLocationProvider } from './components/CurrentLocationContext';
-import PostMessageModal from './components/BulletinBoard/PostMessageModal';
 
 
 setupIonicReact();
@@ -368,11 +367,12 @@ const App: React.FC = () => {
   
       // Filter out events in the past
       const futureEvents = allEvents.filter(event => {
-        if (!event.start || typeof event.start.seconds === 'undefined') {
-          console.error('Invalid timestamp:', event);
+        // event.start is a timestamp object, so we need to check if it exists and if it has a seconds property
+        if (event.start && typeof event.start.seconds !== 'undefined') {
+          return new Date(event.start * 1000).getTime() > Date.now();
+        } else {
           return false;
-        }
-        return new Date(event.start.seconds * 1000).getTime() > Date.now();
+        }        
       });
   
       // Sort all the future events by start in ascending order

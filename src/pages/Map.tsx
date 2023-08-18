@@ -2429,7 +2429,7 @@ const Map: React.FC = () => {
                               <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
                             </IonRow>
                           )}
-                          {showGetDirectionsButton && directionsFetched && isActiveEvent && (
+                          {showGetDirectionsButton && directionsFetched && (
                             <IonRow>
                               <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
                             </IonRow>
