@@ -24,6 +24,7 @@ import {
   IonSegment,
   IonSegmentButton,
   IonToggle,
+  IonCardSubtitle,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
@@ -1054,7 +1055,7 @@ const EventSummary: React.FC = () => {
                 <IonGrid>
                   <IonRow>
                     <IonCol>
-                      <IonTitle className="bikebus-event-title">Event Summary</IonTitle>
+                      <IonCardSubtitle className="bikebus-event-title">Event Summary</IonCardSubtitle>
                     </IonCol>
                     <IonCol>
                       {isBikeBus && (
