@@ -598,8 +598,13 @@ const Event: React.FC = () => {
   // Date and time formatting options
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
+  
   const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-  const endTime = eventData?.endTime ? new Date(eventData?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+  const endTime = eventData?.endTime
+    ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
+    : 'Loading...';
+  
 
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
@@ -749,316 +754,7 @@ const Event: React.FC = () => {
                 mapTypeControl: false,
                 disableDoubleClickZoom: true,
                 maxZoom: 18,
-                styles: [
-                  {
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#f5f5f5"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.icon",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#616161"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.text.stroke",
-                    "stylers": [
-                      {
-                        "color": "#f5f5f5"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.land_parcel",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.land_parcel",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#bdbdbd"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.neighborhood",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.neighborhood",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#eeeeee"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#757575"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#e5e5e5"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "color": "#ffd800"
-                      },
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "geometry.stroke",
-                    "stylers": [
-                      {
-                        "color": "#ffd800"
-                      },
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      },
-                      {
-                        "weight": 5
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text.stroke",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      },
-                      {
-                        "weight": 3.5
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#ffffff"
-                      },
-                      {
-                        "visibility": "simplified"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road",
-                    "elementType": "labels.icon",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.arterial",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#757575"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.highway",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#dadada"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.highway",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#616161"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.local",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.local",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#9e9e9e"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "transit",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "saturation": -50
-                      },
-                      {
-                        "lightness": 50
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "water",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#c9c9c9"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "water",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#9e9e9e"
-                      }
-                    ]
-                  }
-                ],
+                mapId: 'b75f9f8b8cf9c287',
               }}
             >
               {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
@@ -1089,16 +785,6 @@ const Event: React.FC = () => {
                       ],
                     }}
                   />
-                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={{ lat: stop.lat, lng: stop.lng }}
-                      icon={{
-                        url: '/assets/markers/stop-outline.svg',
-                        scaledSize: new google.maps.Size(30, 30),
-                      }}
-                    />
-                  ))}
                 </div>
               )}
               <div>
@@ -1311,13 +997,7 @@ const Event: React.FC = () => {
                 <IonGrid className="bikebus-event-time">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>{startTime} to
-                      </IonLabel>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <IonLabel>{endTime}
+                      <IonLabel>{startTime} to {endTime}
                       </IonLabel>
                     </IonCol>
                   </IonRow>

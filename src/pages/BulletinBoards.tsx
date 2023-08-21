@@ -822,7 +822,7 @@ const BulletinBoards: React.FC = () => {
                                     placeholder="Enter your message"
                                     onIonChange={e => setMessageInput(e.detail.value || '')}
                                 />
-                                {selectedBBOROrgValue !== 'Community' && (
+                                {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
                                     <IonLabel>
                                         Cross-Post to Community Board?
                                         <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
