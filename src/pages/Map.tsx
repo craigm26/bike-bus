@@ -1281,6 +1281,25 @@ const Map: React.FC = () => {
               const epsilon = 0.0001;
               const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
               resolve(simplifiedPathPoints);
+
+              directionsRenderer.setOptions({
+                draggable: true,
+                preserveViewport: true,
+              });
+
+              directionsRenderer.addListener('directions_changed', () => {
+                // did the user drag the route?
+                const newDirections = directionsRenderer.getDirections();
+                const newRoute = newDirections?.routes[0];
+                if (newRoute?.overview_path) {
+                  const newRoutePathPoints: LatLng[] = newRoute.overview_path.map((latLng: any) => ({
+                    latitude: latLng.lat(),
+                    longitude: latLng.lng(),
+                  }));
+                  const newSimplifiedPathPoints = ramerDouglasPeucker(newRoutePathPoints, epsilon);
+                  resolve(newSimplifiedPathPoints);
+                }
+              });
               setPathCoordinates(simplifiedPathPoints);
             } else {
               console.error("Directions request failed due to " + status);
@@ -1884,7 +1903,7 @@ const Map: React.FC = () => {
   function generateSVGBikeBus(label: string) {
     const fontSize = 14;
     const padding = 10;
-  
+
     // Create a temporary SVG to measure text width
     const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const textElem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1895,11 +1914,11 @@ const Map: React.FC = () => {
     document.body.appendChild(tempSvg);
     const textWidth = textElem.getBBox().width;
     document.body.removeChild(tempSvg);
-  
+
     // Calculate the dimensions
     const rectWidth = textWidth + padding * 2;
     const rectHeight = fontSize + padding * 2;
-  
+
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
       <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#ffd800"/>
@@ -1907,8 +1926,15 @@ const Map: React.FC = () => {
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
-  
-  
+
+  useEffect(() => {
+    if (pathCoordinates.length > 0) {
+      // Code to update the Google Map with the new pathCoordinates
+    }
+  }, [pathCoordinates]);
+
+
+
 
   const handleBicyclingLayerToggle = (enabled: boolean) => {
     if (bicyclingLayerRef.current && mapRef.current) {

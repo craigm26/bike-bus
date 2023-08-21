@@ -18,7 +18,7 @@ import { useEffect, useCallback, useState, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
 import { db } from "../firebaseConfig";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { DocumentReference, collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import {
     personCircleOutline,
@@ -31,6 +31,7 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
+import { database } from "firebase-functions/v1/firestore";
 
 interface UserData {
     username: string;
@@ -39,6 +40,14 @@ interface UserData {
     enabledAccountModes: string[];
     avatarUrl: string;
     email: string;
+}
+
+type BikeBusGroups = {
+    id: string;
+    BikeBusName: string;
+    BikeBusLocation: string;
+    BikeBusCreator: string;
+    BikeBusLeader: string;
 }
 
 
@@ -51,9 +60,8 @@ type Organization = {
     schoolDistrict: string;
     schools: string[];
     bikeBusRoutes: string[];
-    BikeBusGroups: string[];
-    BikeBusGroupIds: string[];
-    BikeBusGroupNames: string[];
+    //BikeBusGroups should be a document reference to the bikebusgroups collection
+    BikeBusGroups: DocumentReference[];
     NameOfOrg: string;
     OrganizationType: string;
     Website: string;
@@ -89,7 +97,6 @@ type Organization = {
     LastUpdatedBy: string
     LastUpdatedOn: Date,
 };
-
 const ViewOrganization: React.FC = () => {
     const { user, isAnonymous } = useAuth();
     const history = useHistory();
@@ -110,6 +117,10 @@ const ViewOrganization: React.FC = () => {
     const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
     const [orgData, setOrgData] = useState<any>(null);
     const [organizationId, setOrganizationId] = useState<string>("");
+    const [BikeBusGroupNames, setBikeBusGroupNames] = useState<string[]>([]);
+    const [BikeBusGroups, setBikeBusGroups] = useState<BikeBusGroups[]>([]);
+
+
 
 
 
@@ -132,63 +143,10 @@ const ViewOrganization: React.FC = () => {
 
     useEffect(() => {
         if (user) {
+            // use the user data to determine what account modes are enabled and org modes are enabled
             const userRef = firestoreDoc(db, "users", user.uid);
-            const routesRef = collection(db, "routes");
-            const BikeBusGroupsRef = collection(db, "BikeBusGroups");
 
-            const queryObj = query(
-                routesRef,
-                where("isBikeBus", "==", true),
-            );
-
-            const BikeBusGroupsLeaderQueryObj = query(
-                BikeBusGroupsRef,
-                where("BikeBusGroupLeader", "==", user.uid),
-            );
-
-            getDocs(BikeBusGroupsLeaderQueryObj)
-                .then((querySnapshot) => {
-                    const BikeBusGroups: any[] = [];
-                    querySnapshot.forEach((doc) => {
-                        const BikeBusorgData = doc.data();
-                        BikeBusGroups.push(BikeBusorgData);
-                    });
-                    setBikeBusRoutes(BikeBusGroups);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-
-            const BikeBusGroupsMemberQueryObj = query(
-                BikeBusGroupsRef,
-                where("BikeBusGroupMembers", "array-contains", user.uid),
-            );
-
-            getDocs(BikeBusGroupsMemberQueryObj)
-                .then((querySnapshot) => {
-                    const BikeBusGroups: any[] = [];
-                    querySnapshot.forEach((doc) => {
-                        const BikeBusorgData = doc.data();
-                        BikeBusGroups.push(BikeBusorgData);
-                    });
-                    setBikeBusRoutes(BikeBusGroups);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-
-            getDocs(queryObj)
-                .then((querySnapshot) => {
-                    const routes: any[] = [];
-                    querySnapshot.forEach((doc) => {
-                        const routeData = doc.data();
-                        routes.push(routeData);
-                    });
-                    setBikeBusRoutes(routes);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
+            // use the organization data to determine what bikebusgroups are in their control as well as the event(s), schedule(s), and route(s) that they are in control of
 
             const organizationRef = firestoreDoc(db, "organizations", id);
             getDoc(organizationRef).then((docSnapshot) => {
@@ -201,6 +159,9 @@ const ViewOrganization: React.FC = () => {
                         setSchoolDistrict(organizationData.SchoolDistrictName);
                         setSchools(organizationData.SchoolNames);
                         setSchool(organizationData.SchoolNames[0]);
+                        setBikeBusGroups(organizationData.BikeBusGroups);
+                        console.log("organizationData", organizationData);
+                        console.log("BikeBusGroups", organizationData.BikeBusGroups);
 
                         getDoc(userRef).then((docSnapshot) => {
                             if (docSnapshot.exists()) {
@@ -210,124 +171,85 @@ const ViewOrganization: React.FC = () => {
 
                         const organizationId = docSnapshot.id;
                         setOrganizationId(organizationId);
+                        // Define an async function to handle the await inside
+                        const getBikeBusGroupsData = async () => {
+                            const BikeBusGroupsData = await Promise.all(
+                                organizationData.BikeBusGroups.map((ref: DocumentReference) => getDoc(ref).then(doc => doc.data()))
+                            );
 
-                        const BikeBusGroupsRef = collection(db, "BikeBusGroups");
-                        const queryObj = query(
-                            BikeBusGroupsRef,
-                            where("Organization", "==", organizationId),
-                        );
-                        getDocs(queryObj)
-                            .then((querySnapshot) => {
-                                const BikeBusGroups: any[] = [];
-                                querySnapshot.forEach((doc) => {
-                                    const BikeBusorgData = doc.data();
-                                    BikeBusGroups.push(BikeBusorgData);
-                                });
-                                setBikeBusRoutes(BikeBusGroups);
-                            })
-                            .catch((error) => {
-                                console.log("Error getting documents: ", error);
-                            });
+                            setBikeBusGroups(BikeBusGroupsData as BikeBusGroups[]);
+                            console.log("BikeBusGroups", BikeBusGroupsData);
+                        };
+
+                        // Call the async function
+                        getBikeBusGroupsData();
+                        console.log('BikeBusGroups:', BikeBusGroups);
+
                     }
                 }
             });
         }
-    }, [bikeBusRoutes, id, user]);
+    }, [id, user]);
 
-
-    const avatarElement = user ? (
-        avatarUrl ? (
-            <IonAvatar>
-                <Avatar uid={user.uid} size="extrasmall" />
-            </IonAvatar>
-        ) : (
-            <IonIcon icon={personCircleOutline} />
-        )
-    ) : (
-        <IonIcon icon={personCircleOutline} />
-    );
 
     const setShowBikeBusGroupAddModal = (show: boolean) => {
         setShowBikeBusGroupAddModal(show);
-    };
-
-    const fetchMembers = useCallback(async () => {
-        if (orgData?.BikeBusMembers && Array.isArray(orgData.BikeBusMembers)) {
-            const members = orgData.BikeBusMembers.map((member: any) => {
-                return getDoc(member)
-                    .then((docSnapshot) => {
-                        if (docSnapshot.exists()) {
-                            const memberData = docSnapshot.data();
-                            return memberData ? {
-                                ...memberData,
-                                id: docSnapshot.id,
-                            } : { id: docSnapshot.id };
-                        } else {
-                            // Return a placeholder object if the member document doesn't exist
-                            return { id: member.id };
-                        }
-                    })
-                    .catch((error) => {
-                        // Handle the error if necessary
-                    });
-            });
-            const membersData = await Promise.all(members);
-            setMembersData(membersData);
-            // Fetch usernames and avatars for members
-            const usernamesArray = await Promise.all(
-                membersData.map(async (member) => {
-                    if (member && member.username) {
-                        const userRefId = member.username.split('/').pop();
-                        const userRef = doc(db, 'users', userRefId);
-                        const userSnapshot = await getDoc(userRef);
-                        if (userSnapshot.exists()) {
-                            const userData = userSnapshot.data();
-                            return userData?.username;
-                        }
-                    }
-                    return null;
-                })
-            );
-            setMemberUsernames(usernamesArray);
-        }
-    }, [orgData]);
-
-    const showBikeBusGroupAddModal = () => {
-        setShowBikeBusGroupAddModal(true);
     };
 
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen className="ion-flex">
                 <IonCardTitle>{Organization?.NameOfOrg}</IonCardTitle>
-                    <IonGrid>
-                        <IonRow>
-                            <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
-                            <IonButton>Send Invite</IonButton>
-                            <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
-                            <IonButton>Schedules</IonButton>
-                            <IonButton>Timesheets</IonButton>
-                            <IonButton>Reports</IonButton>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonItem lines="none">
-                                    <IonLabel position="stacked">Organization Type: {Organization?.OrganizationType}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem lines="none">
-                                    <IonLabel position="stacked">Organization Location: {Organization?.Location}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                            <IonCol>
-                                <IonItem lines="none">
-                                    <IonLabel position="stacked">Organization Contact: {Organization?.ContactName}</IonLabel>
-                                </IonItem>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                </IonContent>
+                <IonGrid>
+                    <IonRow>
+                        <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
+                        <IonButton>Send Invite</IonButton>
+                        <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
+                        <IonButton>Schedules</IonButton>
+                        <IonButton>Timesheets</IonButton>
+                        <IonButton>Reports</IonButton>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonItem lines="none">
+                                <IonLabel position="stacked">Organization Type: {Organization?.OrganizationType}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem lines="none">
+                                <IonLabel position="stacked">Organization Location: {Organization?.Location}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem lines="none">
+                                <IonLabel position="stacked">Organization Contact: {Organization?.ContactName}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem lines="none">
+                                <IonLabel position="stacked">Organization Email: {Organization?.Email}</IonLabel>
+                            </IonItem>
+                        </IonCol>
+                        <IonCol>
+                            <IonItem lines="none">
+                                <div>
+                                    {Array.isArray(BikeBusGroups) && BikeBusGroups.map((BikeBusGroup) => (
+                                        <div key={BikeBusGroup.id}>
+                                            <IonLabel position="stacked">Bike Bus Group: {BikeBusGroup.BikeBusName}</IonLabel>
+                                        </div>
+                                    ))}
+                                </div>
+                            </IonItem>
+                        </IonCol>
+
+
+                        <IonCol>
+                            <IonItem lines="none">
+                            </IonItem>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+            </IonContent>
         </IonPage>
     );
 };
