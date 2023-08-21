@@ -440,7 +440,7 @@
 .bikebus-event-route,
 .bikebus-event-time {
   background-color: #ffd800; /* Bright yellow background */
-  border-radius: 25px; /* Rounded corners */
+  border-radius: 25px; /* Rounded corners*/
   margin: 0px;
   padding: 5px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Darker shadow to contrast with yellow */
@@ -451,9 +451,9 @@
 /* Specific Styles for Each Element */
 .bikebus-event-name {
   font-family: 'indie-flower', sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
-  color: #333; /* Dark text color */
+  color: #000; /* Dark text color */
   border-bottom: 2px solid #333; /* Separator line */
 }
 

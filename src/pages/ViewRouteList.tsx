@@ -79,20 +79,20 @@ const ViewRouteList: React.FC = () => {
 
     const saveRouteChanges = useCallback(async () => {
         if (editableRoute) {
-          try {
-            const routeRef = doc(db, "routes", editableRoute.id);
-            await updateDoc(routeRef, { ...editableRoute });
-            closePopover();
-          } catch (error) {
-            console.log("Error updating route: ", error);
-          }
+            try {
+                const routeRef = doc(db, "routes", editableRoute.id);
+                await updateDoc(routeRef, { ...editableRoute });
+                closePopover();
+            } catch (error) {
+                console.log("Error updating route: ", error);
+            }
         }
-      }, [editableRoute]);
-      
-      useEffect(() => {
+    }, [editableRoute]);
+
+    useEffect(() => {
         saveRouteChanges();
-      }, [saveRouteChanges]);
-      
+    }, [saveRouteChanges]);
+
     const fetchRoutes = useCallback(async () => {
         // Assuming that your uid is stored in the user.uid
         const uid = user?.uid;
@@ -149,7 +149,7 @@ const ViewRouteList: React.FC = () => {
 
     return (
         <IonPage className="ion-flex-offset-app">
-        <IonContent fullscreen>
+            <IonContent fullscreen>
                 {routes.length === 0 && !isUserLeader ? (
                     <IonCard>
                         <IonCardHeader>
@@ -167,21 +167,36 @@ const ViewRouteList: React.FC = () => {
                         </IonCardContent>
                     </IonCard>
                 ) : (
-                    <IonCard>
-                        <IonList>
-                            {routes.map((route) => (
-                                <IonItem key={route.id}>
-                                    <IonLabel>{route.routeName}</IonLabel>
-                                    <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
-                                </IonItem>
-                            ))}
-                        </IonList>
+                    <><IonCard>
+                        <IonCardHeader>
+                            <IonCardTitle>Creating a Route</IonCardTitle>
+                        </IonCardHeader>
+                        <IonCardContent>
+                            <IonList>
+                                <IonItem>1. Login as a registered user</IonItem>
+                                <IonItem>2. Go to the Map Page</IonItem>
+                                <IonItem>3. Search for a Starting Location</IonItem>
+                                <IonItem>4. Search for a Destination</IonItem>
+                                <IonItem>5. Click on the "Get Directions" button</IonItem>
+                                <IonItem>6. Click on the "Create Route" button</IonItem>
+                            </IonList>
+                        </IonCardContent>
                     </IonCard>
+                        <IonCard>
+                            <IonList>
+                                {routes.map((route) => (
+                                    <IonItem key={route.id}>
+                                        <IonLabel>{route.routeName}</IonLabel>
+                                        <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
+                                    </IonItem>
+                                ))}
+                            </IonList>
+                        </IonCard></>
                 )}
             </IonContent>
         </IonPage>
     );
-    
+
 };
 
 export default ViewRouteList;

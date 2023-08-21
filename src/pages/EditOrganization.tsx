@@ -16,6 +16,7 @@ import {
     IonModal,
     IonHeader,
     IonIcon,
+    IonButtons,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -26,7 +27,7 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 import { set } from 'date-fns';
-import { checkmark } from 'ionicons/icons';
+import { checkmark, peopleOutline } from 'ionicons/icons';
 import './EditOrganization.css';
 
 
@@ -39,6 +40,14 @@ interface Organization {
     Email: string;
     LastUpdatedBy: string;
     LastUpdatedOn: Timestamp;
+    BikeBusGroup: DocumentReference;
+}
+
+type BikeBusGroup = {
+    id: string;
+    BikeBusName: string;
+    BikeBusLeader: DocumentReference;
+    Organization: DocumentReference;
 }
 
 const EditOrganization: React.FC = () => {
@@ -62,7 +71,7 @@ const EditOrganization: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [showBikeBusModal, setShowBikeBusModal] = useState(false);
     const [bikeBusGroups, setBikeBusGroups] = useState<any[]>([]);
-    const [selectedBikeBusGroup, setSelectedBikeBusGroup] = useState<string>('');
+    const [selectedBikeBusGroup, setSelectedBikeBusGroup] = useState<BikeBusGroup | null>(null);
 
 
     useEffect(() => {
@@ -115,9 +124,39 @@ const EditOrganization: React.FC = () => {
 
     const handleAddBikeBusGroup = async () => {
 
-        const bikeBusGroupRef = doc(db, 'bikeBusGroups', selectedBikeBusGroup);
-        await updateDoc(bikeBusGroupRef, { Organization: doc(db, 'organizations', id) });
-        alert('Organization updated with BikeBusGroup');
+        if (!selectedBikeBusGroup) {
+            return;
+        }
+        console.log(selectedBikeBusGroup.id)
+        console.log("Organization ID: ", id);
+
+        const bikeBusGroupRef = doc(db, 'bikebusgroups', selectedBikeBusGroup.id);
+        console.log(bikeBusGroupRef);
+        const docSnapshot = await getDoc(bikeBusGroupRef);
+        console.log(docSnapshot);
+
+
+
+        if (docSnapshot.exists()) {
+            console.log("Organization ID: ", id);
+            await updateDoc(bikeBusGroupRef, { Organization: doc(db, 'organizations', id) });
+        }
+
+        // now let's update the organization with the bikebusgroup
+        const OrganizationRef = doc(db, 'organizations', id);
+        console.log(OrganizationRef);
+        const docSnapshot2 = await getDoc(OrganizationRef);
+        console.log(docSnapshot2);
+
+        if (docSnapshot2.exists()) {
+            console.log("Organization ID: ", id);
+            await updateDoc(OrganizationRef, { BikeBusGroups: doc(db, 'bikebusgroups', selectedBikeBusGroup.id) });
+            alert('Organization updated with BikeBusGroup');
+        } else {
+            alert('The Organization document does not exist');
+        }
+
+
         setShowModal(false);
     };
 
@@ -197,10 +236,10 @@ const EditOrganization: React.FC = () => {
                                                     <IonItem
                                                         key={group.id}
                                                         button
-                                                        onClick={() => setSelectedBikeBusGroup(group.id)}
-                                                        className={group.id === selectedBikeBusGroup ? 'selected-group' : ''}
+                                                        onClick={() => setSelectedBikeBusGroup(group)}
+                                                        className={group.id === selectedBikeBusGroup?.id ? 'selected-group' : ''}
                                                     >
-                                                        {group.id === selectedBikeBusGroup && <IonIcon icon={checkmark} />} {/* Optional icon */}
+                                                        {group.id === selectedBikeBusGroup?.id && <IonIcon icon={checkmark} />} {/* Optional icon */}
                                                         {group.BikeBusName}
                                                     </IonItem>
                                                 ))}
@@ -245,6 +284,20 @@ const EditOrganization: React.FC = () => {
                                             <IonSelectOption value="Social">Social</IonSelectOption>
                                             <IonSelectOption value="Club">Club</IonSelectOption>
                                         </IonSelect>
+                                    </IonCol>
+                                    <IonCol>
+                                        <IonLabel position="stacked">BikeBus Groups: </IonLabel>
+                                        <IonList>
+                                                {bikeBusGroups.map(group => (
+                                                    <IonItem
+                                                        key={group.id}
+                                                        className={group.id === selectedBikeBusGroup?.id ? 'selected-group' : ''}
+                                                    >
+                                                        {group.id === selectedBikeBusGroup?.id && <IonIcon icon={peopleOutline} />} {/* Optional icon */}
+                                                        {group.BikeBusName}
+                                                    </IonItem>
+                                                ))}
+                                            </IonList>
                                     </IonCol>
                                     <IonCol>
                                         <IonLabel position="stacked">Contact Name:</IonLabel>

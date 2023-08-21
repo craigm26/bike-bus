@@ -115,6 +115,17 @@ const ViewOrganizationList: React.FC = () => {
                         </IonCardContent>
                     ) : (
                         <IonCardContent>
+                            <IonCardTitle>How to Create or Join an Organization</IonCardTitle>
+                            <IonLabel>Organizations are a specific group of people who manage multiple BikeBus groups and routes.</IonLabel>
+                            <IonList>
+                                <IonLabel>To Create an Organization:</IonLabel>
+                                <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
+                                <IonItem>2. Create a Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/CreateOrganization">Create Organization</IonButton></IonItem>
+                                <IonItem>3. Invite people to join your Organization:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
+                                <IonItem>4. Delegate roles to your Organization</IonItem>
+                                <IonItem>5. Create BikeBus groups and routes for your Organization</IonItem>
+                                <IonItem>6. Train others on timekeeping and reporting</IonItem>
+                            </IonList>
                             <IonLabel>Organizations are a specific group of people who manage multiple BikeBus groups and routes.</IonLabel>
                             <p>You are a member of the following Organizations:</p>
                             <IonList>
