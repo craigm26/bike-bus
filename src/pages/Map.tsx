@@ -1882,22 +1882,33 @@ const Map: React.FC = () => {
   }
 
   function generateSVGBikeBus(label: string) {
+    const fontSize = 14;
+    const padding = 10;
+  
+    // Create a temporary SVG to measure text width
+    const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const textElem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textElem.setAttribute('font-size', `${fontSize}px`);
+    textElem.setAttribute('font-family', 'Arial, sans-serif');
+    textElem.textContent = label;
+    tempSvg.appendChild(textElem);
+    document.body.appendChild(tempSvg);
+    const textWidth = textElem.getBBox().width;
+    document.body.removeChild(tempSvg);
+  
+    // Calculate the dimensions
+    const rectWidth = textWidth + padding * 2;
+    const rectHeight = fontSize + padding * 2;
+  
     const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-      <defs>
-        <filter id="glow" x="-50%" y="-50%" width="300%" height="300%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
-          <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      <circle cx="50" cy="50" r="50" fill="#ffd800" filter="url(#glow)"/>
-      <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
+    <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
+      <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#ffd800"/>
+      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
+  
+  
 
   const handleBicyclingLayerToggle = (enabled: boolean) => {
     if (bicyclingLayerRef.current && mapRef.current) {
@@ -1999,316 +2010,7 @@ const Map: React.FC = () => {
                 disableDoubleClickZoom: true,
                 minZoom: 8,
                 maxZoom: 18,
-                styles: [
-                  {
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#e5e5e5"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.icon",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#616161"
-                      }
-                    ]
-                  },
-                  {
-                    "elementType": "labels.text.stroke",
-                    "stylers": [
-                      {
-                        "color": "#f5f5f5"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.land_parcel",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.land_parcel",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#bdbdbd"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.neighborhood",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "administrative.neighborhood",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#eeeeee"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#757575"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#e5e5e5"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.park",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "color": "#ffd800"
-                      },
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "geometry.stroke",
-                    "stylers": [
-                      {
-                        "color": "#ffd800"
-                      },
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      },
-                      {
-                        "weight": 5
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "poi.school",
-                    "elementType": "labels.text.stroke",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      },
-                      {
-                        "weight": 3.5
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#4a90e2"
-                      },
-                      {
-                        "visibility": "simplified"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road",
-                    "elementType": "labels.icon",
-                    "stylers": [
-                      {
-                        "visibility": "off"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.arterial",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#757575"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.highway",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#dadada"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.highway",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#616161"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.local",
-                    "elementType": "labels",
-                    "stylers": [
-                      {
-                        "visibility": "on"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "road.local",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#9e9e9e"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "transit",
-                    "elementType": "geometry.fill",
-                    "stylers": [
-                      {
-                        "saturation": -50
-                      },
-                      {
-                        "lightness": 50
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "water",
-                    "elementType": "geometry",
-                    "stylers": [
-                      {
-                        "color": "#c9c9c9"
-                      }
-                    ]
-                  },
-                  {
-                    "featureType": "water",
-                    "elementType": "labels.text.fill",
-                    "stylers": [
-                      {
-                        "color": "#9e9e9e"
-                      }
-                    ]
-                  }
-                ],
+                mapId: 'b75f9f8b8cf9c287',
               }}
             >
               {!id && (
@@ -2589,6 +2291,23 @@ const Map: React.FC = () => {
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
                     )}
+                    {route.bikeBusStops && route.bikeBusStops.map((stop: any) => {
+                      const keyPrefix = stop.id || stop.stopName;
+                      return (
+                        <Marker
+                          key={`${keyPrefix}-stop`}
+                          label={`${stop.stopName}`}
+                          position={stop.stopLocation}
+                          icon={{
+                            url: generateSVGBikeBus(stop.stopName),
+                            scaledSize: new google.maps.Size(60, 20),
+                          }}
+                          onClick={() => { handleBikeBusRouteClick(route) }}
+                        />
+                      );
+                    }
+                    )
+                    }
                     {route.endPoint && (
                       <Marker
                         key={`${keyPrefix}-end`}

@@ -369,7 +369,7 @@ const App: React.FC = () => {
       const futureEvents = allEvents.filter(event => {
         // event.start is a timestamp object, so we need to check if it exists and if it has a seconds property
         if (event.start && typeof event.start.seconds !== 'undefined') {
-          return new Date(event.start * 1000).getTime() > Date.now();
+          return new Date(event.start.seconds * 1000).getTime() > Date.now();
         } else {
           return false;
         }        

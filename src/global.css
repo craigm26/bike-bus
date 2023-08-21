@@ -439,36 +439,36 @@
 .bikebus-event-name,
 .bikebus-event-route,
 .bikebus-event-time {
-  background-color: #ffd800;
-  /* Bright yellow background */
-  border-radius: 10px;
-  margin: 10px;
-  padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  /* Darker shadow to contrast with yellow */
+  background-color: #ffd800; /* Bright yellow background */
+  border-radius: 25px; /* Rounded corners */
+  margin: 0px;
+  padding: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Darker shadow to contrast with yellow */
+  display: inline-block; /* Ensure the element shrinks to fit content */
+  white-space: nowrap; /* Prevent the text from wrapping */
 }
 
 /* Specific Styles for Each Element */
 .bikebus-event-name {
+  font-family: 'indie-flower', sans-serif;
   font-size: 24px;
   font-weight: bold;
-  color: #333;
-  /* Dark text color */
-  border-bottom: 2px solid #333;
-  /* Separator line */
+  color: #333; /* Dark text color */
+  border-bottom: 2px solid #333; /* Separator line */
 }
 
 .bikebus-event-route {
   font-size: 20px;
-  color: #555;
-  border-bottom: 1px dashed #333;
-  /* Dashed separator line */
+  color: #000;
+  border-bottom: 1px dashed #333; /* Dashed separator line */
 }
 
 .bikebus-event-time {
   font-size: 18px;
-  color: #555;
+  color: #000;
 }
+
+
 
 /* Style for the map container */
 .map-container {
