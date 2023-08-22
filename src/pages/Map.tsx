@@ -839,7 +839,6 @@ const Map: React.FC = () => {
       const queryObj3 = query(
         routesRef,
         where("isBikeBus", "==", false),
-        where("routeCreator", "==", user.uid)
       );
       getDocs(queryObj3)
         .then((querySnapshot) => {
@@ -1674,93 +1673,13 @@ const Map: React.FC = () => {
 
   const handleUserRouteClick = async (route: any) => {
 
-    // let's get the events for this bikebus group
-    const bikeBusGroupId = route.BikeBusGroupId.id;
-    console.log("bikeBusGroupId: ", bikeBusGroupId);
-    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
-
-    // get the events for this bikebus group
-    const eventsRef = query(
-      collection(db, "event"),
-      where('BikeBusGroup', '==', bikeBusGroupRef),
-    );
-    const querySnapshot = getDocs(eventsRef);
-    // once we have the docs, let's figure out the next 3 events for this bikebus group in order of start time
-    const events: BikeBusEvent[] = [];
-    const currentTime = new Date().getTime(); // Get the current time in milliseconds
-    (await querySnapshot).forEach((doc) => {
-      const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
-
-      // Extract the date from the 'start' field
-      const eventStartDate = new Date(eventData.start.seconds * 1000);
-      const eventStartTime = new Date(eventData.start.seconds * 1000);
-
-      // Combine the date and time
-      eventStartDate.setHours(eventStartTime.getHours());
-      eventStartDate.setMinutes(eventStartTime.getMinutes());
-      eventStartDate.setSeconds(eventStartTime.getSeconds());
-
-      // Convert the combined date and time back to seconds
-      const combinedStartTimestamp = {
-        seconds: Math.floor(eventStartDate.getTime() / 1000),
-        nanoseconds: 0 // Assuming no nanoseconds needed; otherwise, you can calculate based on the original timestamps
-      };
-
-      if (eventStartDate.getTime() > currentTime) {
-        events.push(eventData);
-      }
-    });
-    console.log("events: ", events);
-    // sort the events by start time
-    events.sort((a, b) => (a.start.seconds - b.start.seconds));
-    // get the next 3 events
-    const next3Events = events.slice(0, 3);
-    // get the next 3 events' start times
-    const next3EventsStartTimes = next3Events.map((event) => {
-      const eventStartTime = event.start;
-      return eventStartTime;
-    });
-
-    let next3EventsHTML = '<span style="color: black;">No Events Scheduled</span>'; // Default message
-
-    if (next3Events.length > 0) {
-      const next3EventsLinks = next3Events.map((event) => {
-        const eventId = event.id;
-
-        // Convert the Timestamp to a Date object
-        const eventStartDate = new Date(event.start.seconds * 1000);
-
-        // Format the date
-        const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
-
-        return `<a href="/event/${eventId}" style="color: black;">${eventStartFormatted}</a>`;
-      });
-      next3EventsHTML = next3EventsLinks.join('<br>');
-    }
-
-    // for each of the qualified next3Events, let's create a link to the event page for that event /event/id
-    const next3EventsLinks = next3Events.map((event) => {
-      const eventId = event.id;
-
-      // Convert the Timestamp to a Date object
-      const eventStartDate = new Date(event.start.seconds * 1000);
-
-      // Format the date
-      const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
-
-      return `<a href="/event/${eventId}">${eventStartFormatted}</a>`;
-    });
-
 
     // Set content to whatever you want to display inside the InfoWindow
     const content = `  
     <div style="margin-top: 10px;">
-    <h4>Upcoming Events:</h4>
-    ${next3EventsHTML}
+  </a>
   </div>
-    <a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
-    View ${route.BikeBusName}
-  </a>`
+    `
       ;
 
     // Set position to the startPoint of the route (or any other point you prefer)
