@@ -95,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </IonRow>
                     <IonRow>
                         <IonCol>
-                            <IonLabel>My Routes</IonLabel>
+                            <IonLabel>Routes</IonLabel>
                             <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
                         </IonCol>
                     </IonRow>
