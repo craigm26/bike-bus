@@ -241,8 +241,6 @@ const ViewOrganization: React.FC = () => {
                                 </div>
                             </IonItem>
                         </IonCol>
-
-
                         <IonCol>
                             <IonItem lines="none">
                             </IonItem>

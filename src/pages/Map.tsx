@@ -173,7 +173,11 @@ const Map: React.FC = () => {
   const [routeName, setRouteName] = useState('');
   const [description, setDescription] = useState('');
   const [isBikeBus, setIsBikeBus] = useState(false);
-  const polylinesRef = useRef([]); const [bikeBusEnabled, setBikeBusEnabled] = useState(true);
+  const polylinesRef = useRef([]);
+  const [bikeBusEnabled, setBikeBusEnabled] = useState(true);
+  const [userRoutesEnabled, setUserRoutesEnabled] = useState(true);
+
+
   const [routesEnabled, setRoutesEnabled] = useState(false);
   const [organizationsEnabled, setOrganizationsEnabled] = useState(false);
   const [openTripsEnabled, setOpenTripsEnabled] = useState(true);
@@ -212,8 +216,11 @@ const Map: React.FC = () => {
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
   const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
   const transitLayerRef = useRef(null);
-  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(true);
   const [permissions, setPermissions] = useState(false);
+  const [myrouteslayer, setMyRoutesLayer] = useState(false);
+  const [myroutes, setMyRoutes] = useState<any[]>([]);
+  const [userRoutes, setUserRoutes] = useState<any[]>([]);
 
 
 
@@ -828,6 +835,25 @@ const Map: React.FC = () => {
           }
         }
       });
+      // we're going to query for routes that the user has created and is not a BikeBus route
+      const queryObj3 = query(
+        routesRef,
+        where("isBikeBus", "==", false),
+        where("routeCreator", "==", user.uid)
+      );
+      getDocs(queryObj3)
+        .then((querySnapshot) => {
+          const routes: any[] = [];
+          querySnapshot.forEach((doc) => {
+            const userRouteData = doc.data();
+            routes.push(userRouteData);
+          });
+          setUserRoutes(routes);
+        })
+        .catch((error) => {
+          console.log("Error fetching user routes:", error);
+        });
+
       const queryObj2 = query(collection(db, 'event'), where('eventType', '==', 'openTrip'), where('status', '==', 'active'));
       getDocs(queryObj2)
         .then((querySnapshot) => {
@@ -1646,6 +1672,103 @@ const Map: React.FC = () => {
     setInfoWindow({ isOpen: true, content, position });
   };
 
+  const handleUserRouteClick = async (route: any) => {
+
+    // let's get the events for this bikebus group
+    const bikeBusGroupId = route.BikeBusGroupId.id;
+    console.log("bikeBusGroupId: ", bikeBusGroupId);
+    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
+
+    // get the events for this bikebus group
+    const eventsRef = query(
+      collection(db, "event"),
+      where('BikeBusGroup', '==', bikeBusGroupRef),
+    );
+    const querySnapshot = getDocs(eventsRef);
+    // once we have the docs, let's figure out the next 3 events for this bikebus group in order of start time
+    const events: BikeBusEvent[] = [];
+    const currentTime = new Date().getTime(); // Get the current time in milliseconds
+    (await querySnapshot).forEach((doc) => {
+      const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
+
+      // Extract the date from the 'start' field
+      const eventStartDate = new Date(eventData.start.seconds * 1000);
+      const eventStartTime = new Date(eventData.start.seconds * 1000);
+
+      // Combine the date and time
+      eventStartDate.setHours(eventStartTime.getHours());
+      eventStartDate.setMinutes(eventStartTime.getMinutes());
+      eventStartDate.setSeconds(eventStartTime.getSeconds());
+
+      // Convert the combined date and time back to seconds
+      const combinedStartTimestamp = {
+        seconds: Math.floor(eventStartDate.getTime() / 1000),
+        nanoseconds: 0 // Assuming no nanoseconds needed; otherwise, you can calculate based on the original timestamps
+      };
+
+      if (eventStartDate.getTime() > currentTime) {
+        events.push(eventData);
+      }
+    });
+    console.log("events: ", events);
+    // sort the events by start time
+    events.sort((a, b) => (a.start.seconds - b.start.seconds));
+    // get the next 3 events
+    const next3Events = events.slice(0, 3);
+    // get the next 3 events' start times
+    const next3EventsStartTimes = next3Events.map((event) => {
+      const eventStartTime = event.start;
+      return eventStartTime;
+    });
+
+    let next3EventsHTML = '<span style="color: black;">No Events Scheduled</span>'; // Default message
+
+    if (next3Events.length > 0) {
+      const next3EventsLinks = next3Events.map((event) => {
+        const eventId = event.id;
+
+        // Convert the Timestamp to a Date object
+        const eventStartDate = new Date(event.start.seconds * 1000);
+
+        // Format the date
+        const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
+
+        return `<a href="/event/${eventId}" style="color: black;">${eventStartFormatted}</a>`;
+      });
+      next3EventsHTML = next3EventsLinks.join('<br>');
+    }
+
+    // for each of the qualified next3Events, let's create a link to the event page for that event /event/id
+    const next3EventsLinks = next3Events.map((event) => {
+      const eventId = event.id;
+
+      // Convert the Timestamp to a Date object
+      const eventStartDate = new Date(event.start.seconds * 1000);
+
+      // Format the date
+      const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
+
+      return `<a href="/event/${eventId}">${eventStartFormatted}</a>`;
+    });
+
+
+    // Set content to whatever you want to display inside the InfoWindow
+    const content = `  
+    <div style="margin-top: 10px;">
+    <h4>Upcoming Events:</h4>
+    ${next3EventsHTML}
+  </div>
+    <a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    View ${route.BikeBusName}
+  </a>`
+      ;
+
+    // Set position to the startPoint of the route (or any other point you prefer)
+    const position = route.startPoint;
+
+    setInfoWindow({ isOpen: true, content, position });
+  };
+
   const handleOpenTripRouteClick = (trip: any) => {
     const contentString = `
     <div class="info-window-content">
@@ -1922,7 +2045,34 @@ const Map: React.FC = () => {
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
       <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#ffd800"/>
-      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
+      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#ffd800" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+  }
+
+  function generateSVGUserRoutes(label: string) {
+    const fontSize = 14;
+    const padding = 10;
+
+    // Create a temporary SVG to measure text width
+    const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const textElem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textElem.setAttribute('font-size', `${fontSize}px`);
+    textElem.setAttribute('font-family', 'Arial, sans-serif');
+    textElem.textContent = label;
+    tempSvg.appendChild(textElem);
+    document.body.appendChild(tempSvg);
+    const textWidth = textElem.getBBox().width;
+    document.body.removeChild(tempSvg);
+
+    // Calculate the dimensions
+    const rectWidth = textWidth + padding * 2;
+    const rectHeight = fontSize + padding * 2;
+
+    const svgString = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
+      <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#88C8F7"/>
+      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#88C8F7" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
@@ -2242,6 +2392,96 @@ const Map: React.FC = () => {
                   </div>
                 );
               })}
+              {!isActiveBikeBusEvent && userRoutesEnabled && userRoutes.map((route: any, index: number) => {
+                const keyPrefix = route.id || `${route.routeName}-${index}`;
+                return (
+                  <div key={`${keyPrefix}`}>
+                    <Polyline
+                      key={`${keyPrefix}-border`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#000000", // Border color
+                        strokeOpacity: .7,
+                        strokeWeight: 3, // Border thickness
+                        clickable: true,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#000000", // Main line color
+                              strokeOpacity: .7,
+                              strokeWeight: 3,
+                              fillColor: "#000000",
+                              fillOpacity: .7,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                      onClick={() => { handleUserRouteClick(route) }}
+                    />
+                    <Polyline
+                      key={`${keyPrefix}-main`}
+                      path={route.pathCoordinates}
+                      options={{
+                        strokeColor: "#88C8F7", // Main line color
+                        strokeOpacity: 1,
+                        strokeWeight: 2,
+                        icons: [
+                          {
+                            icon: {
+                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                              strokeColor: "#88C8F7", // Main line color
+                              strokeOpacity: 1,
+                              strokeWeight: 2,
+                              fillColor: "#88C8F7",
+                              fillOpacity: 1,
+                              scale: 3,
+                            },
+                            offset: "100%",
+                            repeat: "100px",
+                          },
+                        ],
+                      }}
+                    />
+                    {infoWindow.isOpen && infoWindow.position && (
+                      <InfoWindow
+                        position={infoWindow.position}
+                        onCloseClick={handleCloseClick}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                      </InfoWindow>
+                    )}
+
+                    {route.startPoint && (
+                      <Marker
+                        key={`${keyPrefix}-start`}
+                        label={`${route.routeName}`}
+                        position={route.startPoint}
+                        icon={{
+                          url: generateSVGUserRoutes(route.routeName),
+                          scaledSize: new google.maps.Size(60, 20),
+                        }}
+                        onClick={() => { handleUserRouteClick(route) }}
+                      />
+                    )}
+                    {route.endPoint && (
+                      <Marker
+                        key={`${keyPrefix}-end`}
+                        label={`${route.routeName}`}
+                        position={route.endPoint}
+                        icon={{
+                          url: generateSVGUserRoutes(route.routeName),
+                          scaledSize: new google.maps.Size(60, 20),
+                        }}
+                        onClick={() => { handleUserRouteClick(route) }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
               {isActiveBikeBusEvent && bikeBusRoutes.map((route: any) => {
                 const keyPrefix = route.id || route.routeName;
                 return (
@@ -2505,7 +2745,9 @@ const Map: React.FC = () => {
                 mapRef={mapRef}
                 getLocation={getLocation}
                 bikeBusEnabled={bikeBusEnabled}
+                userRoutesEnabled={userRoutesEnabled}
                 setBikeBusEnabled={setBikeBusEnabled}
+                setUserRoutesEnabled={setUserRoutesEnabled}
                 openTripsEnabled={openTripsEnabled}
                 setOpenTripsEnabled={setOpenTripsEnabled}
                 bicyclingLayerEnabled={bicyclingLayerEnabled}
