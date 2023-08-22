@@ -293,7 +293,7 @@ const EditOrganization: React.FC = () => {
                                                         key={group.id}
                                                         className={group.id === selectedBikeBusGroup?.id ? 'selected-group' : ''}
                                                     >
-                                                        {group.id === selectedBikeBusGroup?.id && <IonIcon icon={peopleOutline} />} {/* Optional icon */}
+                                                        {group.id === selectedBikeBusGroup?.id && <IonIcon icon={peopleOutline} />}
                                                         {group.BikeBusName}
                                                     </IonItem>
                                                 ))}

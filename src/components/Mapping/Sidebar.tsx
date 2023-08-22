@@ -6,7 +6,9 @@ type SidebarProps = {
     mapRef: React.RefObject<google.maps.Map | null>;
     getLocation: () => void;
     bikeBusEnabled: boolean;
+    userRoutesEnabled: boolean;
     setBikeBusEnabled: (value: boolean) => void;
+    setUserRoutesEnabled: (value: boolean) => void;
     openTripsEnabled: boolean;
     setOpenTripsEnabled: (value: boolean) => void;
     bicyclingLayerEnabled: boolean;
@@ -19,6 +21,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     getLocation,
     bikeBusEnabled,
     setBikeBusEnabled,
+    userRoutesEnabled,
+    setUserRoutesEnabled,
     openTripsEnabled,
     setOpenTripsEnabled,
     bicyclingLayerEnabled,
@@ -87,6 +91,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <IonCol>
                             <IonLabel>BikeBus</IonLabel>
                             <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>My Routes</IonLabel>
+                            <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
                         </IonCol>
                     </IonRow>
                     <IonRow>
