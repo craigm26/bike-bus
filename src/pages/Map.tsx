@@ -24,6 +24,8 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, clipboardOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import userIcon from '../assets/fontawesome/svgs/solid/user.svg';
+import githubIcon from '../assets/fontawesome/svgs/brands/github-square.svg';
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -2042,6 +2044,7 @@ const Map: React.FC = () => {
                         <IonList>
                           <IonItem>
                             <IonIcon icon={clipboardOutline} slot="start" />
+                            <img src={userIcon} alt="User Icon" />
                             <IonLabel>Community Bulletin Boards</IonLabel>
                           </IonItem>
                           <IonItem>

@@ -354,7 +354,6 @@ const BikeBusGroupPage: React.FC = () => {
       // Filter out undefined values from the array
       const filteredEvents = events.filter(event => event !== undefined);
       setEventData(filteredEvents);
-      console.log('event', filteredEvents);
     }
   }, [groupData]);
 
@@ -418,7 +417,6 @@ const BikeBusGroupPage: React.FC = () => {
 
   // we need to ensure we have the eventData before we can use it. If it's just one event, that's acceptable too.
   useEffect(() => {
-    console.log('eventIds inside useEffect', eventIds);
     if (eventIds.length > 0) {
       const eventDocs = eventIds
         .map((eventId: string) => doc(db, 'events', eventId))
@@ -429,13 +427,11 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [eventIds]);
 
-  console.log('eventIds', eventIds);
 
 
   const validEvents = (eventData || []).filter((event: Event) =>
     event && event.start
   );
-  console.log('validEvents', validEvents);
 
   const convertStartToMilliseconds = (
     start: string | { seconds: number; nanoseconds: number } | undefined
@@ -458,11 +454,6 @@ const BikeBusGroupPage: React.FC = () => {
     const eventDateMilliseconds = convertStartToMilliseconds(event.start);
     return eventDateMilliseconds > new Date().getTime();
   });
-  
-  
-
-  console.log('nextEvent', nextEvent);
-
 
   const nextEventId = nextEvent?.id;
 
