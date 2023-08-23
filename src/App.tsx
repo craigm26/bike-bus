@@ -358,12 +358,28 @@ const App: React.FC = () => {
     );
   
     Promise.all(eventFetchPromises).then((eventSnapshots) => {
+      // Keep track of the current index within fetchedGroups
+      let groupIndex = 0;
+      // Keep track of the current event index within the current group
+      let eventIndex = 0;
+  
       // Extract event data from snapshots
-      const allEvents = eventSnapshots.map((eventSnapshot, index) => ({
-        ...eventSnapshot.data(),
-        id: eventSnapshot.id,
-        groupId: fetchedGroups[Math.floor(index / fetchedGroups[0].event.length)].id,
-      }));
+      const allEvents = eventSnapshots.map((eventSnapshot) => {
+        // If we've processed all events in the current group, move to the next group
+        if (eventIndex >= fetchedGroups[groupIndex].event.length) {
+          groupIndex++;
+          eventIndex = 0;
+        }
+  
+        const event = {
+          ...eventSnapshot.data(),
+          id: eventSnapshot.id,
+          groupId: fetchedGroups[groupIndex].id,
+        };
+  
+        eventIndex++;
+        return event;
+      });
   
       // Filter out events in the past
       const futureEvents = allEvents.filter(event => {
@@ -372,7 +388,7 @@ const App: React.FC = () => {
           return new Date(event.start.seconds * 1000).getTime() > Date.now();
         } else {
           return false;
-        }        
+        }
       });
   
       // Sort all the future events by start in ascending order
@@ -380,7 +396,7 @@ const App: React.FC = () => {
         (a, b) =>
           new Date(a.start.seconds * 1000).getTime() - new Date(b.start.seconds * 1000).getTime()
       );
-    
+  
       // Now, the first event in sortedEvents is the upcoming event
       const upcomingEvent = sortedEvents[0];
   

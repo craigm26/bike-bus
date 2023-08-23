@@ -323,15 +323,20 @@ const BikeBusGroupPage: React.FC = () => {
               groupId: docSnapshot.id,
             } : { id: docSnapshot.id };
           }
+          // Return undefined if the doc doesn't exist, so it can be filtered out later
+          return undefined;
         })
       );
-      setEventsData(events);
+      // Filter out undefined values from the array
+      const filteredEvents = events.filter(event => event !== undefined);
+      setEventsData(filteredEvents);
     }
   }, [groupData]);
 
+
   const fetchEvent = useCallback(async () => {
     if (groupData && groupData.event) {
-      const event = await Promise.all(
+      const events = await Promise.all(
         groupData.event.map(async (eventRef: any) => {
           const docSnapshot = await getDoc(eventRef);
           if (docSnapshot.exists()) {
@@ -342,11 +347,18 @@ const BikeBusGroupPage: React.FC = () => {
               groupId: docSnapshot.id,
             } : { id: docSnapshot.id };
           }
+          // Return undefined if the doc doesn't exist, so it can be filtered out later
+          return undefined;
         })
       );
-      setEventData(event);
+      // Filter out undefined values from the array
+      const filteredEvents = events.filter(event => event !== undefined);
+      setEventData(filteredEvents);
+      console.log('event', filteredEvents);
     }
   }, [groupData]);
+
+
 
 
 
@@ -406,6 +418,7 @@ const BikeBusGroupPage: React.FC = () => {
 
   // we need to ensure we have the eventData before we can use it. If it's just one event, that's acceptable too.
   useEffect(() => {
+    console.log('eventIds inside useEffect', eventIds);
     if (eventIds.length > 0) {
       const eventDocs = eventIds
         .map((eventId: string) => doc(db, 'events', eventId))
@@ -416,22 +429,39 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [eventIds]);
 
+  console.log('eventIds', eventIds);
+
 
   const validEvents = (eventData || []).filter((event: Event) =>
-    event && event.startTimestamp
+    event && event.start
   );
+  console.log('validEvents', validEvents);
 
-
+  const convertStartToMilliseconds = (
+    start: string | { seconds: number; nanoseconds: number } | undefined
+  ) => {
+    if (typeof start === 'string') {
+      return new Date(start).getTime();
+    } else if (start) {
+      return start.seconds * 1000;
+    }
+    return 0; // Default value when start is undefined
+  };
+  
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
-    const aDate = a.startTimestamp.toDate();
-    const bDate = b.startTimestamp.toDate();
-    return aDate.getTime() - bDate.getTime();
+    const aDateMilliseconds = convertStartToMilliseconds(a.start);
+    const bDateMilliseconds = convertStartToMilliseconds(b.start);
+    return aDateMilliseconds - bDateMilliseconds;
   });
-
+  
   const nextEvent = sortedEvents.find((event: Event) => {
-    const eventDate = event.startTimestamp.toDate();
-    return eventDate.getTime() > new Date().getTime();
+    const eventDateMilliseconds = convertStartToMilliseconds(event.start);
+    return eventDateMilliseconds > new Date().getTime();
   });
+  
+  
+
+  console.log('nextEvent', nextEvent);
 
 
   const nextEventId = nextEvent?.id;
