@@ -24,8 +24,13 @@ import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, businessOutline, carOutline, clipboardOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import userIcon from '../assets/fontawesome/svgs/solid/user.svg';
-import githubIcon from '../assets/fontawesome/svgs/brands/github-square.svg';
+import { ReactComponent as ClipboardIcon } from '../assets/fontawesome/svgs/regular/clipboard-list.svg';
+import { ReactComponent as MapIcon } from '../assets/fontawesome/svgs/regular/map.svg';
+import { ReactComponent as PersonBikingIcon } from '../assets/fontawesome/svgs/regular/person-biking.svg';
+import { ReactComponent as UsersPeopleIcon } from '../assets/fontawesome/svgs/regular/users.svg';
+import { ReactComponent as SchoolIcon } from '../assets/fontawesome/svgs/regular/school.svg';
+
+
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
@@ -2043,24 +2048,23 @@ const Map: React.FC = () => {
                         <IonText>Find, Create, and Join:</IonText>
                         <IonList>
                           <IonItem>
-                            <IonIcon icon={clipboardOutline} slot="start" />
-                            <img src={userIcon} alt="User Icon" />
+                            <ClipboardIcon style={{ width: '24px', height: '24px' }} />
                             <IonLabel>Community Bulletin Boards</IonLabel>
                           </IonItem>
                           <IonItem>
-                            <IonIcon icon={mapOutline} slot="start" />
+                            <MapIcon style={{ width: '24px', height: '24px' }} />
                             <IonLabel>Routes</IonLabel>
                           </IonItem>
                           <IonItem>
-                            <IonIcon icon={bicycleOutline} slot="start" />
+                            <PersonBikingIcon style={{ width: '24px', height: '24px' }} />
                             <IonLabel>Open Trips</IonLabel>
                           </IonItem>
                           <IonItem>
-                            <IonIcon icon={peopleOutline} slot="start" />
+                            <UsersPeopleIcon style={{ width: '24px', height: '24px' }} />
                             <IonLabel>BikeBus Groups</IonLabel>
                           </IonItem>
                           <IonItem>
-                            <IonIcon icon={businessOutline} slot="start" />
+                            <SchoolIcon style={{ width: '24px', height: '24px' }} />
                             <IonLabel>Organizations Near You</IonLabel>
                           </IonItem>
                         </IonList>
