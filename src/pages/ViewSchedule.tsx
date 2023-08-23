@@ -276,9 +276,9 @@ const ViewSchedule: React.FC = () => {
                                 </IonItem>
                             </IonCardContent>
                         </IonCard>
-                        <IonButton onClick={handleEditEvent}>Go to Event</IonButton>
-                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                        {(!isEventDone) ?<IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
                         {(isEventDone) ?<IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
+                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
                     </IonContent>
                 </IonModal>
 

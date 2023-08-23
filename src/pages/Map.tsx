@@ -19,7 +19,7 @@ import {
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
 import useAuth from "../useAuth";
-import { get, getDatabase, onValue, ref, set } from "firebase/database";
+import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
@@ -38,7 +38,7 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
-import { el } from "date-fns/locale";
+import { is } from "date-fns/locale";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -78,8 +78,6 @@ interface FetchedUserData {
   uid: string;
   accountType?: string;
 }
-
-
 interface BikeBusEvent {
   status: string;
   id: string;
@@ -96,7 +94,6 @@ interface BikeBusEvent {
     nanoseconds: number;
   };
 }
-
 interface Coordinate {
   lat: number;
   lng: number;
@@ -223,8 +220,6 @@ const Map: React.FC = () => {
   const [userRoutes, setUserRoutes] = useState<any[]>([]);
 
 
-
-
   interface Trip {
     id: string;
     routeName?: string;
@@ -237,10 +232,6 @@ const Map: React.FC = () => {
     position: { lat: number; lng: number; } | null;
     trip: Trip | null;
   }
-
-  // if (!id) {
-
-  // uploadString is the string that will be uploaded to the database
 
   const [infoWindowOpenTrip, setInfoWindowOpenTrip] = useState<InfoWindowOpenTrip>({
     isOpen: false,
@@ -376,6 +367,10 @@ const Map: React.FC = () => {
           if (eventSnapshot.exists()) {
             const eventData = eventSnapshot.data();
             console.log('eventData', eventData)
+            // set isActiveBikeBusEvent to true if the event is a bikebus event
+            if (eventData?.eventType === 'BikeBus') {
+              setIsActiveBikeBusEvent(true);
+            }
             // find the eventCheckInLeader and set the leaderUID to the user.uid of the leader
             const extractedUID = eventData.eventCheckInLeader;
             setLeaderUID(extractedUID);
@@ -415,29 +410,6 @@ const Map: React.FC = () => {
     fetchData();
 
   }, [user, id,]);
-
-  useEffect(() => {
-
-    if (leaderUID) {
-      const rtdb = getDatabase();
-      const leaderLocationRef = ref(rtdb, 'userLocations/' + leaderUID);
-      onValue(leaderLocationRef, (snapshot) => {
-        const leaderLocationData = snapshot.val();
-        if (leaderLocationData) {
-          setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
-          // update the event document with the leader location
-        }
-
-        if (leaderLocationData) {
-          setMapCenter({
-            lat: leaderLocation.lat,
-            lng: leaderLocation.lng,
-          });
-        }
-      });
-    }
-
-  }, [leaderUID, leaderLocation]);
 
 
   const endTripAndCheckOutAll = async () => {
@@ -735,9 +707,32 @@ const Map: React.FC = () => {
     setIsActiveBikeBusEvent(events.length > 0);
   };
 
+  useEffect(() => {
+    if (leaderUID) {
+      const rtdb = getDatabase();
+      const leaderLocationRef = ref(rtdb, 'userLocations/' + leaderUID);
+      const listener = onValue(leaderLocationRef, (snapshot) => {
+        const leaderLocationData = snapshot.val();
+        if (leaderLocationData) {
+          setLeaderLocation({ lat: leaderLocationData.lat, lng: leaderLocationData.lng });
+          setMapCenter({
+            lat: leaderLocationData.lat,
+            lng: leaderLocationData.lng,
+          });
+        }
+      });
+
+      // Clean up the listener when the component unmounts
+      return () => {
+        off(leaderLocationRef, 'value', listener);
+      };
+    }
+  }, [leaderUID]);
+
 
 
   const watchLocation = useCallback(() => {
+    if (!isLoaded || !user) return;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -786,7 +781,7 @@ const Map: React.FC = () => {
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
       );
     }
-  }, [user]);
+  }, [user, isLoaded]);
 
   useEffect(() => {
     if (user && getLocationClicked) {
@@ -1123,6 +1118,8 @@ const Map: React.FC = () => {
   const onPlaceChangedStart = () => {
     console.log("onPlaceChangedStart called");
 
+
+    // if the page is loaded as a active event, then don't do the following:
     if (autocompleteStart !== null) {
       const places = autocompleteStart.getPlaces();
       if (places && places.length > 0) {
@@ -2015,6 +2012,11 @@ const Map: React.FC = () => {
     }
   };
 
+  // we need to figure out why the endbikebus event button is not showing up...
+  console.log('isEventLeader: ', isEventLeader);
+  console.log('id', id);
+  console.log('isActiveBikeBusEvent: ', isActiveBikeBusEvent);
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -2510,7 +2512,7 @@ const Map: React.FC = () => {
               }
               )
               }
-              {openTripsEnabled && openTrips.map((trip: any) => {
+              {openTripsEnabled && !isActiveBikeBusEvent && openTrips.map((trip: any) => {
                 const keyPrefix = trip.id || trip.routeName;
                 return (
                   <div key={`${keyPrefix}`}>
