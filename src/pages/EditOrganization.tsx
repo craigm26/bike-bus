@@ -114,7 +114,7 @@ const EditOrganization: React.FC = () => {
         id: "google-map-script",
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
-      });
+    });
 
 
 
@@ -126,8 +126,8 @@ const EditOrganization: React.FC = () => {
 
     useEffect(() => {
         fetchBikeBusGroups();
-      }, []);
-      
+    }, []);
+
 
 
     useEffect(() => {
@@ -147,24 +147,24 @@ const EditOrganization: React.FC = () => {
     const fetchBikeBusGroups = async () => {
         const OrganizationRef = doc(db, 'organizations', id);
         const orgSnapshot = await getDoc(OrganizationRef);
-      
+
         // Get the BikeBusGroups array and handle possible undefined data
         const orgData = orgSnapshot.data() as Organization;
         const bikeBusGroupRefs = orgData?.BikeBusGroups || [];
-      
+
         // Fetch each bike bus group document
         const groupPromises = bikeBusGroupRefs.map(ref => getDoc(ref));
         const groupSnapshots = await Promise.all(groupPromises);
-      
+
         // Transform snapshots to bike bus groups
         const groups = groupSnapshots.map(snapshot => ({
-          id: snapshot.id,
-          ...snapshot.data()
+            id: snapshot.id,
+            ...snapshot.data()
         })) as BikeBusGroup[];
-      
+
         setFetchedBikeBusGroups(groups);
-      };
-      
+    };
+
 
 
     const fetchSingleOrganization = async (id: string) => {
@@ -271,37 +271,27 @@ const EditOrganization: React.FC = () => {
                 } else {
                     // if not, create a new school and add it to the organization and the organization to the school
                     console.log("School does not exist");
-                    // create a new school document
-                    const newSchoolRef = setDoc(doc(db, 'schools'), {
-                        SchoolName: 'New School',
-                        Location: schoolLocation,
+                    // create a reference to a new school document
+                    const newSchoolRef = doc(collection(db, 'schools'));
+                    // set the data for the new school document
+                    setDoc(newSchoolRef, {
+                        SchoolName: selectedSchool?.SchoolName,
+                        Location: selectedSchool?.Location,
                         Organization: OrganizationRef,
+                    }).then(() => {
+                        // add the school to the organization
+                        updateDoc(OrganizationRef, { Schools: arrayUnion(newSchoolRef) });
+                        // add the organization to the school
+                        updateDoc(newSchoolRef, { Organization: OrganizationRef });
+                    }).catch(error => {
+                        console.error("Error creating new school: ", error);
                     });
-                    // add the school to the organization
-                    updateDoc(OrganizationRef, { Schools: arrayUnion(newSchoolRef) });
-                    // add the organization to the school
+
+
                 }
             })
         })
 
-        // if so, add the school to the organization and the organization to the school
-        // if not, create a new school and add it to the organization and the organization to the school
-
-
-        // Iterate through the selected school groups and update them
-        for (const school of selectedSchools) {
-            const schoolRef = doc(db, 'schools', school.id);
-            const docSnapshot = await getDoc(schoolRef);
-
-            if (docSnapshot.exists()) {
-                console.log("Organization ID: ", id);
-                await updateDoc(schoolRef, { Organization: OrganizationRef });
-            }
-        }
-
-        // Update the organization with the schools as an array of document references
-        const schoolRefs = selectedSchools.map(school => doc(db, 'schools', school.id));
-        await updateDoc(OrganizationRef, { Schools: arrayUnion(...schoolRefs) });
 
         alert('Organization updated with Schools');
         history.push(`/EditOrganization/${id}`);
@@ -389,7 +379,7 @@ const EditOrganization: React.FC = () => {
 
         history.push(`/ViewOrganization/${selectedOrganization.id}`)
     }
-      
+
 
     const handleSave = async () => {
         if (!selectedOrganization || !isCreator) {
@@ -505,29 +495,29 @@ const EditOrganization: React.FC = () => {
                                         </IonSelect>
                                     </IonCol>
                                     {orgType === "School District" &&
-                                    <IonCol>
-                                        <IonLabel position="stacked">Schools:</IonLabel>
-                                        <IonList>
-                                            {fetchedSchools.map(school => (
-                                                <IonItem key={school.id}>
-                                                    <IonButton onClick={() => setShowRemoveConfimModal(true)}>
-                                                    <IonIcon icon={peopleOutline} />
-                                                    {school.SchoolName}
-                                                    </IonButton>
-                                                    <IonModal isOpen={showRemoveSchoolConfimModal} onDidDismiss={() => setShowRemoveSchoolConfimModal(false)}>
-                                                        <IonHeader>
-                                                            <IonTitle>Remove School</IonTitle>
-                                                        </IonHeader>
-                                                        <IonContent>
-                                                            <IonLabel>Are you sure you want to remove {school.SchoolName}?</IonLabel>
-                                                            <IonButton onClick={() => setShowRemoveSchoolConfimModal(false)}>Cancel</IonButton>
-                                                            <IonButton onClick={() => removeSchoolGroup(school)}>Remove</IonButton>
-                                                        </IonContent>
-                                                    </IonModal>
-                                                </IonItem>
-                                            ))}
-                                        </IonList>
-                                    </IonCol>
+                                        <IonCol>
+                                            <IonLabel position="stacked">Schools:</IonLabel>
+                                            <IonList>
+                                                {fetchedSchools.map(school => (
+                                                    <IonItem key={school.id}>
+                                                        <IonButton onClick={() => setShowRemoveConfimModal(true)}>
+                                                            <IonIcon icon={peopleOutline} />
+                                                            {school.SchoolName}
+                                                        </IonButton>
+                                                        <IonModal isOpen={showRemoveSchoolConfimModal} onDidDismiss={() => setShowRemoveSchoolConfimModal(false)}>
+                                                            <IonHeader>
+                                                                <IonTitle>Remove School</IonTitle>
+                                                            </IonHeader>
+                                                            <IonContent>
+                                                                <IonLabel>Are you sure you want to remove {school.SchoolName}?</IonLabel>
+                                                                <IonButton onClick={() => setShowRemoveSchoolConfimModal(false)}>Cancel</IonButton>
+                                                                <IonButton onClick={() => removeSchoolGroup(school)}>Remove</IonButton>
+                                                            </IonContent>
+                                                        </IonModal>
+                                                    </IonItem>
+                                                ))}
+                                            </IonList>
+                                        </IonCol>
                                     }
                                     <IonCol>
                                         <IonLabel position="stacked">BikeBus Groups: </IonLabel>
@@ -535,8 +525,8 @@ const EditOrganization: React.FC = () => {
                                             {fetchedBikeBusGroups.map(group => (
                                                 <IonItem key={group.id}>
                                                     <IonButton onClick={() => setShowRemoveConfimModal(true)}>
-                                                    <IonIcon icon={peopleOutline} />
-                                                    {group.BikeBusName}
+                                                        <IonIcon icon={peopleOutline} />
+                                                        {group.BikeBusName}
                                                     </IonButton>
                                                     <IonModal isOpen={showRemoveConfimModal} onDidDismiss={() => setShowRemoveConfimModal(false)}>
                                                         <IonHeader>
@@ -572,7 +562,7 @@ const EditOrganization: React.FC = () => {
                                     <IonButton routerLink={`/ViewOrganization/${id}`}>Cancel</IonButton>
                                 </IonCol>
                             </IonRow>
-                            
+
                         </IonGrid>
                 }
             </IonContent>
