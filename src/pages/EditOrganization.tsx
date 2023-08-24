@@ -37,7 +37,7 @@ type School = {
     id: string;
     SchoolName: string;
     Location: string;
-    Organization: DocumentReference;
+    Organization?: DocumentReference;
 }
 
 interface Organization {
@@ -96,8 +96,10 @@ const EditOrganization: React.FC = () => {
     const [organizationLocation, setOrganizationLocation] = useState('');
     const [showSchoolModal, setShowSchoolModal] = useState(false);
     const [showRemoveSchoolConfimModal, setShowRemoveSchoolConfimModal] = useState(false);
-    const [schoolLocation, setSchoolLocation] = useState('');
+    const [schoolLocation, setSchoolLocation] = useState<string | null>(null);
     const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+    const [schoolName, setSchoolName] = useState<string | null>(null);
+
 
 
     const toggleSelectedBikeBusGroup = (group: BikeBusGroup) => {
@@ -128,6 +130,15 @@ const EditOrganization: React.FC = () => {
         fetchBikeBusGroups();
     }, []);
 
+    useEffect(() => {
+        const fetchOrganizationLocation = async () => {
+            const locationFromFirestore = await getOrganizationLocation();
+            setOrganizationLocation(locationFromFirestore);
+        };
+
+        fetchOrganizationLocation();
+    }, []);
+
 
 
     useEffect(() => {
@@ -143,6 +154,18 @@ const EditOrganization: React.FC = () => {
             });
         }
     }, [user]);
+
+    const getOrganizationLocation = async () => {
+        const OrganizationRef = doc(db, 'organizations', id);
+        const orgSnapshot = await getDoc(OrganizationRef);
+        const orgData = orgSnapshot.data() as Organization;
+        return orgData.Location;
+    };
+
+    const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
+        const schoolName = place.name;
+        setSchoolName(schoolName || null);
+    };
 
     const fetchBikeBusGroups = async () => {
         const OrganizationRef = doc(db, 'organizations', id);
@@ -238,11 +261,7 @@ const EditOrganization: React.FC = () => {
 
     const handleAddSchool = async () => {
         console.log("Organization ID: ", id);
-
-        if (!selectedSchools.length) {
-            alert('Please select at least one School.');
-            return;
-        }
+        console.log(schoolName);
 
         // Get reference to the organization document
         const OrganizationRef = doc(db, 'organizations', id);
@@ -270,7 +289,7 @@ const EditOrganization: React.FC = () => {
                     updateDoc(schoolRef, { Organization: OrganizationRef });
                 } else {
                     // if not, create a new school and add it to the organization and the organization to the school
-                    console.log("School does not exist");
+                    console.log("School does not exist, let's create the school document and in the organization and the organization to the school");
                     // create a reference to a new school document
                     const newSchoolRef = doc(collection(db, 'schools'));
                     // set the data for the new school document
@@ -380,6 +399,19 @@ const EditOrganization: React.FC = () => {
         history.push(`/ViewOrganization/${selectedOrganization.id}`)
     }
 
+    const handlePhotos = (photos: string) => {
+        // let's display the photos in a small ionic grid
+        return (
+            <IonGrid>
+                <IonRow>
+                    <IonCol>
+                        <img src={photos} alt="school photo" />
+                    </IonCol>
+                </IonRow>
+            </IonGrid>
+        );
+    }
+
 
     const handleSave = async () => {
         if (!selectedOrganization || !isCreator) {
@@ -446,12 +478,10 @@ const EditOrganization: React.FC = () => {
                                             <IonTitle>Select a School</IonTitle>
                                         </IonHeader>
                                         <IonContent>
-                                            <IonInput>
-                                                <form>
-                                                    <input type="text" placeholder="School Name" />
-                                                </form>
-                                            </IonInput>
-                                            <LocationInput onLocationChange={setSchoolLocation} />
+                                            <LocationInput onLocationChange={setSchoolLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} />
+                                            <IonLabel position="stacked">School Name:</IonLabel>
+                                            {schoolName}
+                                            <IonButton onClick={() => { setSchoolLocation(null); setSchoolName(null); }}>Clear</IonButton>
                                             <IonButton onClick={handleAddSchool}>Add Selected School</IonButton>
                                             <IonButton onClick={() => setShowSchoolModal(false)}>Cancel</IonButton>
                                         </IonContent>
@@ -480,7 +510,7 @@ const EditOrganization: React.FC = () => {
                                             </IonCol>
                                             <IonCol>
                                                 <IonLabel position="stacked">Organization Location:</IonLabel>
-                                                <LocationInput onLocationChange={setOrganizationLocation} />
+                                                <LocationInput onLocationChange={setOrganizationLocation} defaultLocation={organizationLocation} />
                                             </IonCol>
                                         </IonList>
                                     }
