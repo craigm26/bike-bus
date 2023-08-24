@@ -362,8 +362,6 @@ const Map: React.FC = () => {
 
         if (id) {
 
-          console.log('id', id)
-
           const tripsRef = doc(db, 'event', id);
           const tripSnapshot = await getDoc(tripsRef);
 
@@ -373,7 +371,6 @@ const Map: React.FC = () => {
 
           if (eventSnapshot.exists()) {
             const eventData = eventSnapshot.data();
-            console.log('eventData', eventData)
             // set isActiveBikeBusEvent to true if the event is a bikebus event
             if (eventData?.eventType === 'BikeBus') {
               setIsActiveBikeBusEvent(true);
@@ -1744,10 +1741,6 @@ const Map: React.FC = () => {
     setInfoWindow({ isOpen: false, content: '', position: null });
   };
 
-
-  // how do we do the uploadString function for the avatarElement?
-  // we need to create a new document in the firestore storage document collection "avatars" sub folder "Open Trip Leaders"
-
   const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
 
     // get the convertedPathCoordinates
@@ -2018,12 +2011,6 @@ const Map: React.FC = () => {
       }
     }
   };
-
-  // we need to figure out why the endbikebus event button is not showing up...
-  console.log('isEventLeader: ', isEventLeader);
-  console.log('id', id);
-  console.log('isActiveBikeBusEvent: ', isActiveBikeBusEvent);
-
 
   if (!isLoaded) {
     return <div>Loading...</div>;
