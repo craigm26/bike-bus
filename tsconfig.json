@@ -19,10 +19,22 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "typeRoots": ["./node_modules/@types", "./typings"],
-    "types": ["jest", "google.maps"]
+    "typeRoots": [
+      "./node_modules/@types",
+      "./typings"
+    ],
+    "types": [
+      "jest",
+      "google.maps"
+    ]
   },
   "include": [
-    "src", "typings", "jest", "functions"
+    "src",
+    "typings",
+    "jest",
+    "functions"
+  ],
+  "exclude": [
+    "src/assets/fontawesome/*",
   ]
 }

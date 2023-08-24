@@ -60,6 +60,13 @@ import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
 
 
+import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
+import { ReactComponent as HouseIcon } from './assets/fontawesome/svgs/regular/house.svg';
+import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/arrow-up-from-bracket.svg';
+import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
+import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
+
+
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
@@ -420,11 +427,11 @@ const App: React.FC = () => {
           <Avatar uid={user.uid} size="extrasmall" />
         </IonAvatar>
       ) : (
-        <IonIcon icon={personCircleOutline} />
+        <UserIcon style={{ width: '24px', height: '24px' }} />
       )
     ) : (
-      <IonIcon icon={personCircleOutline} />
-    );
+      <UserIcon style={{ width: '24px', height: '24px' }} />
+      );
   }, [user, avatarUrl]);
 
 
@@ -601,10 +608,10 @@ const App: React.FC = () => {
                           ]}
                         />
                         <IonButton onClick={() => setShowActionSheet(true)}>
-                          <IonIcon slot="end" icon={shareOutline}></IonIcon>
+                          <ShareIcon style={{ width: '18px', height: '18px' }} />
                         </IonButton>
                         <IonButton routerLink='/help'>
-                          <IonIcon slot="end" icon={helpCircleOutline}></IonIcon>
+                          <HelpIcon style={{ width: '18px', height: '18px' }} />
                         </IonButton>
                       </IonButtons>
                     </IonToolbar>
@@ -752,7 +759,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="start" slot="fixed">
                       <IonFabButton routerLink="/Map" routerDirection="none">
-                        <IonIcon color="#ffd800" icon={homeOutline} />
+                      <HouseIcon style={{ width: '24px', height: '24px' }} />
                       </IonFabButton>
                     </IonFab>
                   </div>
@@ -786,7 +793,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="end" slot="fixed">
                     <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
-                        <IonIcon color="#ffd800" icon={clipboardOutline} />
+                    <ClipboardIcon style={{ width: '24px', height: '24px' }} />
                       </IonFabButton>
                     </IonFab>
                   </div>

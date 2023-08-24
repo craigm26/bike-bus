@@ -1,37 +1,27 @@
 import {
     IonContent,
-    IonHeader,
     IonPage,
     IonButton,
-    IonIcon,
     IonRow,
     IonGrid,
     IonCol,
-    IonToolbar,
-    IonAvatar,
     IonLabel,
     IonItem,
-    IonTitle,
     IonCardTitle,
+    IonRouterLink,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useContext } from "react";
-import "./Map.css";
+import { useEffect, useState } from "react";
+import "./ViewOrganization.css";
 import useAuth from "../useAuth";
 import { db } from "../firebaseConfig";
-import { DocumentReference, collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { DocumentReference, DocumentSnapshot, getDoc } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import {
-    personCircleOutline,
-} from "ionicons/icons";
-import { HeaderContext } from "../components/HeaderContext";
 import React from "react";
-import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
 import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
-import { database } from "firebase-functions/v1/firestore";
 
 interface UserData {
     username: string;
@@ -45,9 +35,8 @@ interface UserData {
 type BikeBusGroups = {
     id: string;
     BikeBusName: string;
-    BikeBusLocation: string;
-    BikeBusCreator: string;
-    BikeBusLeader: string;
+    BikeBusLeader: DocumentReference;
+    Organization: DocumentReference;
 }
 
 
@@ -60,8 +49,7 @@ type Organization = {
     schoolDistrict: string;
     schools: string[];
     bikeBusRoutes: string[];
-    //BikeBusGroups should be a document reference to the bikebusgroups collection
-    BikeBusGroups: DocumentReference[];
+    BikeBusGroups?: DocumentReference[];
     NameOfOrg: string;
     OrganizationType: string;
     Website: string;
@@ -119,6 +107,8 @@ const ViewOrganization: React.FC = () => {
     const [organizationId, setOrganizationId] = useState<string>("");
     const [BikeBusGroupNames, setBikeBusGroupNames] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<BikeBusGroups[]>([]);
+    const [BikeBusGroupIds, setBikeBusGroupIds] = useState<string[]>([]);
+
 
 
 
@@ -139,7 +129,7 @@ const ViewOrganization: React.FC = () => {
 
     // the id of the url param is the id of the collection document for the organization
     // get the document data
-    const [Organization, setOrganization] = useState<Organization | null>(null);
+    const [organization, setOrganization] = useState<Organization | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -160,12 +150,24 @@ const ViewOrganization: React.FC = () => {
                         setSchools(organizationData.SchoolNames);
                         setSchool(organizationData.SchoolNames[0]);
                         setBikeBusGroups(organizationData.BikeBusGroups);
-                        console.log("organizationData", organizationData);
-                        console.log("BikeBusGroups", organizationData.BikeBusGroups);
-
                         getDoc(userRef).then((docSnapshot) => {
                             if (docSnapshot.exists()) {
                                 const userData = docSnapshot.data();
+                            }
+                        });
+
+                        // get the document id of the bikebusgroups from the organization data
+                        getDoc(organizationRef).then((docSnapshot) => {
+                            if (docSnapshot.exists()) {
+                                const organizationData = docSnapshot.data();
+                                if (organizationData) {
+                                    setOrganization(organizationData as Organization);
+                                    const BikeBusGroups = organizationData.BikeBusGroups;
+                                    // let's get the document id of each BikeBusGroup
+                                    const BikeBusGroupIds = BikeBusGroups.map((BikeBusGroup: DocumentReference) => BikeBusGroup.id);
+                                    console.log("BikeBusGroupIds", BikeBusGroupIds);
+                                    setBikeBusGroupIds(BikeBusGroupIds);
+                                }
                             }
                         });
 
@@ -178,12 +180,11 @@ const ViewOrganization: React.FC = () => {
                             );
 
                             setBikeBusGroups(BikeBusGroupsData as BikeBusGroups[]);
-                            console.log("BikeBusGroups", BikeBusGroupsData);
+                            // let's get the document id of each BikeBusGroup
                         };
 
                         // Call the async function
                         getBikeBusGroupsData();
-                        console.log('BikeBusGroups:', BikeBusGroups);
 
                     }
                 }
@@ -191,6 +192,32 @@ const ViewOrganization: React.FC = () => {
         }
     }, [id, user]);
 
+    useEffect(() => {
+        const fetchBikeBusGroups = async (organization: Organization) => {
+            if (organization.BikeBusGroups) {
+                const bikeBusGroupsData = await Promise.all(
+                    organization.BikeBusGroups.map((ref: DocumentReference) => getDoc(ref))
+                );
+                const bikeBusGroups = bikeBusGroupsData.map((doc: DocumentSnapshot) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }) as BikeBusGroups);
+                setBikeBusGroups(bikeBusGroups);
+            }
+        };
+        
+          
+
+          if (organization) {
+            fetchBikeBusGroups(organization);
+          }
+          
+        }, [organization]);
+
+    // lets get the document id of the bikebusgroups from the organization data
+    console.log("BikeBusGroupIds", BikeBusGroupIds);
+    console.log("BikeBusGroups", BikeBusGroups);
+    BikeBusGroups.forEach(group => console.log("BikeBusGroup.id", group.id)); // Use forEach to loop over the array
 
     const setShowBikeBusGroupAddModal = (show: boolean) => {
         setShowBikeBusGroupAddModal(show);
@@ -199,7 +226,7 @@ const ViewOrganization: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen className="ion-flex">
-                <IonCardTitle>{Organization?.NameOfOrg}</IonCardTitle>
+                <IonCardTitle>{organization?.NameOfOrg}</IonCardTitle>
                 <IonGrid>
                     <IonRow>
                         <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
@@ -212,37 +239,38 @@ const ViewOrganization: React.FC = () => {
                     <IonRow>
                         <IonCol>
                             <IonItem lines="none">
-                                <IonLabel position="stacked">Organization Type: {Organization?.OrganizationType}</IonLabel>
+                                <IonLabel position="stacked">Organization Type: {organization?.OrganizationType}</IonLabel>
                             </IonItem>
                         </IonCol>
                         <IonCol>
                             <IonItem lines="none">
-                                <IonLabel position="stacked">Organization Location: {Organization?.Location}</IonLabel>
+                                <IonLabel position="stacked">Organization Location: {organization?.Location}</IonLabel>
                             </IonItem>
                         </IonCol>
                         <IonCol>
                             <IonItem lines="none">
-                                <IonLabel position="stacked">Organization Contact: {Organization?.ContactName}</IonLabel>
+                                <IonLabel position="stacked">Organization Contact: {organization?.ContactName}</IonLabel>
                             </IonItem>
                         </IonCol>
                         <IonCol>
                             <IonItem lines="none">
-                                <IonLabel position="stacked">Organization Email: {Organization?.Email}</IonLabel>
+                                <IonLabel position="stacked">Organization Email: {organization?.Email}</IonLabel>
                             </IonItem>
                         </IonCol>
-                        <IonCol>
+                    </IonRow>
+                    <IonRow>
+                    <IonCol>
                             <IonItem lines="none">
+                                <IonLabel position="stacked">Bike Bus Groups: </IonLabel>
                                 <div>
-                                    {Array.isArray(BikeBusGroups) && BikeBusGroups.map((BikeBusGroup) => (
+                                    {BikeBusGroups.map((BikeBusGroup) => (
                                         <div key={BikeBusGroup.id}>
-                                            <IonLabel position="stacked">Bike Bus Group: {BikeBusGroup.BikeBusName}</IonLabel>
+                                            <IonRouterLink className="BikeBusName" routerLink={`/BikeBusGroupPage/${BikeBusGroup.id}`}>
+                                                {BikeBusGroup.BikeBusName}
+                                            </IonRouterLink>
                                         </div>
                                     ))}
                                 </div>
-                            </IonItem>
-                        </IonCol>
-                        <IonCol>
-                            <IonItem lines="none">
                             </IonItem>
                         </IonCol>
                     </IonRow>
