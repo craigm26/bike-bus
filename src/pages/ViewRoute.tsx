@@ -101,7 +101,7 @@ const ViewRoute: React.FC = () => {
   const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
   const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
-  const [BikeBusGroupId, setBikeBusGroupId] = useState<string>('');
+  const [BikeBusGroupId, setBikeBusGroupId] = useState<DocumentReference | null>(null);
 
 
   const containerMapStyle = {
@@ -153,7 +153,7 @@ const ViewRoute: React.FC = () => {
         console.log("This is a bike bus route");
         console.log(routeData.BikeBusGroupId);
         // fetch the bikebus group data
-        const docRef = doc(db, 'bikeBusGroups', routeData.BikeBusGroupId);
+        const docRef = doc(db, 'bikebusgroups', routeData.BikeBusGroupId?.id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const bikeBusGroupData = {

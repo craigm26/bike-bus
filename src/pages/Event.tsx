@@ -785,6 +785,17 @@ const Event: React.FC = () => {
                       ],
                     }}
                   />
+                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
+                    <Marker
+                      
+                      key={index}
+                      position={{ lat: stop.lat, lng: stop.lng }}
+                      icon={{
+                        url: '/assets/markers/stop-outline.svg',
+                        scaledSize: new google.maps.Size(30, 30),
+                      }}
+                    />
+                  ))}
                 </div>
               )}
               <div>

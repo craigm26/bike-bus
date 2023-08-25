@@ -19,14 +19,20 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { FieldPath, arrayUnion, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
+import { get } from 'http';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+
+
+type DirectionsWaypoint = {
+  location: google.maps.LatLng | google.maps.LatLngLiteral;
+};
 
 
 interface Coordinate {
@@ -93,6 +99,8 @@ const EditRoute: React.FC = () => {
   });
   const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
   const [isClicked, setIsClicked] = useState<boolean>(false);
+  const bikeBusStopsRef = getDoc(doc(db, 'bikebusstops', id));
+  const bikeBusStopsQuery = bikeBusStopsRef;
 
 
 
@@ -337,10 +345,9 @@ const EditRoute: React.FC = () => {
 
 
   const onGenerateNewRouteClick = async () => {
-    if (!selectedRoute?.BikeBusStop || selectedRoute.BikeBusStop.length === 0) {
-      console.error('No new stop to add to route');
-      return;
-    }
+
+
+
 
     // Add a confirm dialog
     const confirmed = window.confirm("This will delete the existing route and create a new one. Are you sure you want to continue?");
@@ -350,11 +357,31 @@ const EditRoute: React.FC = () => {
     }
 
     if (selectedRoute) {
-      // Create a new path with the stops included
-      const busStops: google.maps.DirectionsWaypoint[] = selectedRoute.BikeBusStop.map(coord => ({ location: coord, stopover: true }));
 
-      // Not including the old pathCoordinates here
-      const waypoints = [...busStops];
+      const routeRef = doc(db, 'routes', id);
+      const routeSnap = await getDoc(routeRef);
+      const routeData = routeSnap.data() as Route;
+      const routeBikeBusStopIds = routeData.BikeBusStopIds;
+
+      // Fetch all bike bus stops using getDocs and the routeBikeBusStopIds array
+      const bikeBusStopsQuery = await getDocs(query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds)));
+      const bikeBusStopsData = bikeBusStopsQuery.docs.map(doc => doc.data());
+      console.log('bikeBusStopsData: ', bikeBusStopsData);
+
+
+
+      // Create an array of coordinates from the bikeBusStopsData
+      const bikeBusStopsCoordinates = bikeBusStopsData.map((coord: any) => ({
+        lat: coord.latitude,
+        lng: coord.longitude,
+      }));
+      console.log('bikeBusStopsCoordinates: ', bikeBusStopsCoordinates);
+
+      // now let's create a new array of coordinates with the start point, the end point, and the bikeBusStopsCoordinates
+      const waypoints = [
+        ...bikeBusStopsCoordinates.map(coord => ({ location: new google.maps.LatLng(coord.lat, coord.lng) })),
+      ];
+      console.log('waypoints: ', waypoints);
 
       const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
 
@@ -366,7 +393,7 @@ const EditRoute: React.FC = () => {
       setIsClicked(true);
     }
 
-    setBikeBusStops(selectedRoute.BikeBusStop);
+    setBikeBusStops(selectedRoute?.BikeBusStop ?? []);
   };
 
   const updateRoute = async (updatedRoute: Route) => {
@@ -379,25 +406,6 @@ const EditRoute: React.FC = () => {
 
 
   const handleDeleteStop = async (index: number) => {
-    if (selectedRoute) {
-      // Create a new array without the stop to be deleted
-      const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
-
-      const newRoute: Route = {
-        ...selectedRoute,
-        BikeBusStop: newStops,
-      };
-      console.log(newStops);
-      console.log(newRoute);
-
-      // Update the route in Firebase here
-      await updateRoute(newRoute);
-      alert('Stop deleted, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
-      setSelectedStopIndex(null);
-    }
-  };
-
-  const handleEditStop = async (index: number) => {
     if (selectedRoute) {
       // Create a new array without the stop to be deleted
       const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);

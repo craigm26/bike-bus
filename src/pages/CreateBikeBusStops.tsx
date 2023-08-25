@@ -18,7 +18,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
+import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection, DocumentReference } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -38,7 +38,7 @@ interface Route {
   BikeBusGroupId: string;
   BikeBusRouteId: string;
   BikeBusStopName: string[];
-  BikeBusStopIds: string[];
+  BikeBusStopIds: DocumentReference[];
   BikeBusStop: Coordinate[];
   id: string;
   endPoint: Coordinate;
@@ -88,9 +88,9 @@ const CreateBikeBusStop: React.FC = () => {
               endPoint: routeData.endPoint as Coordinate,
               id: routeData.id ? routeData.name as string : '',
               BikeBusGroupId: routeData.BikeBusGroupId ? routeData.BikeBusGroupId as string : '',
-              BikeBusStopName: [],
+              BikeBusStopName: routeData.BikeBusStopName ? routeData.BikeBusStopName as string[] : [],
               BikeBusRouteId: routeData.BikeBusRouteId ? routeData.BikeBusRouteId as string : '',
-              BikeBusStopIds: [],
+              BikeBusStopIds: routeData.BikeBusStopIds ? routeData.BikeBusStopIds as DocumentReference[] : [],
               BikeBusStop: [],
               pathCoordinates: [],
               endPointAddress: routeData.endPointAddress ? routeData.endPointAddress as string : '',
@@ -163,8 +163,8 @@ const CreateBikeBusStop: React.FC = () => {
     // Get the bikebusgroup's id from the selected route
     const bikeBusGroupId = selectedRoute?.BikeBusGroupId || '';
 
-    // Get the route id from the URL parameter
-    const routeId = id || '';
+    // Get the route id from the URL parameter and set it as a document reference to the routes document collection
+    const routeId = doc(db, 'routes', id);
 
     await updateDoc(bikeBusStopRef, {
       BikeBusGroupId: bikeBusGroupId,
@@ -177,12 +177,9 @@ const CreateBikeBusStop: React.FC = () => {
 
   const updateRoute = async (newRoute: Route, newStopId: string) => {
     const routeRef = doc(db, 'routes', id);
-    const lastBikeBusStopName = BikeBusStopName[BikeBusStopName.length - 1] || "";
     await updateDoc(routeRef, {
       ...newRoute,
-      BikeBusStopName: arrayUnion(lastBikeBusStopName),
       BikeBusStopIds: arrayUnion("/bikebusstops/" + newStopId),
-      BikeBusStop: arrayUnion(...BikeBusStops)
     });
   };
 
@@ -192,24 +189,27 @@ const CreateBikeBusStop: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-
   const onSaveStopButtonClick = async () => {
     if (selectedRoute && BikeBusStops.length > 0) {
       const newStop = BikeBusStops[BikeBusStops.length - 1];
       const newStopId = await addNewStop(newStop);
+
       if (newStopId) {
-        const newStops: Coordinate[] = [...selectedRoute.BikeBusStop, newStop];
-        const newRoute: Route = {
-          ...selectedRoute,
-          BikeBusStop: newStops as Coordinate[],
-        };
-        await updateRoute(newRoute, newStopId);
+        // Create a DocumentReference for the newStopId
+        const newStopDocRef = doc(db, "bikebusstops", newStopId);
+        const routeDocRef = doc(db, "routes", id); 
+        await setDoc(routeDocRef, {
+          BikeBusStopIds: arrayUnion(newStopDocRef)
+        }, { merge: true });
+      
+        
         await updateBikeBusStops(newStopId);
         alert('BikeBusStop added successfully!');
         history.push(`/EditRoute/${id}`);
       }
     }
   };
+  
 
 
   return (
