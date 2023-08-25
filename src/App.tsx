@@ -277,6 +277,12 @@ const App: React.FC = () => {
   // Function to check if an event is within the required distance and if the event belongs to a group the user is part of
   const isEventRelevant = useCallback(async (event: any) => {
     return new Promise(async (resolve, reject) => {
+
+      if (event.start && event.start < Date.now()) {
+        resolve(false);
+        return;
+      }
+
       const userLocation = await getUserLocation(); // Get the user's location
       const userGroups = await getUserGroups(); // Get the groups the user is part of
       const groupRoute = await getRoute() as GRoute | null;
@@ -336,12 +342,10 @@ const App: React.FC = () => {
         }
       }
 
-
-
-
       const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
 
       resolve(isRelevant);
+      
     });
   }, [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
 
@@ -517,7 +521,6 @@ const App: React.FC = () => {
                 </IonContent>
               </IonMenu>
               <IonPage id="main-content" >
-
                 <IonContent fullscreen>
                   <IonHeader>
                     <IonToolbar color="primary" >
@@ -527,14 +530,6 @@ const App: React.FC = () => {
                       <IonText slot="start" color="secondary" class="BikeBusFont">
                         <h1>BikeBus</h1>
                       </IonText>
-                      <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                      >
-                        <Profile />
-                      </IonPopover>
                       <IonButton fill="clear" slot="end" onClick={togglePopover}>
                         <IonChip>
                           {avatarElement}
@@ -779,7 +774,7 @@ const App: React.FC = () => {
                               {upcomingGroup.BikeBusName}
                               {upcomingEvent && (
                                 <IonText className="EventTimeFont">
-                                  {formatDate(upcomingEvent.startTimestamp)}
+                                  {formatDate(upcomingEvent.start)}
                                 </IonText>
                               )}
                             </IonLabel>

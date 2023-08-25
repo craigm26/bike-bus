@@ -600,7 +600,7 @@ const Event: React.FC = () => {
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
   
-  const startTime = eventData?.startTimestamp ? new Date(eventData?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+  const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime
     ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
     : 'Loading...';
