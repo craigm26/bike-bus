@@ -467,9 +467,9 @@ const BikeBusGroupPage: React.FC = () => {
   };
 
   // make the nextEvent a start time that's nicely formatted for use in the ui 
-  const nextEventTime = nextEvent?.startTimestamp && (typeof nextEvent.startTimestamp === 'string'
-    ? new Date(nextEvent.startTimestamp).toLocaleString(undefined, dateTimeOptions)
-    : new Date(nextEvent.startTimestamp.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
+  const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
+    ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions)
+    : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
 
 
   return (

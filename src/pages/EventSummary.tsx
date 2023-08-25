@@ -598,34 +598,16 @@ const EventSummary: React.FC = () => {
 
   // Date and time formatting options
 
+  // Date and time formatting options
+
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-
-  // Extract date from "start" field
-  const startDate = eventData?.start ? new Date(eventData?.start.toDate()) : null;
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
   
-  // Combine date from "start" with time from "startTimestamp" for startTime
-  const startTime = startDate && eventData?.startTimestamp
-    ? new Date(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        new Date(eventData.startTimestamp.toDate()).getHours(),
-        new Date(eventData.startTimestamp.toDate()).getMinutes()
-      ).toLocaleString(undefined, dateOptions)
+  const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
+  const endTime = eventData?.endTime
+    ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
     : 'Loading...';
   
-  // Combine date from "start" with time from "endTime" for endTime
-  const endTime = startDate && eventData?.endTime
-    ? new Date(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        new Date(eventData.endTime.toDate()).getHours(),
-        new Date(eventData.endTime.toDate()).getMinutes()
-      ).toLocaleString(undefined, dateOptions)
-    : 'Loading...';
-  
-
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
 
@@ -1108,13 +1090,7 @@ const EventSummary: React.FC = () => {
                 <IonGrid className="bikebus-event-time">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>{startTime} to
-                      </IonLabel>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <IonLabel>{endTime}
+                      <IonLabel>{startTime} to {endTime}
                       </IonLabel>
                     </IonCol>
                   </IonRow>
