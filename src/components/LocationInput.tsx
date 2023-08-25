@@ -3,8 +3,10 @@ import { on } from 'events';
 import React, { useState, useRef, useEffect } from 'react';
 
 
-function LocationInput({ onLocationChange, onPlaceSelected, defaultLocation = '', onPhotos }: { onLocationChange: (location: string) => void; onPlaceSelected?: (place: google.maps.places.PlaceResult) => void; defaultLocation?: string; onPhotos?: (photoUrl: string) => void; }) {
+function LocationInput({ onLocationChange, onPlaceSelected, defaultLocation = '', onPhotos }: { onLocationChange: (location: string) => void; onPlaceSelected?: (place: google.maps.places.PlaceResult) => void; defaultLocation?: string; onPhotos?: (photoUrl: string) => void; setPlaceName: (placeName: string) => void; setFormattedAddress: (formattedAddress: string) => void; }) {
   const [location, setLocation] = useState(defaultLocation);
+  const [placeName, setPlaceName] = useState('');
+  const [formattedAddress, setFormattedAddress] = useState('');
   const autoCompleteRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -16,6 +18,9 @@ function LocationInput({ onLocationChange, onPlaceSelected, defaultLocation = ''
         const address = place.formatted_address || '';
         setLocation(address);
         onLocationChange(address);
+        const placeName = place.name || '';
+        setPlaceName(placeName);
+        setFormattedAddress(address);
         if (onPlaceSelected) {
           onPlaceSelected(place);
         }
@@ -35,7 +40,7 @@ function LocationInput({ onLocationChange, onPlaceSelected, defaultLocation = ''
       <input
         ref={autoCompleteRef}
         onChange={(e) => setLocation(e.target.value)}
-        placeholder="Enter Location"
+        placeholder="Enter Name or Location"
         value={location}
         style={{ width: '100%' }}
       />

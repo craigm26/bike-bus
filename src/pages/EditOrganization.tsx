@@ -17,17 +17,23 @@ import {
     IonHeader,
     IonIcon,
     IonButtons,
+    IonSearchbar,
+    IonRadio,
+    IonRadioGroup,
+    IonItemDivider,
 } from '@ionic/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { collection, getDoc, getDocs, updateDoc, query, doc, where, DocumentReference, Timestamp, arrayUnion, setDoc } from 'firebase/firestore';
+import { collection, getDoc, getDocs, updateDoc, query, doc, where, DocumentReference, Timestamp, arrayUnion, setDoc, addDoc } from 'firebase/firestore';
+// State variables remain the same
+
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 import { set } from 'date-fns';
-import { checkmark, peopleOutline } from 'ionicons/icons';
+import { checkmark, peopleOutline, schoolOutline } from 'ionicons/icons';
 import './EditOrganization.css';
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import LocationInput from '../components/LocationInput';
@@ -38,6 +44,17 @@ type School = {
     SchoolName: string;
     Location: string;
     Organization?: DocumentReference;
+}
+
+type UserType = {
+    id: string;
+    email: string;
+    accountType: string;
+    avatarUrl?: string;
+    firstName?: string;
+    lastName?: string;
+    organization?: DocumentReference;
+    orgRole?: string;
 }
 
 interface Organization {
@@ -88,9 +105,7 @@ const EditOrganization: React.FC = () => {
     const [bikeBusGroupsLeader, setBikeBusGroupsLeader] = useState<any[]>([]);
     const [selectedBikeBusGroups, setSelectedBikeBusGroups] = useState<BikeBusGroup[]>([]);
     const selectedSchools: School[] = [];
-    const [selectedStaff, setSelectedStaff] = useState([]);
     const [fetchedBikeBusGroups, setFetchedBikeBusGroups] = useState<BikeBusGroup[]>([]);
-    const fetchedSchools: School[] = [];
     const [fetchedStaff, setFetchedStaff] = useState([]);
     const [showRemoveConfimModal, setShowRemoveConfimModal] = useState(false);
     const [organizationLocation, setOrganizationLocation] = useState('');
@@ -99,6 +114,56 @@ const EditOrganization: React.FC = () => {
     const [schoolLocation, setSchoolLocation] = useState<string | null>(null);
     const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
     const [schoolName, setSchoolName] = useState<string | null>(null);
+    const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
+    const [placeName, setPlaceName] = useState<string | null>(null);
+    const [fetchedSchools, setFetchedSchools] = useState<School[]>([]);
+    const [showStaffModal, setShowStaffModal] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState<BikeBusGroup | null>(null);
+    const [searchStaffQuery, setSearchStaffQuery] = useState('');
+    const [selectedStaff, setSelectedStaff] = useState<UserType[]>([]);
+    const [searchStaffResults, setSearchStaffResults] = useState<UserType[]>([]);
+    const [showRemoveStaffConfimModal, setShowRemoveStaffConfimModal] = useState(false);
+
+    const handleSearch = async (queryText: string) => {
+        setSearchStaffQuery(queryText);
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, where('email', '==', queryText));
+        console.log(q);
+        const querySnapshot = await getDocs(q);
+        const results = querySnapshot.docs.map(doc => {
+            return { id: doc.id, email: doc.data().email, accountType: doc.data().accountType } as UserType;
+        });
+        setSearchStaffResults(results);
+        console.log(results);
+    };
+
+
+    const handleSelectStaff = (user: UserType) => {
+        setSelectedStaff([...selectedStaff, user]);
+    };
+
+    const handleAddStaff = async () => {
+        const OrganizationRef = doc(db, 'organizations/${Organization.id}/staff', id);
+        console.log(OrganizationRef);
+
+        selectedStaff.forEach(user => {
+            const staffRef = doc(OrganizationRef, user.id); // Assuming user.id exists
+            console.log(staffRef);
+            updateDoc(staffRef, { Organization: OrganizationRef });
+        });
+
+        await updateDoc(OrganizationRef, { staff: arrayUnion(...selectedStaff) });
+    };
+
+    const [selectedEmail, setSelectedEmail] = useState<string>('');
+    const [inviteEmail, setInviteEmail] = useState<string>('');
+
+    const handleInvite = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Logic to send an invitation to inviteEmail
+    };
+
+
 
 
 
@@ -153,6 +218,8 @@ const EditOrganization: React.FC = () => {
                 }
             });
         }
+
+        fetchSchools();
     }, [user]);
 
     const getOrganizationLocation = async () => {
@@ -186,6 +253,27 @@ const EditOrganization: React.FC = () => {
         })) as BikeBusGroup[];
 
         setFetchedBikeBusGroups(groups);
+    };
+
+    const fetchSchools = async () => {
+        const OrganizationRef = doc(db, 'organizations', id);
+        const orgSnapshot = await getDoc(OrganizationRef);
+
+        // Get the Schools array and handle possible undefined data
+        const orgData = orgSnapshot.data() as Organization;
+        const schoolRefs = orgData?.Schools || [];
+
+        // Fetch each school document
+        const schoolPromises = schoolRefs.map(ref => getDoc(ref));
+        const schoolSnapshots = await Promise.all(schoolPromises);
+
+        // Transform snapshots to schools
+        const schools = schoolSnapshots.map(snapshot => ({
+            id: snapshot.id,
+            ...snapshot.data()
+        })) as School[];
+
+        setFetchedSchools(schools);
     };
 
 
@@ -261,7 +349,10 @@ const EditOrganization: React.FC = () => {
 
     const handleAddSchool = async () => {
         console.log("Organization ID: ", id);
+        console.log(placeName);
         console.log(schoolName);
+        console.log(formattedAddress);
+        console.log(schoolLocation);
 
         // Get reference to the organization document
         const OrganizationRef = doc(db, 'organizations', id);
@@ -290,20 +381,17 @@ const EditOrganization: React.FC = () => {
                 } else {
                     // if not, create a new school and add it to the organization and the organization to the school
                     console.log("School does not exist, let's create the school document and in the organization and the organization to the school");
-                    // create a reference to a new school document
-                    const newSchoolRef = doc(collection(db, 'schools'));
-                    // set the data for the new school document
-                    setDoc(newSchoolRef, {
-                        SchoolName: selectedSchool?.SchoolName,
-                        Location: selectedSchool?.Location,
-                        Organization: OrganizationRef,
-                    }).then(() => {
+                    // create a new document in the schools document collection with the school name and location
+                    addDoc(collection(db, 'schools'), {
+                        SchoolName: schoolName,
+                        Location: schoolLocation,
+                    }).then((docRef) => {
                         // add the school to the organization
-                        updateDoc(OrganizationRef, { Schools: arrayUnion(newSchoolRef) });
+                        updateDoc(OrganizationRef, { Schools: arrayUnion(docRef) });
                         // add the organization to the school
-                        updateDoc(newSchoolRef, { Organization: OrganizationRef });
-                    }).catch(error => {
-                        console.error("Error creating new school: ", error);
+                        updateDoc(docRef, { Organization: OrganizationRef });
+                    }).catch((error) => {
+                        console.error("Error adding document: ", error);
                     });
 
 
@@ -354,6 +442,8 @@ const EditOrganization: React.FC = () => {
         if (!selectedOrganization || !isCreator) {
             return;
         }
+
+
 
         const OrganizationRef = doc(db, 'organizations', selectedOrganization.id);
 
@@ -447,7 +537,39 @@ const EditOrganization: React.FC = () => {
                             </IonRow>
                             <IonRow>
                                 <IonCol>
-                                    <IonButton>Add Staff</IonButton>
+                                    <IonButton onClick={() => setShowStaffModal(true)}>Add Staff</IonButton>
+                                    <IonModal isOpen={showStaffModal} onDidDismiss={() => setShowStaffModal(false)}>
+                                        <IonHeader>
+                                            <IonTitle>Search for BikeBus Users to add as Staff</IonTitle>
+                                        </IonHeader>
+                                        <IonContent>
+                                            <IonSearchbar onIonChange={(e) => handleSearch(e.detail.value || '')} value={searchStaffQuery} />
+                                            <IonRadioGroup value={selectedEmail} onIonChange={(e) => setSelectedEmail(e.detail.value)}>
+                                                {searchStaffResults.map((user) => (
+                                                    <IonItem key={user.id}>
+                                                        <IonLabel>
+                                                            {user.email} - {user.firstName} {user.lastName}
+                                                        </IonLabel>
+                                                        <IonRadio slot="start" value={user.email} />
+                                                    </IonItem>
+                                                ))}
+                                            </IonRadioGroup>
+                                            <IonButton onClick={handleAddStaff}>Add Selected Staff</IonButton>
+                                            <IonButton onClick={() => setShowStaffModal(false)}>Cancel</IonButton>
+                                            <IonItemDivider>Or</IonItemDivider>
+                                            {searchStaffResults.length === 0 && (
+                                                <form onSubmit={handleInvite}>
+                                                    <IonInput
+                                                        type="email"
+                                                        placeholder="Enter email to invite"
+                                                        value={inviteEmail}
+                                                        onIonChange={(e) => setInviteEmail(e.detail.value || '')}
+                                                    />
+                                                    <IonButton type="submit">Send Invite</IonButton>
+                                                </form>
+                                            )}
+                                        </IonContent>
+                                    </IonModal>
                                     <IonButton onClick={() => setShowBikeBusModal(true)}>Add BikeBusGroup</IonButton>
                                     <IonModal isOpen={showBikeBusModal} onDidDismiss={() => setShowBikeBusModal(false)}>
                                         <IonHeader>
@@ -475,13 +597,26 @@ const EditOrganization: React.FC = () => {
                                     <IonButton onClick={() => setShowSchoolModal(true)}>Add School</IonButton>
                                     <IonModal isOpen={showSchoolModal} onDidDismiss={() => setShowSchoolModal(false)}>
                                         <IonHeader>
-                                            <IonTitle>Select a School</IonTitle>
+                                            <IonTitle>Search For a School</IonTitle>
                                         </IonHeader>
                                         <IonContent>
-                                            <LocationInput onLocationChange={setSchoolLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} />
-                                            <IonLabel position="stacked">School Name:</IonLabel>
-                                            {schoolName}
-                                            <IonButton onClick={() => { setSchoolLocation(null); setSchoolName(null); }}>Clear</IonButton>
+                                            <LocationInput onLocationChange={setSchoolLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
+                                            <IonItem>
+                                                <IonLabel position="stacked">School Name: {schoolName}</IonLabel>
+                                            </IonItem>
+                                            <IonItem>
+                                                <IonLabel position="stacked">School Location: {schoolLocation}</IonLabel>
+                                            </IonItem>
+                                            <IonItem>
+                                                <IonGrid>
+                                                    <IonRow>
+                                                        <IonCol>
+                                                            {schoolLocation && <img src={`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${schoolLocation}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`} alt="school photo" />}
+                                                        </IonCol>
+                                                    </IonRow>
+                                                </IonGrid>
+                                            </IonItem>
+                                            <IonButton onClick={() => { setSchoolLocation(null); setSchoolName(null); setFormattedAddress(null); }}>Clear</IonButton>
                                             <IonButton onClick={handleAddSchool}>Add Selected School</IonButton>
                                             <IonButton onClick={() => setShowSchoolModal(false)}>Cancel</IonButton>
                                         </IonContent>
@@ -493,36 +628,37 @@ const EditOrganization: React.FC = () => {
                                     {isLoading ? <IonSpinner /> :
                                         <IonList>
                                             <IonCol>
-                                                <IonLabel position="stacked">Organization Name:</IonLabel>
-                                                <IonInput
-                                                    key={selectedOrganization?.id}
-                                                    value={selectedOrganization?.NameOfOrg || ''}
-                                                    onIonChange={e => {
-                                                        if (selectedOrganization) {
-                                                            const updatedOrganization = {
-                                                                ...selectedOrganization,
-                                                                NameOfOrg: e.detail.value!
-                                                            };
-                                                            setselectedOrganization(updatedOrganization);
-                                                        }
-                                                    }}
-                                                />
-                                            </IonCol>
-                                            <IonCol>
-                                                <IonLabel position="stacked">Organization Location:</IonLabel>
-                                                <LocationInput onLocationChange={setOrganizationLocation} defaultLocation={organizationLocation} />
+                                                <IonLabel position="stacked">Organization Name:
+                                                    <IonInput
+                                                        key={selectedOrganization?.id}
+                                                        value={selectedOrganization?.NameOfOrg || ''}
+                                                        onIonChange={e => {
+                                                            if (selectedOrganization) {
+                                                                const updatedOrganization = {
+                                                                    ...selectedOrganization,
+                                                                    NameOfOrg: e.detail.value!
+                                                                };
+                                                                setselectedOrganization(updatedOrganization);
+                                                            }
+                                                        }}
+                                                    />
+                                                </IonLabel>
+                                                <IonLabel position="stacked"> Organization Location:
+                                                    <LocationInput onLocationChange={setOrganizationLocation} defaultLocation={organizationLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
+                                                </IonLabel>
                                             </IonCol>
                                         </IonList>
                                     }
                                     <IonCol>
-                                        <IonLabel position="stacked">Organization Type:</IonLabel>
-                                        <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)}>
-                                            <IonSelectOption value="School">School</IonSelectOption>
-                                            <IonSelectOption value="School District">School District</IonSelectOption>
-                                            <IonSelectOption value="Work">Work</IonSelectOption>
-                                            <IonSelectOption value="Social">Social</IonSelectOption>
-                                            <IonSelectOption value="Club">Club</IonSelectOption>
-                                        </IonSelect>
+                                        <IonLabel position="stacked">Organization Type:
+                                            <IonSelect value={orgType} onIonChange={e => setOrgType(e.detail.value)}>
+                                                <IonSelectOption value="School">School</IonSelectOption>
+                                                <IonSelectOption value="School District">School District</IonSelectOption>
+                                                <IonSelectOption value="Work">Work</IonSelectOption>
+                                                <IonSelectOption value="Social">Social</IonSelectOption>
+                                                <IonSelectOption value="Club">Club</IonSelectOption>
+                                            </IonSelect>
+                                        </IonLabel>
                                     </IonCol>
                                     {orgType === "School District" &&
                                         <IonCol>
@@ -530,8 +666,8 @@ const EditOrganization: React.FC = () => {
                                             <IonList>
                                                 {fetchedSchools.map(school => (
                                                     <IonItem key={school.id}>
-                                                        <IonButton onClick={() => setShowRemoveConfimModal(true)}>
-                                                            <IonIcon icon={peopleOutline} />
+                                                        <IonButton onClick={() => setShowRemoveSchoolConfimModal(true)}>
+                                                            <IonIcon icon={schoolOutline} />
                                                             {school.SchoolName}
                                                         </IonButton>
                                                         <IonModal isOpen={showRemoveSchoolConfimModal} onDidDismiss={() => setShowRemoveSchoolConfimModal(false)}>
@@ -539,7 +675,9 @@ const EditOrganization: React.FC = () => {
                                                                 <IonTitle>Remove School</IonTitle>
                                                             </IonHeader>
                                                             <IonContent>
-                                                                <IonLabel>Are you sure you want to remove {school.SchoolName}?</IonLabel>
+                                                                <IonItem>
+                                                                    <IonLabel>Are you sure you want to remove {school.SchoolName}?</IonLabel>
+                                                                </IonItem>
                                                                 <IonButton onClick={() => setShowRemoveSchoolConfimModal(false)}>Cancel</IonButton>
                                                                 <IonButton onClick={() => removeSchoolGroup(school)}>Remove</IonButton>
                                                             </IonContent>
@@ -554,22 +692,32 @@ const EditOrganization: React.FC = () => {
                                         <IonList>
                                             {fetchedBikeBusGroups.map(group => (
                                                 <IonItem key={group.id}>
-                                                    <IonButton onClick={() => setShowRemoveConfimModal(true)}>
+                                                    <IonButton onClick={() => {
+                                                        setSelectedGroup(group);
+                                                        setShowRemoveConfimModal(true);
+                                                    }}>
                                                         <IonIcon icon={peopleOutline} />
                                                         {group.BikeBusName}
                                                     </IonButton>
-                                                    <IonModal isOpen={showRemoveConfimModal} onDidDismiss={() => setShowRemoveConfimModal(false)}>
-                                                        <IonHeader>
-                                                            <IonTitle>Remove BikeBusGroup</IonTitle>
-                                                        </IonHeader>
-                                                        <IonContent>
-                                                            <IonLabel>Are you sure you want to remove {group.BikeBusName}?</IonLabel>
-                                                            <IonButton onClick={() => setShowRemoveConfimModal(false)}>Cancel</IonButton>
-                                                            <IonButton onClick={() => removeBikeBusGroup(group)}>Remove</IonButton>
-                                                        </IonContent>
-                                                    </IonModal>
                                                 </IonItem>
                                             ))}
+
+                                            <IonModal isOpen={showRemoveConfimModal} onDidDismiss={() => setShowRemoveConfimModal(false)}>
+                                                <IonHeader>
+                                                    <IonTitle>Remove BikeBusGroup</IonTitle>
+                                                </IonHeader>
+                                                <IonContent>
+                                                    <IonItem>
+                                                        <IonLabel>Are you sure you want to remove {selectedGroup ? selectedGroup.BikeBusName : ''}?</IonLabel>
+                                                    </IonItem>
+                                                    <IonButton onClick={() => setShowRemoveConfimModal(false)}>Cancel</IonButton>
+                                                    <IonButton onClick={() => {
+                                                        if (selectedGroup) {
+                                                            removeBikeBusGroup(selectedGroup);
+                                                        }
+                                                    }}>Remove</IonButton>
+                                                </IonContent>
+                                            </IonModal>
                                         </IonList>
                                     </IonCol>
                                     <IonCol>
@@ -582,6 +730,22 @@ const EditOrganization: React.FC = () => {
                                                     const updatedOrganization = {
                                                         ...selectedOrganization,
                                                         ContactName: e.detail.value!
+                                                    };
+                                                    setselectedOrganization(updatedOrganization);
+                                                }
+                                            }}
+                                        />
+                                    </IonCol>
+                                    <IonCol>
+                                        <IonLabel position="stacked">Contact Email:</IonLabel>
+                                        <IonInput
+                                            key={selectedOrganization?.id}
+                                            value={selectedOrganization?.Email || ''}
+                                            onIonChange={e => {
+                                                if (selectedOrganization) {
+                                                    const updatedOrganization = {
+                                                        ...selectedOrganization,
+                                                        Email: e.detail.value!
                                                     };
                                                     setselectedOrganization(updatedOrganization);
                                                 }

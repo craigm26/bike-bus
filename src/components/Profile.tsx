@@ -6,6 +6,8 @@ import {
   IonAvatar,
   IonButton,
   IonText,
+  IonItem,
+  IonItemDivider,
 } from '@ionic/react';
 import './Profile.css';
 import useAuth from '../useAuth';
@@ -84,6 +86,7 @@ const Profile: React.FC = () => {
           <IonAvatar className='img-center-profile'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
+          <IonItemDivider className="ion-item-divider-profile" />
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
