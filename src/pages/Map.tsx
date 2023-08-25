@@ -14,7 +14,6 @@ import {
   IonList,
   IonText,
   IonCardTitle,
-  IonToggle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import "./Map.css";
@@ -23,7 +22,7 @@ import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, businessOutline, carOutline, clipboardOutline, locateOutline, mapOutline, peopleOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 import { ReactComponent as ClipboardIcon } from '../assets/fontawesome/svgs/regular/clipboard-list.svg';
 import { ReactComponent as MapIcon } from '../assets/fontawesome/svgs/regular/map.svg';
 import { ReactComponent as PersonBikingIcon } from '../assets/fontawesome/svgs/regular/person-biking.svg';
@@ -45,11 +44,24 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
-import { is } from "date-fns/locale";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
+
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
+
+interface BikeBusStop {
+  id: string;
+  BikeBusStopName: string;
+  lat: number;
+  lng: number;
+  BikeBusGroupId: DocumentReference;
+  BikeBusRouteId: string;
+}
 
 interface RouteData {
   eventCheckInLeader: any;
@@ -73,6 +85,7 @@ interface RouteData {
   BikeBusStops: Coordinate[];
   BikeBusStationsIds: string[];
   BikeBusGroupId: DocumentReference;
+  BikeBusStopIds: DocumentReference[];
   id: string;
   accountType: string;
   routeId: string;
@@ -100,10 +113,6 @@ interface BikeBusEvent {
     seconds: number;
     nanoseconds: number;
   };
-}
-interface Coordinate {
-  lat: number;
-  lng: number;
 }
 
 const Map: React.FC = () => {
@@ -215,16 +224,17 @@ const Map: React.FC = () => {
   const [isEventLeaderActive, setIsEventLeaderActive] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
-  const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
   const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
   const transitLayerRef = useRef(null);
-  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(true);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
   const [permissions, setPermissions] = useState(false);
   const [myrouteslayer, setMyRoutesLayer] = useState(false);
   const [myroutes, setMyRoutes] = useState<any[]>([]);
   const [userRoutes, setUserRoutes] = useState<any[]>([]);
+  const [bikeBusStopData, setBikeBusStopData] = useState<BikeBusStop | null>(null);
 
 
   interface Trip {
@@ -388,9 +398,11 @@ const Map: React.FC = () => {
                 setSelectedRoute(routeData);
                 setBikeBusGroupId(routeData.BikeBusGroupId.id);
                 setPath(routeData.pathCoordinates);
-                setBikeBusStops(routeData.BikeBusStops);
                 setStartGeo(routeData.startPoint);
                 setEndGeo(routeData.endPoint);
+                setBikeBusStops((bikeBusStops) => [...bikeBusStops, bikeBusStopData as BikeBusStop]);
+                console.log('routeData', routeData);
+                console.log('BikeBusStops', bikeBusStops);
               }
             } else {
               console.error('selectedRouteRef is undefined');
@@ -803,17 +815,39 @@ const Map: React.FC = () => {
 
       );
       getDocs(queryObj)
-        .then((querySnapshot) => {
-          const routes: any[] = [];
-          querySnapshot.forEach((doc) => {
-            const routeData = doc.data();
+        .then(async (querySnapshot) => {
+          const routes: RouteData[] = [];
+          const allBikeBusStops: BikeBusStop[] = [];
+
+          for (const doc of querySnapshot.docs) {
+            const routeData = doc.data() as RouteData;
             routes.push(routeData);
-          });
+
+            const bikeBusStopIds = routeData.BikeBusStopIds;
+            if (bikeBusStopIds) {
+              for (const stopid of bikeBusStopIds) {
+                console.log(typeof stopid, stopid);
+                try {
+                  const bikeBusStopSnapshot = await getDoc(stopid);
+                  const bikeBusStopData = bikeBusStopSnapshot.data() as BikeBusStop;
+                  if (bikeBusStopData) {
+                    allBikeBusStops.push(bikeBusStopData);
+                    console.log('bikeBusStopData', bikeBusStopData);
+                  } else {
+                    console.warn("No data found for stopid: ", stopid);
+                  }
+                } catch (error) {
+                  console.error("Error fetching data for stopid: ", stopid, error);
+                }
+              }
+            }
+
+          }
+
           setBikeBusRoutes(routes);
+          setBikeBusStops(allBikeBusStops);
+          console.log('allBikeBusStops', allBikeBusStops);
         })
-        .catch((error) => {
-          console.log("Error fetching bike/bus routes:", error);
-        });
 
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
@@ -1995,9 +2029,9 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     if (pathCoordinates.length > 0) {
-      // Code to update the Google Map with the new pathCoordinates
     }
   }, [pathCoordinates]);
+
 
 
 
