@@ -148,7 +148,6 @@ const ViewOrganization: React.FC = () => {
                         setOrgLocation(organizationData.Location);
                         setSchoolDistrict(organizationData.SchoolDistrictName);
                         setSchools(organizationData.SchoolNames);
-                        setSchool(organizationData.SchoolNames[0]);
                         setBikeBusGroups(organizationData.BikeBusGroups);
                         getDoc(userRef).then((docSnapshot) => {
                             if (docSnapshot.exists()) {
