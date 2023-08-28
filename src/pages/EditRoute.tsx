@@ -19,7 +19,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { FieldPath, arrayUnion, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentReference, FieldPath, arrayUnion, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -40,14 +40,20 @@ interface Coordinate {
   lng: number;
 }
 
+interface BikeBusStop {
+  id: string;
+  BikeBusStopName: string;
+  BikBusGroupId: DocumentReference;
+  BikeBusRouteId: DocumentReference;
+  lat: Coordinate;
+  lng: Coordinate;
+}
+
 interface Route {
   newStop: Coordinate | null;
   oldIds: Coordinate | null;
   stopPoint: Coordinate | null;
-  BikeBusStopName: string;
-  BikeBusStopId: string;
-  BikeBusStopIds: Coordinate[];
-  BikeBusStop: Coordinate[];
+  BikeBusStopIds: DocumentReference[];
   isBikeBus: boolean;
   BikeBusGroupId: string;
   id: string;
@@ -192,18 +198,24 @@ const EditRoute: React.FC = () => {
         routeName: docSnap.data().routeName,
         startPoint: docSnap.data().startPoint,
         endPoint: docSnap.data().endPoint,
-        BikeBusStop: docSnap.data().BikeBusStop,
+        // BikeBusStopIds is an array of DocumentReferences
+        BikeBusStopIds: (docSnap.data().BikeBusStopIds ?? []) as DocumentReference[],
         BikeBusGroupId: docSnap.data().BikeBusGroupId,
         pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-        BikeBusStationsIds: (docSnap.data().BikeBusStationsIds || []).map((coord: any) => ({
-          lat: coord.latitude,
-          lng: coord.longitude,
-        })),
       };
       setSelectedRoute(routeData);
-      setBikeBusStops(routeData.BikeBusStop);
     }
+
+    console.log('selectedRoute?.BikeBusStopIds:', selectedRoute?.BikeBusStopIds);
+    
   };
+
+  console.log('selectedRoute?.BikeBusStopIds:', selectedRoute?.BikeBusStopIds);
+
+  // BikeBusStops is an array of lat lng coordinates. We need to show these on the map as BikeBusStops markers
+  // We also need to show the BikeBusStops names in the list of BikeBusStops
+  // We need to fetch the BikeBusStops data from Firebase
+
 
 
   useEffect(() => {
@@ -387,20 +399,22 @@ const EditRoute: React.FC = () => {
 
       const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
       setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-      alert('Route Updated, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
+      alert('Route Updated, if you like it, click save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
       console.log('newPathCoordinates: ', newCoordinates);
       // set the isClicked to true
       setIsClicked(true);
     }
-
-    setBikeBusStops(selectedRoute?.BikeBusStop ?? []);
   };
 
   const updateRoute = async (updatedRoute: Route) => {
     const routeRef = doc(db, 'routes', id);
+
+    const bikeBusStopRefs = updatedRoute.BikeBusStopIds;
+
+
     await updateDoc(routeRef, {
       ...updatedRoute,
-      BikeBusStop: arrayUnion(updatedRoute.BikeBusStop)
+      BikeBusStopIds: bikeBusStopRefs,
     });
   };
 
@@ -408,11 +422,10 @@ const EditRoute: React.FC = () => {
   const handleDeleteStop = async (index: number) => {
     if (selectedRoute) {
       // Create a new array without the stop to be deleted
-      const newStops = selectedRoute.BikeBusStop.filter((_, stopIndex) => stopIndex !== index);
-
+      const newStops = selectedRoute.BikeBusStopIds.filter((stop, i) => i !== index);
       const newRoute: Route = {
         ...selectedRoute,
-        BikeBusStop: newStops,
+        BikeBusStopIds: newStops,
       };
       console.log(newStops);
       console.log(newRoute);
@@ -539,7 +552,7 @@ const EditRoute: React.FC = () => {
                   center={mapCenter}
                   zoom={12}
                   options={{
-                    mapTypeControl: false,
+                    mapTypeControl: true,
                     streetViewControl: false,
                     fullscreenControl: true,
                     disableDoubleClickZoom: true,
@@ -554,40 +567,11 @@ const EditRoute: React.FC = () => {
                   >
                   </Marker>
                   <Marker
-                    position={{ lat: BikeBusStop.lat, lng: BikeBusStop.lng }}
-                    title="New Stop"
-                    onClick={() => {
-                      console.log("Clicked on new stop");
-                    }}
-                  />
-
-                  {BikeBusStops?.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={stop}
-                      title={`Stop ${index + 1}`}
-                      label={`${index + 1}`}
-                      onClick={() => {
-                        setSelectedStopIndex(index);
-                      }}
-                    >
-                      {selectedStopIndex === index && (
-                        <InfoWindow onCloseClick={() => setSelectedStopIndex(null)}>
-                          <div>
-                            <h3>{`Stop ${index + 1}`}</h3>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </Marker>
-                  ))}
-                  <Marker
                     position={{ lat: endGeo.lat, lng: endGeo.lng }}
                     title="End"
                     label={"End"}
                   >
                   </Marker>
-
-
                   <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
                     <Polyline
                       path={selectedRoute?.pathCoordinates}
