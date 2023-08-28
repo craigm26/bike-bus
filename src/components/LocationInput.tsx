@@ -26,7 +26,6 @@ function LocationInput({ onLocationChange, onPlaceSelected, defaultLocation = ''
         }
         if (place.photos && place.photos.length > 0) {
           const photoUrl = place.photos[0].getUrl(); // Get the URL of the first photo
-          console.log(photoUrl);
           if (onPhotos) { // Check if the onPhotos prop is provided
             onPhotos(photoUrl);
           }

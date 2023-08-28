@@ -108,7 +108,7 @@ const EditOrganization: React.FC = () => {
     const [fetchedBikeBusGroups, setFetchedBikeBusGroups] = useState<BikeBusGroup[]>([]);
     const [fetchedStaff, setFetchedStaff] = useState([]);
     const [showRemoveConfimModal, setShowRemoveConfimModal] = useState(false);
-    const [organizationLocation, setOrganizationLocation] = useState('');
+    const [PlaceLocation, setPlaceLocation] = useState('');
     const [showSchoolModal, setShowSchoolModal] = useState(false);
     const [showRemoveSchoolConfimModal, setShowRemoveSchoolConfimModal] = useState(false);
     const [schoolLocation, setSchoolLocation] = useState<string | null>(null);
@@ -196,12 +196,12 @@ const EditOrganization: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const fetchOrganizationLocation = async () => {
-            const locationFromFirestore = await getOrganizationLocation();
-            setOrganizationLocation(locationFromFirestore);
+        const fetchPlaceLocation = async () => {
+            const locationFromFirestore = await getPlaceLocation();
+            setPlaceLocation(locationFromFirestore);
         };
 
-        fetchOrganizationLocation();
+        fetchPlaceLocation();
     }, []);
 
 
@@ -222,7 +222,7 @@ const EditOrganization: React.FC = () => {
         fetchSchools();
     }, [user]);
 
-    const getOrganizationLocation = async () => {
+    const getPlaceLocation = async () => {
         const OrganizationRef = doc(db, 'organizations', id);
         const orgSnapshot = await getDoc(OrganizationRef);
         const orgData = orgSnapshot.data() as Organization;
@@ -513,7 +513,7 @@ const EditOrganization: React.FC = () => {
             NameOfOrg: selectedOrganization.NameOfOrg,
             OrganizationType: selectedOrganization.OrganizationType,
             ContactName: selectedOrganization.ContactName,
-            Location: organizationLocation, // Update the location
+            Location: PlaceLocation, // Update the location
             LastUpdatedBy: user?.uid,
         };
         await updateDoc(OrganizationRef, updatedOrganization);
@@ -644,7 +644,7 @@ const EditOrganization: React.FC = () => {
                                                     />
                                                 </IonLabel>
                                                 <IonLabel position="stacked"> Organization Location:
-                                                    <LocationInput onLocationChange={setOrganizationLocation} defaultLocation={organizationLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
+                                                    <LocationInput onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
                                                 </IonLabel>
                                             </IonCol>
                                         </IonList>
