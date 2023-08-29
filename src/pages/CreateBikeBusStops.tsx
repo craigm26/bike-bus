@@ -367,6 +367,8 @@ const CreateBikeBusStop: React.FC = () => {
                 key={index}
                 position={{ lat: stop.lat, lng: stop.lng }}
                 title={`Stop ${index + 1}, ${BikeBusStopName}`}
+                label={`Stop ${index + 1}, ${BikeBusStopName}`}
+
               />
             ))}
             <Polyline
