@@ -367,11 +367,13 @@ const ViewRoute: React.FC = () => {
                   <Marker
                     position={{ lat: startGeo.lat, lng: startGeo.lng }}
                     title="Start"
+                    label={"Start"}
                     onClick={() => setSelectedMarker(startGeo)}
                   />
                   <Marker
                     position={{ lat: endGeo.lat, lng: endGeo.lng }}
                     title="End"
+                    label={"End"}
                     onClick={() => setSelectedMarker(endGeo)}
                   />
                   {bikeBusStops?.map((stop, index) => (
@@ -379,6 +381,7 @@ const ViewRoute: React.FC = () => {
                       key={index}
                       position={{ lat: stop.location.lat, lng: stop.location.lng }}
                       title={stop.BikeBusStopName}
+                      label={stop.BikeBusStopName}
                       onClick={() => {
                         setSelectedBikeBusStop(stop.location);
                         setSelectedStopIndex(index);
@@ -442,6 +445,7 @@ const ViewRoute: React.FC = () => {
                             key={index}
                             position={{ lat: stop.location.lat, lng: stop.location.lng }}
                             title={stop.BikeBusStopName}
+                            label={stop.BikeBusStopName}
                             onClick={() => {
                               setSelectedBikeBusStop(stop.location);
                               setSelectedStopIndex(index);

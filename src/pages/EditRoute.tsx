@@ -557,7 +557,7 @@ const EditRoute: React.FC = () => {
                   center={mapCenter}
                   zoom={12}
                   options={{
-                    mapTypeControl: true,
+                    mapTypeControl: false,
                     streetViewControl: false,
                     fullscreenControl: true,
                     disableDoubleClickZoom: true,
@@ -569,6 +569,7 @@ const EditRoute: React.FC = () => {
                     <Marker
                       key={index}
                       position={{ lat: stop.lat.lat, lng: stop.lat.lng }}
+                      label={stop.BikeBusStopName}
                       title={stop.BikeBusStopName}
                     >
                     </Marker>

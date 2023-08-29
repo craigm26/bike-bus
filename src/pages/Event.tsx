@@ -80,10 +80,20 @@ interface Coordinate {
   lng: number;
 }
 
+interface BikeBusStop {
+  id: string;
+  BikeBusStopName: string;
+  BikBusGroupId: DocumentReference;
+  BikeBusRouteId: DocumentReference;
+  lat: Coordinate;
+  lng: Coordinate;
+  BikeBusStopIds: DocumentReference[];
+  BikeBusGroupId: string;
+}
+
 interface Route {
   BikeBusName: string;
-  BikeBusStopName: string[];
-  BikeBusStop: Coordinate[];
+  BikeBusStopIds: DocumentReference[];
   id: string;
   BikeBusStationsIds: string[];
   BikeBusGroupId: DocumentReference;
@@ -125,12 +135,20 @@ interface Coordinate {
   lat: number;
   lng: number;
 }
+
+interface BikeBusStops {
+  id: string;
+  BikeBusStopName: string;
+  BikBusGroupId: DocumentReference;
+  BikeBusRouteId: DocumentReference;
+  lat: Coordinate;
+  lng: Coordinate;
+}
+
 interface RouteData {
   BikeBusName: string;
-  BikeBusStopName: string[];
-  BikeBusStop: Coordinate[];
+  BikeBusStopIds: DocumentReference[];
   id: string;
-  BikeBusStationsIds: string[];
   BikeBusGroupId: DocumentReference;
   accountType: string;
   description: string;
@@ -193,7 +211,8 @@ const Event: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [routeData, setRouteData] = useState<Route | null>(null);
   const [path, setPath] = useState<Coordinate[]>([]);
-  const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
+  const [bikeBusStopIds, setBikeBusStopIds] = useState<DocumentReference[]>([]);
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
@@ -325,7 +344,7 @@ const Event: React.FC = () => {
         const routeData = docRouteSnapshot.data() as Route;
         setRouteData(routeData);
         setPath(routeData.pathCoordinates);
-        setBikeBusStops(routeData.BikeBusStop);
+        setBikeBusStopIds(routeData.BikeBusStopIds);
         setStartAddress(routeData.startPointAddress);
         setEndAddress(routeData.endPointAddress);
       }
@@ -355,7 +374,7 @@ const Event: React.FC = () => {
   useEffect(() => {
     if (routeData) {
       console.log('routeData', routeData)
-      setBikeBusStops(routeData.BikeBusStop);
+      setBikeBusStopIds(routeData.BikeBusStopIds);
       setPathCoordinates(routeData.pathCoordinates);
 
       setMapCenter({
@@ -785,14 +804,13 @@ const Event: React.FC = () => {
                       ],
                     }}
                   />
-                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
+                  {bikeBusStopIds.map((bikeBusStopId, index) => (
                     <Marker
-                      
                       key={index}
-                      position={{ lat: stop.lat, lng: stop.lng }}
+                      position={{ lat: bikeBusStopId.lat, lng: bikeBusStopId.lng }}
                       icon={{
-                        url: '/assets/markers/stop-outline.svg',
-                        scaledSize: new google.maps.Size(30, 30),
+                        url: '/assets/icon/bikebusstop.svg',
+                        scaledSize: new google.maps.Size(40, 40),
                       }}
                     />
                   ))}
