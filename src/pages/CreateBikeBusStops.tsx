@@ -80,6 +80,8 @@ const CreateBikeBusStop: React.FC = () => {
   const [FormattedAddress, setFormattedAddress] = useState<BikeBusStop['formattedAddress']>('');
   const [Photos, setPhotos] = useState<BikeBusStop['photos']>('');
   const [PlaceId, setPlaceId] = useState<BikeBusStop['placeId']>('');
+  const [rerender, setRerender] = useState(0);
+
 
 
 
@@ -177,11 +179,30 @@ const CreateBikeBusStop: React.FC = () => {
 
   const onMapClick = (event: google.maps.MapMouseEvent) => {
     if (event.latLng) {
+      setBikeBusStops([]);
       const newStop: Coordinate = {
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
       };
-      setBikeBusStops(prevStops => [...prevStops, newStop]);
+
+      // pass the newStop to the LocationInput and get the PlaceName and PlaceLocation
+      const BikeBusStopName = PlaceName;
+
+
+      // add the new stop to the LocationInput as the variable PlaceLocation
+      setPlaceLocation(newStop.lat + ',' + newStop.lng);
+
+      // add the new stop to the LocationInput as the variable PlaceName
+      setPlaceName(BikeBusStopName);
+
+      // show the new stop on the map with a marker
+      setBikeBusStops([newStop]);
+
+      // update the map center to the new stop
+      setMapCenter(newStop);
+
+      // update the marker with a title of the stop place name
+      setBikeBusStopName(PlaceName);
     }
   };
 
@@ -231,7 +252,11 @@ const CreateBikeBusStop: React.FC = () => {
         lng: place.geometry.location.lng(),
       };
       setBikeBusStops(prevStops => [...prevStops, newStop]);
-      
+
+    }
+
+    if (place.name) {
+      setBikeBusStopName(place.name);
     }
   };
 
@@ -294,14 +319,30 @@ const CreateBikeBusStop: React.FC = () => {
           </IonRow>
           <IonText>Search for Name by searching for the location. If you like the name of the BikeBus Stop, then "save new bikebusstop"</IonText>
           <IonItem lines="full">
-            <IonLabel>BikeBusStop Name: {PlaceName}</IonLabel>
+            <IonLabel>BikeBusStop Name: {BikeBusStopName}</IonLabel>
           </IonItem>
           <IonItem lines="full">
             <IonLabel>Search for a location:</IonLabel>
-            </IonItem>
-            <LocationInput onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
-          <IonButton color="success" buttonType='block' onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
-          <IonButton routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
+          </IonItem>
+          <LocationInput onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
+          <IonRow>
+            <IonCol>
+              <IonButton size='default' onClick={() => {
+                setPlaceLocation('');
+                setPlaceName('');
+                setFormattedAddress('');
+                setPhotos('');
+                setPlaceId('');
+                setRerender(prev => prev + 1); 
+              }}>Clear Address</IonButton>
+            </IonCol>
+            <IonCol>
+              <IonButton size='default' color="success" onClick={onSaveStopButtonClick}>Save New BikeBusStop</IonButton>
+            </IonCol>
+            <IonCol>
+              <IonButton color="danger" size='default' routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
+            </IonCol>
+          </IonRow>
           <GoogleMap
             mapContainerStyle={{
               width: '100%',
@@ -325,10 +366,9 @@ const CreateBikeBusStop: React.FC = () => {
               <Marker
                 key={index}
                 position={{ lat: stop.lat, lng: stop.lng }}
-                title={`Stop ${index + 1}`}
+                title={`Stop ${index + 1}, ${BikeBusStopName}`}
               />
             ))}
-
             <Polyline
               path={selectedRoute ? selectedRoute.pathCoordinates : []}
               options={{

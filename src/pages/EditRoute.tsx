@@ -26,6 +26,7 @@ import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
 import { get } from 'http';
+import { is } from 'date-fns/locale';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -47,6 +48,8 @@ interface BikeBusStop {
   BikeBusRouteId: DocumentReference;
   lat: Coordinate;
   lng: Coordinate;
+  BikeBusStopIds: DocumentReference[];
+  BikeBusGroupId: string;
 }
 
 interface Route {
@@ -103,10 +106,11 @@ const EditRoute: React.FC = () => {
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
     libraries,
   });
-  const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const bikeBusStopsRef = getDoc(doc(db, 'bikebusstops', id));
   const bikeBusStopsQuery = bikeBusStopsRef;
+
 
 
 
@@ -184,41 +188,7 @@ const EditRoute: React.FC = () => {
   };
 
   useEffect(() => {
-    if (id) fetchSingleRoute(id);
-  }, [id]);
 
-  const fetchSingleRoute = async (id: string) => {
-    const docRef = doc(db, 'routes', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const routeData = {
-        ...docSnap.data() as Route,
-        id: docSnap.id,
-        routeName: docSnap.data().routeName,
-        startPoint: docSnap.data().startPoint,
-        endPoint: docSnap.data().endPoint,
-        // BikeBusStopIds is an array of DocumentReferences
-        BikeBusStopIds: (docSnap.data().BikeBusStopIds ?? []) as DocumentReference[],
-        BikeBusGroupId: docSnap.data().BikeBusGroupId,
-        pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-      };
-      setSelectedRoute(routeData);
-    }
-
-    console.log('selectedRoute?.BikeBusStopIds:', selectedRoute?.BikeBusStopIds);
-    
-  };
-
-  console.log('selectedRoute?.BikeBusStopIds:', selectedRoute?.BikeBusStopIds);
-
-  // BikeBusStops is an array of lat lng coordinates. We need to show these on the map as BikeBusStops markers
-  // We also need to show the BikeBusStops names in the list of BikeBusStops
-  // We need to fetch the BikeBusStops data from Firebase
-
-
-
-  useEffect(() => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       getDoc(userRef).then((docSnapshot) => {
@@ -230,14 +200,49 @@ const EditRoute: React.FC = () => {
         }
       });
     }
-  }
-    , [user]);
+
+    const fetchSingleRoute = async (id: string) => {
+      const docRef = doc(db, 'routes', id);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const routeData = {
+          ...docSnap.data() as Route,
+          id: docSnap.id,
+          routeName: docSnap.data().routeName,
+          startPoint: docSnap.data().startPoint,
+          endPoint: docSnap.data().endPoint,
+          // BikeBusStopIds is an array of DocumentReferences
+          BikeBusStopIds: (docSnap.data().BikeBusStopIds ?? []) as DocumentReference[],
+          BikeBusGroupId: docSnap.data().BikeBusGroupId,
+          pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
+        };
+        setSelectedRoute(routeData);
+      }
+
+    };
+    fetchSingleRoute(id);
+
+  }, []);
+
+
 
   useEffect(() => {
-    if (headerContext) {
-      headerContext.setShowHeader(true);
+    if (selectedRoute?.BikeBusStopIds && selectedRoute.BikeBusStopIds.length > 0) {
+      const fetchBikeBusStops = async () => {
+        const bikeBusStopsQuery = await getDocs(query(collection(db, 'bikebusstops'), where('__name__', 'in', selectedRoute?.BikeBusStopIds)));
+        const bikeBusStops = bikeBusStopsQuery.docs.map(doc => {
+          const data = doc.data() as BikeBusStop;
+          // Update Coordinate object
+          data.lat = { lat: parseFloat(data.lat.lat as unknown as string), lng: parseFloat(data.lat.lng as unknown as string) };
+          data.lng = { lat: parseFloat(data.lng.lat as unknown as string), lng: parseFloat(data.lng.lng as unknown as string) };
+          return data;
+        });
+        setBikeBusStops(bikeBusStops);
+      };
+      fetchBikeBusStops();
     }
-  }, [headerContext]);
+  }, [selectedRoute?.BikeBusStopIds]);
 
   // center the map between the start point of the route and the end point of the route
   useEffect(() => {
@@ -540,8 +545,8 @@ const EditRoute: React.FC = () => {
                 <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
               )}
               <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
-              <IonButton onClick={handleRouteSave}>Save</IonButton>
-              <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+              <IonButton color="success" onClick={handleRouteSave}>Save</IonButton>
+              <IonButton color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
             </IonCol>
           </IonRow>
           {selectedRoute && (
@@ -560,6 +565,14 @@ const EditRoute: React.FC = () => {
                     mapId: 'b75f9f8b8cf9c287',
                   }}
                 >
+                  {BikeBusStops.map((stop, index) => (
+                    <Marker
+                      key={index}
+                      position={{ lat: stop.lat.lat, lng: stop.lat.lng }}
+                      title={stop.BikeBusStopName}
+                    >
+                    </Marker>
+                  ))}
                   <Marker
                     position={{ lat: startGeo.lat, lng: startGeo.lng }}
                     title="Start"

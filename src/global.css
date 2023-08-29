@@ -26,6 +26,15 @@
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  /* Custom sizes for icons and buttons */
+  [style*="24px"] {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+
 .location-app-intro-container {
   display: flex;
   justify-content: center;
@@ -33,6 +42,7 @@
   text-align: center;
   font-family: 'Indie-Flower', sans-serif;
   overflow: hidden;
+  word-wrap: break-word;
 }
 
 .EventTimeFont {
