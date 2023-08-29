@@ -1,43 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   IonContent,
-  IonHeader,
   IonPage,
-  IonToolbar,
   IonAvatar,
   IonIcon,
   IonLabel,
   IonButton,
-  IonList,
-  IonItem,
-  IonModal,
-  IonTitle,
-  IonCheckbox,
-  IonChip,
   IonCol,
   IonRow,
-  IonCard,
-  IonCardContent,
   IonGrid,
-  IonImg,
   IonText,
-  IonSegment,
-  IonSegmentButton,
-  IonToggle,
-  IonCardSubtitle,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
+import { personCircleOutline } from 'ionicons/icons';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
-import { create } from 'domain';
-import { set } from 'date-fns';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
 
 
@@ -76,17 +59,20 @@ interface event {
   BikeBusGroup: string;
 }
 
-interface Coordinate {
-  lat: number;
-  lng: number;
+
+interface BikeBusStops {
+  id: string;
+  BikeBusStopName: string;
+  BikBusGroupId: DocumentReference;
+  BikeBusRouteId: DocumentReference;
+  lat: Coordinate;
+  lng: Coordinate;
 }
 
 interface Route {
   BikeBusName: string;
-  BikeBusStopName: string[];
-  BikeBusStop: Coordinate[];
+  BikeBusStopIds: DocumentReference[];
   id: string;
-  BikeBusStationsIds: string[];
   BikeBusGroupId: DocumentReference;
   accountType: string;
   description: string;
@@ -194,7 +180,7 @@ const EventSummary: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [routeData, setRouteData] = useState<Route | null>(null);
   const [path, setPath] = useState<Coordinate[]>([]);
-  const [bikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
@@ -326,7 +312,6 @@ const EventSummary: React.FC = () => {
         const routeData = docRouteSnapshot.data() as Route;
         setRouteData(routeData);
         setPath(routeData.pathCoordinates);
-        setBikeBusStops(routeData.BikeBusStop);
         setStartAddress(routeData.startPointAddress);
         setEndAddress(routeData.endPointAddress);
       }
@@ -352,11 +337,18 @@ const EventSummary: React.FC = () => {
     });
   }, [id]);
 
+  const fetchBikeBusStopData = async (bikeBusStopId: DocumentReference) => {
+    const docSnap = await getDoc(bikeBusStopId);
+    if (docSnap.exists()) {
+      return docSnap.data() as BikeBusStops;
+    }
+    return null;
+  };
+
 
   useEffect(() => {
     if (routeData) {
       console.log('routeData', routeData)
-      setBikeBusStops(routeData.BikeBusStop);
       setPathCoordinates(routeData.pathCoordinates);
 
       setMapCenter({
@@ -367,6 +359,18 @@ const EventSummary: React.FC = () => {
       setEndGeo(routeData.endPoint);
       setSelectedStartLocation(routeData.startPoint);
       setSelectedEndLocation(routeData.endPoint);
+
+      const fetchAllStops = async () => {
+        const fetchedStops = await Promise.all(
+          routeData.BikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
+        );
+        setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStops[]);
+      };
+      console.log('BikeBusStops', bikeBusStops)
+
+      if (routeData) {
+        fetchAllStops();
+      }
 
       // let's set the zoom level based on the distance between the start and end points
       const distance = Math.sqrt(Math.pow(routeData.startPoint.lat - routeData.endPoint.lat, 2) + Math.pow(routeData.startPoint.lng - routeData.endPoint.lng, 2));
@@ -602,12 +606,12 @@ const EventSummary: React.FC = () => {
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
-  
+
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime
     ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
     : 'Loading...';
-  
+
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
 
@@ -1021,23 +1025,23 @@ const EventSummary: React.FC = () => {
                       ],
                     }}
                   />
-                  {bikeBusStops && bikeBusStops.length > 0 && bikeBusStops.map((stop, index) => (
+                  {bikeBusStops.map((stop, index) => (
                     <Marker
                       key={index}
-                      position={{ lat: stop.lat, lng: stop.lng }}
-                      icon={{
-                        url: '/assets/markers/stop-outline.svg',
-                        scaledSize: new google.maps.Size(30, 30),
-                      }}
+                      position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
+                      label={stop.BikeBusStopName}
+                      title={stop.BikeBusStopName}
                     />
+
                   ))}
+
                 </div>
               )}
               <div>
                 <IonGrid>
                   <IonRow>
                     <IonCol>
-                      <IonCardSubtitle className="bikebus-event-title">Event Summary</IonCardSubtitle>
+                      <IonText className="bikebus-event-title">Event Summary</IonText>
                     </IonCol>
                     <IonCol>
                       {isBikeBus && (

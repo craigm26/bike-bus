@@ -349,6 +349,13 @@ const Event: React.FC = () => {
         setEndAddress(routeData.endPointAddress);
       }
     };
+    // let's fetch the bikebusstop data from the firestore document collection "bikebusstops"
+    const fetchBikeBusStops = async () => {
+      const bikeBusStopsRef = collection(db, 'bikebusstops');
+      const bikeBusStopsSnapshot = await getDocs(bikeBusStopsRef);
+      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => doc.data()) as BikeBusStops[];
+      setBikeBusStops(bikeBusStopsData);
+    };
     const fetchBikeBusGroup = async (bikeBusGroupRef: DocumentReference) => {
       const groupDocSnapshot = await getDoc(bikeBusGroupRef);
       if (groupDocSnapshot.exists()) {
@@ -362,6 +369,8 @@ const Event: React.FC = () => {
     fetchEventData().then(eventData => {
       if (eventData?.route?.id) {
         fetchRoute(eventData.route.id).then(() => {
+          fetchBikeBusStops();
+          console.log('bikebussstops', bikeBusStops);
           if (eventData?.BikeBusGroup) {
             fetchBikeBusGroup(eventData.BikeBusGroup);
           }
@@ -369,6 +378,25 @@ const Event: React.FC = () => {
       }
     });
   }, [id]);
+
+  const fetchBikeBusStopData = async (bikeBusStopId: DocumentReference) => {
+    const docSnap = await getDoc(bikeBusStopId);
+    if (docSnap.exists()) {
+      return docSnap.data() as BikeBusStop;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const fetchAllStops = async () => {
+      const fetchedStops = await Promise.all(
+        bikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
+      );
+      setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStop[]);
+    };
+  
+    fetchAllStops();
+  }, [bikeBusStopIds]);
 
 
   useEffect(() => {
@@ -746,6 +774,7 @@ const Event: React.FC = () => {
     return <div>Error loading Google Maps: {loadError.message}</div>;
   }
 
+
   if (!isLoaded) {
     return <div>Loading Google Maps...</div>;
   }
@@ -804,15 +833,13 @@ const Event: React.FC = () => {
                       ],
                     }}
                   />
-                  {bikeBusStopIds.map((bikeBusStopId, index) => (
+                  {bikeBusStops.map((stop, index) => (
                     <Marker
-                      key={index}
-                      position={{ lat: bikeBusStopId.lat, lng: bikeBusStopId.lng }}
-                      icon={{
-                        url: '/assets/icon/bikebusstop.svg',
-                        scaledSize: new google.maps.Size(40, 40),
-                      }}
-                    />
+                    key={index}
+                    position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
+                    label={stop.BikeBusStopName}
+                    title={stop.BikeBusStopName}
+                  />                  
                   ))}
                 </div>
               )}
@@ -1001,6 +1028,14 @@ const Event: React.FC = () => {
                     }}
                   />
                 )}
+                {bikeBusStops.map((stop, index) => (
+                  <Marker
+                    key={index}
+                    position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
+                    label={stop.BikeBusStopName}
+                    title={stop.BikeBusStopName}
+                  />
+                ))}
               </div>
               <div>
               </div>

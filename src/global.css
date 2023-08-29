@@ -465,12 +465,14 @@
   font-weight: bold;
   color: #000; /* Dark text color */
   border-bottom: 2px solid #333; /* Separator line */
+  word-wrap: break-word;;
 }
 
 .bikebus-event-route {
-  font-size: 20px;
+  font-size: 18px;
   color: #000;
   border-bottom: 1px dashed #333; /* Dashed separator line */
+  word-wrap: break-word;
 }
 
 .bikebus-event-time {
@@ -612,4 +614,8 @@
 
 .sidebar-content IonLabel {
   font-size: 14px;
+}
+
+.bikebus-event-title {
+  font-size: 28px;
 }
