@@ -16,7 +16,6 @@ import {
   IonCardTitle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
-import "./Map.css";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";

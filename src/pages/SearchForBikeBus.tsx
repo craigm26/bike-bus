@@ -12,7 +12,6 @@ import {
   IonLabel,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
-import "./Map.css";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";

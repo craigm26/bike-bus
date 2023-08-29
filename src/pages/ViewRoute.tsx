@@ -364,8 +364,27 @@ const ViewRoute: React.FC = () => {
                       }}
                     />
                   </React.Fragment>
-                  <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" label="Start" onClick={() => setSelectedMarker(selectedMarker)} />
-                  <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" label="End" onClick={() => setSelectedMarker(selectedMarker)} />
+                  <Marker
+                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                    title="Start"
+                    onClick={() => setSelectedMarker(startGeo)}
+                  />
+                  <Marker
+                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                    title="End"
+                    onClick={() => setSelectedMarker(endGeo)}
+                  />
+                  {bikeBusStops?.map((stop, index) => (
+                    <Marker
+                      key={index}
+                      position={{ lat: stop.location.lat, lng: stop.location.lng }}
+                      title={stop.BikeBusStopName}
+                      onClick={() => {
+                        setSelectedBikeBusStop(stop.location);
+                        setSelectedStopIndex(index);
+                      }}
+                    />
+                  ))}
                   {selectedMarker && (
                     <InfoWindow
                       position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
@@ -378,6 +397,7 @@ const ViewRoute: React.FC = () => {
                       </div>
                     </InfoWindow>
                   )}
+
                 </GoogleMap>
               ) : (
                 <>
@@ -398,21 +418,36 @@ const ViewRoute: React.FC = () => {
                         <Marker
                           position={{ lat: startGeo.lat, lng: startGeo.lng }}
                           title="Start"
-                          onClick={() => setSelectedMarker(selectedMarker)}
+                          onClick={() => setSelectedMarker(startGeo)}
                         />
                         <Marker
                           position={{ lat: endGeo.lat, lng: endGeo.lng }}
                           title="End"
+                          onClick={() => setSelectedMarker(endGeo)}
                         />
-                        // let's get all of the bikebus stops
+                        {selectedMarker && (
+                          <InfoWindow
+                            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                            onCloseClick={() => setSelectedMarker(null)}
+                          >
+                            <div>
+                              <h4>Marker Data</h4>
+                              <p>Latitude: {selectedMarker.lat}</p>
+                              <p>Longitude: {selectedMarker.lng}</p>
+                            </div>
+                          </InfoWindow>
+                        )}
                         {bikeBusStops?.map((stop, index) => (
                           <Marker
                             key={index}
-                            position={{ lat: stop.lat, lng: stop.lng }}
+                            position={{ lat: stop.location.lat, lng: stop.location.lng }}
                             title={stop.BikeBusStopName}
+                            onClick={() => {
+                              setSelectedBikeBusStop(stop.location);
+                              setSelectedStopIndex(index);
+                            }}
                           />
                         ))}
-
                       </GoogleMap>
                       <Polyline
                         path={selectedRoute.pathCoordinates}
