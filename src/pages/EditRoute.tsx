@@ -41,8 +41,8 @@ interface Coordinate {
   lng: number;
 }
 
-interface BikeBusStop {
-  id: string;
+interface BikeBusStops {
+  id: number;
   BikeBusStopName: string;
   BikBusGroupId: DocumentReference;
   BikeBusRouteId: DocumentReference;
@@ -90,7 +90,6 @@ const EditRoute: React.FC = () => {
   const [routeEndName, setRouteEndName] = useState<string>('');
   const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
   const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
-  const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [bikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
   const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
   const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
@@ -106,10 +105,14 @@ const EditRoute: React.FC = () => {
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
     libraries,
   });
-  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const bikeBusStopsRef = getDoc(doc(db, 'bikebusstops', id));
   const bikeBusStopsQuery = bikeBusStopsRef;
+  const [selectedStop, setSelectedStop] = React.useState(null);
+  const [selectedStopId, setSelectedStopId] = React.useState(null);
+  const [selectedStopIndex, setSelectedStopIndex] = React.useState<number | null>(null);
+
 
 
 
@@ -229,20 +232,32 @@ const EditRoute: React.FC = () => {
 
   useEffect(() => {
     if (selectedRoute?.BikeBusStopIds && selectedRoute.BikeBusStopIds.length > 0) {
+      // let's fetch the bikebusstop data from the firestore document collection "bikebusstops" and store it in the state variable BikeBusStops
       const fetchBikeBusStops = async () => {
-        const bikeBusStopsQuery = await getDocs(query(collection(db, 'bikebusstops'), where('__name__', 'in', selectedRoute?.BikeBusStopIds)));
-        const bikeBusStops = bikeBusStopsQuery.docs.map(doc => {
-          const data = doc.data() as BikeBusStop;
-          // Update Coordinate object
-          data.lat = { lat: parseFloat(data.lat.lat as unknown as string), lng: parseFloat(data.lat.lng as unknown as string) };
-          data.lng = { lat: parseFloat(data.lng.lat as unknown as string), lng: parseFloat(data.lng.lng as unknown as string) };
-          return data;
-        });
-        setBikeBusStops(bikeBusStops);
+        // first let's get the bikebusstop ids from the selectedRoute
+        const bikeBusStopIds = selectedRoute.BikeBusStopIds;
+        console.log('bikeBusStopIds: ', bikeBusStopIds);
+        // for each bikeBusStopId, let's create a query
+        const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', bikeBusStopIds));
+        console.log('bikeBusStopsQuery: ', bikeBusStopsQuery);
+        getDocs(bikeBusStopsQuery);
+        // for each document, get the actual object document data and store it in the state variable BikeBusStops
+        const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
+        console.log('bikeBusStopsSnapshot: ', bikeBusStopsSnapshot);
+        const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as unknown as BikeBusStops[]; // this is the array of BikeBusStops
+        console.log('bikeBusStopsData: ', bikeBusStopsData);
+        setBikeBusStops(bikeBusStopsData);
+
       };
+
+      console.log('bikeBusStops: ', BikeBusStops);
       fetchBikeBusStops();
     }
-  }, [selectedRoute?.BikeBusStopIds]);
+  }
+    , [selectedRoute]);
 
   // center the map between the start point of the route and the end point of the route
   useEffect(() => {
@@ -355,23 +370,31 @@ const EditRoute: React.FC = () => {
       }
     }
 
-    return Promise.all(routeRequests).then(routeResults => {
-      return routeResults.flat();
-    });
-  };
+    try {
+      return await Promise.all(routeRequests).then(routeResults => {
+        return routeResults.flat();
+      });
+    } catch (error) {
+      console.error("An error occurred during route calculation:", error);
+      throw new Error("Route calculation failed. Please try again.");
+    }
+  }
+
 
 
   const onGenerateNewRouteClick = async () => {
-
-
-
-
     // Add a confirm dialog
     const confirmed = window.confirm("This will delete the existing route and create a new one. Are you sure you want to continue?");
     if (!confirmed) {
       // User clicked "Cancel", so we return and don't continue with generating the new route
       return;
     }
+
+    if (!selectedRoute) {
+      alert("No route selected!");
+      return;
+    }
+
 
     if (selectedRoute) {
 
@@ -380,15 +403,9 @@ const EditRoute: React.FC = () => {
       const routeData = routeSnap.data() as Route;
       const routeBikeBusStopIds = routeData.BikeBusStopIds;
 
-      // Fetch all bike bus stops using getDocs and the routeBikeBusStopIds array
-      const bikeBusStopsQuery = await getDocs(query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds)));
-      const bikeBusStopsData = bikeBusStopsQuery.docs.map(doc => doc.data());
-      console.log('bikeBusStopsData: ', bikeBusStopsData);
 
-
-
-      // Create an array of coordinates from the bikeBusStopsData
-      const bikeBusStopsCoordinates = bikeBusStopsData.map((coord: any) => ({
+      // Create an array of coordinates from the BikeBusStops
+      const bikeBusStopsCoordinates = BikeBusStops.map((coord: any) => ({
         lat: coord.latitude,
         lng: coord.longitude,
       }));
@@ -399,6 +416,11 @@ const EditRoute: React.FC = () => {
         ...bikeBusStopsCoordinates.map(coord => ({ location: new google.maps.LatLng(coord.lat, coord.lng) })),
       ];
       console.log('waypoints: ', waypoints);
+
+      if (!selectedRoute.startPoint || !selectedRoute.endPoint || !waypoints) {
+        alert("Missing startPoint, endPoint, or waypoints!");
+        return;
+      }
 
       const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
 
@@ -423,11 +445,10 @@ const EditRoute: React.FC = () => {
     });
   };
 
-
-  const handleDeleteStop = async (index: number) => {
+  const handleDeleteStop = async (id: string) => {
     if (selectedRoute) {
       // Create a new array without the stop to be deleted
-      const newStops = selectedRoute.BikeBusStopIds.filter((stop, i) => i !== index);
+      const newStops = selectedRoute.BikeBusStopIds.filter(stop => stop.id !== id);
       const newRoute: Route = {
         ...selectedRoute,
         BikeBusStopIds: newStops,
@@ -568,10 +589,20 @@ const EditRoute: React.FC = () => {
                   {BikeBusStops.map((stop, index) => (
                     <Marker
                       key={index}
-                      position={{ lat: stop.lat.lat, lng: stop.lat.lng }}
+                      position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
                       label={stop.BikeBusStopName}
                       title={stop.BikeBusStopName}
+                      onClick={() => setSelectedStopIndex(stop.id)}
                     >
+                      {selectedStopIndex !== null && selectedStopIndex === stop.id && (
+
+                        <InfoWindow>
+                          <div>
+                            <h1>{stop.BikeBusStopName}</h1>
+                            <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
+                          </div>
+                        </InfoWindow>
+                      )}
                     </Marker>
                   ))}
                   <Marker

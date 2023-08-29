@@ -534,7 +534,6 @@ const BikeBusGroupPage: React.FC = () => {
               {isUserLeader && Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
                 <IonItem key={index}>
                   <IonButton routerLink={`/CreateBikeBusStops/${route?.id}`}>Create BikeBusStops</IonButton>
-                  <IonButton routerLink={`/DeleteBikeBusStops/${route?.id}`}>Delete BikeBusStops</IonButton>
                 </IonItem>
               ))}
               <IonList>

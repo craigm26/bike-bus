@@ -3,12 +3,9 @@ import {
   IonPage,
   IonLabel,
   IonButton,
-  IonHeader,
-  IonToolbar,
   IonCol,
   IonGrid,
   IonRow,
-  IonRouterLink,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -16,11 +13,9 @@ import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { DocumentReference, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { GeoPoint } from 'firebase/firestore';
-import { useParams, useHistory, Link } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
-import { set } from 'date-fns';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
