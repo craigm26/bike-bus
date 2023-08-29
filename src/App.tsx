@@ -41,7 +41,6 @@ import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
 import SearchForBikeBus from './pages/SearchForBikeBus';
 import Event from './pages/Event';
-import DeleteBikeBusStops from './pages/DeleteBikeBusStops';
 import ViewRouteList from './pages/ViewRouteList';
 import EditRoute from './pages/EditRoute';
 import ViewBikeBusList from './pages/ViewBikeBusList';
@@ -702,9 +701,6 @@ const App: React.FC = () => {
                       <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
                       <Route path="/CreateBikeBusStops/:id">
                         <CreateBikeBusStops />
-                      </Route>
-                      <Route path="/DeleteBikeBusStops/:id">
-                        <DeleteBikeBusStops />
                       </Route>
                       <Route exact path="/UpgradeAccountToPremium">
                         <UpgradeAccountToPremium />
