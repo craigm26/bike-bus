@@ -337,14 +337,19 @@ const EditRoute: React.FC = () => {
     console.log('waypoints: ', waypoints);
 
     for (let i = 0; i < waypoints.length; i += batchSize) {
+      console.log('i: ', i)
       const batch: google.maps.DirectionsWaypoint[] = waypoints.slice(i, Math.min(i + batchSize, waypoints.length));
+      console.log('batch: ', batch)
       if (i !== 0) {
         batch.unshift(waypoints[i - 1]);
+        console.log('batch: ', batch)
       }
       if (i + batchSize < waypoints.length) {
         batch.push(waypoints[i + batchSize]);
+        console.log('batch: ', batch)
       }
       batches.push(batch);
+      console.log('batches: ', batches)
     }
 
     for (let i = 0; i < batches.length; i++) {
@@ -353,8 +358,11 @@ const EditRoute: React.FC = () => {
       const origin = batch.length > 0 ? batch[0].location : undefined;
       const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
       const batchWaypoints = batch.slice(1, batch.length - 1);
-
-      if (origin && destination) {
+      console.log('batchWaypoints: ', batchWaypoints);
+      // deeply inspect the batchWaypoints array
+      console.log('batchWaypoints[0]: ', batchWaypoints[0]);
+      if (origin && destination && batchWaypoints.length > 0) {
+        console.log('waypoints: ', waypoints)
         routeRequests.push(new Promise<Coordinate[]>((resolve, reject) => {
           directionsService.route({
             origin: startPoint,
@@ -389,12 +397,6 @@ const EditRoute: React.FC = () => {
 
 
   const onGenerateNewRouteClick = async () => {
-    // Add a confirm dialog
-    const confirmed = window.confirm("This will delete the existing route and create a new one. Are you sure you want to continue?");
-    if (!confirmed) {
-      // User clicked "Cancel", so we return and don't continue with generating the new route
-      return;
-    }
 
     if (!selectedRoute) {
       alert("No route selected!");
@@ -403,23 +405,46 @@ const EditRoute: React.FC = () => {
 
 
     if (selectedRoute) {
-
+      console.log('selectedRoute: ', selectedRoute);
       const routeRef = doc(db, 'routes', id);
       const routeSnap = await getDoc(routeRef);
       const routeData = routeSnap.data() as Route;
+      console.log('routeData: ', routeData);
       const routeBikeBusStopIds = routeData.BikeBusStopIds;
+      console.log('routeBikeBusStopIds: ', routeBikeBusStopIds);
 
+      // now that we have our routeData.BikeBusStopIds, let's get the BikeBusStops data 
+      // from the firestore document collection "bikebusstops" and store it in the state variable BikeBusStops
+      const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds));
+      const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
+      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as unknown as BikeBusStops[]; // this is the array of BikeBusStops
+      setBikeBusStops(bikeBusStopsData);
+      console.log('bikeBusStopsData: ', bikeBusStopsData);
 
       // Create an array of coordinates from the BikeBusStops
-      const bikeBusStopsCoordinates = BikeBusStops.map((coord: any) => ({
-        lat: coord.latitude,
-        lng: coord.longitude,
-      }));
-      console.log('bikeBusStopsCoordinates: ', bikeBusStopsCoordinates);
+      const bikeBusStopsCoordinates = BikeBusStops.map((coord: any) => {
+        const simplifiedCoord = {
+          lat: coord.lat,
+          lng: coord.lng
+        };
+        console.log('Simplified Coord:', simplifiedCoord);
+
+        if (!simplifiedCoord.lat || !simplifiedCoord.lng) {
+          console.error('Missing latitude or longitude:', simplifiedCoord);
+          return null;
+        }
+        return simplifiedCoord;
+      }).filter(Boolean);  // remove null values
+
+      console.log('bikeBusStopsCoordinates with checks: ', bikeBusStopsCoordinates);
+
 
       // now let's create a new array of coordinates with the start point, the end point, and the bikeBusStopsCoordinates
       const waypoints = [
-        ...bikeBusStopsCoordinates.map(coord => ({ location: new google.maps.LatLng(coord.lat, coord.lng) })),
+        ...bikeBusStopsCoordinates.map(coord => ({ location: new google.maps.LatLng(coord?.lat, coord?.lng) })),
       ];
       console.log('waypoints: ', waypoints);
 
@@ -432,7 +457,7 @@ const EditRoute: React.FC = () => {
 
       const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
       setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-      alert('Route Updated, if you like it, click save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
+      alert('Route Updated, if you like it, click save to save the new route.');
       console.log('newPathCoordinates: ', newCoordinates);
       // set the isClicked to true
       setIsClicked(true);
@@ -504,17 +529,17 @@ const EditRoute: React.FC = () => {
           console.error("Stop not found");
           return;
         }
-  
+
         console.log('Stop to update:', stopToUpdate);
-  
+
         // Create the DocRefStopid using the id of the stop to be updated
         const DocRefStopid = doc(db, 'bikebusstops', StopId);
-  
+
         // Perform the update to the document
         await updateDoc(DocRefStopid, {
           BikeBusStopName: stopToUpdate.BikeBusStopName,
         });
-  
+
         // Close the InfoWindow
         setSelectedStopIndex(null);
       }
@@ -522,7 +547,7 @@ const EditRoute: React.FC = () => {
       console.error("Error updating document:", error);
     }
   }
-  
+
 
   const handleRouteSave = async () => {
     if (selectedRoute === null) {
@@ -556,12 +581,7 @@ const EditRoute: React.FC = () => {
   }
 
   return (
-    <IonPage style={{ height: '100%' }}>
-      <IonHeader>
-        <IonToolbar>
-          {headerContext?.showHeader && <IonHeader></IonHeader>}
-        </IonToolbar>
-      </IonHeader>
+    <IonPage className="ion-flex-offset-app">
       <IonContent style={{ height: '100%' }}>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
@@ -717,7 +737,7 @@ const EditRoute: React.FC = () => {
           )}
 
         </IonGrid>
-      </IonContent >
+      </IonContent>
     </IonPage >
   );
 };
