@@ -19,7 +19,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, FieldPath, arrayUnion, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentReference, FieldPath, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -42,7 +42,8 @@ interface Coordinate {
 }
 
 interface BikeBusStops {
-  id: number;
+  id: string;
+  StopId: string;
   BikeBusStopName: string;
   BikBusGroupId: DocumentReference;
   BikeBusRouteId: DocumentReference;
@@ -111,7 +112,7 @@ const EditRoute: React.FC = () => {
   const bikeBusStopsQuery = bikeBusStopsRef;
   const [selectedStop, setSelectedStop] = React.useState(null);
   const [selectedStopId, setSelectedStopId] = React.useState(null);
-  const [selectedStopIndex, setSelectedStopIndex] = React.useState<number | null>(null);
+  const [selectedStopIndex, setSelectedStopIndex] = React.useState<string | null>(null);
 
 
 
@@ -445,23 +446,50 @@ const EditRoute: React.FC = () => {
     });
   };
 
-  const handleDeleteStop = async (id: string) => {
-    if (selectedRoute) {
-      // Create a new array without the stop to be deleted
-      const newStops = selectedRoute.BikeBusStopIds.filter(stop => stop.id !== id);
-      const newRoute: Route = {
-        ...selectedRoute,
-        BikeBusStopIds: newStops,
-      };
-      console.log(newStops);
-      console.log(newRoute);
+  const handleDeleteStop = async (StopId: string) => {
+    try {
+      if (selectedRoute) {
+        console.log('selectedRoute:', selectedRoute);
+        console.log('id:', id);
+        console.log('StopId:', StopId);
+        console.log('BikeBusStops:', BikeBusStops);
 
-      // Update the route in Firebase here
-      await updateRoute(newRoute);
-      alert('Stop deleted, if you like it, save to save the new route. If you want to make additional route changes manually, click on "update route manually".');
-      setSelectedStopIndex(null);
+        // Create the DocRefStopid using the id of the stop to be deleted
+        const DocRefStopid = doc(db, 'bikebusstops', StopId);
+        console.log('DocRefStopid:', DocRefStopid);
+
+        // Get the current route data
+        const routeRef = doc(db, 'routes', id);
+        const routeSnap = await getDoc(routeRef);
+        const routeData = routeSnap.data() as Route;
+
+        // Manually filtering out the DocRefStopId
+        const updatedBikeBusStopIds = routeData.BikeBusStopIds.filter((stopId: any) => {
+          return stopId.path !== DocRefStopid.path; // replace with your actual path matching logic
+        });
+
+
+        console.log('routeData:', routeData);
+        console.log('routeData.BikeBusStopIds:', routeData.BikeBusStopIds);
+
+        await updateDoc(routeRef, {
+          ...routeData,
+          BikeBusStopIds: updatedBikeBusStopIds,
+        });
+
+        // Delete the entry from the BikeBusStops array
+        await deleteDoc(doc(db, 'bikebusstops', StopId));  // Changed from 'id' to 'StopId'
+        console.log('Step executed: Deleted BikeBusStop document');
+
+        alert('Stop deleted');
+        setSelectedStopIndex(null);
+        history.push(`/EditRoute/${id}`)
+      }
+    } catch (error) {
+      console.error("Error deleting document:", error);
     }
   };
+
 
   const handleRouteSave = async () => {
     if (selectedRoute === null) {
@@ -592,13 +620,13 @@ const EditRoute: React.FC = () => {
                       position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
                       label={stop.BikeBusStopName}
                       title={stop.BikeBusStopName}
-                      onClick={() => setSelectedStopIndex(stop.id)}
+                      onClick={() => setSelectedStopIndex(stop.StopId)}
                     >
-                      {selectedStopIndex !== null && selectedStopIndex === stop.id && (
+                      {selectedStopIndex !== null && (
 
                         <InfoWindow>
                           <div>
-                            <h1>{stop.BikeBusStopName}</h1>
+                            <h2>{stop.BikeBusStopName}</h2>
                             <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
                           </div>
                         </InfoWindow>

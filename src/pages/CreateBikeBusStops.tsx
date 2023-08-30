@@ -333,7 +333,7 @@ const CreateBikeBusStop: React.FC = () => {
                 setFormattedAddress('');
                 setPhotos('');
                 setPlaceId('');
-                setRerender(prev => prev + 1); 
+                setRerender(prev => prev + 1);
               }}>Clear Address</IonButton>
             </IonCol>
             <IonCol>
@@ -360,29 +360,27 @@ const CreateBikeBusStop: React.FC = () => {
             }}
             onClick={onMapClick}
           >
-            <Marker position={{ lat: startGeo.lat, lng: startGeo.lng }} title="Start" />
-            <Marker position={{ lat: endGeo.lat, lng: endGeo.lng }} title="End" />
-            {BikeBusStops && BikeBusStops.map((stop, index) => (
-              <Marker
-                key={index}
-                position={{ lat: stop.lat, lng: stop.lng }}
-                title={`Stop ${index + 1}, ${BikeBusStopName}`}
-                label={`Stop ${index + 1}, ${BikeBusStopName}`}
+              {BikeBusStops && BikeBusStops.map((stop, index) => (
+                <Marker
+                  key={index}
+                  position={{ lat: stop.lat, lng: stop.lng }}
+                  title={`Stop ${index + 1}, ${BikeBusStopName}`}
+                  label={`${BikeBusStopName}`}
 
+                />
+              ))}
+              <Polyline
+                path={selectedRoute ? selectedRoute.pathCoordinates : []}
+                options={{
+                  strokeColor: "#FF0000",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                  geodesic: true,
+                  draggable: true,
+                  editable: false,
+                  visible: true,
+                }}
               />
-            ))}
-            <Polyline
-              path={selectedRoute ? selectedRoute.pathCoordinates : []}
-              options={{
-                strokeColor: "#FF0000",
-                strokeOpacity: 1.0,
-                strokeWeight: 2,
-                geodesic: true,
-                draggable: true,
-                editable: false,
-                visible: true,
-              }}
-            />
           </GoogleMap>
         </IonGrid>
       </IonContent >
