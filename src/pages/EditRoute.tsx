@@ -28,6 +28,7 @@ import React from 'react';
 import { get } from 'http';
 import { is } from 'date-fns/locale';
 import { update } from 'firebase/database';
+import { set } from 'date-fns';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -357,18 +358,19 @@ const EditRoute: React.FC = () => {
       console.log('batch: ', batch);
       const origin = batch.length > 0 ? batch[0].location : undefined;
       const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
+      console.log('batch.length: ', batch.length);  
       const batchWaypoints = batch.slice(1, batch.length - 1);
       console.log('batchWaypoints: ', batchWaypoints);
       // deeply inspect the batchWaypoints array
       console.log('batchWaypoints[0]: ', batchWaypoints[0]);
-      if (origin && destination && batchWaypoints.length > 0) {
-        console.log('waypoints: ', waypoints)
+      if (origin && destination) {
+        // If batchWaypoints is empty, it will just route from origin to destination
         routeRequests.push(new Promise<Coordinate[]>((resolve, reject) => {
           directionsService.route({
             origin: startPoint,
             destination: endPoint,
             waypoints: batchWaypoints,
-            optimizeWaypoints: true,
+            optimizeWaypoints: false,
             travelMode: travelMode,
           }, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
             if (status === google.maps.DirectionsStatus.OK && response) {
@@ -382,6 +384,7 @@ const EditRoute: React.FC = () => {
           });
         }));
       }
+
     }
 
     try {
@@ -394,75 +397,71 @@ const EditRoute: React.FC = () => {
     }
   }
 
-
-
   const onGenerateNewRouteClick = async () => {
-
     if (!selectedRoute) {
       alert("No route selected!");
       return;
     }
-
-
-    if (selectedRoute) {
-      console.log('selectedRoute: ', selectedRoute);
-      const routeRef = doc(db, 'routes', id);
-      const routeSnap = await getDoc(routeRef);
-      const routeData = routeSnap.data() as Route;
-      console.log('routeData: ', routeData);
-      const routeBikeBusStopIds = routeData.BikeBusStopIds;
-      console.log('routeBikeBusStopIds: ', routeBikeBusStopIds);
-
-      // now that we have our routeData.BikeBusStopIds, let's get the BikeBusStops data 
-      // from the firestore document collection "bikebusstops" and store it in the state variable BikeBusStops
+  
+    const routeRef = doc(db, 'routes', id);
+    const routeSnap = await getDoc(routeRef);
+    const routeData = routeSnap.data() as Route;
+    const routeBikeBusStopIds = routeData.BikeBusStopIds;
+  
+    let bikeBusStopsData: BikeBusStops[] = [];
+  
+    if (routeBikeBusStopIds.length > 0) {
       const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds));
       const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-      })) as unknown as BikeBusStops[]; // this is the array of BikeBusStops
+      bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => doc.data()) as unknown as BikeBusStops[];
       setBikeBusStops(bikeBusStopsData);
-      console.log('bikeBusStopsData: ', bikeBusStopsData);
+    }
+  
+    setBikeBusStops(bikeBusStopsData);
+    console.log('bikeBusStopsData: ', bikeBusStopsData);
+  
+    const waypoints = bikeBusStopsData.map((stop) => ({
+      // bikeBusStopsData is an array of BikeBusStops which contain two fields: lat and lng which are numbers
+      // but google.maps.LatLng takes in a google.maps.LatLngLiteral which is an object with lat and lng as numbers
+      // so we need to convert the lat and lng to a google.maps.LatLngLiteral, which is what the following line does
+      location: new google.maps.LatLng(stop.lat.lat, stop.lat.lng)
+    }));
+    console.log('location: ', waypoints[0].location);
+    console.log('waypoints: ', waypoints);
 
-      // Create an array of coordinates from the BikeBusStops
-      const bikeBusStopsCoordinates = BikeBusStops.map((coord: any) => {
-        const simplifiedCoord = {
-          lat: coord.lat,
-          lng: coord.lng
-        };
-        console.log('Simplified Coord:', simplifiedCoord);
-
-        if (!simplifiedCoord.lat || !simplifiedCoord.lng) {
-          console.error('Missing latitude or longitude:', simplifiedCoord);
-          return null;
-        }
-        return simplifiedCoord;
-      }).filter(Boolean);  // remove null values
-
-      console.log('bikeBusStopsCoordinates with checks: ', bikeBusStopsCoordinates);
-
-
-      // now let's create a new array of coordinates with the start point, the end point, and the bikeBusStopsCoordinates
-      const waypoints = [
-        ...bikeBusStopsCoordinates.map(coord => ({ location: new google.maps.LatLng(coord?.lat, coord?.lng) })),
-      ];
-      console.log('waypoints: ', waypoints);
-
-      if (!selectedRoute.startPoint || !selectedRoute.endPoint || !waypoints) {
-        alert("Missing startPoint, endPoint, or waypoints!");
-        return;
-      }
-
-      const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-
-      const newCoordinates = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedTravelMode, true);
-      setSelectedRoute({ ...selectedRoute, pathCoordinates: newCoordinates });
-      alert('Route Updated, if you like it, click save to save the new route.');
-      console.log('newPathCoordinates: ', newCoordinates);
-      // set the isClicked to true
+  
+    if (!selectedRoute.startPoint || !selectedRoute.endPoint) {
+      alert("Missing startPoint or endPoint!");
+      return;
+    }
+  
+    const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
+  
+    try {
+      const newCoordinates = await calculateRoute(
+        selectedRoute.startPoint,
+        selectedRoute.endPoint,
+        waypoints,
+        selectedTravelMode
+      );
+  
+      setSelectedRoute(prevState => {
+        if (!prevState) return null;
+        return { ...prevState, pathCoordinates: newCoordinates } as Route;
+      });
+        
+      const alertMessage = newCoordinates.length === 0 ? 'New route generated. Click save to update the route.' : 'Route Updated, if you like it, click save to save the new route.';
+      alert(alertMessage);
+  
       setIsClicked(true);
+  
+    } catch (error) {
+      console.error('Error generating new route:', error);
+      alert('Failed to generate new route. Please try again.');
     }
   };
+  
+  
 
   const updateRoute = async (updatedRoute: Route) => {
     const routeRef = doc(db, 'routes', id);
