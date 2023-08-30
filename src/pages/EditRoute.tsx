@@ -27,6 +27,7 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoW
 import React from 'react';
 import { get } from 'http';
 import { is } from 'date-fns/locale';
+import { update } from 'firebase/database';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -51,6 +52,10 @@ interface BikeBusStops {
   lng: Coordinate;
   BikeBusStopIds: DocumentReference[];
   BikeBusGroupId: string;
+}
+
+interface BikeBusStop {
+  BikeBusStopName: string;
 }
 
 interface Route {
@@ -483,13 +488,41 @@ const EditRoute: React.FC = () => {
 
         alert('Stop deleted');
         setSelectedStopIndex(null);
-        history.push(`/EditRoute/${id}`)
+        history.push(`/ViewRoute/${id}`)
       }
     } catch (error) {
       console.error("Error deleting document:", error);
     }
   };
 
+  const saveBikeBusStopName = async (StopId: string) => {
+    try {
+      if (selectedRoute) {
+        // Find the specific stop to update
+        const stopToUpdate = BikeBusStops.find(stop => stop.id === StopId);
+        if (!stopToUpdate) {
+          console.error("Stop not found");
+          return;
+        }
+  
+        console.log('Stop to update:', stopToUpdate);
+  
+        // Create the DocRefStopid using the id of the stop to be updated
+        const DocRefStopid = doc(db, 'bikebusstops', StopId);
+  
+        // Perform the update to the document
+        await updateDoc(DocRefStopid, {
+          BikeBusStopName: stopToUpdate.BikeBusStopName,
+        });
+  
+        // Close the InfoWindow
+        setSelectedStopIndex(null);
+      }
+    } catch (error) {
+      console.error("Error updating document:", error);
+    }
+  }
+  
 
   const handleRouteSave = async () => {
     if (selectedRoute === null) {
@@ -627,6 +660,12 @@ const EditRoute: React.FC = () => {
                         <InfoWindow>
                           <div>
                             <h2>{stop.BikeBusStopName}</h2>
+                            <IonInput value={stop.BikeBusStopName} helperText="Enter new BikeBusStopName"
+                              onIonChange={e => {
+                                const updatedStop = { ...stop, BikeBusStopName: e.detail.value! };
+                                setBikeBusStops(prevStops => prevStops.map(s => s.id === stop.id ? updatedStop : s));
+                              }} />
+                            <IonButton onClick={() => saveBikeBusStopName(stop.id)}>Save BikeBusStop</IonButton>
                             <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
                           </div>
                         </InfoWindow>
