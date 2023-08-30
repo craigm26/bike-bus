@@ -2,8 +2,6 @@ import {
     IonContent,
     IonPage,
     IonButton,
-    IonHeader,
-    IonToolbar,
     IonTitle,
     IonCol,
     IonRow,
@@ -12,8 +10,7 @@ import {
 import { useContext, useRef, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { HeaderContext } from "../components/HeaderContext";
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { DocumentReference, doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -21,15 +18,31 @@ import { GoogleMap, Polyline, useJsApiLoader, Marker } from '@react-google-maps/
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
+interface BikeBusStops {
+    id: string;
+    StopId: string;
+    BikeBusStopName: string;
+    BikBusGroupId: DocumentReference;
+    BikeBusRouteId: DocumentReference;
+    lat: number;  
+    lng: number;
+    BikeBusStopIds: DocumentReference[];
+    BikeBusGroupId: string;
+}
 
 interface Coordinate {
     lat: number;
     lng: number;
 }
 
+interface BikeBusStopCoordinate extends Coordinate {
+    bikeBusStopName: string;
+}
+
+
 interface Route {
     BikeBusStopName: string[] | null;
-    BikeBusStopIds: string[] | null;
+    BikeBusStopIds: DocumentReference[] | null;
     BikeBusStop: Coordinate[] | null;
     isBikeBus: boolean;
     id: string;
@@ -51,7 +64,6 @@ interface Route {
 const UpdateRouteManually: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
-    const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
@@ -74,13 +86,17 @@ const UpdateRouteManually: React.FC = () => {
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
         libraries,
     });
-    const [BikeBusStops, setBikeBusStops] = useState<Coordinate[]>([]);
+    const [BikeBusStops, setBikeBusStops] = useState<BikeBusStopCoordinate[] | null>(null);
 
 
     const containerMapStyle = {
         width: '100%',
         height: '100%',
     };
+
+    useEffect(() => {
+        if (id) fetchSingleRoute(id);
+    }, [id]);
 
 
     // when the map is loading, set startGeo to the route's startPoint
@@ -92,27 +108,46 @@ const UpdateRouteManually: React.FC = () => {
             setEndGeo(selectedRoute.endPoint);
             setRouteStartFormattedAddress(selectedRoute.startPointAddress);
             setRouteEndFormattedAddress(selectedRoute.endPointAddress);
+            setPathCoordinates(selectedRoute.pathCoordinates);
+            setMapCenter({
+                lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+                lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+            });
+        }
+
+        // since we have the BikeBusStopIds, we can get the BikeBusStop coordinates from the BikeBusStopIds document from the bikebusstop document collection
+        if (selectedRoute?.BikeBusStopIds) {
+            console.log("selectedRoute.BikeBusStopIds", selectedRoute.BikeBusStopIds);
+            // BikeBusStopIds is an array of document references in the routes document collection. What we want now is the document data from the bikebusstop document collection
+            const BikeBusStopIds = selectedRoute.BikeBusStopIds;
+            // create an array of promises
+            const promises = BikeBusStopIds.map((BikeBusStopId) => {
+                return getDoc(BikeBusStopId);
+            });
+            // resolve all the promises. BikeBusStops is an array of documents from the document collection bikebusstops. It includes the lat and lng of the bikebusstop and stored as number
+            Promise.all(promises).then((BikeBusStops) => {
+                const BikeBusStopsData = BikeBusStops.map((BikeBusStop) => {
+                    return BikeBusStop.data() as BikeBusStops;
+                });
+                // BikeBusStopsData is an array of documents from the document collection bikebusstops. It includes the lat and lng of the bikebusstop and stored as number
+                console.log("BikeBusStopsData", BikeBusStopsData);
+                // BikeBusStopsData is an array of documents from the document collection bikebusstops. It includes the lat and lng of the bikebusstop and stored as number
+                const BikeBusStopsCoordinates = BikeBusStopsData.map((BikeBusStop) => {
+                    return { 
+                        lat: BikeBusStop.lat, 
+                        lng: BikeBusStop.lng,
+                        bikeBusStopName: BikeBusStop.BikeBusStopName
+                    };
+                });                
+                // BikeBusStopsCoordinates is an array of coordinates of the bikebusstops
+                console.log("BikeBusStopsCoordinates", BikeBusStopsCoordinates);
+                setBikeBusStops(BikeBusStopsCoordinates);
+            });
         }
     }
         , [selectedRoute]);
 
-        console.log("selectedRoute.startPoint", selectedRoute?.startPoint);
-        console.log("selectedRoute.endPoint", selectedRoute?.endPoint);
-        console.log("selectedRoute.pathCoordinates", selectedRoute?.pathCoordinates);
-        console.log("selectedRoute.BikeBusStop", selectedRoute?.BikeBusStop);
-        console.log("selectedRoute.BikeBusStopIds", selectedRoute?.BikeBusStopIds);
 
-
-
-    useEffect(() => {
-        if (selectedRoute && selectedRoute.pathCoordinates) {
-            setPathCoordinates(selectedRoute.pathCoordinates);
-        }
-    }, [selectedRoute]);
-
-    useEffect(() => {
-        if (id) fetchSingleRoute(id);
-    }, [id]);
 
     const fetchSingleRoute = async (id: string) => {
         const docRef = doc(db, 'routes', id);
@@ -127,11 +162,10 @@ const UpdateRouteManually: React.FC = () => {
                 endPoint: docSnap.data().endPoint,
                 BikeBusGroupId: docSnap.data().BikeBusGroupId,
                 pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-                BikeBusStop: docSnap.data()?.BikeBusStop,
+                BikeBusStopIds: docSnap.data()?.BikeBusStopIds,
             };
             console.log("routeData", routeData);
             setSelectedRoute(routeData);
-            setBikeBusStops(routeData.BikeBusStop);
         }
     };
 
@@ -152,116 +186,95 @@ const UpdateRouteManually: React.FC = () => {
         , [user]);
 
     useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true);
-        }
-    }, [headerContext]);
-
-    // center the map between the start point of the route and the end point of the route
-    useEffect(() => {
-        if (selectedRoute) {
-            setMapCenter({
-                lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-                lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
-            });
-        }
-    }
-        , [selectedRoute]);
-
-    useEffect(() => {
         if (selectedStartLocation) {
             setStartGeo(selectedStartLocation);
-            setMapCenter(selectedStartLocation);
         }
-    }
-        , [selectedStartLocation]);
 
-    useEffect(() => {
         if (selectedEndLocation) {
             setEndGeo(selectedEndLocation);
         }
     }
-        , [selectedEndLocation]);
+        , [selectedEndLocation, selectedStartLocation]);
 
 
-        const handleRouteSave = async () => {
-            if (selectedRoute === null) {
-                console.error("selectedRoute is null");
-                return;
-            }
-        
-            const routeRef = doc(db, 'routes', selectedRoute.id);
-            const updatedRoute: Partial<Route> = {
-                ...selectedRoute,
-                pathCoordinates,
-            };
-        
-            // Create a skeleton object with all keys of Route but with undefined values.
-            const routeSkeleton: Record<keyof Route, undefined> = {
-                BikeBusStopName: undefined,
-                BikeBusStopIds: undefined,
-                BikeBusStop: undefined,
-                isBikeBus: undefined,
-                BikeBusGroupId: undefined,
-                id: undefined,
-                endPoint: undefined,
-                endPointAddress: undefined,
-                endPointName: undefined,
-                routeCreator: undefined,
-                routeLeader: undefined,
-                routeName: undefined,
-                routeType: undefined,
-                startPoint: undefined,
-                startPointAddress: undefined,
-                startPointName: undefined,
-                travelMode: undefined,
-                pathCoordinates: undefined,
-            };
-        
-            const updatedRouteWithDefaults: Record<keyof Route, string | boolean | Coordinate | string[] | Coordinate[] | null | undefined> = routeSkeleton;
-        
-            (Object.keys(updatedRoute) as (keyof Route)[]).forEach((key) => {
-                let value = updatedRoute[key];
-        
-                if (value === undefined) {
-                    switch (typeof updatedRoute[key]) {
-                        case 'string':
-                            value = '';
-                            break;
-                        case 'boolean':
-                            value = false;
-                            break;
-                        case 'object':
-                            // Check if it's an array
-                            if (Array.isArray(updatedRoute[key])) {
-                                value = [];
-                            } else if(updatedRoute[key] === null){
-                                value = null;
-                            } else {
-                                // Assuming it's Coordinate, fill with default Coordinate
-                                value = {lat: 0, lng: 0};
-                            }
-                            break;
-                        default:
-                            // Throw error for unknown types
-                            throw new Error(`Unexpected type for key ${key}`);
-                    }
-                }
-        
-                updatedRouteWithDefaults[key] = value;
-            });
-        
-            console.log("updatedRouteWithDefaults", updatedRouteWithDefaults);
-        
-            try {
-                await updateDoc(routeRef, updatedRouteWithDefaults);
-                alert('Route Updated');
-                history.push(`/ViewRoute/${id}`);
-            } catch (err) {
-                console.error(err);
-            }
+    const handleRouteSave = async () => {
+        if (selectedRoute === null) {
+            console.error("selectedRoute is null");
+            return;
+        }
+
+        const routeRef = doc(db, 'routes', selectedRoute.id);
+        const updatedRoute: Partial<Route> = {
+            ...selectedRoute,
+            pathCoordinates,
         };
-        
+
+        // Create a skeleton object with all keys of Route but with undefined values.
+        const routeSkeleton: Record<keyof Route, undefined> = {
+            BikeBusStopName: undefined,
+            BikeBusStopIds: undefined,
+            BikeBusStop: undefined,
+            isBikeBus: undefined,
+            BikeBusGroupId: undefined,
+            id: undefined,
+            endPoint: undefined,
+            endPointAddress: undefined,
+            endPointName: undefined,
+            routeCreator: undefined,
+            routeLeader: undefined,
+            routeName: undefined,
+            routeType: undefined,
+            startPoint: undefined,
+            startPointAddress: undefined,
+            startPointName: undefined,
+            travelMode: undefined,
+            pathCoordinates: undefined,
+        };
+
+        const updatedRouteWithDefaults: Record<keyof Route, string | boolean | Coordinate | string[] | Coordinate[] | DocumentReference[] | null | undefined> = routeSkeleton;
+
+        (Object.keys(updatedRoute) as (keyof Route)[]).forEach((key) => {
+            let value = updatedRoute[key];
+
+            if (value === undefined) {
+                switch (typeof updatedRoute[key]) {
+                    case 'string':
+                        value = '';
+                        break;
+                    case 'boolean':
+                        value = false;
+                        break;
+                    case 'object':
+                        // Check if it's an array
+                        if (Array.isArray(updatedRoute[key])) {
+                            value = [];
+                        } else if (updatedRoute[key] === null) {
+                            value = null;
+                        } else {
+                            // Assuming it's Coordinate, fill with default Coordinate
+                            value = { lat: 0, lng: 0 };
+                        }
+                        break;
+                    default:
+                        // Throw error for unknown types
+                        throw new Error(`Unexpected type for key ${key}`);
+                }
+            }
+
+            updatedRouteWithDefaults[key] = value;
+        });
+
+        console.log("updatedRouteWithDefaults", updatedRouteWithDefaults);
+
+        try {
+            await updateDoc(routeRef, updatedRoute);
+            alert('Route Updated');
+            history.push(`/ViewRoute/${id}`);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
 
     useEffect(() => {
         console.log("Google Maps script loaded: ", isLoaded);
@@ -293,13 +306,8 @@ const UpdateRouteManually: React.FC = () => {
     }
 
     return (
-        <IonPage style={{ height: '100%' }}>
-            <IonHeader>
-                <IonToolbar>
-                    {headerContext?.showHeader && <IonHeader></IonHeader>}
-                </IonToolbar>
-            </IonHeader>
-            <IonContent style={{ height: '100%' }}>
+        <IonPage className="ion-flex-offset-app">
+            <IonContent>
                 <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <IonRow>
                         <IonCol>
@@ -322,6 +330,7 @@ const UpdateRouteManually: React.FC = () => {
                                     center={mapCenter}
                                     zoom={12}
                                     options={{
+                                        mapId: 'b75f9f8b8cf9c287',
                                         mapTypeControl: false,
                                         streetViewControl: false,
                                         fullscreenControl: true,
@@ -334,14 +343,6 @@ const UpdateRouteManually: React.FC = () => {
                                         zoomControlOptions: {
                                             position: google.maps.ControlPosition.RIGHT_CENTER,
                                         },
-
-                                        styles: [
-                                            {
-                                                featureType: 'poi',
-                                                elementType: 'labels',
-                                                stylers: [{ visibility: 'on' }],
-                                            },
-                                        ],
                                     }}
                                 >
                                     <Marker
@@ -354,7 +355,7 @@ const UpdateRouteManually: React.FC = () => {
                                             key={index}
                                             position={stop}
                                             title={`Stop ${index + 1}`}
-                                            label={`Stop ${index + 1}`}
+                                            label={stop.bikeBusStopName}
                                             onClick={() => {
                                                 console.log(`Clicked on stop ${index + 1}`);
                                             }}
@@ -365,10 +366,9 @@ const UpdateRouteManually: React.FC = () => {
                                         title="End"
                                         label={"End"}
                                     />
-                                    {
-                                        selectedRoute?.pathCoordinates.length > 0 &&
+                                    {selectedRoute?.pathCoordinates.length > 0 &&
                                         <Polyline
-                                            path={selectedRoute.pathCoordinates}
+                                            path={pathCoordinates}
                                             options={{ strokeColor: "#FF0000" }}
                                         />
                                     }
