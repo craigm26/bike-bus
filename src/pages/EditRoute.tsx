@@ -358,9 +358,16 @@ const EditRoute: React.FC = () => {
       console.log('batch: ', batch);
       const origin = batch.length > 0 ? batch[0].location : undefined;
       const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
-      console.log('batch.length: ', batch.length);  
-      const batchWaypoints = batch.slice(1, batch.length - 1);
+      
+      // Modified slicing logic
+      const batchWaypoints = batch.length <= 2 ? batch : batch.slice(1, batch.length - 1);
+      
       console.log('batchWaypoints: ', batchWaypoints);
+      
+      // Debugging for empty array
+      if (batchWaypoints.length === 0) {
+        console.warn("batchWaypoints is empty!");
+      } 
       // deeply inspect the batchWaypoints array
       console.log('batchWaypoints[0]: ', batchWaypoints[0]);
       if (origin && destination) {
