@@ -16,27 +16,18 @@ import {
   IonChip,
   IonCol,
   IonRow,
-  IonCard,
-  IonCardContent,
   IonGrid,
-  IonImg,
-  IonText,
-  IonSegment,
-  IonSegmentButton,
-  IonToggle,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, addDoc, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
+import { personCircleOutline } from 'ionicons/icons';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
-import { create } from 'domain';
-import { set } from 'date-fns';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
 
 

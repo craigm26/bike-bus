@@ -17,7 +17,6 @@ import {
 import { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { HeaderContext } from "../components/HeaderContext";
 import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
@@ -39,7 +38,6 @@ interface BikeBus {
 const EditBikeBus: React.FC = () => {
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
-    const headerContext = useContext(HeaderContext);
     const [accountType, setaccountType] = useState<string>('');
     const [selectedBikeBus, setSelectedBikeBus] = useState<BikeBus | null>(null);
     const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
@@ -86,13 +84,6 @@ const EditBikeBus: React.FC = () => {
         }
     };
 
-
-    useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(true); // Hide the header for false, Show the header for true (default)
-        }
-    }, [headerContext]);
-
     useEffect(() => {
         if (user) {
             const userRef = doc(db, 'users', user.uid);
@@ -112,13 +103,16 @@ const EditBikeBus: React.FC = () => {
         if (!selectedBikeBus) {
             return;
         }
-
+        console.log(selectedBikeBus);
+        console.log(selectedBikeBus.id);
+        console.log(selectedBikeBus.BikeBusName);
         const BikeBusRef = doc(db, 'bikebusgroups', selectedBikeBus.id);
         const updatedBikeBus: Partial<BikeBus> = {
             BikeBusName: selectedBikeBus.BikeBusName,
             BikeBusDescription: selectedBikeBus.BikeBusDescription,
             BikeBusType: selectedBikeBus.BikeBusType,
         };
+        console.log(updatedBikeBus);
         await updateDoc(BikeBusRef, updatedBikeBus);
         alert('BikeBus Updated');
         history.push(`/bikebusgrouppage/${selectedBikeBus.id}`)
