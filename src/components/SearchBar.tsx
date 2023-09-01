@@ -16,8 +16,8 @@ interface SearchBarProps {
   
 
 
-function SearchBar({ setFormattedAddress, setPlaceName, setPlaceLatitude, setPlaceLongitude }: SearchBarProps) {
-  const [location, setLocation] = useState('');
+function SearchBar({ setFormattedAddress, setPlaceName, setPlaceLatitude, setPlaceLongitude, defaultLocation }: SearchBarProps) {
+  const [location, setLocation] = useState(defaultLocation || '');
   const autoCompleteRef = useRef<HTMLInputElement | null>(null);
 
 

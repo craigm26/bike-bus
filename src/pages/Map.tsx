@@ -279,8 +279,7 @@ const Map: React.FC = () => {
   const [searchMarkerRef, setSearchMarkerRef] = useState<google.maps.Marker | null>(null);
   const [searchInfoWindow, setSearchInfoWindow] = useState<{ isOpen: boolean, content: { PlaceName: any, PlaceAddress: any, PlaceLatitude: number, PlaceLongitude: number } | null, position: { lat: number, lng: number } | null }>({ isOpen: false, content: null, position: null });
   const [destinationValue, setDestinationValue] = useState<string | null>(null);
-
-
+  const [destinationInput, setDestinationInput] = useState(PlaceName);
 
 
   interface Trip {
@@ -382,9 +381,11 @@ const Map: React.FC = () => {
     console.log("placeName", PlaceName);
     console.log("PlaceAddress", formattedAddress);
     requestLocationPermission();
+    onPlaceChangedDestination();
     if (PlaceName) {
       setDestinationValue(formattedAddress);
-      setEndPointAdress(PlaceName);
+      setEndPoint({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      setEndPointAdress(formattedAddress);
       setMapCenter({ lat: PlaceLatitude!, lng: PlaceLongitude! });
       // update the end location to the selected location of PlaceLatitude and PlaceLongitude
       setSelectedEndLocation({ lat: PlaceLatitude!, lng: PlaceLongitude! });
@@ -509,6 +510,7 @@ const Map: React.FC = () => {
 
 
   const endTripAndCheckOutAll = async () => {
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
     const tripDataIdDoc = doc(db, 'event', id);
     console.log('tripDataIdDoc', tripDataIdDoc)
     // get the serverTimeStamp() and set it as eventEndTimeStamp
@@ -580,6 +582,15 @@ const Map: React.FC = () => {
 
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
+    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the handCountEvent to the number the user inputted
+    const handCountEvent = parseInt(handCountEventBox!);
+    const handCountEventDoc = doc(db, 'event', id);
+    console.log('handCountEventDoc', handCountEventDoc)
+    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -636,6 +647,15 @@ const Map: React.FC = () => {
     }
 
     const eventDataURL = tripDataIdDoc.id;
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
+    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the handCountEvent to the number the user inputted
+    const handCountEvent = parseInt(handCountEventBox!);
+    const handCountEventDoc = doc(db, 'event', id);
+    console.log('handCountEventDoc', handCountEventDoc)
+    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    console.log('handCountEvent', handCountEvent)
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
     history.push(eventSummaryUrl);
@@ -716,6 +736,15 @@ const Map: React.FC = () => {
     console.log('eventEndeventEndTimeStamp', tripData?.eventEndeventEndTimeStamp)
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
+    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the handCountEvent to the number the user inputted
+    const handCountEvent = parseInt(handCountEventBox!);
+    const handCountEventDoc = doc(db, 'event', id);
+    console.log('handCountEventDoc', handCountEventDoc)
+    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -775,6 +804,16 @@ const Map: React.FC = () => {
     const eventDataURL = tripDataIdDoc.id;
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
+    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the handCountEvent to the number the user inputted
+    const handCountEvent = parseInt(handCountEventBox!);
+    // save the handCountEvent to the database
+    const handCountEventDoc = doc(db, 'event', id);
+    console.log('handCountEventDoc', handCountEventDoc)
+    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -1235,7 +1274,6 @@ const Map: React.FC = () => {
 
   const onPlaceChangedStart = () => {
 
-
     // if the page is loaded as a active event, then don't do the following:
     if (autocompleteStart !== null) {
       const places = autocompleteStart.getPlaces();
@@ -1331,15 +1369,14 @@ const Map: React.FC = () => {
           // then get the lat and lng of the selected end location from setSelectedEndLocation
           // then set the mapCenter to the midpoint between the two
           // then set the mapZoom to fit both locations on the map
-          const selectedStartLocation = getSelectedStartLocation(); // You need to implement this function
+          const selectedStartLocation = getSelectedStartLocation();
           const selectedEndLocation = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
           const midpoint = {
             lat: (selectedStartLocation.lat + selectedEndLocation.lat) / 2,
             lng: (selectedStartLocation.lng + selectedEndLocation.lng) / 2,
           };
           setMapCenter(midpoint);
-
-
+          setDestinationInput(`${place.formatted_address}` ?? {PlaceAddress});
           setRouteEndStreetName(streetName ?? '');
           setRouteEndName(`${place.name}` ?? '');
           setRouteEndFormattedAddress(`${place.formatted_address}` ?? '');
@@ -2288,7 +2325,8 @@ const Map: React.FC = () => {
                           <input
                             type="text"
                             autoComplete="on"
-                            value={destinationValue || "Enter Destination"}
+                            value={destinationInput}
+                            onChange={(e) => setDestinationInput(e.target.value)}
                             style={{
                               width: "350px",
                               height: "40px",
@@ -2863,7 +2901,3 @@ const Map: React.FC = () => {
 }
 
 export default Map;
-
-function setSearchMarkerRef(arg0: { lat: number; lng: number; }) {
-  throw new Error("Function not implemented.");
-}
