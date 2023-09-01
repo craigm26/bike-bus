@@ -1,10 +1,13 @@
 # BikeBus
 
+## Safety in Numbers
+
 ## MVP goals
 
-- Providing value to bikebus members and leaders by allowing them to create a route, schedule it and invite users. Organizations can host multiple BikeBus groups and assign leaders to them. Organizations can also track time and distance traveled by BikeBus group as well as employee timesheets.
-  
-## Safety in Numbers
+   -Set up a school page w/ custom URL (e.g. bikebus.app/<school-name>) and QR code
+   -Design your route map, set the days/dates
+   -Create a “WhatsApp” Group for your Bike Bus
+   -Be able to submit a form with the count of kids
 
 ## What
 
@@ -42,7 +45,15 @@ We think technology could help make this a smoother, more fun experience while p
 -npm install
 -ionic develop
 
-## To deploy to Firebase preview channel
+## To push to Firebase Hosting
+
+-firebase deploy
+
+### future build commands that will be needed for a cleaner dev / prod build process
+
+### will have to figure out how to deploy preview builds to ios and android
+
+### To deploy to Firebase preview channel
 
 -ionic build
 -npx cap sync
@@ -50,9 +61,7 @@ We think technology could help make this a smoother, more fun experience while p
 -npx sync android
 -firebase hosting:channel:deploy preview
 
-### will have to figure out how to deploy preview builds to ios and android
-
-## to deploy to Firebase production channel
+### to deploy to Firebase production channel
 
 -ionic build --prod
 -npx cap sync
@@ -70,16 +79,12 @@ Free features:
 - BikeBus Members and Parents can search for a scheduled route.
 - BikeBus Members and Parents can become a leader by creating a new route.
 
-Premium features (Monthly, cost TBD):
+Premium features (ideas) (Monthly, cost TBD):
 
 - Advanced route planning and customization for BikeBus leaders
 - Real-time ETA predictions and notifications for BikeBus parents
 - Enhanced safety features and alerts for car drivers when a BikeBus is nearby
 - In-app messaging between BikeBus members and leaders (when a parent allows it)
 - Deeper Integration with third-party services such as Google Maps for advanced navigation features
-
-Make a plan to create different user roles (free and premium) and ensure that only premium users have access to the premium features.
-
-Make it clear which features are part of the free and premium plans. This will help users understand the benefits of upgrading to a paid subscription. Use a dedicated pricing or subscription page within the app to showcase the benefits of upgrading.
 
 We will use Stripe to help manage payments and subscriptions. They also have some "preview" pages that we can use to help with the UI.
