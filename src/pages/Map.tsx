@@ -19,14 +19,9 @@ import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
+import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, Timestamp } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
-import { ReactComponent as ClipboardIcon } from '../assets/fontawesome/svgs/regular/clipboard-list.svg';
-import { ReactComponent as MapIcon } from '../assets/fontawesome/svgs/regular/map.svg';
-import { ReactComponent as PersonBikingIcon } from '../assets/fontawesome/svgs/regular/person-biking.svg';
-import { ReactComponent as UsersPeopleIcon } from '../assets/fontawesome/svgs/regular/users.svg';
-import { ReactComponent as SchoolIcon } from '../assets/fontawesome/svgs/regular/school.svg';
 
 
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
@@ -34,6 +29,8 @@ import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
 import { HeaderContext } from "../components/HeaderContext";
+import LocationInput from "../components/LocationInput";
+import SearchBar from "../components/SearchBar";
 import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
@@ -43,6 +40,7 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
+import { on } from "events";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -90,6 +88,40 @@ interface RouteData {
   routeId: string;
   name: string;
 }
+
+
+type School = {
+  id: string;
+  SchoolName: string;
+  Location: string;
+  Organization?: DocumentReference;
+}
+
+type UserType = {
+  id: string;
+  email: string;
+  accountType: string;
+  avatarUrl?: string;
+  firstName?: string;
+  lastName?: string;
+  organization?: DocumentReference;
+  orgRole?: string;
+}
+
+interface Organization {
+  NameOfOrg: any;
+  OrganizationType: any;
+  Location: any;
+  OrganizationCreator: DocumentReference;
+  id: string;
+  ContactName: string;
+  Email: string;
+  LastUpdatedBy: string;
+  LastUpdatedOn: Timestamp;
+  BikeBusGroups?: DocumentReference[];
+  Schools?: DocumentReference[];
+}
+
 
 interface FetchedUserData {
   username: string;
@@ -235,6 +267,19 @@ const Map: React.FC = () => {
   const [userRoutes, setUserRoutes] = useState<any[]>([]);
   const [BikeBusStopIds, setBikeBusStopIds] = useState<DocumentReference[]>([]);
   const [bikeBusStopData, setBikeBusStopData] = useState<BikeBusStop[]>([]);
+  const [PlaceLocation, setPlaceLocation] = useState('');
+  const [PlaceName, setPlaceName] = useState('');
+  const [formattedAddress, setFormattedAddress] = useState('');
+  const [schoolName, setSchoolName] = useState<string | null>(null);
+  const [fetchedSchools, setFetchedSchools] = useState<School[]>([]);
+  const [PlaceAddress, setPlaceAddress] = useState('');
+  const [PlaceFormattedAddress, setPlaceFormattedAddress] = useState('');
+  const [PlaceLatitude, setPlaceLatitude] = useState<number | null>(null);
+  const [PlaceLongitude, setPlaceLongitude] = useState<number | null>(null);
+  const [searchMarkerRef, setSearchMarkerRef] = useState<google.maps.Marker | null>(null);
+  const [searchInfoWindow, setSearchInfoWindow] = useState<{ isOpen: boolean, content: { PlaceName: any, PlaceAddress: any, PlaceLatitude: number, PlaceLongitude: number } | null, position: { lat: number, lng: number } | null }>({ isOpen: false, content: null, position: null });
+  const [destinationValue, setDestinationValue] = useState<string | null>(null);
+
 
 
 
@@ -334,7 +379,29 @@ const Map: React.FC = () => {
   // You can call this function when the "start map" button is clicked
   const handleStartMap = () => {
     console.log("handleStartMap called");
+    console.log("placeName", PlaceName);
+    console.log("PlaceAddress", formattedAddress);
     requestLocationPermission();
+    if (PlaceName) {
+      setDestinationValue(formattedAddress);
+      setEndPointAdress(PlaceName);
+      setMapCenter({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      // update the end location to the selected location of PlaceLatitude and PlaceLongitude
+      setSelectedEndLocation({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      // we need to show the getDirections row by setting the state to true
+      setGetLocationClicked(true);
+      renderMap({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      setShowCreateRouteButton(true);
+      setShowGetDirectionsButton(true);
+      // show the infoWindow of the place
+      setSearchInfoWindow({
+        isOpen: true,
+        content: { PlaceName, PlaceAddress, PlaceLatitude: PlaceLatitude!, PlaceLongitude: PlaceLongitude! },
+        position: { lat: PlaceLatitude!, lng: PlaceLongitude! },
+      });
+    } else {
+      requestLocationPermission();
+    }
   };
 
 
@@ -2067,6 +2134,53 @@ const Map: React.FC = () => {
     }
   };
 
+
+
+  const getPlaceLocation = async () => {
+    const OrganizationRef = doc(db, 'organizations', id);
+    const orgSnapshot = await getDoc(OrganizationRef);
+    const orgData = orgSnapshot.data() as Organization;
+    return orgData.Location;
+  };
+
+  const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
+    const schoolName = place.name;
+    setSchoolName(schoolName || null);
+  };
+
+  const handlePhotos = (photos: string) => {
+    return (
+      <IonGrid>
+        <IonRow>
+          <IonCol>
+            <img src={photos} alt="school photo" />
+          </IonCol>
+        </IonRow>
+      </IonGrid>
+    );
+  }
+
+  const fetchSchools = async () => {
+    const OrganizationRef = doc(db, 'organizations', id);
+    const orgSnapshot = await getDoc(OrganizationRef);
+
+    // Get the Schools array and handle possible undefined data
+    const orgData = orgSnapshot.data() as Organization;
+    const schoolRefs = orgData?.Schools || [];
+
+    // Fetch each school document
+    const schoolPromises = schoolRefs.map(ref => getDoc(ref));
+    const schoolSnapshots = await Promise.all(schoolPromises);
+
+    // Transform snapshots to schools
+    const schools = schoolSnapshots.map(snapshot => ({
+      id: snapshot.id,
+      ...snapshot.data()
+    })) as School[];
+
+    setFetchedSchools(schools);
+  };
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -2078,50 +2192,31 @@ const Map: React.FC = () => {
             <IonGrid className="location-app-intro-container">
               <IonRow>
                 <IonCol>
-                  <IonList lines="full">
-                    <IonItem>
-                      <IonLabel>
-                        <IonCardTitle className="BikeBusFont">Welcome to BikeBus!</IonCardTitle>
-                        <IonText>BikeBus is a group of people who want to bike together</IonText>
-                      </IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>
-                        <IonText>Find, Create, and Join:</IonText>
-                        <IonList>
-                          <IonItem>
-                            <ClipboardIcon style={{ width: '24px', height: '24px' }} />
-                            <IonLabel>Community Bulletin Boards</IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <MapIcon style={{ width: '24px', height: '24px' }} />
-                            <IonLabel>Routes</IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <PersonBikingIcon style={{ width: '24px', height: '24px' }} />
-                            <IonLabel>Open Trips</IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <UsersPeopleIcon style={{ width: '24px', height: '24px' }} />
-                            <IonLabel>BikeBus Groups</IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <SchoolIcon style={{ width: '24px', height: '24px' }} />
-                            <IonLabel>Organizations Near You</IonLabel>
-                          </IonItem>
-                        </IonList>
-                      </IonLabel>
-                    </IonItem>
-                  </IonList>
                   <IonLabel>
-                    <IonItem button color="primary" onClick={handleStartMap} lines="none">
-                      <IonText color="secondary">Start Map</IonText>
-                    </IonItem>
-                    or Visit
-                    <IonItem button color="primary" routerLink="/Help" lines="none">
-                      <IonText color="secondary">Help</IonText>
-                    </IonItem>
+                    <IonCardTitle className="BikeBusFont">Welcome to BikeBus!</IonCardTitle>
+                    <IonText>BikeBus is a group of people who want to bike together</IonText>
                   </IonLabel>
+
+                  <IonCol>
+                    <SearchBar setPlaceLatitude={setPlaceLatitude} setPlaceLongitude={setPlaceLongitude} onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName}
+                    />
+                  </IonCol>
+                  <IonCol>
+                    <IonText>{PlaceName}</IonText>
+                  </IonCol>
+                  <IonCol>
+                    <IonButton color="primary" onClick={handleStartMap}>
+                      <IonText color="secondary">Start Map</IonText>
+                    </IonButton>
+                  </IonCol>
+                  <IonCol>
+                    <IonLabel>
+                      or Visit
+                      <IonButton color="primary" routerLink="/Help">
+                        <IonText color="secondary"> Help</IonText>
+                      </IonButton>
+                    </IonLabel>
+                  </IonCol>
                 </IonCol>
               </IonRow>
             </IonGrid>
@@ -2193,7 +2288,7 @@ const Map: React.FC = () => {
                           <input
                             type="text"
                             autoComplete="on"
-                            placeholder="Enter a Destination"
+                            value={destinationValue || "Enter Destination"}
                             style={{
                               width: "350px",
                               height: "40px",
@@ -2768,3 +2863,7 @@ const Map: React.FC = () => {
 }
 
 export default Map;
+
+function setSearchMarkerRef(arg0: { lat: number; lng: number; }) {
+  throw new Error("Function not implemented.");
+}

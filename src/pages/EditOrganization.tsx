@@ -490,7 +490,6 @@ const EditOrganization: React.FC = () => {
     }
 
     const handlePhotos = (photos: string) => {
-        // let's display the photos in a small ionic grid
         return (
             <IonGrid>
                 <IonRow>
