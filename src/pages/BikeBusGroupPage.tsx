@@ -5,7 +5,7 @@ import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import { HeaderContext } from '../components/HeaderContext';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useHistory } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
@@ -52,10 +52,11 @@ interface BikeBus {
 
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();
+  const history = useHistory();
+  const { BikeBusName, groupId } = useParams<{ BikeBusName?: string; groupId?: string }>();
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setAccountType] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
-  const { groupId } = useParams<{ groupId: string }>();
   const [routesData, setRoutesData] = useState<any[]>([]);
   const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
   const [membersData, setMembersData] = useState<any[]>([]);
@@ -85,12 +86,10 @@ const BikeBusGroupPage: React.FC = () => {
   const [leaderUserName, setLeaderUsername] = useState<string>('');
   const [leaderAvatar, setLeaderAvatar] = useState<string>('');
   const [showMembersModal, setShowMembersModal] = useState(false);
-
-  const headerContext = useContext(HeaderContext);
-
   const label = user?.username ? user.username : "anonymous";
 
   const [showFullPage, setShowFullPage] = useState(false); // State to toggle full-page layout
+
 
 
 
@@ -111,46 +110,61 @@ const BikeBusGroupPage: React.FC = () => {
     setShowPopover((prevState) => !prevState);
   };
 
+
   useEffect(() => {
-    if (user) {
+    const fetchUserData = async () => {
+      if (!user?.uid) return;
       const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setAccountType(userData.accountType);
-          }
-          const username = userData?.username;
-          if (username) {
-            setUsername(username);
-          }
-        } else {
-        }
-      });
-    }
-
-    const groupRef = doc(db, 'bikebusgroups', groupId);
-    getDoc(groupRef)
-      .then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const groupData = docSnapshot.data();
-          setGroupData(groupData);
-          const uid = user?.uid;
-
-          if (groupData?.BikeBusLeader.id === uid) {
-            setIsUserLeader(true);
-          }
-
-          if (groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${user?.uid}`)) {
-            setIsUserMember(true);
-          }
-        } else {
-        }
-      })
-      .catch((error) => {
-      });
-
-  }, [user, groupId, username]);
+      const docSnapshot = await getDoc(userRef);
+      if (!docSnapshot.exists()) return;
+      const userData = docSnapshot.data();
+      setAccountType(userData?.accountType || '');
+      setUsername(userData?.username || '');
+    };
+  
+    const fetchGroupData = async (id: string) => {
+      const groupRef = doc(db, 'bikebusgroups', id);
+      const docSnapshot = await getDoc(groupRef);
+      if (!docSnapshot.exists()) return;
+      const groupData = docSnapshot.data();
+      setGroupData(groupData);
+      const uid = user?.uid;
+  
+      setIsUserLeader(groupData?.BikeBusLeader.id === uid);
+      setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
+    };
+  
+    const handleGroupBasedOnName = async () => {
+      const BikeBusCollection = collection(db, 'bikebusgroups');
+      const q = query(BikeBusCollection, where('BikeBusName', '==', BikeBusName));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        await fetchGroupData(doc.id);
+        history.replace(`/bikebusgrouppage/${doc.id}`);
+      } else {
+        history.push('/Map');
+      }
+    };
+  
+    const handleInitialLoad = () => {
+      if (BikeBusName) {
+        handleGroupBasedOnName();
+      } else if (groupId) {
+        fetchGroupData(groupId);
+      } else {
+        history.replace('/Map');
+      }
+    };
+  
+    // Fetch user data
+    fetchUserData();
+  
+    // Handle initial loading based on BikeBusName or groupId
+    handleInitialLoad();
+  
+  }, [user, groupId, BikeBusName]);
+  
 
   const fetchBikeBus = useCallback(async () => {
     const uid = user?.uid;
@@ -206,20 +220,23 @@ const BikeBusGroupPage: React.FC = () => {
   }, [groupData]);
 
   const inviteUserByEmail = async () => {
-    if (!inviteEmail) {
+    if (!inviteEmail || !groupId) {
       return;
     }
-
+  
     const groupRef = doc(db, 'bikebusgroups', groupId);
-
-    await updateDoc(groupRef, {
-      BikeBusInvites: arrayUnion(inviteEmail)
-    });
-
+  
+    if (groupRef) {
+      await updateDoc(groupRef, {
+        BikeBusInvites: arrayUnion(inviteEmail),
+      });
+    }
+  
     setInviteEmail('');
     setShowInviteModal(false);
     alert('Invite sent!');
   };
+  
 
   const fetchMembers = useCallback(async () => {
     if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
@@ -358,12 +375,6 @@ const BikeBusGroupPage: React.FC = () => {
   }, [groupData]);
 
 
-
-
-
-
-
-
   useEffect(() => {
     fetchRoutes();
     fetchLeader();
@@ -375,20 +386,18 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules,]);
 
-
-
-
-
   const joinBikeBus = async () => {
     if (!user?.uid) {
       return;
     }
 
-    const groupRef = doc(db, 'bikebusgroups', groupId);
+    const groupRef = groupId ? doc(db, 'bikebusgroups', groupId) : null;
 
-    await updateDoc(groupRef, {
-      BikeBusMembers: arrayUnion(doc(db, 'users', user.uid))
-    });
+    if (groupRef) {
+      await updateDoc(groupRef, {
+        BikeBusMembers: arrayUnion(doc(db, 'users', user.uid))
+      });
+    }
 
     setIsUserMember(true);
   };
@@ -399,11 +408,14 @@ const BikeBusGroupPage: React.FC = () => {
       return;
     }
 
-    const groupRef = doc(db, 'bikebusgroups', groupId);
+    const groupRef = groupId ? doc(db, 'bikebusgroups', groupId) : null;
 
+    if (groupRef) {
     await updateDoc(groupRef, {
       BikeBusMembers: arrayRemove(doc(db, 'users', user.uid))
     });
+  }
+
 
     setIsUserMember(false);
   };
@@ -443,13 +455,13 @@ const BikeBusGroupPage: React.FC = () => {
     }
     return 0; // Default value when start is undefined
   };
-  
+
   const sortedEvents = validEvents.sort((a: Event, b: Event) => {
     const aDateMilliseconds = convertStartToMilliseconds(a.start);
     const bDateMilliseconds = convertStartToMilliseconds(b.start);
     return aDateMilliseconds - bDateMilliseconds;
   });
-  
+
   const nextEvent = sortedEvents.find((event: Event) => {
     const eventDateMilliseconds = convertStartToMilliseconds(event.start);
     return eventDateMilliseconds > new Date().getTime();
@@ -470,6 +482,7 @@ const BikeBusGroupPage: React.FC = () => {
   const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
     ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions)
     : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
+
 
 
   return (

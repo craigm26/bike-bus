@@ -278,9 +278,8 @@ const Map: React.FC = () => {
   const [PlaceLongitude, setPlaceLongitude] = useState<number | null>(null);
   const [searchMarkerRef, setSearchMarkerRef] = useState<google.maps.Marker | null>(null);
   const [searchInfoWindow, setSearchInfoWindow] = useState<{ isOpen: boolean, content: { PlaceName: any, PlaceAddress: any, PlaceLatitude: number, PlaceLongitude: number } | null, position: { lat: number, lng: number } | null }>({ isOpen: false, content: null, position: null });
-  const [destinationValue, setDestinationValue] = useState<string | null>(null);
+  const [destinationValue, setDestinationValue] = useState('');
   const [destinationInput, setDestinationInput] = useState(PlaceName);
-
 
   interface Trip {
     id: string;
@@ -2325,7 +2324,7 @@ const Map: React.FC = () => {
                           <input
                             type="text"
                             autoComplete="on"
-                            value={destinationInput}
+                            value={destinationValue || "Enter Destination"}
                             onChange={(e) => setDestinationInput(e.target.value)}
                             style={{
                               width: "350px",
