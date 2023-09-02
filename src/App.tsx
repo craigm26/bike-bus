@@ -344,7 +344,7 @@ const App: React.FC = () => {
       const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
 
       resolve(isRelevant);
-      
+
     });
   }, [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
 
@@ -361,18 +361,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!fetchedGroups || fetchedGroups.length === 0) return;
-  
+
     // Fetch all event documents from their references in parallel
     const eventFetchPromises = fetchedGroups.flatMap((group) =>
       group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
     );
-  
+
     Promise.all(eventFetchPromises).then((eventSnapshots) => {
       // Keep track of the current index within fetchedGroups
       let groupIndex = 0;
       // Keep track of the current event index within the current group
       let eventIndex = 0;
-  
+
       // Extract event data from snapshots
       const allEvents = eventSnapshots.map((eventSnapshot) => {
         // If we've processed all events in the current group, move to the next group
@@ -380,17 +380,17 @@ const App: React.FC = () => {
           groupIndex++;
           eventIndex = 0;
         }
-  
+
         const event = {
           ...eventSnapshot.data(),
           id: eventSnapshot.id,
           groupId: fetchedGroups[groupIndex].id,
         };
-  
+
         eventIndex++;
         return event;
       });
-  
+
       // Filter out events in the past
       const futureEvents = allEvents.filter(event => {
         // event.start is a timestamp object, so we need to check if it exists and if it has a seconds property
@@ -400,26 +400,26 @@ const App: React.FC = () => {
           return false;
         }
       });
-  
+
       // Sort all the future events by start in ascending order
       const sortedEvents = [...futureEvents].sort(
         (a, b) =>
           new Date(a.start.seconds * 1000).getTime() - new Date(b.start.seconds * 1000).getTime()
       );
-  
+
       // Now, the first event in sortedEvents is the upcoming event
       const upcomingEvent = sortedEvents[0];
-  
+
       // Find the group that the upcoming event belongs to
       const upcomingGroup = upcomingEvent
         ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId)
         : null;
-  
+
       setUpcomingEvent(upcomingEvent);
       setUpcomingGroup(upcomingGroup);
     });
   }, [fetchedGroups]);
-  
+
 
 
 
@@ -434,7 +434,7 @@ const App: React.FC = () => {
       )
     ) : (
       <UserIcon style={{ width: '24px', height: '24px' }} />
-      );
+    );
   }, [user, avatarUrl]);
 
 
@@ -671,9 +671,6 @@ const App: React.FC = () => {
                           <Map />
                         </MapProvider>
                       </Route>
-                      <Route exact path="/ViewBikeBusGroup">
-                        <BikeBusGroupPage />
-                      </Route>
                       <Route exact path="/ViewRoute">
                         <ViewRoute />
                       </Route>
@@ -736,6 +733,16 @@ const App: React.FC = () => {
                         <Welcome />
                       </Route>
                       <Switch>
+                        <Switch>
+                          <Route exact path="/ViewBikeBusGroup">
+                            <BikeBusGroupPage />
+                          </Route>
+                          <Route exact path="/:BikeBusName">
+                            <BikeBusGroupPage />
+                          </Route>
+                        </Switch>
+                      </Switch>
+                      <Switch>
                         <Route exact path="/Map/:id?" component={Map} />
                         <Route exact path="/">
                           <Redirect to="/Map/" />
@@ -750,7 +757,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="start" slot="fixed">
                       <IonFabButton routerLink="/Map" routerDirection="none">
-                      <HouseIcon style={{ width: '24px', height: '24px' }} />
+                        <HouseIcon style={{ width: '24px', height: '24px' }} />
                       </IonFabButton>
                     </IonFab>
                   </div>
@@ -783,8 +790,8 @@ const App: React.FC = () => {
                   )}
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                    <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
-                    <ClipboardIcon style={{ width: '24px', height: '24px' }} />
+                      <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
+                        <ClipboardIcon style={{ width: '24px', height: '24px' }} />
                       </IonFabButton>
                     </IonFab>
                   </div>
