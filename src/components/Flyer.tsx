@@ -4,22 +4,12 @@ import { useAvatar } from '../components/useAvatar';
 import React, { useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { DocumentReference } from "firebase/firestore";
-import { event } from "firebase-functions/v1/analytics";
-
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
-
-
 
 interface Coordinate {
     lat: number;
     lng: number;
-}
-
-interface BikeBusGroupData {
-    name: string;
-    description: string;
-    BikeBusRoutes: { id: string }[];
 }
 
 interface BikeBusGroup {
