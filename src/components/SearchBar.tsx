@@ -41,6 +41,7 @@ function SearchBar({ setFormattedAddress, setPlaceName, setPlaceLatitude, setPla
         console.log(place);
         console.log(placeName);
         console.log(address);
+        // also run the onPlaceChangedDestination function in the parent component
         
       });
     }

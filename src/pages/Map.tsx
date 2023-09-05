@@ -2217,6 +2217,13 @@ const Map: React.FC = () => {
     setFetchedSchools(schools);
   };
 
+  // if the setPlaceLocation has changed, run onPlaceChangedDestination function
+  useEffect(() => {
+    if (PlaceLocation) {
+      onPlaceChangedDestination();
+    }
+  }, [PlaceLocation]);
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -2232,7 +2239,6 @@ const Map: React.FC = () => {
                     <IonCardTitle className="BikeBusFont">Welcome to BikeBus!</IonCardTitle>
                     <IonText>BikeBus is a group of people who want to bike together</IonText>
                   </IonLabel>
-
                   <IonCol>
                     <SearchBar setPlaceLatitude={setPlaceLatitude} setPlaceLongitude={setPlaceLongitude} onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName}
                     />
@@ -2324,8 +2330,9 @@ const Map: React.FC = () => {
                           <input
                             type="text"
                             autoComplete="on"
-                            value={destinationValue || "Enter Destination"}
-                            onChange={(e) => setDestinationInput(e.target.value)}
+                            placeholder="Enter Destination"
+                            value={destinationValue}
+                            onChange={(e) => setDestinationValue(e.target.value)}
                             style={{
                               width: "350px",
                               height: "40px",

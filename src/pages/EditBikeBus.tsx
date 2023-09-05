@@ -17,7 +17,7 @@ import {
 import { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { collection, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, updateDoc, query, where, DocumentReference } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -26,12 +26,26 @@ import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 
 interface BikeBus {
     BikeBusName: any;
+    BikeBusRoutes: DocumentReference[];
     BikeBusDescription: any;
     BikeBusType: any;
     travelMode: any;
     startPoint: any;
     endPoint: any;
     pathCoordinates: any;
+    id: string;
+}
+
+interface Route {
+    RouteName: any;
+    RouteDescription: any;
+    RouteType: any;
+    RouteCreator: any;
+    RouteBikeBus: any;
+    RouteStartPoint: any;
+    RouteEndPoint: any;
+    BikeBusName: any;
+    RoutePathCoordinates: any;
     id: string;
 }
 
@@ -43,8 +57,10 @@ const EditBikeBus: React.FC = () => {
     const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
+    const [routeId, setRouteId] = useState<DocumentReference[]>([]);
     const startPointRef = usePlacesAutocomplete((location, name) => { });
     const endPointRef = usePlacesAutocomplete((location, name) => { });
+    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
 
 
 
@@ -82,6 +98,7 @@ const EditBikeBus: React.FC = () => {
             };
             setSelectedBikeBus(BikeBusData);
         }
+
     };
 
     useEffect(() => {

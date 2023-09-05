@@ -254,17 +254,6 @@ const ViewRoute: React.FC = () => {
               <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
             </IonCol>
           </IonRow>
-          {isBikeBus && (
-            <IonRow>
-              <IonCol>
-                <IonLabel>
-                  BikeBus Group:
-                  {selectedRoute?.BikeBusName}
-
-                </IonLabel>
-              </IonCol>
-            </IonRow>
-          )}
           <IonRow>
             <IonCol>
               {selectedRoute?.travelMode && (
