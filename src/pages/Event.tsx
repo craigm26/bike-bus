@@ -868,9 +868,9 @@ const Event: React.FC = () => {
                       {isBikeBus && (
                         <>
                           <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
-                          {showPrintFlyer && routeData && (
+                          {showPrintFlyer && routeData && eventData && (
                             <div ref={componentRef}>
-                              <Flyer eventData={eventData} routeData={routeData} BikeBusName='' />
+                              <Flyer eventData={eventData} routeData={routeData} BikeBusName=''/>
                             </div>
                           )}
 
