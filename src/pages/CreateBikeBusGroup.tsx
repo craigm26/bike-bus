@@ -1,16 +1,9 @@
 import {
   IonContent,
-  IonHeader,
   IonPage,
-  IonToolbar,
-  IonMenuButton,
-  IonButtons,
   IonButton,
   IonLabel,
-  IonText,
-  IonChip,
   IonAvatar,
-  IonPopover,
   IonIcon,
   IonItem,
   IonInput,
@@ -22,13 +15,11 @@ import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
-import Profile from '../components/Profile'; // Import the Profile component
 import { personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
-import { helpCircleOutline, cogOutline, alertCircleOutline } from 'ionicons/icons';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import React from 'react';
 
 const CreateBikeBusGroup: React.FC = () => {
@@ -154,15 +145,17 @@ const CreateBikeBusGroup: React.FC = () => {
     await updateDoc(userRef, {
       bikebusgroups: arrayUnion(doc(db, 'bikebusgroups', bikebusgroupId)),
     });
+    console.log('bikebusgroupId:', bikebusgroupId); // check if the bikebusgroupId is correctly fetched from Firestore
 
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
-      Messages: '',
-      Timestamp: '',
+      messages: '',
+      timestamp: '',
       user: '',
     };
     await addDoc(collection(db, 'messages'), messagesData);
+    console.log('messagesData:', messagesData);
 
     // get the messages document id
     const messagesRef = await getDocs(collection(db, 'messages'));
@@ -175,17 +168,14 @@ const CreateBikeBusGroup: React.FC = () => {
       // make an array of messageIds references in "Messages"
       Messages: [],
     }
+
+    // when we create the bulletinboard, we want the id of the document to be set to a new variable
     await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
 
-    // get the bulletinboard document id
-    const bulletinBoardRef = await getDocs(collection(db, 'bulletinboard'));
-    const bulletinBoardId = bulletinBoardRef.docs[bulletinBoardRef.docs.length - 1].id;
-    console.log('bulletinBoardId:', bulletinBoardId);
 
-    // add the bulletinboard reference to the bikebusgroup document in firestore
     const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
     await updateDoc(bikeBusGroupRef3, {
-      bulletinboard: doc(db, 'bulletinboard', bulletinBoardId),
+      bulletinboard: doc(db, 'bulletinboard', bikeBusRef.id),
     });
 
     history.push(`/bikebusgrouppage/${bikebusgroupId}`);

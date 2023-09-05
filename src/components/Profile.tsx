@@ -86,13 +86,17 @@ const Profile: React.FC = () => {
           <IonAvatar className='img-center-profile'>
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
-          <IonItemDivider className="ion-item-divider-profile" />
           {user?.accountType === 'Anonymous' ? (
             <div></div>
           ) : (
             <><><IonButton className="ion-button-profile" fill="solid" routerLink="/account">
               Account
-            </IonButton><Logout /></></>
+            </IonButton>
+            <Logout />
+            <IonButton className="ion-button-profile" fill="solid" routerLink="/Login"> 
+                Login to Account
+              </IonButton>
+            </></>
             
           )}
           {user?.accountType === 'Anonymous' ? (
@@ -105,6 +109,7 @@ const Profile: React.FC = () => {
                 Login to Account
               </IonButton>
               <Logout />
+
             </>
           ) : (
             <div>
