@@ -439,7 +439,7 @@ const BulletinBoards: React.FC = () => {
             unsubscribeOrganization?.();
         };
 
-    }, [selectedBBOROrgValue]);
+    }, [selectedBBOROrgValue, messageInput]);
 
     const getAvatarElement = (userId: string | undefined) => {
         // You can replace this with the logic to get the avatar URL for the given user ID
