@@ -25,8 +25,6 @@ We think technology could help make this a smoother, more fun experience while p
 
 -create a route, make it a scheduled route and call that a BikeBus group. Invite other or new users to join.
 -Map search then allow options to get directions, look for routes or BikeBus groups
--Parents can check in a kid when the BikeBus starts
--Org admins can claim a destination and make multiple routes and assign/invite leaders to them.
 -"Bulletin Boards" allow users in a BikeBus or Organization to send messages
 -Account page allows users to see their details and change them
 

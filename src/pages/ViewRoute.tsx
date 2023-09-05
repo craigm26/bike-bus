@@ -312,7 +312,7 @@ const ViewRoute: React.FC = () => {
                 <GoogleMap
                   mapContainerStyle={containerMapStyle}
                   center={mapCenter}
-                  zoom={12}
+                  zoom={15}
                   options={{
                     mapTypeControl: false,
                     streetViewControl: false,

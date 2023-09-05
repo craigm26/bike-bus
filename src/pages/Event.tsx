@@ -31,7 +31,7 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/
 import React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
-import Flyer from '../components/Flyer'; 
+import Flyer from '../components/Flyer';
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -234,6 +234,7 @@ const Event: React.FC = () => {
   const [RouteDocId, setRouteDocId] = useState<string>('');
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
+  const [showPrintFlyer, setShowPrintFlyer] = useState(false);
 
   type SetRoleFunction = (role: string[]) => void;
 
@@ -388,7 +389,7 @@ const Event: React.FC = () => {
       );
       setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStop[]);
     };
-  
+
     fetchAllStops();
   }, [bikeBusStopIds]);
 
@@ -640,12 +641,12 @@ const Event: React.FC = () => {
 
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
-  
+
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime
     ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
     : 'Loading...';
-  
+
 
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
@@ -764,7 +765,17 @@ const Event: React.FC = () => {
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
-  
+
+  useEffect(() => {
+    if (showPrintFlyer) {
+      handlePrint();
+      setShowPrintFlyer(false);
+    }
+  }, [showPrintFlyer]);
+
+  const togglePrintFlyer = () => {
+    setShowPrintFlyer(true);
+  };
 
   useEffect(() => {
     console.log("Google Maps script loaded: ", isLoaded);
@@ -836,11 +847,11 @@ const Event: React.FC = () => {
                   />
                   {bikeBusStops.map((stop, index) => (
                     <Marker
-                    key={index}
-                    position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
-                    label={stop.BikeBusStopName}
-                    title={stop.BikeBusStopName}
-                  />                  
+                      key={index}
+                      position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
+                      label={stop.BikeBusStopName}
+                      title={stop.BikeBusStopName}
+                    />
                   ))}
                 </div>
               )}
@@ -856,15 +867,17 @@ const Event: React.FC = () => {
                       )}
                       {isBikeBus && (
                         <>
-                        <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
-                        <div ref={componentRef}>
-                          <Flyer
-                          />
-                        </div>
+                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                          {showPrintFlyer && routeData && (
+                            <div ref={componentRef}>
+                              <Flyer eventData={eventData} routeData={routeData} BikeBusName='' />
+                            </div>
+                          )}
+
                         </>
                       )}
                       {!isEventEnded && (
-                      <IonButton size="small" onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+                        <IonButton size="small" onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
                       )}
                       <IonModal isOpen={showRSVPModal}>
                         <IonHeader>
@@ -911,9 +924,9 @@ const Event: React.FC = () => {
                           <IonButton size="small" onClick={handleRSVP}>RSVP with these Roles</IonButton>
                         </IonContent>
                       </IonModal>
-                      
+
                       {!isEventEnded && (
-                      <IonButton size="small" onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+                        <IonButton size="small" onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
                       )}
                       <IonModal isOpen={showRSVPListModal}>
                         <IonHeader>
@@ -1011,7 +1024,7 @@ const Event: React.FC = () => {
                         <IonButton size="small" color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
                       )}
                       {!isEventLeader && isEventActive && (
-                        <IonButton size="small"  onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+                        <IonButton size="small" onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
                       )}
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
