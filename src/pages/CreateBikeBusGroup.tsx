@@ -19,7 +19,7 @@ import { personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
 import React from 'react';
 
 const CreateBikeBusGroup: React.FC = () => {
@@ -150,7 +150,7 @@ const CreateBikeBusGroup: React.FC = () => {
     // create a messages document in the firestore collection "messages" for the bikebusgroup
     const messagesData = {
       BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
-      messages: '',
+      message: '',
       timestamp: '',
       user: '',
     };
@@ -169,10 +169,15 @@ const CreateBikeBusGroup: React.FC = () => {
       Messages: [],
     }
 
-    // when we create the bulletinboard, we want the id of the document to be set to a new variable
-    await addDoc(collection(db, 'bulletinboard'), bulletinBoardData);
+    // when we create the bulletinboard, we want the id of the document to be set to the id of the bikebusgroup (bikeBusRef.id)
+    // set the bulletinboard document id to the bikebusgroup id
+    const bulletinBoardRef = doc(db, 'bulletinboard', bikeBusRef.id);
+    // now use the updateDoc or addDoc function to create the bulletinboard document in the bulletinboard collection in firestore with the bulletinBoardRef
 
-
+    await setDoc(bulletinBoardRef, bulletinBoardData);
+    // get the bulletinboard document id
+    
+  
     const bikeBusGroupRef3 = doc(db, 'bikebusgroups', bikebusgroupId);
     await updateDoc(bikeBusGroupRef3, {
       bulletinboard: doc(db, 'bulletinboard', bikeBusRef.id),
