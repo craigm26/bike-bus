@@ -29,6 +29,9 @@ import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
+import Flyer from '../components/Flyer'; 
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -756,6 +759,13 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+  });
+  
+
   useEffect(() => {
     console.log("Google Maps script loaded: ", isLoaded);
     console.log("Google Maps load error: ", loadError);
@@ -839,13 +849,22 @@ const Event: React.FC = () => {
                   <IonRow>
                     <IonCol>
                       {isBikeBus && (
-                        <IonButton routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
+                        <IonButton size="small" routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
                       )}
                       {!isBikeBus && (
-                        <IonButton routerLink="/map">Back to Map</IonButton>
+                        <IonButton size="small" routerLink="/map">Back to Map</IonButton>
+                      )}
+                      {isBikeBus && (
+                        <>
+                        <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                        <div ref={componentRef}>
+                          <Flyer
+                          />
+                        </div>
+                        </>
                       )}
                       {!isEventEnded && (
-                      <IonButton onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
+                      <IonButton size="small" onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
                       )}
                       <IonModal isOpen={showRSVPModal}>
                         <IonHeader>
@@ -888,13 +907,13 @@ const Event: React.FC = () => {
                               <IonLabel>Caboose: Keep to the back to handle any stragglers</IonLabel>
                             </IonItem>
                           </IonList>
-                          <IonButton onClick={() => setShowRSVPModal(false)}>Close</IonButton>
-                          <IonButton onClick={handleRSVP}>RSVP with these Roles</IonButton>
+                          <IonButton size="small" onClick={() => setShowRSVPModal(false)}>Close</IonButton>
+                          <IonButton size="small" onClick={handleRSVP}>RSVP with these Roles</IonButton>
                         </IonContent>
                       </IonModal>
                       
                       {!isEventEnded && (
-                      <IonButton onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
+                      <IonButton size="small" onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
                       )}
                       <IonModal isOpen={showRSVPListModal}>
                         <IonHeader>
@@ -911,7 +930,7 @@ const Event: React.FC = () => {
                             <IonItem>
                               <IonLabel>Members</IonLabel>
                               <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                                <IonButton size="small" onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
                                   {membersId.slice(0, 5).map((member, index) => (
                                     <IonChip key={index}>
                                       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -942,7 +961,7 @@ const Event: React.FC = () => {
                                     </IonItem>
                                   ))}
                                 </IonList>
-                                <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                                <IonButton size="small" expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
                               </IonContent>
                             </IonModal>
                             <IonItem>
@@ -982,20 +1001,20 @@ const Event: React.FC = () => {
                               ))}
                             </IonItem>
                           </IonList>
-                          <IonButton onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
+                          <IonButton size="small" onClick={() => setShowRSVPListModal(false)}>Close</IonButton>
                         </IonContent>
                       </IonModal>
                       {isEventEnded && (
-                        <IonButton routerLink={`/EventSummary/${id}`}>Event Summary</IonButton>
+                        <IonButton size="small" routerLink={`/EventSummary/${id}`}>Event Summary</IonButton>
                       )}
                       {isEventLeader && !isEventActive && !isEventEnded && (
-                        <IonButton color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
+                        <IonButton size="small" color={'success'} onClick={toggleStartEvent}>Start BikeBus Event</IonButton>
                       )}
                       {!isEventLeader && isEventActive && (
-                        <IonButton onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
+                        <IonButton size="small"  onClick={toggleJoinEvent}>CheckIn to BikeBus Event!</IonButton>
                       )}
                       {isEventLeader && isEventActive && (
-                        <IonButton routerLink={`/Map/${id}`}>Go to Event</IonButton>
+                        <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
                     </IonCol>
                   </IonRow>
@@ -1019,14 +1038,6 @@ const Event: React.FC = () => {
                     }}
                   />
                 )}
-                {bikeBusStops.map((stop, index) => (
-                  <Marker
-                    key={index}
-                    position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
-                    label={stop.BikeBusStopName}
-                    title={stop.BikeBusStopName}
-                  />
-                ))}
               </div>
               <div>
               </div>

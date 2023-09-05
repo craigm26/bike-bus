@@ -121,7 +121,7 @@ const BikeBusGroupPage: React.FC = () => {
       setAccountType(userData?.accountType || '');
       setUsername(userData?.username || '');
     };
-  
+
     const fetchGroupData = async (id: string) => {
       const groupRef = doc(db, 'bikebusgroups', id);
       const docSnapshot = await getDoc(groupRef);
@@ -129,11 +129,11 @@ const BikeBusGroupPage: React.FC = () => {
       const groupData = docSnapshot.data();
       setGroupData(groupData);
       const uid = user?.uid;
-  
+
       setIsUserLeader(groupData?.BikeBusLeader.id === uid);
       setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
     };
-  
+
     const handleGroupBasedOnName = async () => {
       const BikeBusCollection = collection(db, 'bikebusgroups');
       const q = query(BikeBusCollection, where('BikeBusName', '==', BikeBusName));
@@ -143,28 +143,26 @@ const BikeBusGroupPage: React.FC = () => {
         await fetchGroupData(doc.id);
         history.replace(`/bikebusgrouppage/${doc.id}`);
       } else {
-        history.push('/Map');
       }
     };
-  
-    const handleInitialLoad = () => {
-      if (BikeBusName) {
-        handleGroupBasedOnName();
-      } else if (groupId) {
-        fetchGroupData(groupId);
-      } else {
-        history.replace('/Map');
-      }
-    };
-  
-    // Fetch user data
+
+    const validRoutes = ['/bikebusgrouppage/:groupId', '/BikeBusName'];
+    const route = window.location.pathname;
+
+
+    if (BikeBusName) {
+      handleGroupBasedOnName();
+    } else if (groupId) {
+      fetchGroupData(groupId);
+    } else {
+      history.replace('/BikeBusName');
+    }
+
     fetchUserData();
-  
-    // Handle initial loading based on BikeBusName or groupId
-    handleInitialLoad();
-  
-  }, [user, groupId, BikeBusName]);
-  
+
+  }
+
+    , [BikeBusName, groupId, history, user]);
 
   const fetchBikeBus = useCallback(async () => {
     const uid = user?.uid;
@@ -223,20 +221,20 @@ const BikeBusGroupPage: React.FC = () => {
     if (!inviteEmail || !groupId) {
       return;
     }
-  
+
     const groupRef = doc(db, 'bikebusgroups', groupId);
-  
+
     if (groupRef) {
       await updateDoc(groupRef, {
         BikeBusInvites: arrayUnion(inviteEmail),
       });
     }
-  
+
     setInviteEmail('');
     setShowInviteModal(false);
     alert('Invite sent!');
   };
-  
+
 
   const fetchMembers = useCallback(async () => {
     if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
@@ -411,10 +409,10 @@ const BikeBusGroupPage: React.FC = () => {
     const groupRef = groupId ? doc(db, 'bikebusgroups', groupId) : null;
 
     if (groupRef) {
-    await updateDoc(groupRef, {
-      BikeBusMembers: arrayRemove(doc(db, 'users', user.uid))
-    });
-  }
+      await updateDoc(groupRef, {
+        BikeBusMembers: arrayRemove(doc(db, 'users', user.uid))
+      });
+    }
 
 
     setIsUserMember(false);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Route, Redirect, useParams, Switch } from 'react-router-dom';
+import { Route, Redirect, useParams, Switch, BrowserRouter } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
@@ -610,15 +610,13 @@ const App: React.FC = () => {
                       </IonButtons>
                     </IonToolbar>
                   </IonHeader>
+                  <BrowserRouter>
                   <IonRouterOutlet>
                     <React.Fragment>
-                      <Route path="/bikebusgrouppage/:groupId">
-                        <BikeBusGroupPage />
-                      </Route>
-                      <Route path="/SearchForBikeBus">
+                      <Route exact path="/SearchForBikeBus">
                         <SearchForBikeBus />
                       </Route>
-                      <Route path="/BulletinBoards">
+                      <Route exact path="/BulletinBoards">
                         <CurrentLocationProvider>
                           <BulletinBoards />
                         </CurrentLocationProvider>
@@ -670,6 +668,9 @@ const App: React.FC = () => {
                         >
                           <Map />
                         </MapProvider>
+                      </Route>
+                      <Route exact path="/ViewBikeBusGroup">
+                        <BikeBusGroupPage />
                       </Route>
                       <Route exact path="/ViewRoute">
                         <ViewRoute />
@@ -733,23 +734,19 @@ const App: React.FC = () => {
                         <Welcome />
                       </Route>
                       <Switch>
-                        <Switch>
-                          <Route exact path="/ViewBikeBusGroup">
-                            <BikeBusGroupPage />
-                          </Route>
-                          <Route exact path="/:BikeBusName">
-                            <BikeBusGroupPage />
-                          </Route>
-                        </Switch>
-                      </Switch>
-                      <Switch>
                         <Route exact path="/Map/:id?" component={Map} />
                         <Route exact path="/">
                           <Redirect to="/Map/" />
                         </Route>
                       </Switch>
+                      <Switch>
+                        <Route exact path="/bikebusgrouppage/:groupId">
+                          <BikeBusGroupPage />
+                        </Route>
+                      </Switch>
                     </React.Fragment>
                   </IonRouterOutlet>
+                  </BrowserRouter>
                 </IonContent>
               </IonPage>
               {user && (
