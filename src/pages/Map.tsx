@@ -158,7 +158,7 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
-  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
@@ -1250,6 +1250,13 @@ const Map: React.FC = () => {
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
 
+    // if the page has a selected end location, then update some const values that are updated when the destination is changed
+    if (PlaceAddress !== null) {
+      console.log('PlaceAddress', PlaceAddress)
+      // then we need to set a bunch of const values to the values of the selected end location
+      setRouteEndFormattedAddress(`${PlaceAddress}` ?? '');
+    }
+
     const map = mapRef.current;
     if (map) {
       map.addListener("bounds_changed", () => {
@@ -1346,6 +1353,10 @@ const Map: React.FC = () => {
     return selectedStartLocation;
   }
 
+  function getSelectedEndLocation() {
+    return selectedEndLocation;
+  }
+
   const onPlaceChangedDestination = () => {
     if (autocompleteEnd !== null) {
       const places = autocompleteEnd.getPlaces();
@@ -1369,7 +1380,7 @@ const Map: React.FC = () => {
           // then set the mapCenter to the midpoint between the two
           // then set the mapZoom to fit both locations on the map
           const selectedStartLocation = getSelectedStartLocation();
-          const selectedEndLocation = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+          const selectedEndLocation = getSelectedEndLocation();
           const midpoint = {
             lat: (selectedStartLocation.lat + selectedEndLocation.lat) / 2,
             lng: (selectedStartLocation.lng + selectedEndLocation.lng) / 2,
@@ -1378,7 +1389,10 @@ const Map: React.FC = () => {
           setDestinationInput(`${place.formatted_address}` ?? {PlaceAddress});
           setRouteEndStreetName(streetName ?? '');
           setRouteEndName(`${place.name}` ?? '');
-          setRouteEndFormattedAddress(`${place.formatted_address}` ?? '');
+          console.log(place.formatted_address)
+          console.log(PlaceAddress)
+          setRouteEndFormattedAddress(`${place.formatted_address}` ?? {PlaceAddress});
+          console.log('routeEndFormattedAddress', routeEndFormattedAddress);
           setShowCreateRouteButton(true);
           setShowGetDirectionsButton(true);
 
@@ -1432,6 +1446,9 @@ const Map: React.FC = () => {
   const getDirections = () => {
     return new Promise(async (resolve, reject) => {
       if (selectedStartLocation && selectedEndLocation) {
+        console.log("getDirections called");
+        console.log("selectedStartLocation: ", selectedStartLocation);
+        console.log("selectedEndLocation: ", selectedEndLocation);
         getEndPointAdress();
         getStartPointAdress();
         const directionsService = new google.maps.DirectionsService();
@@ -1530,15 +1547,20 @@ const Map: React.FC = () => {
 
 
   const getEndPointAdress = async () => {
+    console.log("getEndPointAdress called");
+    console.log("selectedEndLocation: ", endPoint);
     if (endPoint) {
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${endPoint.lat},${endPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
       const data = await response.json();
       setSelectedEndLocationAddress(data.results[0].formatted_address);
+      console.log("selectedEndLocationAddress: ", data.results[0].formatted_address);
     }
   };
 
   const createRoute = () => {
     try {
+      console.log("createRoute called");
+      console.log("selectedEndLocation: ", selectedEndLocation);
       getEndPointAdress();
       getStartPointAdress();
 
@@ -1577,7 +1599,7 @@ const Map: React.FC = () => {
                     lng: route?.legs[0]?.end_location?.lng()
                   },
                   startPointAddress: routeStartFormattedAddress,
-                  endPointAddress: routeEndFormattedAddress,
+                  endPointAddress: selectedEndLocationAddress,
                   startPoint: selectedStartLocation,
                   endPoint: selectedEndLocation,
                   routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
@@ -1641,7 +1663,7 @@ const Map: React.FC = () => {
           startPointName: routeStartName,
           startPointAddress: routeStartFormattedAddress,
           endPointName: routeEndName,
-          endPointAddress: routeEndFormattedAddress,
+          endPointAddress: selectedEndLocationAddress,
           distance: distance,
         });
 

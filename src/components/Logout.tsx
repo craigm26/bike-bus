@@ -12,7 +12,8 @@ const Logout: React.FC = () => {
     try {
       await logout();
       // Redirect the user to the login page or another appropriate page.
-      history.push('/Login');
+      /// go to login page
+      history.replace('/Login');
     } catch (error) {
       // Handle errors during logout here.
       const err = error as Error;
