@@ -49,8 +49,8 @@ interface BikeBusStops {
   BikeBusStopName: string;
   BikBusGroupId: DocumentReference;
   BikeBusRouteId: DocumentReference;
-  lat: Coordinate;
-  lng: Coordinate;
+  lat: number;
+  lng: number;
   BikeBusStopIds: DocumentReference[];
   BikeBusGroupId: string;
 }
@@ -243,24 +243,19 @@ const EditRoute: React.FC = () => {
       const fetchBikeBusStops = async () => {
         // first let's get the bikebusstop ids from the selectedRoute
         const bikeBusStopIds = selectedRoute.BikeBusStopIds;
-        console.log('bikeBusStopIds: ', bikeBusStopIds);
         // for each bikeBusStopId, let's create a query
         const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', bikeBusStopIds));
-        console.log('bikeBusStopsQuery: ', bikeBusStopsQuery);
         getDocs(bikeBusStopsQuery);
         // for each document, get the actual object document data and store it in the state variable BikeBusStops
         const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-        console.log('bikeBusStopsSnapshot: ', bikeBusStopsSnapshot);
         const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
           ...doc.data(),
           id: doc.id,
         })) as unknown as BikeBusStops[]; // this is the array of BikeBusStops
-        console.log('bikeBusStopsData: ', bikeBusStopsData);
         setBikeBusStops(bikeBusStopsData);
 
       };
 
-      console.log('bikeBusStops: ', BikeBusStops);
       fetchBikeBusStops();
     }
   }
@@ -328,8 +323,25 @@ const EditRoute: React.FC = () => {
     }
   }
 
-  const calculateRoute = async (startPoint: Coordinate, endPoint: Coordinate, waypoints: google.maps.DirectionsWaypoint[], travelMode: google.maps.TravelMode, optimize = false) => {
+  const calculateRoute = async (
+    startPoint: Coordinate,
+    endPoint: Coordinate,
+    waypoints: google.maps.DirectionsWaypoint[],
+    travelMode: google.maps.TravelMode,
+    optimize = true
+  ) => {
     const directionsService = new google.maps.DirectionsService();
+
+    if (!startPoint || !endPoint) {
+      console.warn("Missing startPoint or endPoint!");
+      throw new Error("Missing startPoint or endPoint!");
+    }
+    console.log('startPoint: ', startPoint);
+    console.log('endPoint: ', endPoint);
+    // now inspect the type that is returned from startPoint and endPoint
+    console.log('typeof startPoint: ', typeof startPoint);
+    console.log('typeof endPoint: ', typeof endPoint);
+
     const batchSize = 10;
     const batches = [];
     const epsilon = 0.00005; // Define epsilon for Douglas-Peucker algorithm. Distance in degrees. 0.00005 is about 5.5 meters.
@@ -355,19 +367,23 @@ const EditRoute: React.FC = () => {
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log('batch: ', batch);
       const origin = batch.length > 0 ? batch[0].location : undefined;
       const destination = batch.length > 0 ? batch[batch.length - 1].location : undefined;
-      
+
+      if (!origin || !destination) {
+        console.warn("Origin or Destination is missing in batch!");
+        return;
+      }
+
       // Modified slicing logic
       const batchWaypoints = batch.length <= 2 ? batch : batch.slice(1, batch.length - 1);
-      
+
       console.log('batchWaypoints: ', batchWaypoints);
-      
+
       // Debugging for empty array
       if (batchWaypoints.length === 0) {
         console.warn("batchWaypoints is empty!");
-      } 
+      }
       // deeply inspect the batchWaypoints array
       console.log('batchWaypoints[0]: ', batchWaypoints[0]);
       if (origin && destination) {
@@ -385,6 +401,9 @@ const EditRoute: React.FC = () => {
               let newRoutePathCoordinates = newRoute.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
               newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);
               resolve(newRoutePathCoordinates);
+              console.log('newRoutePathCoordinates: ', newRoutePathCoordinates);
+              // log the response and status from the directionsService.route
+              console.log('response: ', response);
             } else {
               reject('Directions request failed due to ' + status);
             }
@@ -404,46 +423,66 @@ const EditRoute: React.FC = () => {
     }
   }
 
+  const ALERT_NO_ROUTE = "No route selected!";
+  const ALERT_MISSING_POINTS = "Missing startPoint or endPoint!";
+
   const onGenerateNewRouteClick = async () => {
     if (!selectedRoute) {
-      alert("No route selected!");
+      alert(ALERT_NO_ROUTE);
       return;
     }
-  
+
     const routeRef = doc(db, 'routes', id);
     const routeSnap = await getDoc(routeRef);
     const routeData = routeSnap.data() as Route;
-    const routeBikeBusStopIds = routeData.BikeBusStopIds;
-  
-    let bikeBusStopsData: BikeBusStops[] = [];
-  
+
+    if (!routeData) {
+      alert('Failed to fetch route data.');
+      return;
+    }
+
+    const waypoints = [] as google.maps.DirectionsWaypoint[];
+
+
+    const routeBikeBusStopIds = routeData?.BikeBusStopIds || [];
+    let bikeBusStopsData: Array<BikeBusStops> = [];
+
     if (routeBikeBusStopIds.length > 0) {
       const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds));
       const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-      bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => doc.data()) as unknown as BikeBusStops[];
+      bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as unknown as Array<BikeBusStops>;      
       setBikeBusStops(bikeBusStopsData);
+
+      BikeBusStops.forEach(stop => {
+        const location = new google.maps.LatLng(stop.lat, stop.lng);
+        // basically, each location becomes a waypoint, so let's set each as a waypoint for later use
+        waypoints.push({ location });
+      });
+      console.log('location: ', location);     
     }
-  
+
     setBikeBusStops(bikeBusStopsData);
     console.log('bikeBusStopsData: ', bikeBusStopsData);
-  
-    const waypoints = bikeBusStopsData.map((stop) => ({
-      // bikeBusStopsData is an array of BikeBusStops which contain two fields: lat and lng which are numbers
-      // but google.maps.LatLng takes in a google.maps.LatLngLiteral which is an object with lat and lng as numbers
-      // so we need to convert the lat and lng to a google.maps.LatLngLiteral, which is what the following line does
-      location: new google.maps.LatLng(stop.lat.lat, stop.lat.lng)
-    }));
-    console.log('location: ', waypoints[0].location);
-    console.log('waypoints: ', waypoints);
+    // what's the type of bikeBusStopsData?
+    console.log('typeof bikeBusStopsData: ', typeof bikeBusStopsData);
 
-  
+
+
     if (!selectedRoute.startPoint || !selectedRoute.endPoint) {
       alert("Missing startPoint or endPoint!");
       return;
     }
-  
+
     const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-  
+
+    console.log('selectedTravelMode: ', selectedTravelMode);
+    console.log('selectedRoute.startPoint: ', selectedRoute.startPoint);
+    console.log('selectedRoute.endPoint: ', selectedRoute.endPoint);
+    console.log('waypoints: ', waypoints);
+
     try {
       const newCoordinates = await calculateRoute(
         selectedRoute.startPoint,
@@ -451,24 +490,26 @@ const EditRoute: React.FC = () => {
         waypoints,
         selectedTravelMode
       );
-  
+
       setSelectedRoute(prevState => {
         if (!prevState) return null;
         return { ...prevState, pathCoordinates: newCoordinates } as Route;
       });
-        
+
+      if (newCoordinates) {
       const alertMessage = newCoordinates.length === 0 ? 'New route generated. Click save to update the route.' : 'Route Updated, if you like it, click save to save the new route.';
       alert(alertMessage);
-  
+      }
+
       setIsClicked(true);
-  
+
     } catch (error) {
       console.error('Error generating new route:', error);
       alert('Failed to generate new route. Please try again.');
     }
   };
-  
-  
+
+
 
   const updateRoute = async (updatedRoute: Route) => {
     const routeRef = doc(db, 'routes', id);
@@ -556,6 +597,7 @@ const EditRoute: React.FC = () => {
 
 
   const handleRouteSave = async () => {
+    console.log('selectedRoute: ', selectedRoute);
     if (selectedRoute === null) {
       console.error("selectedRoute is null");
       return;
@@ -663,7 +705,7 @@ const EditRoute: React.FC = () => {
                 <GoogleMap
                   mapContainerStyle={containerMapStyle}
                   center={mapCenter}
-                  zoom={15}
+                  zoom={13}
                   options={{
                     mapTypeControl: false,
                     streetViewControl: false,

@@ -158,7 +158,7 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
-  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const headerContext = useContext(HeaderContext);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
@@ -1381,17 +1381,19 @@ const Map: React.FC = () => {
           // then set the mapZoom to fit both locations on the map
           const selectedStartLocation = getSelectedStartLocation();
           const selectedEndLocation = getSelectedEndLocation();
-          const midpoint = {
-            lat: (selectedStartLocation.lat + selectedEndLocation.lat) / 2,
-            lng: (selectedStartLocation.lng + selectedEndLocation.lng) / 2,
-          };
-          setMapCenter(midpoint);
-          setDestinationInput(`${place.formatted_address}` ?? {PlaceAddress});
+          if (selectedStartLocation && selectedEndLocation) {
+            const midpoint = {
+              lat: (selectedStartLocation.lat + selectedEndLocation.lat) / 2,
+              lng: (selectedStartLocation.lng + selectedEndLocation.lng) / 2,
+            };
+            setMapCenter(midpoint);
+          }
+          setDestinationInput(`${place.formatted_address}` ?? { PlaceAddress });
           setRouteEndStreetName(streetName ?? '');
           setRouteEndName(`${place.name}` ?? '');
           console.log(place.formatted_address)
           console.log(PlaceAddress)
-          setRouteEndFormattedAddress(`${place.formatted_address}` ?? {PlaceAddress});
+          setRouteEndFormattedAddress(`${place.formatted_address}` ?? { PlaceAddress });
           console.log('routeEndFormattedAddress', routeEndFormattedAddress);
           setShowCreateRouteButton(true);
           setShowGetDirectionsButton(true);

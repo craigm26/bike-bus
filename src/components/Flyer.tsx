@@ -127,7 +127,7 @@ interface routeData {
 }
 
 type FlyerProps = {
-    eventData: event,
+    eventData: event;
     routeData: routeData
     BikeBusName: string;
 };
@@ -173,7 +173,7 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
 
 
     return (
-        <IonPage className="ion-flex-offset-app">
+        <div className="flyer">
             <IonContent>
                 <IonGrid className="ion-no-padding">
                     <IonRow className="map-base" id="map-container">
@@ -288,7 +288,7 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
                     </IonRow>
                 </IonGrid>
             </IonContent>
-        </IonPage >
+        </div>
     )
 }
 

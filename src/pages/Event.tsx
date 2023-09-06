@@ -19,7 +19,6 @@ import {
   IonGrid,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
-import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -234,7 +233,8 @@ const Event: React.FC = () => {
   const [RouteDocId, setRouteDocId] = useState<string>('');
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
-  const [showPrintFlyer, setShowPrintFlyer] = useState(false);
+  const [isFlyerRendered, setIsFlyerRendered] = useState(false);
+
 
   type SetRoleFunction = (role: string[]) => void;
 
@@ -408,6 +408,7 @@ const Event: React.FC = () => {
       setEndGeo(routeData.endPoint);
       setSelectedStartLocation(routeData.startPoint);
       setSelectedEndLocation(routeData.endPoint);
+      console.log('routeData.startPoint', routeData.startPoint)
 
       // let's set the zoom level based on the distance between the start and end points
       const distance = Math.sqrt(Math.pow(routeData.startPoint.lat - routeData.endPoint.lat, 2) + Math.pow(routeData.startPoint.lng - routeData.endPoint.lng, 2));
@@ -760,27 +761,20 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
-  const componentRef = useRef<HTMLDivElement>(null);
+  const componentRef = useRef(null);
+
+
+  useEffect(() => {
+    if (isBikeBus && routeData && eventData) {
+      setIsFlyerRendered(true);
+    } else {
+      setIsFlyerRendered(false);
+    }
+  }, [isBikeBus, routeData, eventData]);
 
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    content: () => (isFlyerRendered ? componentRef.current : null),
   });
-
-  useEffect(() => {
-    if (showPrintFlyer) {
-      handlePrint();
-      setShowPrintFlyer(false);
-    }
-  }, [showPrintFlyer]);
-
-  const togglePrintFlyer = () => {
-    setShowPrintFlyer(true);
-  };
-
-  useEffect(() => {
-    console.log("Google Maps script loaded: ", isLoaded);
-    console.log("Google Maps load error: ", loadError);
-  }, [isLoaded, loadError]);
 
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
@@ -865,16 +859,13 @@ const Event: React.FC = () => {
                       {!isBikeBus && (
                         <IonButton size="small" routerLink="/map">Back to Map</IonButton>
                       )}
-                      {isBikeBus && (
-                        <>
-                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
-                          {showPrintFlyer && routeData && eventData && (
-                            <div ref={componentRef}>
-                              <Flyer eventData={eventData} routeData={routeData} BikeBusName=''/>
-                            </div>
-                          )}
-
-                        </>
+                      {isBikeBus && routeData && eventData && (
+                      <div>
+                        <div ref={componentRef}>
+                          <Flyer eventData={eventData} routeData={routeData} BikeBusName='' />
+                        </div>
+                        <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                      </div>
                       )}
                       {!isEventEnded && (
                         <IonButton size="small" onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
