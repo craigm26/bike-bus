@@ -944,18 +944,14 @@ const Map: React.FC = () => {
             const bikeBusStopIds = routeData.BikeBusStopIds;
             if (bikeBusStopIds) {
               for (const stopid of bikeBusStopIds) {
-                console.log(typeof stopid, stopid);
                 try {
                   const bikeBusStopSnapshot = await getDoc(stopid);
                   const bikeBusStopData = bikeBusStopSnapshot.data() as BikeBusStop;
                   if (bikeBusStopData) {
                     allBikeBusStops.push(bikeBusStopData);
-                    console.log('bikeBusStopData', bikeBusStopData);
                   } else {
-                    console.warn("No data found for stopid: ", stopid);
                   }
                 } catch (error) {
-                  console.error("Error fetching data for stopid: ", stopid, error);
                 }
               }
             }
@@ -964,7 +960,6 @@ const Map: React.FC = () => {
 
           setBikeBusRoutes(routes);
           setBikeBusStops(allBikeBusStops);
-          console.log('allBikeBusStops', allBikeBusStops);
         })
 
       getDoc(userRef).then((docSnapshot) => {

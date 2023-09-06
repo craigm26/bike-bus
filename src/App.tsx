@@ -473,12 +473,6 @@ const App: React.FC = () => {
                         <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                           <IonLabel>View BikeBusses</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
-                          <IonLabel>View Organizations</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/CreateOrganization" routerDirection="none">
-                          <IonLabel>Create Organization</IonLabel>
-                        </IonItem>
                       </IonCard>
                       {accountType === 'App Admin' &&
                         <IonCard>
@@ -488,6 +482,12 @@ const App: React.FC = () => {
                           </IonItem>
                           <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
                             <IonLabel>Update Organization</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
+                            <IonLabel>View Organizations</IonLabel>
+                          </IonItem>
+                          <IonItem button routerLink="/CreateOrganization" routerDirection="none">
+                            <IonLabel>Create Organization</IonLabel>
                           </IonItem>
                         </IonCard>}
                       {accountType === 'App Admin' &&
@@ -611,141 +611,141 @@ const App: React.FC = () => {
                     </IonToolbar>
                   </IonHeader>
                   <BrowserRouter>
-                  <IonRouterOutlet>
-                    <React.Fragment>
-                      <Route exact path="/SearchForBikeBus">
-                        <SearchForBikeBus />
-                      </Route>
-                      <Route exact path="/BulletinBoards">
-                        <CurrentLocationProvider>
-                          <BulletinBoards />
-                        </CurrentLocationProvider>
-                      </Route>
-                      <Route path="/viewroute/:id" exact>
-                        <ViewRoute />
-                      </Route>
-                      <Route path="/editroute/:id" exact>
-                        <EditRoute />
-                      </Route>
-                      <Route path="/updateroutemanually/:id" exact>
-                        <UpdateRouteManually />
-                      </Route>
-                      <Route exact path="/viewroutelist">
-                        <ViewRouteList />
-                      </Route>
-                      <Route exact path="/viewschedule/:id">
-                        <ViewSchedule />
-                      </Route>
-                      <Route exact path="/addschedule/:id">
-                        <AddSchedule />
-                      </Route>
-                      <Route exact path="/editschedule/:id">
-                        <EditSchedule />
-                      </Route>
-                      <Route exact path="/viewbikebuslist">
-                        <ViewBikeBusList />
-                      </Route>
-                      <Route path="/editbikebus/:id" exact>
-                        <EditBikeBus />
-                      </Route>
-                      <Route path="/editorganization/:id" exact>
-                        <EditOrganization />
-                      </Route>
-                      <Route path="/event/:id">
-                        <Event />
-                      </Route>
-                      <Route exact path="/Profile">
-                        <Profile />
-                      </Route>
-                      <Route exact path="/Account">
-                        <Account />
-                      </Route>
-                      <Route exact path="/SetUsername">
-                        <SetUsername />
-                      </Route>
-                      <Route exact path="/Map">
-                        <MapProvider
-                        >
-                          <Map />
-                        </MapProvider>
-                      </Route>
-                      <Route exact path="/ViewBikeBusGroup">
-                        <BikeBusGroupPage />
-                      </Route>
-                      <Route exact path="/ViewRoute">
-                        <ViewRoute />
-                      </Route>
-                      <Route exact path="/SearchForRoute">
-                        <SearchForRoute />
-                      </Route>
-                      <Route exact path="/CreateOrganization">
-                        <CreateOrganization />
-                      </Route>
-                      <Route exact path="/OrganizationProfile/:id">
-                        <OrganizationProfile />
-                      </Route>
-                      <Route exact path="/ViewOrganization/:id">
-                        <ViewOrganization />
-                      </Route>
-                      <Route exact path="/OrganizationMap/:id">
-                        <OrganizationMap />
-                      </Route>
-                      <Route exact path="/ViewOrganizationList">
-                        <ViewOrganizationList />
-                      </Route>
-                      <Route exact path="/CreateRoute">
-                        <CreateRoute />
-                      </Route>
-                      <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
-                      <Route path="/CreateBikeBusStops/:id">
-                        <CreateBikeBusStops />
-                      </Route>
-                      <Route exact path="/UpgradeAccountToPremium">
-                        <UpgradeAccountToPremium />
-                      </Route>
-                      <Route exact path="/Login">
-                        <Login />
-                      </Route>
-                      <Route exact path="/SignUp">
-                        <SignUp />
-                      </Route>
-                      <Route exact path="/Logout">
-                        <Logout />
-                      </Route>
-                      <Route exact path="/help">
-                        <Help />
-                      </Route>
-                      <Route exact path="/about">
-                        <About />
-                      </Route>
-                      <Route exact path="/trips/:tripDataId">
-                        <Trip />
-                      </Route>
-                      <Route exact path="/EventSummary/:id">
-                        <EventSummary />
-                      </Route>
-                      <Route exact path="/settings">
-                        <Settings />
-                      </Route>
-                      <Route exact path="/notifications">
-                        <Notifications />
-                      </Route>
-                      <Route exact path="/Welcome">
-                        <Welcome />
-                      </Route>
-                      <Switch>
-                        <Route exact path="/Map/:id?" component={Map} />
-                        <Route exact path="/">
-                          <Redirect to="/Map/" />
+                    <IonRouterOutlet>
+                      <React.Fragment>
+                        <Route exact path="/SearchForBikeBus">
+                          <SearchForBikeBus />
                         </Route>
-                      </Switch>
-                      <Switch>
-                        <Route exact path="/bikebusgrouppage/:groupId">
+                        <Route exact path="/BulletinBoards">
+                          <CurrentLocationProvider>
+                            <BulletinBoards />
+                          </CurrentLocationProvider>
+                        </Route>
+                        <Route path="/viewroute/:id" exact>
+                          <ViewRoute />
+                        </Route>
+                        <Route path="/editroute/:id" exact>
+                          <EditRoute />
+                        </Route>
+                        <Route path="/updateroutemanually/:id" exact>
+                          <UpdateRouteManually />
+                        </Route>
+                        <Route exact path="/viewroutelist">
+                          <ViewRouteList />
+                        </Route>
+                        <Route exact path="/viewschedule/:id">
+                          <ViewSchedule />
+                        </Route>
+                        <Route exact path="/addschedule/:id">
+                          <AddSchedule />
+                        </Route>
+                        <Route exact path="/editschedule/:id">
+                          <EditSchedule />
+                        </Route>
+                        <Route exact path="/viewbikebuslist">
+                          <ViewBikeBusList />
+                        </Route>
+                        <Route path="/editbikebus/:id" exact>
+                          <EditBikeBus />
+                        </Route>
+                        <Route path="/editorganization/:id" exact>
+                          <EditOrganization />
+                        </Route>
+                        <Route path="/event/:id">
+                          <Event />
+                        </Route>
+                        <Route exact path="/Profile">
+                          <Profile />
+                        </Route>
+                        <Route exact path="/Account">
+                          <Account />
+                        </Route>
+                        <Route exact path="/SetUsername">
+                          <SetUsername />
+                        </Route>
+                        <Route exact path="/Map">
+                          <MapProvider
+                          >
+                            <Map />
+                          </MapProvider>
+                        </Route>
+                        <Route exact path="/ViewBikeBusGroup">
                           <BikeBusGroupPage />
                         </Route>
-                      </Switch>
-                    </React.Fragment>
-                  </IonRouterOutlet>
+                        <Route exact path="/ViewRoute">
+                          <ViewRoute />
+                        </Route>
+                        <Route exact path="/SearchForRoute">
+                          <SearchForRoute />
+                        </Route>
+                        <Route exact path="/CreateOrganization">
+                          <CreateOrganization />
+                        </Route>
+                        <Route exact path="/OrganizationProfile/:id">
+                          <OrganizationProfile />
+                        </Route>
+                        <Route exact path="/ViewOrganization/:id">
+                          <ViewOrganization />
+                        </Route>
+                        <Route exact path="/OrganizationMap/:id">
+                          <OrganizationMap />
+                        </Route>
+                        <Route exact path="/ViewOrganizationList">
+                          <ViewOrganizationList />
+                        </Route>
+                        <Route exact path="/CreateRoute">
+                          <CreateRoute />
+                        </Route>
+                        <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
+                        <Route path="/CreateBikeBusStops/:id">
+                          <CreateBikeBusStops />
+                        </Route>
+                        <Route exact path="/UpgradeAccountToPremium">
+                          <UpgradeAccountToPremium />
+                        </Route>
+                        <Route exact path="/Login">
+                          <Login />
+                        </Route>
+                        <Route exact path="/SignUp">
+                          <SignUp />
+                        </Route>
+                        <Route exact path="/Logout">
+                          <Logout />
+                        </Route>
+                        <Route exact path="/help">
+                          <Help />
+                        </Route>
+                        <Route exact path="/about">
+                          <About />
+                        </Route>
+                        <Route exact path="/trips/:tripDataId">
+                          <Trip />
+                        </Route>
+                        <Route exact path="/EventSummary/:id">
+                          <EventSummary />
+                        </Route>
+                        <Route exact path="/settings">
+                          <Settings />
+                        </Route>
+                        <Route exact path="/notifications">
+                          <Notifications />
+                        </Route>
+                        <Route exact path="/Welcome">
+                          <Welcome />
+                        </Route>
+                        <Switch>
+                          <Route exact path="/Map/:id?" component={Map} />
+                          <Route exact path="/">
+                            <Redirect to="/Map/" />
+                          </Route>
+                        </Switch>
+                        <Switch>
+                          <Route exact path="/bikebusgrouppage/:groupId">
+                            <BikeBusGroupPage />
+                          </Route>
+                        </Switch>
+                      </React.Fragment>
+                    </IonRouterOutlet>
                   </BrowserRouter>
                 </IonContent>
               </IonPage>

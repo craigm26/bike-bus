@@ -17,6 +17,7 @@ import {
   IonCol,
   IonRow,
   IonGrid,
+  IonRouterLink,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 import useAuth from '../useAuth';
@@ -31,6 +32,8 @@ import React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
 import Flyer from '../components/Flyer';
+import QRCode from 'qrcode.react';
+
 
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
@@ -234,6 +237,7 @@ const Event: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
   const [isFlyerRendered, setIsFlyerRendered] = useState(false);
+
 
 
   type SetRoleFunction = (role: string[]) => void;
@@ -853,19 +857,8 @@ const Event: React.FC = () => {
                 <IonGrid>
                   <IonRow>
                     <IonCol>
-                      {isBikeBus && (
-                        <IonButton size="small" routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>Back to BikeBus</IonButton>
-                      )}
                       {!isBikeBus && (
                         <IonButton size="small" routerLink="/map">Back to Map</IonButton>
-                      )}
-                      {isBikeBus && routeData && eventData && (
-                      <div>
-                        <div ref={componentRef}>
-                          <Flyer eventData={eventData} routeData={routeData} BikeBusName='' />
-                        </div>
-                        <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
-                      </div>
                       )}
                       {!isEventEnded && (
                         <IonButton size="small" onClick={() => setShowRSVPModal(true)}>RSVP to be there!</IonButton>
@@ -1020,6 +1013,14 @@ const Event: React.FC = () => {
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
+                      {isBikeBus && routeData && eventData && (
+                        <div>
+                          <div ref={componentRef}>
+                            <Flyer eventData={eventData} routeData={routeData} />
+                          </div>
+                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                        </div>
+                      )}
                     </IonCol>
                   </IonRow>
                 </IonGrid>
@@ -1049,7 +1050,13 @@ const Event: React.FC = () => {
                 <IonGrid className="bikebus-event-name">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>{eventData?.BikeBusName}</IonLabel>
+                      {isBikeBus ? (
+                        <IonRouterLink routerLink={`/bikebusgrouppage/${eventData?.groupId.id}`}>
+                          <IonLabel style={{ color: 'black' }}>{eventData?.BikeBusName}</IonLabel>
+                        </IonRouterLink>
+                      ) : (
+                        <IonLabel>{eventData?.BikeBusName}</IonLabel>
+                      )}
                     </IonCol>
                   </IonRow>
                 </IonGrid>
@@ -1069,6 +1076,15 @@ const Event: React.FC = () => {
                     <IonCol>
                       <IonLabel>{startTime} to {endTime}
                       </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              <div>
+                <IonGrid className="bikebus-event-qrcode">
+                  <IonRow>
+                    <IonCol>
+                      <QRCode size={80} value={window.location.href} />
                     </IonCol>
                   </IonRow>
                 </IonGrid>

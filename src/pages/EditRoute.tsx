@@ -453,7 +453,7 @@ const EditRoute: React.FC = () => {
       bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
-      })) as unknown as Array<BikeBusStops>;      
+      })) as unknown as Array<BikeBusStops>;
       setBikeBusStops(bikeBusStopsData);
 
       BikeBusStops.forEach(stop => {
@@ -461,7 +461,7 @@ const EditRoute: React.FC = () => {
         // basically, each location becomes a waypoint, so let's set each as a waypoint for later use
         waypoints.push({ location });
       });
-      console.log('location: ', location);     
+      console.log('location: ', location);
     }
 
     setBikeBusStops(bikeBusStopsData);
@@ -497,8 +497,8 @@ const EditRoute: React.FC = () => {
       });
 
       if (newCoordinates) {
-      const alertMessage = newCoordinates.length === 0 ? 'New route generated. Click save to update the route.' : 'Route Updated, if you like it, click save to save the new route.';
-      alert(alertMessage);
+        const alertMessage = newCoordinates.length === 0 ? 'New route generated. Click save to update the route.' : 'Route Updated, if you like it, click save to save the new route.';
+        alert(alertMessage);
       }
 
       setIsClicked(true);
@@ -614,10 +614,15 @@ const EditRoute: React.FC = () => {
     if (selectedRoute.endPoint !== undefined) updatedRoute.endPoint = selectedRoute.endPoint;
     if (selectedRoute.BikeBusStopIds !== undefined) updatedRoute.BikeBusStopIds = selectedRoute.BikeBusStopIds;
     if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
+    
+    try {
+      await updateDoc(routeRef, updatedRoute);
+      alert('Route Updated');
+      history.push(`/ViewRoute/${id}`);
+    } catch (error) {
+      console.error("Could not update Firestore document:", error);
+    }
 
-    await updateDoc(routeRef, updatedRoute);
-    alert('Route Updated');
-    history.push(`/ViewRoute/${id}`)
   };
 
   useEffect(() => {
