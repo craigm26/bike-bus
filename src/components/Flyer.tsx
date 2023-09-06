@@ -128,12 +128,11 @@ interface routeData {
 
 type FlyerProps = {
     eventData: event;
-    routeData: routeData
-    BikeBusName: string;
+    routeData: routeData;
 };
 
 // get data from the parent component (event.tsx) - props should include event data and route data and pass it to the child component Flyer
-const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
+const Flyer: React.FC<FlyerProps> = ({ eventData, routeData }) => {
 
 
     const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -167,16 +166,14 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
     const [bikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
     const [startTime, setStartTime] = useState<string>('');
     const [endTime, setEndTime] = useState<string>('');
-    const setBikeBusName = (name: string) => {
-        BikeBusName = name;
-    }
+    const [BikeBusName, setBikeBusName] = useState<string>(''); // BikeBusName is the name of the BikeBusGroup
 
 
     return (
         <div className="flyer">
-            <IonContent>
-                <IonGrid className="ion-no-padding">
-                    <IonRow className="map-base" id="map-container">
+            <IonContent className="flyer-content">
+                <IonGrid className="ion-no-padding-flyer">
+                    <IonRow className="map-base-flyer" id="map-container">
                         <GoogleMap
                             onLoad={(map) => {
                                 mapRef.current = map;
@@ -257,16 +254,16 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
                             <div>
                             </div>
                             <div>
-                                <IonGrid className="bikebus-event-name">
+                                <IonGrid className="bikebus-event-name-flyer">
                                     <IonRow>
                                         <IonCol>
-                                            <IonLabel>{BikeBusName || 'N/A'}</IonLabel>
+                                            <IonLabel>{eventData?.BikeBusName || 'N/A'}</IonLabel>
                                         </IonCol>
                                     </IonRow>
                                 </IonGrid>
                             </div>
                             <div>
-                                <IonGrid className="bikebus-event-route">
+                                <IonGrid className="bikebus-event-route-flyer">
                                     <IonRow>
                                         <IonCol>
                                             <IonLabel>{routeData?.routeName}</IonLabel>
@@ -275,7 +272,7 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData, BikeBusName }) => {
                                 </IonGrid>
                             </div>
                             <div>
-                                <IonGrid className="bikebus-event-time">
+                                <IonGrid className="bikebus-event-time-flyer">
                                     <IonRow>
                                         <IonCol>
                                             <IonLabel>{startTime} to {endTime}

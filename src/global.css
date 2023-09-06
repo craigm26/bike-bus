@@ -448,7 +448,9 @@
 /* General Styles for the Event Details */
 .bikebus-event-name,
 .bikebus-event-route,
-.bikebus-event-time {
+.bikebus-event-time,
+.bikebus-event-startAddress,
+.bikebus-event-endAddress {
   border-radius: 25px; /* Rounded corners*/
   margin: 0px;
   padding: 5px;
@@ -480,6 +482,48 @@
   font-size: 18px;
   color: #000;
 }
+
+.bikebus-event-startAddress {
+  font-size: 18px;
+  color: #000;
+}
+
+.bikebus-event-endAddress {
+  font-size: 18px;
+  color: #000;
+}
+
+.bikebus-event-qrcode {
+  background: white;
+  padding: 16px;
+  display: flex;
+  justify-content: left;
+  bottom: 85px !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
+@media print {
+  /* Hide all other content */
+  body * {
+    visibility: hidden;
+  }
+  /* Make your component visible */
+  .ion-no-padding-flyer, .ion-no-padding-flyer, flyer-content * {
+    visibility: visible;
+  }
+  /* Style it to fit into the letter-sized paper */
+  .ion-no-padding-flyer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
 
 
 
