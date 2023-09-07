@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -9,6 +9,7 @@ import { useParams, Link, useHistory } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
+import QRCode from 'qrcode.react';
 
 
 interface Coordinate {
@@ -635,6 +636,13 @@ const BikeBusGroupPage: React.FC = () => {
             </div>
           </IonCardContent>
         </IonCard>
+        <IonGrid className="bikebus-event-qrcode">
+          <IonRow>
+            <IonCol>
+              <QRCode size={80} value={window.location.href} />
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent >
     </IonPage >
   );

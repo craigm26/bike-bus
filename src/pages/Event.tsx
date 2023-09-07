@@ -29,7 +29,7 @@ import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
-import { useReactToPrint } from 'react-to-print';
+import ReactToPrint, { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
 import Flyer from '../components/Flyer';
 import QRCode from 'qrcode.react';
@@ -767,22 +767,14 @@ const Event: React.FC = () => {
 
   const componentRef = useRef(null);
 
-
-  useEffect(() => {
-    if (isBikeBus && routeData && eventData) {
-      setIsFlyerRendered(true);
-    } else {
-      setIsFlyerRendered(false);
-    }
-  }, [isBikeBus, routeData, eventData]);
-
-  const handlePrint = useReactToPrint({
-    content: () => (isFlyerRendered ? componentRef.current : null),
-  });
-
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
   }
+
+  useEffect(() => {
+    console.log(componentRef.current);
+  }, []);
+  
 
 
   if (!isLoaded) {
@@ -1015,10 +1007,11 @@ const Event: React.FC = () => {
                       )}
                       {isBikeBus && routeData && eventData && (
                         <div>
-                          <div ref={componentRef}>
-                            <Flyer eventData={eventData} routeData={routeData} />
-                          </div>
-                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                          <ReactToPrint
+                            trigger={() => <IonButton size="small" disabled={!componentRef.current}>Print Flyer</IonButton>}
+                            content={() => componentRef.current}
+                          />
+                          <Flyer ref={componentRef} eventData={eventData} routeData={routeData} />
                         </div>
                       )}
                     </IonCol>
