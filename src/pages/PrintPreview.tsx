@@ -1,9 +1,10 @@
-import { IonCol, IonContent, IonGrid, IonLabel, IonPage, IonRow } from "@ionic/react";
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
-import React, { useState, forwardRef, Ref } from "react";
+import { FC, useEffect, useState } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { DocumentReference } from "firebase/firestore";
+import { useParams } from "react-router-dom";
+import React from "react";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -132,13 +133,12 @@ type FlyerProps = {
     ref: any;
 };
 
-// get data from the parent component (event.tsx) - props should include event data and route data and pass it to the child component Flyer
-const Flyer = forwardRef<HTMLDivElement, FlyerProps>((props, ref) => {
-    const { eventData, routeData } = props;
+const PrintPreview: FC = () => {
+
+    const { id } = useParams<{ id: string }>();
     const { user } = useAuth(); // Use the useAuth hook to get the user object
     const { avatarUrl } = useAvatar(user?.uid);
     const mapRef = React.useRef<google.maps.Map | null>(null);
-
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
@@ -167,12 +167,34 @@ const Flyer = forwardRef<HTMLDivElement, FlyerProps>((props, ref) => {
     const [startTime, setStartTime] = useState<string>('');
     const [endTime, setEndTime] = useState<string>('');
     const [BikeBusName, setBikeBusName] = useState<string>(''); // BikeBusName is the name of the BikeBusGroup
+    const [routeData, setRouteData] = useState<routeData | null>(null);
+    const [eventData, setEventData] = useState<event | null>(null);
+    const [isPrintPreview, setIsPrintPreview] = useState<boolean>(true);
+
+    function printDocument() {
+        window.print();
+    }
+
+    function goBackToEvent() {
+        window.history.back();
+    }
+
+    if (loadError) {
+        return <div>Error loading Google Maps: {loadError.message}</div>;
+      }
     
+      if (!isLoaded) {
+        return <div>Loading Google Maps...</div>;
+      }
+
+
     return (
-        <div ref={ref} className="flyer">
+        <div className="flyer">
             <div className="flyer-content">
                 <div className="ion-no-padding-flyer">
                     <div className="map-base-flyer" id="map-container">
+                        <button onClick={printDocument}>Print</button>
+                        <button onClick={goBackToEvent}>Back</button>
                         <GoogleMap
                             onLoad={(map) => {
                                 mapRef.current = map;
@@ -266,7 +288,7 @@ const Flyer = forwardRef<HTMLDivElement, FlyerProps>((props, ref) => {
                 </div>
             </div>
         </div>
-    )
-});
+    );
+};
 
-export default Flyer;
+export default PrintPreview;

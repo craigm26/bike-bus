@@ -57,6 +57,7 @@ import { useOrganizationContext } from "./components/Organizations/useOrganizati
 import useEvent from "./components/BikeBusGroup/useEvent";
 import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
+import PrintPreview from './pages/PrintPreview';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -80,6 +81,7 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import { type } from 'os';
 import { CurrentLocationProvider } from './components/CurrentLocationContext';
+import { is } from 'date-fns/locale';
 
 
 setupIonicReact();
@@ -443,6 +445,16 @@ const App: React.FC = () => {
     setShowPopover((prevState) => !prevState);
   };
 
+  const isPrintPreview = window.location.pathname.includes('/PrintPreview');
+
+  useEffect(() => {
+    // determine if hte page is a print preview page
+    if (isPrintPreview) {
+      setShowHeader(false);
+      isPrintPreview ? document.body.classList.add('print-preview') : document.body.classList.remove('print-preview');
+    }
+  }, [isPrintPreview]);
+
 
   if (loading) {
     return <p>Loading...</p>;
@@ -521,7 +533,7 @@ const App: React.FC = () => {
               </IonMenu>
               <IonPage id="main-content" >
                 <IonContent fullscreen>
-                  <IonHeader>
+                  <IonHeader className={isPrintPreview ? 'hidden' : ''}>
                     <IonToolbar color="primary" >
                       <IonButtons color="secondary" slot="start">
                         <IonMenuButton></IonMenuButton>
@@ -729,6 +741,9 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/notifications">
                           <Notifications />
+                        </Route>
+                        <Route exact path="/PrintPreview/:id">
+                          <PrintPreview />
                         </Route>
                         <Route exact path="/Welcome">
                           <Welcome />

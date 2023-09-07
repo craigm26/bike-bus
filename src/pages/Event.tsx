@@ -29,9 +29,7 @@ import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
-import ReactToPrint, { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
-import Flyer from '../components/Flyer';
 import QRCode from 'qrcode.react';
 
 
@@ -237,6 +235,8 @@ const Event: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
   const [isFlyerRendered, setIsFlyerRendered] = useState(false);
+  const [showFlyer, setShowFlyer] = useState(false);
+
 
 
 
@@ -765,17 +765,16 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
-  const componentRef = useRef(null);
+  const handlePrintClick = () => {
+    // route the user to the PrintPreview page with the id of the event being passed to the url
+    console.log('eventData?.id', eventData?.id)
+    console.log('id', id)
+    history.push(`/printpreview/${id}`);
+  }
 
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
   }
-
-  useEffect(() => {
-    console.log(componentRef.current);
-  }, []);
-  
-
 
   if (!isLoaded) {
     return <div>Loading Google Maps...</div>;
@@ -1006,13 +1005,7 @@ const Event: React.FC = () => {
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
                       {isBikeBus && routeData && eventData && (
-                        <div>
-                          <ReactToPrint
-                            trigger={() => <IonButton size="small" disabled={!componentRef.current}>Print Flyer</IonButton>}
-                            content={() => componentRef.current}
-                          />
-                          <Flyer ref={componentRef} eventData={eventData} routeData={routeData} />
-                        </div>
+                        <IonButton size="small" onClick={handlePrintClick}>Print Flyer</IonButton>
                       )}
                     </IonCol>
                   </IonRow>
