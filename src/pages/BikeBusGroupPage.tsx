@@ -489,7 +489,11 @@ const BikeBusGroupPage: React.FC = () => {
       <IonContent fullscreen>
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>
+            <IonCardTitle>{groupData?.BikeBusName}
+            <IonCol>
+            <QRCode size={50} value={window.location.href} />
+            </IonCol>
+            </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
             <div>
@@ -636,13 +640,6 @@ const BikeBusGroupPage: React.FC = () => {
             </div>
           </IonCardContent>
         </IonCard>
-        <IonGrid className="bikebus-event-qrcode">
-          <IonRow>
-            <IonCol>
-              <QRCode size={80} value={window.location.href} />
-            </IonCol>
-          </IonRow>
-        </IonGrid>
       </IonContent >
     </IonPage >
   );

@@ -53,11 +53,9 @@ import ViewOrganization from './pages/ViewOrganization';
 import ViewOrganizationList from './pages/ViewOrganizationList';
 import BulletinBoards from './pages/BulletinBoards';
 import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
-import { useOrganizationContext } from "./components/Organizations/useOrganization";
 import useEvent from "./components/BikeBusGroup/useEvent";
 import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
-import PrintPreview from './pages/PrintPreview';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -445,15 +443,8 @@ const App: React.FC = () => {
     setShowPopover((prevState) => !prevState);
   };
 
-  const isPrintPreview = window.location.pathname.includes('/PrintPreview');
 
-  useEffect(() => {
-    // determine if hte page is a print preview page
-    if (isPrintPreview) {
-      setShowHeader(false);
-      isPrintPreview ? document.body.classList.add('print-preview') : document.body.classList.remove('print-preview');
-    }
-  }, [isPrintPreview]);
+
 
 
   if (loading) {
@@ -533,7 +524,7 @@ const App: React.FC = () => {
               </IonMenu>
               <IonPage id="main-content" >
                 <IonContent fullscreen>
-                  <IonHeader className={isPrintPreview ? 'hidden' : ''}>
+                  <IonHeader>
                     <IonToolbar color="primary" >
                       <IonButtons color="secondary" slot="start">
                         <IonMenuButton></IonMenuButton>
@@ -741,9 +732,6 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/notifications">
                           <Notifications />
-                        </Route>
-                        <Route exact path="/PrintPreview/:id">
-                          <PrintPreview />
                         </Route>
                         <Route exact path="/Welcome">
                           <Welcome />

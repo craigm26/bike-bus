@@ -19,7 +19,7 @@ import {
   IonGrid,
   IonRouterLink,
 } from '@ionic/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -29,7 +29,6 @@ import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import React from 'react';
-import { useRef } from 'react';
 import QRCode from 'qrcode.react';
 
 
@@ -236,6 +235,7 @@ const Event: React.FC = () => {
   const [mapZoom, setMapZoom] = useState(13);
   const [isFlyerRendered, setIsFlyerRendered] = useState(false);
   const [showFlyer, setShowFlyer] = useState(false);
+  const [showPrintFlyer, setShowPrintFlyer] = useState(false);
 
 
 
@@ -765,12 +765,11 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
-  const handlePrintClick = () => {
-    // route the user to the PrintPreview page with the id of the event being passed to the url
-    console.log('eventData?.id', eventData?.id)
-    console.log('id', id)
-    history.push(`/printpreview/${id}`);
-  }
+
+  useEffect(() => {
+    console.log("Google Maps script loaded: ", isLoaded);
+    console.log("Google Maps load error: ", loadError);
+  }, [isLoaded, loadError]);
 
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
@@ -1004,9 +1003,6 @@ const Event: React.FC = () => {
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
-                      {isBikeBus && routeData && eventData && (
-                        <IonButton size="small" onClick={handlePrintClick}>Print Flyer</IonButton>
-                      )}
                     </IonCol>
                   </IonRow>
                 </IonGrid>
@@ -1070,7 +1066,7 @@ const Event: React.FC = () => {
                 <IonGrid className="bikebus-event-qrcode">
                   <IonRow>
                     <IonCol>
-                      <QRCode size={80} value={window.location.href} />
+                      <QRCode size={50} value={window.location.href} />
                     </IonCol>
                   </IonRow>
                 </IonGrid>
