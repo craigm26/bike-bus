@@ -18,14 +18,16 @@ import {
 } from '@ionic/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
-import { db } from '../firebaseConfig';
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
-import { closeOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
+import { cameraOutline, closeOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
 import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
+import { db, storage } from '../firebaseConfig';
+import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
+import { set } from 'date-fns';
 
 
 interface UserDocument {
@@ -136,6 +138,8 @@ const BulletinBoards: React.FC = () => {
     const [editMessage, setEditMessage] = useState('');
     const locationFetchedRef = useRef(false);
     const [showActionSheet, setShowActionSheet] = useState(false);
+    const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+
 
 
 
@@ -773,6 +777,37 @@ const BulletinBoards: React.FC = () => {
         setShowActionSheet(false);
     }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
 
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const storageRef = ref(storage, `chat_images/${user.uid}/${Date.now()}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot: any) => {
+                    console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                },
+                (error: any) => {
+                    console.error('Error uploading image:', error);
+                },
+                () => {
+                    // TODO: Update your chat message state with the new image URL here
+                    // For instance, you might push this new message into your `sortedMessagesData` array
+                    // You might also want to update the `messagesData` state to include the new message
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log('File available at', downloadURL);
+                        setUploadedImageUrl(downloadURL); // Set the state variable with the URL
+                        // TODO: Update your chat message state with the new image URL here
+                        setMessageInput(downloadURL);
+                    });
+                },
+            );
+        }
+    };
+
+
+
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
@@ -822,6 +857,12 @@ const BulletinBoards: React.FC = () => {
                                     placeholder="Enter your message"
                                     onIonChange={e => setMessageInput(e.detail.value || '')}
                                 />
+
+                                {uploadedImageUrl && <img src={uploadedImageUrl} alt="Uploaded preview" />}
+                                <label htmlFor="upload-button">
+                                    <IonIcon icon={cameraOutline} />
+                                </label>
+                                <input id="upload-button" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
                                 {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
                                     <IonLabel>
                                         Cross-Post to Community Board?

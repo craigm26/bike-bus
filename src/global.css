@@ -505,19 +505,6 @@
   width: 100%;
 }
 
-.flyer {
-margin-top: 10%;
-}
-
-.flyer .bikebus-footer {
-  /* Hide the header */
-  display: none !important;
-}
-
-.hidden {
-  display: none !important;
-}
-
 @media print {
   /* Hide all other content */
   body * {
