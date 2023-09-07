@@ -1,7 +1,7 @@
 import { IonCol, IonContent, IonGrid, IonLabel, IonPage, IonRow } from "@ionic/react";
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
-import React, { useState } from "react";
+import React, { useState, forwardRef, Ref } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { DocumentReference } from "firebase/firestore";
 
@@ -129,10 +129,11 @@ interface routeData {
 type FlyerProps = {
     eventData: event;
     routeData: routeData;
+    ref: any;
 };
 
 // get data from the parent component (event.tsx) - props should include event data and route data and pass it to the child component Flyer
-const Flyer: React.FC<FlyerProps> = ({ eventData, routeData }) => {
+const Flyer = forwardRef(({ eventData, routeData }: FlyerProps, ref: Ref<HTMLDivElement>) => {
 
 
     const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -170,10 +171,10 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData }) => {
 
 
     return (
-        <div className="flyer">
-            <IonContent className="flyer-content">
-                <IonGrid className="ion-no-padding-flyer">
-                    <IonRow className="map-base-flyer" id="map-container">
+        <div ref={ref} className="flyer">
+            <div className="flyer-content">
+                <div className="ion-no-padding-flyer">
+                    <div className="map-base-flyer" id="map-container">
                         <GoogleMap
                             onLoad={(map) => {
                                 mapRef.current = map;
@@ -251,42 +252,23 @@ const Flyer: React.FC<FlyerProps> = ({ eventData, routeData }) => {
                                     />
                                 )}
                             </div>
-                            <div>
-                            </div>
-                            <div>
-                                <IonGrid className="bikebus-event-name-flyer">
-                                    <IonRow>
-                                        <IonCol>
-                                            <IonLabel>{eventData?.BikeBusName || 'N/A'}</IonLabel>
-                                        </IonCol>
-                                    </IonRow>
-                                </IonGrid>
-                            </div>
-                            <div>
-                                <IonGrid className="bikebus-event-route-flyer">
-                                    <IonRow>
-                                        <IonCol>
-                                            <IonLabel>{routeData?.routeName}</IonLabel>
-                                        </IonCol>
-                                    </IonRow>
-                                </IonGrid>
-                            </div>
-                            <div>
-                                <IonGrid className="bikebus-event-time-flyer">
-                                    <IonRow>
-                                        <IonCol>
-                                            <IonLabel>{startTime} to {endTime}
-                                            </IonLabel>
-                                        </IonCol>
-                                    </IonRow>
-                                </IonGrid>
-                            </div>
                         </GoogleMap>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
+                        <div className="bikebus-event-info">
+                            <div className="bikebus-event-name-flyer">
+                                <span>{eventData?.BikeBusName || 'N/A'}</span>
+                            </div>
+                            <div className="bikebus-event-route-flyer">
+                                <span>{routeData?.routeName}</span>
+                            </div>
+                            <div className="bikebus-event-time-flyer">
+                                <span>{startTime} to {endTime}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     )
-}
+});
 
 export default Flyer;

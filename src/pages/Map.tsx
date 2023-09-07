@@ -1941,7 +1941,7 @@ const Map: React.FC = () => {
         startPointAddress: routeStartFormattedAddress,
         endPoint: selectedEndLocation,
         endPointName: routeEndName,
-        endPointAddress: routeEndFormattedAddress,
+        endPointAddress: selectedEndLocationAddress,
         route: null,
         start: new Date(),
         startTime: new Date(),
