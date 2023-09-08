@@ -614,7 +614,7 @@ const EditRoute: React.FC = () => {
     if (selectedRoute.endPoint !== undefined) updatedRoute.endPoint = selectedRoute.endPoint;
     if (selectedRoute.BikeBusStopIds !== undefined) updatedRoute.BikeBusStopIds = selectedRoute.BikeBusStopIds;
     if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
-    
+
     try {
       await updateDoc(routeRef, updatedRoute);
       alert('Route Updated');
@@ -646,7 +646,14 @@ const EditRoute: React.FC = () => {
           </IonRow>
           <IonRow>
             <IonLabel>Route Name:</IonLabel>
-            <IonInput value={selectedRoute?.routeName} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, routeName: e.detail.value! })} />
+            <IonInput value={selectedRoute?.routeName}
+              onIonChange={e => {
+                console.log('Before:', selectedRoute?.routeName);
+                console.log('Event:', e);
+                selectedRoute && ({ ...selectedRoute, routeName: e.detail.value });
+                console.log('After:', selectedRoute?.routeName);
+              }}
+            />
           </IonRow>
           <IonItem>
             <IonLabel>Travel Mode:</IonLabel>
@@ -732,14 +739,16 @@ const EditRoute: React.FC = () => {
 
                         <InfoWindow>
                           <div>
-                            <h2>{stop.BikeBusStopName}</h2>
+                            <h5>{stop.BikeBusStopName}</h5>
                             <IonInput value={stop.BikeBusStopName} helperText="Enter new BikeBusStopName"
                               onIonChange={e => {
                                 const updatedStop = { ...stop, BikeBusStopName: e.detail.value! };
                                 setBikeBusStops(prevStops => prevStops.map(s => s.id === stop.id ? updatedStop : s));
                               }} />
-                            <IonButton onClick={() => saveBikeBusStopName(stop.id)}>Save BikeBusStop</IonButton>
-                            <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
+                            <IonRow>
+                              <IonButton onClick={() => saveBikeBusStopName(stop.id)}>Save BikeBusStop</IonButton>
+                              <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
+                            </IonRow>
                           </div>
                         </InfoWindow>
                       )}
