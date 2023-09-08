@@ -200,32 +200,44 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
                         const message = sortedMessagesData[index];
                         const isCurrentUserMessage = user?.uid === message?.user?.id;
                         const avatarElement = isCurrentUserMessage
-                            ? currentUserAvatarElement
-                            : getAvatarElement(message?.user?.id);
-
+                          ? currentUserAvatarElement
+                          : getAvatarElement(message?.user?.id);
+                      
+                        const isImageURL = (url: any) => {
+                          return url.match(/\.(jpeg|jpg|gif|png)$/) != null; // Update regex as necessary
+                        };
+                        console.log(isImageURL(message?.message));
+                      
                         return (
-                            <div className={`chat-message-wrapper ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
-                                {!isCurrentUserMessage && (
-                                    <div className="avatarChat">{avatarElement}</div>
+                          <div className={`chat-message-wrapper ${isCurrentUserMessage ? 'chat-item-right' : 'chat-item-left'}`}>
+                            {!isCurrentUserMessage && (
+                              <div className="avatarChat">{avatarElement}</div>
+                            )}
+                            <IonItem className="ion-items-messages" lines="none">
+                              <div className="chat-message"
+                                onClick={() => {
+                                  if (isCurrentUserMessage) {
+                                    onMessageSelected(message);
+                                    setShowActionSheet(true);
+                                  }
+                                }}
+                              >
+                                {isImageURL(message?.message) ? (
+                                  <img src={message?.message} alt="chat image" style={{ maxWidth: "100%", maxHeight: "200px" }} />
+                                ) : (
+                                  message?.message
                                 )}
-                                <IonItem className="ion-items-messages" lines="none">
-                                    <div className="chat-message"
-                                        onClick={() => {
-                                            if (isCurrentUserMessage) {
-                                                onMessageSelected(message);
-                                                setShowActionSheet(true);
-                                            }
-                                        }}>
-                                        {message?.message}
-                                    </div>
-                                    {isCurrentUserMessage && (
-                                        <div className="avatarChat">{avatarElement}</div>
-                                    )}
-                                </IonItem>
-                            </div>
+                              </div>
+                              {isCurrentUserMessage && (
+                                <div className="avatarChat">{avatarElement}</div>
+                              )}
+                            </IonItem>
+                          </div>
                         );
-                    }}
+                      }}
+                      
                 />
+
             </IonContent>
         </IonPage>
     );
