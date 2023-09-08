@@ -542,6 +542,14 @@ const BulletinBoards: React.FC = () => {
 
     const submitMessage = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const postToFirestore = async (messageData: any, bulletinBoardData: any) => {
+            const messageRef = await addDoc(collection(db, 'messages'), messageData);
+            await updateDoc(doc(db, bulletinBoardData.path), {
+                Messages: arrayUnion(messageRef),
+            });
+        };
+
         if (isFileUploaded) {
             setMessageInput(uploadedImageUrl || '');
         }
@@ -679,6 +687,8 @@ const BulletinBoards: React.FC = () => {
                 bulletinboard: bulletinBoardRef,
             });
 
+
+
             await updateDoc(bulletinBoardRef, {
                 Messages: arrayUnion(messageRef),
             });
@@ -810,19 +820,8 @@ const BulletinBoards: React.FC = () => {
                         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                             console.log('File available at', downloadURL);
                             setUploadedImageUrl(downloadURL); // Set the state variable with the URL
-                            // TODO: Update your chat message state with the new image URL here
                             setMessageInput(downloadURL);
                         });
-                        // when we submit the message, we need to check to see if the messageInput is a URL. If it is, then we need to display the image in the chat
-                        // we can do this by checking to see if the messageInput starts with "https://firebasestorage.googleapis.com"
-                        // if it does, then we need to display the image in the chat
-                        // if it does not, then we need to display the message in the chat or the other options for URLs
-                        // we can do this by checking to see if the messageInput starts with "http://", "https://", "www.", or "ftp://"
-                        // push image to the messagesData array
-                        // push image to the sortedMessagesData array
-                        // push image to the bulletinboard document
-                        // push image to the bulletinboard document in the community board
-
                     },
                 );
             }
@@ -858,35 +857,50 @@ const BulletinBoards: React.FC = () => {
                 </IonCardTitle>
                 {!anonAccess && (
                     <>
-                        <IonSelect
-                            className="custom-ion-select"
-                            value={selectedBBOROrgValue}
-                            placeholder="Choose a Bulletin Board"
-                            onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
-                        >
-                            {combinedList.map((item, index) => (
-                                <IonSelectOption key={index} value={item.value}>
-                                    {item.label}
-                                </IonSelectOption>
-                            ))}
-                        </IonSelect>
+                        <IonChip>
+                            <IonSelect
+                                className="custom-ion-select"
+                                value={selectedBBOROrgValue}
+                                placeholder="Choose a Bulletin Board"
+                                onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
+                            >
+                                {combinedList.map((item, index) => (
+                                    <IonSelectOption key={index} value={item.value}>
+                                        {item.label}
+                                    </IonSelectOption>
+                                ))}
+                            </IonSelect>
+                        </IonChip>
                         {selectedBBOROrgValue !== '' && (
                             <div className="chat-container">
                                 <form onSubmit={submitMessage} className="chat-input-form">
-                                    <IonChip>
-                                        <IonInput
-                                            required={true}
-                                            aria-label='Message'
-                                            type='text'
-                                            value={messageInput}
-                                            placeholder="Enter your message"
-                                            onIonChange={e => setMessageInput(e.detail.value || '')}
-                                        />
+                                    <IonChip className={uploadedImageUrl ? "ion-chip-with-image" : ""}>
+                                        {uploadedImageUrl ? (
+                                            <img
+                                                src={uploadedImageUrl}
+                                                alt="Uploaded preview"
+                                                style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                            />
+                                        ) : (
+                                            <IonInput
+                                                required={true}
+                                                aria-label='Message'
+                                                type='text'
+                                                value={messageInput}
+                                                placeholder="Enter your message"
+                                                onIonChange={e => setMessageInput(e.detail.value || '')}
+                                            />
+                                        )}
                                         <label htmlFor="upload-button">
                                             <IonIcon icon={cameraOutline} />
                                         </label>
-                                        {uploadedImageUrl && <img src={uploadedImageUrl} alt="Uploaded preview" />}
-                                        <input id="upload-button" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                                        <input
+                                            id="upload-button"
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={handleImageUpload}
+                                        />
                                     </IonChip>
                                     <IonRow>
                                         {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (

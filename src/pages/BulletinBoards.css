@@ -175,3 +175,8 @@
 .sc-ion-alert-md-h .sc-ion-alert-md-s .alert-button-group.sc-ion-alert-md-s {
     min-width: 350px !important;
 }
+
+.ion-chip-with-image {
+    min-height: 30px !important;
+    max-height: 100%;
+}

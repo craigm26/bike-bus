@@ -18,6 +18,7 @@ import {
   IonRow,
   IonGrid,
   IonRouterLink,
+  IonText,
 } from '@ionic/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useAuth from '../useAuth';
@@ -27,7 +28,7 @@ import { personCircleOutline } from 'ionicons/icons';
 import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
 import QRCode from 'qrcode.react';
 
@@ -72,14 +73,14 @@ interface Coordinate {
   lat: number;
   lng: number;
 }
-
-interface BikeBusStop {
+interface BikeBusStops {
   id: string;
+  StopId: string;
   BikeBusStopName: string;
   BikBusGroupId: DocumentReference;
   BikeBusRouteId: DocumentReference;
-  lat: Coordinate;
-  lng: Coordinate;
+  lat: number;
+  lng: number;
   BikeBusStopIds: DocumentReference[];
   BikeBusGroupId: string;
 }
@@ -127,15 +128,6 @@ interface FetchedUserData {
 interface Coordinate {
   lat: number;
   lng: number;
-}
-
-interface BikeBusStops {
-  id: string;
-  BikeBusStopName: string;
-  BikBusGroupId: DocumentReference;
-  BikeBusRouteId: DocumentReference;
-  lat: Coordinate;
-  lng: Coordinate;
 }
 
 interface RouteData {
@@ -236,6 +228,7 @@ const Event: React.FC = () => {
   const [isFlyerRendered, setIsFlyerRendered] = useState(false);
   const [showFlyer, setShowFlyer] = useState(false);
   const [showPrintFlyer, setShowPrintFlyer] = useState(false);
+  const [selectedStopIndex, setSelectedStopIndex] = useState(-1);
 
 
 
@@ -381,7 +374,7 @@ const Event: React.FC = () => {
   const fetchBikeBusStopData = async (bikeBusStopId: DocumentReference) => {
     const docSnap = await getDoc(bikeBusStopId);
     if (docSnap.exists()) {
-      return docSnap.data() as BikeBusStop;
+      return docSnap.data() as BikeBusStops;
     }
     return null;
   };
@@ -391,7 +384,7 @@ const Event: React.FC = () => {
       const fetchedStops = await Promise.all(
         bikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
       );
-      setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStop[]);
+      setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStops[]);
     };
 
     fetchAllStops();
@@ -839,7 +832,20 @@ const Event: React.FC = () => {
                       position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
                       label={stop.BikeBusStopName}
                       title={stop.BikeBusStopName}
-                    />
+                      onClick={() => setSelectedStopIndex(index)}
+                    >
+                      {selectedStopIndex === index && (
+                        <InfoWindow>
+                          <div>
+                            <h5>{stop.BikeBusStopName}</h5>
+                            <IonText>
+                              <p>{stop.lat}</p>
+                              <p>{stop.lng}</p>
+                            </IonText>
+                          </div>
+                        </InfoWindow>
+                      )}
+                    </Marker>
                   ))}
                 </div>
               )}

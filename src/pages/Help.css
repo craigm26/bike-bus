@@ -1,0 +1,26 @@
+.message-page-content {
+    --background: #f4f5f8;
+  }
+  
+  .message-card {
+    --background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  }
+  
+  .message-send-button {
+    --background: #3880ff;
+    --color: white;
+    margin-top: 16px;
+  }
+  
+  .message-email-item ion-label,
+  .message-text-item ion-label {
+    --color: #555;
+  }
+  
+  .message-email-item ion-input,
+  .message-text-item ion-input {
+    --placeholder-color: #ccc;
+  }
+  
