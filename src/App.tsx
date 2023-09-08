@@ -470,9 +470,6 @@ const App: React.FC = () => {
                         <IonItem button routerLink="/BulletinBoards" routerDirection="none">
                           <IonLabel>Bulletin Boards</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink="/ViewSchedule" routerDirection="none">
-                          <IonLabel>View Schedule</IonLabel>
-                        </IonItem>
                         <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
@@ -483,6 +480,9 @@ const App: React.FC = () => {
                       {accountType === 'App Admin' &&
                         <IonCard>
                           <IonLabel>Org Admin Functions</IonLabel>
+                          <IonItem button routerLink="/ViewSchedule" routerDirection="none">
+                            <IonLabel>View Schedule</IonLabel>
+                          </IonItem>
                           <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
                             <IonLabel>Update BikeBusGroups</IonLabel>
                           </IonItem>

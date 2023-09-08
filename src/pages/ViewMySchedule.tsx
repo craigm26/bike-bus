@@ -12,12 +12,14 @@ import {
     IonCardContent,
     IonItem,
     IonText,
+    IonInput,
+    IonCol,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { Timestamp, collection, getDocs } from 'firebase/firestore';
+import { FieldValue, Timestamp, collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { Link, useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -66,10 +68,11 @@ type Event = {
     sheepdogs: [],
     sprinters: [],
     status: string,
+    handCountEvent: number,
 };
 
 
-const ViewMySchedule: React.FC = () => {
+const ViewSchedule: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const { user } = useAuth();
     const { avatarUrl } = useAvatar(user?.uid);
@@ -84,6 +87,9 @@ const ViewMySchedule: React.FC = () => {
     const [endTime, setEndTime] = useState<string>('');
     const [eventSummaryLink, setEventSummaryLink] = useState<string>('');
     const [isEventDone, setIsEventDone] = useState<boolean>(false);
+    const [modifiedHandCount, setModifiedHandCount] = useState<number>(0);
+    const [username, setusername] = useState<string>('');
+
 
     const parseDate = (dateString: string) => {
         const dateFormat = "MMMM d, yyyy 'at' h:mm:ss a 'UTC'XXX";
@@ -93,6 +99,20 @@ const ViewMySchedule: React.FC = () => {
     }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    useEffect(() => {
+        if (user) {
+            const userRef = doc(db, 'users', user.uid);
+            getDoc(userRef).then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const userData = docSnapshot.data();
+                    if (userData && userData.username) {
+                        setusername(userData.username);
+                    }
+                }
+            });
+        }
+    }, [user]);
 
     useEffect(() => {
         const fetchDetailedEvents = async () => {
@@ -148,6 +168,7 @@ const ViewMySchedule: React.FC = () => {
                         id: docSnapshot.id,
                         status: eventData.status,
                         startTimestamp: eventData.startTimestamp,
+                        handCountEvent: eventData.handCountEvent,
                     };
                     eventDocs.push(event);
                 }
@@ -182,8 +203,10 @@ const ViewMySchedule: React.FC = () => {
         setEventSummaryLink(eventSummaryLink);
 
         // check the status of the event
-        const isEventDone = event.status === 'ended' ? true : false;
+        const isEventDone = event.status === 'ended' || event.start.getTime() < Date.now() ? true : false;
         setIsEventDone(isEventDone);
+
+
 
         const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
@@ -198,6 +221,32 @@ const ViewMySchedule: React.FC = () => {
         setShowEventModal(false); // Close the modal
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
+
+    console.log("username: ", username)
+    const isEventLeader = selectedEvent?.leader.includes(username);
+
+    const handleHandCountModification = () => {
+        // first check that the user is the leader of the event
+        if (!isEventLeader) {
+            alert('You are not the leader of this event');
+            return;
+        }
+
+        const updatedEvent = { ...selectedEvent, handCountEvent: modifiedHandCount };
+        // Update Firestore
+        // Create DocumentReference and Update Firestore
+        const cleanedEvent: { [key: string]: FieldValue | Partial<unknown> | undefined } =
+            Object.fromEntries(
+                Object.entries(updatedEvent).filter(([key, val]) => val !== undefined)
+            ) as { [key: string]: FieldValue | Partial<unknown> | undefined };
+
+        const docRef = doc(db, 'event', eventId);
+        updateDoc(docRef, cleanedEvent);
+
+
+        setShowEventModal(false);
+    };
+
 
     console.log("Events: ", events.map(event => ({
         start: event.start.toString(),
@@ -231,54 +280,62 @@ const ViewMySchedule: React.FC = () => {
                 <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
                 <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
                     <IonContent>
-                        <IonCard>
-                            <IonCardHeader>
-                                <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
-                            </IonCardHeader>
-                            <IonCardContent>
-                                <IonItem>
-                                    <IonLabel>{startTime} to {endTime}</IonLabel>
+                        <IonCardHeader>
+                            <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
+                        </IonCardHeader>
+                        <IonCardContent>
+                            <IonItem lines="none">
+                                <IonLabel>{startTime} to {endTime}</IonLabel>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Route</IonLabel>
+                                <Link to={`/ViewRoute/${selectedEvent?.route?.id}`}>
+                                    <IonButton>View Route</IonButton>
+                                </Link>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Leader:</IonLabel>
+                                <IonText>{selectedEvent?.leader}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Captains:</IonLabel>
+                                <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Sheepdogs:</IonLabel>
+                                <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Sprinters:</IonLabel>
+                                <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Caboose:</IonLabel>
+                                <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Kids:</IonLabel>
+                                <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Members:</IonLabel>
+                                <IonText>{selectedEvent?.members?.join(', ')}</IonText>
+                            </IonItem>
+                        </IonCardContent>
+                        {(isEventDone) ?
+                            <>
+                                <IonItem lines="none">
+                                    <IonCol>
+                                        <IonLabel>Hand Count Event:</IonLabel>
+                                        <IonText>{selectedEvent?.handCountEvent}</IonText>
+                                    </IonCol>
+                                    <IonCol>
+                                        <IonLabel>Modify Hand Count:</IonLabel>
+                                        <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
+                                    </IonCol>
                                 </IonItem>
-                                <IonItem>
-                                    <IonLabel>Route</IonLabel>
-                                    <Link to={`/ViewRoute/${selectedEvent?.route?.id}`}>
-                                        <IonButton>View Route</IonButton>
-                                    </Link>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Leader:</IonLabel>
-                                    <IonText>{selectedEvent?.leader}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Captains:</IonLabel>
-                                    <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Sheepdogs:</IonLabel>
-                                    <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Sprinters:</IonLabel>
-                                    <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Caboose:</IonLabel>
-                                    <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Kids:</IonLabel>
-                                    <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Members:</IonLabel>
-                                    <IonText>{selectedEvent?.members?.join(', ')}</IonText>
-                                </IonItem>
-                            </IonCardContent>
-                        </IonCard>
-                        {(isEventDone) ? <IonItem>
-                            <IonLabel>Hand Count:</IonLabel>
-                            <IonText>{selectedEvent?.handCountEvent}</IonText>
-                        </IonItem> : null}
+                                <IonButton onClick={handleHandCountModification}>Modify</IonButton>
+                            </> : null}
                         {(!isEventDone) ? <IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
                         {(isEventDone) ? <IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
                         <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
@@ -290,4 +347,4 @@ const ViewMySchedule: React.FC = () => {
     );
 };
 
-export default ViewMySchedule;
+export default ViewSchedule;

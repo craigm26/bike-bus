@@ -187,7 +187,7 @@ const ViewSchedule: React.FC = () => {
             console.log(endTime);
         };
         fetchDetailedEvents();
-    }, [id, timeZone]);
+    }, [id, timeZone, setModifiedHandCount]);
 
     const handleSelectEvent = (event: Event) => {
         const eventLink = `/event/${event.id}`;
