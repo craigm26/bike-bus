@@ -234,34 +234,6 @@ const Help: React.FC = () => {
                 </IonCard>
               }
             </IonItemGroup>
-            <IonItemGroup>
-              <IonButton expand="full" onClick={() => toggleSection('section6')}>How do I create an Organization?</IonButton>
-              {openSection === 'section6' &&
-                <IonCard>
-                  <IonCardHeader>
-                    <IonCardTitle>How do I create an Organization?</IonCardTitle>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <IonList>
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
-              }
-            </IonItemGroup>
-            <IonItemGroup>
-              <IonButton expand="full" onClick={() => toggleSection('section7')}>How do I join an Organization?</IonButton>
-              {openSection === 'section7' &&
-                <IonCard>
-                  <IonCardHeader>
-                    <IonCardTitle>How do I join an Organization?</IonCardTitle>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <IonList>
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
-              }
-            </IonItemGroup>
           </IonList>
         </IonCard>
       </IonContent>
