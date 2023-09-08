@@ -14,7 +14,8 @@ import {
     IonAvatar,
     IonIcon,
     IonActionSheet,
-    IonSpinner
+    IonSpinner,
+    IonChip
 } from '@ionic/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -28,6 +29,7 @@ import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
 import { db, storage } from '../firebaseConfig';
 import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
 import { set } from 'date-fns';
+import { is } from 'date-fns/locale';
 
 
 interface UserDocument {
@@ -139,6 +141,7 @@ const BulletinBoards: React.FC = () => {
     const locationFetchedRef = useRef(false);
     const [showActionSheet, setShowActionSheet] = useState(false);
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+    const [isFileUploaded, setIsFileUploaded] = useState(false);
 
 
 
@@ -539,6 +542,9 @@ const BulletinBoards: React.FC = () => {
 
     const submitMessage = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isFileUploaded) {
+            setMessageInput(uploadedImageUrl || '');
+        }
 
         if (!messageInput.trim()) {
             console.error('Message input is empty or whitespace only');
@@ -563,6 +569,7 @@ const BulletinBoards: React.FC = () => {
                         // Add the message to the messages document collection
                         const messageRef = await addDoc(collection(db, 'messages'), {
                             message: messageInput,
+                            type: isFileUploaded ? 'file' : 'text',
                             user: doc(db, 'users', `${user?.uid}`),
                             timestamp: serverTimestamp(),
                             // set the bulletinboard field to be the document reference for the community board, which is bulletinboard/{geohash}
@@ -602,6 +609,9 @@ const BulletinBoards: React.FC = () => {
                         });
                         console.log('Messages after posting:', messagesData); // Log the messages data after posting
                     });
+                    setIsFileUploaded(false);
+                    setUploadedImageUrl(null);
+                    setMessageInput('');
                     // refresh the combinedList on the page so that the messages refresh
                     // refresh the messages
                     // After adding the message, refresh and log the messages
@@ -780,29 +790,42 @@ const BulletinBoards: React.FC = () => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (user && user.uid && event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            const storageRef = ref(storage, `chat_images/${user.uid}/${Date.now()}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            if (file) {
+                setIsFileUploaded(true);
+                const storageRef = ref(storage, `chat_images/${selectedBBOROrgValue}/${user.uid}/${Date.now()}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
 
-            uploadTask.on(
-                'state_changed',
-                (snapshot: any) => {
-                    console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                },
-                (error: any) => {
-                    console.error('Error uploading image:', error);
-                },
-                () => {
-                    // TODO: Update your chat message state with the new image URL here
-                    // For instance, you might push this new message into your `sortedMessagesData` array
-                    // You might also want to update the `messagesData` state to include the new message
-                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                        console.log('File available at', downloadURL);
-                        setUploadedImageUrl(downloadURL); // Set the state variable with the URL
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot: any) => {
+                        console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                    },
+                    (error: any) => {
+                        console.error('Error uploading image:', error);
+                    },
+                    () => {
                         // TODO: Update your chat message state with the new image URL here
-                        setMessageInput(downloadURL);
-                    });
-                },
-            );
+                        // For instance, you might push this new message into your `sortedMessagesData` array
+                        // You might also want to update the `messagesData` state to include the new message
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            console.log('File available at', downloadURL);
+                            setUploadedImageUrl(downloadURL); // Set the state variable with the URL
+                            // TODO: Update your chat message state with the new image URL here
+                            setMessageInput(downloadURL);
+                        });
+                        // when we submit the message, we need to check to see if the messageInput is a URL. If it is, then we need to display the image in the chat
+                        // we can do this by checking to see if the messageInput starts with "https://firebasestorage.googleapis.com"
+                        // if it does, then we need to display the image in the chat
+                        // if it does not, then we need to display the message in the chat or the other options for URLs
+                        // we can do this by checking to see if the messageInput starts with "http://", "https://", "www.", or "ftp://"
+                        // push image to the messagesData array
+                        // push image to the sortedMessagesData array
+                        // push image to the bulletinboard document
+                        // push image to the bulletinboard document in the community board
+
+                    },
+                );
+            }
         }
     };
 
@@ -847,65 +870,69 @@ const BulletinBoards: React.FC = () => {
                                 </IonSelectOption>
                             ))}
                         </IonSelect>
-                        <div className="chat-container">
-                            <form onSubmit={submitMessage} className="chat-input-form">
-                                <IonInput
-                                    required={true}
-                                    aria-label='Message'
-                                    type='text'
-                                    value={messageInput}
-                                    placeholder="Enter your message"
-                                    onIonChange={e => setMessageInput(e.detail.value || '')}
-                                />
+                        {selectedBBOROrgValue !== '' && (
+                            <div className="chat-container">
+                                <form onSubmit={submitMessage} className="chat-input-form">
+                                    <IonChip>
+                                        <IonInput
+                                            required={true}
+                                            aria-label='Message'
+                                            type='text'
+                                            value={messageInput}
+                                            placeholder="Enter your message"
+                                            onIonChange={e => setMessageInput(e.detail.value || '')}
+                                        />
+                                        <label htmlFor="upload-button">
+                                            <IonIcon icon={cameraOutline} />
+                                        </label>
+                                        {uploadedImageUrl && <img src={uploadedImageUrl} alt="Uploaded preview" />}
+                                        <input id="upload-button" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                                    </IonChip>
+                                    <IonRow>
+                                        {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
+                                            <IonLabel>
+                                                Cross-Post to Community Board?
+                                                <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                            </IonLabel>
+                                        )}
+                                    </IonRow>
+                                    <IonRow className="chat-button-row">
+                                        <IonButton type="submit" disabled={isLoading}>
+                                            Post Bulletin Board Message
+                                        </IonButton>
+                                        {isLoading && <IonSpinner name="crescent" />}
+                                    </IonRow>
+                                </form>
+                                <IonList className="chat-list">
+                                    {sortedMessagesData.map((message, index) => {
+                                        const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                        const avatarElement = isCurrentUserMessage
+                                            ? currentUserAvatarElement
+                                            : getAvatarElement(message?.user?.id);
 
-                                {uploadedImageUrl && <img src={uploadedImageUrl} alt="Uploaded preview" />}
-                                <label htmlFor="upload-button">
-                                    <IonIcon icon={cameraOutline} />
-                                </label>
-                                <input id="upload-button" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-                                {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
-                                    <IonLabel>
-                                        Cross-Post to Community Board?
-                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                    </IonLabel>
-                                )}
-                                <IonRow className="chat-button-row">
-                                    <IonButton type="submit" disabled={isLoading}>
-                                        Post Bulletin Board Message
-                                    </IonButton>
-                                    {isLoading && <IonSpinner name="crescent" />}
-                                </IonRow>
-                            </form>
-                            <IonList className="chat-list">
-                                {sortedMessagesData.map((message, index) => {
-                                    const isCurrentUserMessage = user?.uid === message?.user?.id;
-                                    const avatarElement = isCurrentUserMessage
-                                        ? currentUserAvatarElement
-                                        : getAvatarElement(message?.user?.id);
-
-                                    return (
-                                        <div className="chat-item" key={index}>
-                                            <ChatListScroll
-                                                key={index}
-                                                avatarElement={avatarElement}
-                                                user={user}
-                                                selectedBBOROrgValue={selectedBBOROrgValue}
-                                                combinedList={combinedList}
-                                                groupData={groupData}
-                                                sortedMessagesData={sortedMessagesData}
-                                                isCurrentUserMessage={isCurrentUserMessage}
-                                                selectedMessage={null}
-                                                isLoading={isLoading}
-                                                onMessageSelected={handleSelectedMessage}
-                                                setShowActionSheet={setShowActionSheet}
-                                                handleAction={handleAction}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </IonList>
-                        </div>
-
+                                        return (
+                                            <div className="chat-item" key={index}>
+                                                <ChatListScroll
+                                                    key={index}
+                                                    avatarElement={avatarElement}
+                                                    user={user}
+                                                    selectedBBOROrgValue={selectedBBOROrgValue}
+                                                    combinedList={combinedList}
+                                                    groupData={groupData}
+                                                    sortedMessagesData={sortedMessagesData}
+                                                    isCurrentUserMessage={isCurrentUserMessage}
+                                                    selectedMessage={null}
+                                                    isLoading={isLoading}
+                                                    onMessageSelected={handleSelectedMessage}
+                                                    setShowActionSheet={setShowActionSheet}
+                                                    handleAction={handleAction}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </IonList>
+                            </div>
+                        )}
                     </>
                 )}
                 <IonActionSheet
