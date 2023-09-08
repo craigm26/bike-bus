@@ -446,7 +446,7 @@ const BulletinBoards: React.FC = () => {
             unsubscribeOrganization?.();
         };
 
-    }, [selectedBBOROrgValue, messageInput]);
+    }, [selectedBBOROrgValue, messageInput, selectedMessage]);
 
     const getAvatarElement = (userId: string | undefined) => {
         // You can replace this with the logic to get the avatar URL for the given user ID
@@ -607,8 +607,7 @@ const BulletinBoards: React.FC = () => {
                                 bulletinboardType: 'Community',
                             });
                         }
-                        // fetchMessages with userLocation
-                        // refresh the messages
+
                         // After adding the message, refresh and log the messages
                         const communityOption = { value: "Community", label: "Community" };
 
@@ -620,9 +619,6 @@ const BulletinBoards: React.FC = () => {
                     setIsFileUploaded(false);
                     setUploadedImageUrl(null);
                     setMessageInput('');
-                    // refresh the combinedList on the page so that the messages refresh
-                    // refresh the messages
-                    // After adding the message, refresh and log the messages
                 }
             } catch (error) {
                 console.log('Error posting to community board:', error);
@@ -715,88 +711,81 @@ const BulletinBoards: React.FC = () => {
         setShowActionSheet(true);
     }, []);
 
-    const handleAction = useCallback((action: string) => {
-
+    const handleAction = useCallback(async (action: string) => {
         console.log('Action:', action);
+    
+        if (!selectedMessage) {
+            console.log("No selected message.");
+            return;
+        }
+    
         console.log('Selected Message:', selectedMessage);
-
-
-
-        // get the message ID from the selectedMessage state
-        if (!selectedMessage) return;
-
-        if (selectedMessage) {
-            // we have the selectedMessage as a firestore document object in the messages document collection, now let's query for the document and get the id of the document
-            const messageRef = query(collection(db, 'messages'), where('message', '==', selectedMessage.message));
-            getDocs(messageRef).then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    console.log('Message ID:', doc.id);
-                    setSelectedMessage({
-                        ...selectedMessage,
-                        id: doc.id,
-                    });
-                });
-            });
-
-            const MessageId = selectedMessage?.id;
-            console.log('Message ID:', MessageId);
-
-            // get the message document reference
-            // get the bulletinboard document reference
-            const bulletinboardRef = selectedMessage?.bulletinboard;
-            console.log('Bulletinboard Ref:', bulletinboardRef);
-
-            if (action === 'edit') {
-
-                // allow the user to edit the message with their new message
-                // Then we can use the message document reference to update the message
-                // Then we can use the message document reference to update the message in the bulletin board document
-
-                // first we need to get the message from the message document reference
-                const messageRef = doc(db, 'messages', MessageId);
-                getDoc(messageRef).then((docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                        const messageData = docSnapshot.data();
-                        if (messageData) {
-                            setEditMode(true);
-                            setEditMessage(messageData.message);
-                        }
-                    }
-                });
-
-            } else if (action === 'delete') {
-                console.log('Delete Message');
-                console.log('Message ID:', MessageId);
-
-                const messageRef = doc(db, 'messages', MessageId);
-
-                // delete the message document reference in the bulletinboard document
-                if (bulletinboardRef instanceof DocumentReference) {
-                    updateDoc(bulletinboardRef, {
-                        Messages: arrayRemove(messageRef),
-                    });
-                } else {
-                    console.error('bulletinboardRef is not a DocumentReference:', bulletinboardRef);
+    
+        let MessageId = selectedMessage.id;
+        console.log('Initial Message ID:', MessageId);
+    
+        // Function to handle Edit Mode
+        const handleEditMode = async (MessageId: string) => {
+            const messageRef = doc(db, 'messages', MessageId);
+            const docSnapshot = await getDoc(messageRef);
+            if (docSnapshot.exists()) {
+                const messageData = docSnapshot.data();
+                if (messageData) {
+                    setEditMode(true);
+                    setEditMessage(messageData.message);
                 }
-
-                // delete the message document
-                deleteDoc(messageRef).then(() => { // Use messageRef instead of selectedMessage
-                    console.log('Message successfully deleted!');
-                }).catch((error) => {
-                    console.error('Error removing message:', error);
+            }
+        };
+    
+        // Function to handle Message Deletion
+        const handleDelete = async (MessageId: string, bulletinboardRef: any) => {
+            const messageRef = doc(db, 'messages', MessageId);
+            
+            if (bulletinboardRef instanceof DocumentReference) {
+                await updateDoc(bulletinboardRef, {
+                    Messages: arrayRemove(messageRef),
                 });
             }
-            // refresh the messages
-            const communityOption = { value: "Community", label: "Community" };
-            Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
-                setCombinedList([communityOption, ...orgs, ...bikebus]);
-            });
+    
+            await deleteDoc(messageRef);
+    
+            console.log('Message successfully deleted!');
+        };
+    
+        // Update the Message ID if required
+        const messageRef = query(collection(db, 'messages'), where('message', '==', selectedMessage.message));
+        const querySnapshot = await getDocs(messageRef);
+        querySnapshot.forEach((doc) => {
+            if (selectedMessage.message) {
+                setSelectedMessage({
+                    ...selectedMessage,
+                    id: doc.id,
+                    message: selectedMessage.message,
+                });
+                MessageId = doc.id;
+            }
+        });
+    
+        const bulletinboardRef = selectedMessage?.bulletinboard;
+        console.log('Bulletinboard Ref:', bulletinboardRef);
+    
+        if (action === 'edit') {
+            await handleEditMode(MessageId);
+        } else if (action === 'delete') {
+            await handleDelete(MessageId, bulletinboardRef);
         }
-
+    
         // Close the action sheet
         setShowActionSheet(false);
-    }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
+        // refresh the chat-list
+        const communityOption = { value: "Community", label: "Community" };
+        Promise.all([fetchOrganizations(), fetchBikeBus(), handleCommunitySelection()]).then(([orgs, bikebus]) => {
+            setCombinedList([communityOption, ...orgs, ...bikebus]);
+        });
 
+    
+    }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
+    
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (user && user.uid && event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
