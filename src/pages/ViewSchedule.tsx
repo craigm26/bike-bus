@@ -13,6 +13,7 @@ import {
     IonItem,
     IonText,
     IonInput,
+    IonCol,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -202,8 +203,10 @@ const ViewSchedule: React.FC = () => {
         setEventSummaryLink(eventSummaryLink);
 
         // check the status of the event
-        const isEventDone = event.status === 'ended' ? true : false;
+        const isEventDone = event.status === 'ended' || event.start.getTime() < Date.now() ? true : false;
         setIsEventDone(isEventDone);
+
+
 
         const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
@@ -281,50 +284,55 @@ const ViewSchedule: React.FC = () => {
                             <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>{startTime} to {endTime}</IonLabel>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Route</IonLabel>
                                 <Link to={`/ViewRoute/${selectedEvent?.route?.id}`}>
                                     <IonButton>View Route</IonButton>
                                 </Link>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Leader:</IonLabel>
                                 <IonText>{selectedEvent?.leader}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Captains:</IonLabel>
                                 <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Sheepdogs:</IonLabel>
                                 <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Sprinters:</IonLabel>
                                 <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Caboose:</IonLabel>
                                 <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Kids:</IonLabel>
                                 <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
                             </IonItem>
-                            <IonItem>
+                            <IonItem lines="none">
                                 <IonLabel>Members:</IonLabel>
                                 <IonText>{selectedEvent?.members?.join(', ')}</IonText>
                             </IonItem>
                         </IonCardContent>
-
                         {(isEventDone) ?
                             <>
-                                <IonItem>
-                                    <IonLabel>Modify Hand Count Event:</IonLabel>
-                                    <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
+                                <IonItem lines="none">
+                                    <IonCol>
+                                        <IonLabel>Hand Count Event:</IonLabel>
+                                        <IonText>{selectedEvent?.handCountEvent}</IonText>
+                                    </IonCol>
+                                    <IonCol>
+                                        <IonLabel>Modify Hand Count:</IonLabel>
+                                        <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
+                                    </IonCol>
                                 </IonItem>
                                 <IonButton onClick={handleHandCountModification}>Modify</IonButton>
                             </> : null}
