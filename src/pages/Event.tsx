@@ -20,7 +20,7 @@ import {
   IonRouterLink,
   IonText,
 } from '@ionic/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -29,8 +29,8 @@ import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
-import React from 'react';
 import QRCode from 'qrcode.react';
+import { useReactToPrint } from 'react-to-print';
 
 
 
@@ -758,6 +758,13 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+    documentTitle: 'BikeBus Flyer',
+  });
+
 
   useEffect(() => {
     console.log("Google Maps script loaded: ", isLoaded);
@@ -1009,6 +1016,18 @@ const Event: React.FC = () => {
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
+
+                      <div>
+                        <>
+                          <div style={{ display: 'none' }} ref={componentRef}>
+                            <svg height="100" width="100">
+                              <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="3" fill="red" />
+                            </svg>
+
+                          </div>
+                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
+                        </>
+                      </div>
                     </IonCol>
                   </IonRow>
                 </IonGrid>
