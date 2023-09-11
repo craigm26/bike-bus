@@ -448,6 +448,9 @@
 /* General Styles for the Event Details */
 .bikebus-event-name,
 .bikebus-event-route,
+.bikebus-startPoint,
+.bikebus-endPoint,
+.bikebus-stops,
 .bikebus-event-time,
 .bikebus-event-startAddress,
 .bikebus-event-endAddress {
@@ -506,25 +509,12 @@
 }
 
 @media print {
-  /* Hide all other content */
-  body * {
-    visibility: hidden;
-  }
-  /* Make your component visible */
-  .ion-no-padding-flyer, .ion-no-padding-flyer, flyer-content * {
-    visibility: visible;
-  }
-  /* Style it to fit into the letter-sized paper */
-  .ion-no-padding-flyer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
+  .print-hidden {
+    visibility: visible !important;
+    display: block !important;
+    opacity: 1 !important;
   }
 }
-
-
 
 
 /* Style for the map container */
