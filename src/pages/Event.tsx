@@ -758,12 +758,33 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
+  const printRef = useRef(null);
+
   const componentRef = useRef<HTMLDivElement>(null);
 
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    content: () => printRef.current,
     documentTitle: 'BikeBus Flyer',
   });
+
+  const triggerPrint = () => {
+    setIsPrinting(true);
+    
+    // Force a redraw
+    componentRef.current?.offsetHeight;
+    
+    setTimeout(() => {
+      handlePrint();
+      setIsPrinting(false);
+    }, 500); // Increase the delay to 500ms
+  };
+  
+  
+
+  const hiddenStyle: React.CSSProperties = isPrinting ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' };
+
 
 
   useEffect(() => {
@@ -1016,18 +1037,13 @@ const Event: React.FC = () => {
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
-
-                      <div>
-                        <>
-                          <div style={{ display: 'none' }} ref={componentRef}>
-                            <svg height="100" width="100">
-                              <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="3" fill="red" />
-                            </svg>
-
-                          </div>
-                          <IonButton size="small" onClick={handlePrint}>Print Flyer</IonButton>
-                        </>
+                      <div ref={printRef}>
+                        <div ref={componentRef} className="print-hidden" style={hiddenStyle}>
+                          <svg>
+                          </svg>
+                        </div>
                       </div>
+                      <IonButton size="small" onClick={triggerPrint}>Print Flyer</IonButton>
                     </IonCol>
                   </IonRow>
                 </IonGrid>
