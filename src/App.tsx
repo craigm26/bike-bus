@@ -56,6 +56,7 @@ import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGrou
 import useEvent from "./components/BikeBusGroup/useEvent";
 import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -141,6 +142,8 @@ const App: React.FC = () => {
   const toggleModal = () => {
     setShowPostMessageModal(!showPostMessageModal);
   };
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 
 
   function formatDate(timestamp: Timestamp) {
@@ -470,6 +473,12 @@ const App: React.FC = () => {
                         <IonItem button routerLink="/BulletinBoards" routerDirection="none">
                           <IonLabel>Bulletin Boards</IonLabel>
                         </IonItem>
+                        <IonItem button routerLink="/Map" routerDirection="none">
+                          <IonLabel>Map</IonLabel>
+                        </IonItem>
+                        <IonItem button routerLink="/ViewSchedule" routerDirection="none">
+                          <IonLabel>View Schedule</IonLabel>
+                        </IonItem>
                         <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
@@ -520,6 +529,9 @@ const App: React.FC = () => {
                         </IonCard>}
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>About</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink="/PrivacyPolicy" routerDirection="none">
+                        <IonLabel>Privacy Policy</IonLabel>
                       </IonItem>
                     </IonMenuToggle>
                   </IonList>
@@ -619,8 +631,8 @@ const App: React.FC = () => {
                   <BrowserRouter>
                     <IonRouterOutlet>
                       <React.Fragment>
-                        <Route exact path="/SearchForBikeBus">
-                          <SearchForBikeBus />
+                        <Route exact path="/PrivacyPolicy">
+                          <PrivacyPolicy />
                         </Route>
                         <Route exact path="/BulletinBoards">
                           <CurrentLocationProvider>
