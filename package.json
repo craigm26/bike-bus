@@ -1,6 +1,6 @@
 {
   "name": "bike-bus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "dependencies": {
     "@capacitor/action-sheet": "^5.0.6",
@@ -106,5 +106,5 @@
     "env-cmd": "^10.1.0",
     "react-scripts": "5.0.1"
   },
-  "description": "BikeBus, An Ionic project"
+  "description": "BikeBus is a web app that helps you find the best bike routes in your city."
 }

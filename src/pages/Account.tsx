@@ -20,11 +20,9 @@ import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { db, storage } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
 import React from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
-import { cogOutline, refresh } from 'ionicons/icons';
-import SetUsername from '../components/SetUsername';
+import { cogOutline } from 'ionicons/icons';
 
 interface Group {
     id: string;
@@ -216,6 +214,9 @@ const Account: React.FC = () => {
                     </IonButton>
                     <IonButton routerLink='/SetUsername'>
                         Set Username
+                    </IonButton>
+                    <IonButton routerLink='/DeleteAccount'>
+                        Delete Account
                     </IonButton>
                     <IonCardContent>
                         <IonList>
