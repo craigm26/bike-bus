@@ -18,21 +18,15 @@ import {
   IonSelectOption,
   IonTitle,
 } from '@ionic/react';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { HeaderContext } from "../components/HeaderContext";
-import { collection, doc, getDocs, getDoc, addDoc, Timestamp, arrayUnion, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, addDoc, Timestamp, arrayUnion, updateDoc } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useHistory, useParams } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { get } from 'http';
-import { format } from 'path';
-import { set } from 'date-fns';
-import { da } from 'date-fns/locale';
-
 const localizer = momentLocalizer(moment);
 
 type Event = {

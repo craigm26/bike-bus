@@ -43,6 +43,7 @@ interface BikeBus {
   accountType: string;
   description: string;
   endPoint: Coordinate;
+  AdditionalInformation: string;
   BikeBusCreator: string;
   BikeBusLeader: string;
   BikeBusName: string;
@@ -604,11 +605,15 @@ const BikeBusGroupPage: React.FC = () => {
                   <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
                 </IonItem>
                 <IonItem>
+                  <IonLabel>Additional Information</IonLabel>
+                  <IonLabel>{groupData?.AdditionalInformation}</IonLabel>
+                </IonItem>
+                <IonItem>
                   <IonLabel>Type</IonLabel>
                   <IonLabel>{groupData?.BikeBusType}</IonLabel>
                 </IonItem>
                 <IonItem>
-                  <IonLabel>Routes</IonLabel>
+                  <IonLabel>Route</IonLabel>
                   {groupId && (
                     <IonList>
                       {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (

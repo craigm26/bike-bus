@@ -6,15 +6,11 @@ import {
     IonInput,
     IonLabel,
     IonButton,
-    IonHeader,
-    IonToolbar,
-    IonPopover,
-    IonText,
     IonTitle,
     IonSelect,
     IonSelectOption,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { collection, doc, getDoc, getDocs, updateDoc, query, where, DocumentReference } from 'firebase/firestore';
@@ -30,6 +26,7 @@ interface BikeBus {
     BikeBusDescription: any;
     BikeBusType: any;
     travelMode: any;
+    AdditionalInformation: any;
     startPoint: any;
     endPoint: any;
     pathCoordinates: any;
@@ -128,6 +125,7 @@ const EditBikeBus: React.FC = () => {
             BikeBusName: selectedBikeBus.BikeBusName,
             BikeBusDescription: selectedBikeBus.BikeBusDescription,
             BikeBusType: selectedBikeBus.BikeBusType,
+            AdditionalInformation: selectedBikeBus.AdditionalInformation,
         };
         console.log(updatedBikeBus);
         await updateDoc(BikeBusRef, updatedBikeBus);
@@ -137,7 +135,7 @@ const EditBikeBus: React.FC = () => {
 
     return (
         <IonPage className="ion-flex-offset-app">
-        <IonContent fullscreen>
+            <IonContent fullscreen>
                 <IonTitle>
                     Editing BikeBus
                 </IonTitle>
@@ -149,6 +147,10 @@ const EditBikeBus: React.FC = () => {
                     <IonItem>
                         <IonLabel>Description:</IonLabel>
                         <IonInput value={selectedBikeBus?.BikeBusDescription} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, BikeBusDescription: e.detail.value! })} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel>Additional Information:</IonLabel>
+                        <IonInput value={selectedBikeBus?.AdditionalInformation} onIonChange={e => selectedBikeBus && setSelectedBikeBus({ ...selectedBikeBus, AdditionalInformation: e.detail.value! })} />
                     </IonItem>
                     <IonItem>
                         <IonLabel>BikeBus Type:</IonLabel>
