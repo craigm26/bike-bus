@@ -19,13 +19,15 @@ import {
   IonGrid,
   IonRouterLink,
   IonText,
+  IonDatetime,
+  IonTextarea,
 } from '@ionic/react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
-import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
@@ -94,6 +96,7 @@ interface Route {
   accountType: string;
   description: string;
   endPoint: Coordinate;
+  duration: number;
   routeCreator: string;
   routeLeader: string;
   routeName: string;
@@ -229,6 +232,12 @@ const Event: React.FC = () => {
   const [showFlyer, setShowFlyer] = useState(false);
   const [showPrintFlyer, setShowPrintFlyer] = useState(false);
   const [selectedStopIndex, setSelectedStopIndex] = useState(-1);
+  const [showStartDateTimeModal, setShowStartDateTimeModal] = useState(false);
+  const [startDateTime, setStartDateTime] = useState<string>('');
+  const [expectedDuration, setExpectedDuration] = useState<any>(0);
+  const [eventEndTime, setEventEndTime] = useState<string>('');
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notes, setNotes] = useState<string>('');
 
 
 
@@ -641,9 +650,10 @@ const Event: React.FC = () => {
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
 
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-  const endTime = eventData?.endTime
-    ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions) // Use timeOptions here
-    : 'Loading...';
+  const endTime = eventData?.endTime instanceof Timestamp
+  ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions)
+  : new Date(eventData?.endTime).toLocaleTimeString(undefined, timeOptions); // Fallback to JavaScript Date
+
 
 
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
@@ -758,6 +768,33 @@ const Event: React.FC = () => {
 
   const isBikeBus = routeData?.isBikeBus ?? false;
 
+  // create a function that allows the leader to changet the date and time of the event
+  const handleUpdateTimeEvent = async () => {
+    // //eventEndTime is a string, not a timestamp. We need to convert it to a timestamp. 
+    const eventEndTime = new Date(Date.parse(startDateTime) + expectedDuration * 60000);
+    const startDateTimeTimestamp = new Date(Date.parse(startDateTime));
+    const docRef = doc(db, 'event', id);
+    await updateDoc(docRef, {
+      startTimestamp: startDateTimeTimestamp,
+      start: startDateTimeTimestamp,
+      startTime: startDateTimeTimestamp,
+      startTimeStamp: startDateTimeTimestamp,
+      endTime: eventEndTime,
+      endTimestamp: eventEndTime
+    });
+    setShowStartDateTimeModal(false);
+  };
+
+    // create a function that allows the leader to changet the notes for the event
+    const handleUpdateNotes = async () => {
+      const docRef = doc(db, 'event', id);
+      await updateDoc(docRef, {
+        notes: notes
+      });
+      setShowNotesModal(false);
+    };
+
+
   const printRef = useRef(null);
 
   const componentRef = useRef<HTMLDivElement>(null);
@@ -771,17 +808,17 @@ const Event: React.FC = () => {
 
   const triggerPrint = () => {
     setIsPrinting(true);
-    
+
     // Force a redraw
     componentRef.current?.offsetHeight;
-    
+
     setTimeout(() => {
       handlePrint();
       setIsPrinting(false);
     }, 500); // Increase the delay to 500ms
   };
-  
-  
+
+
 
   const hiddenStyle: React.CSSProperties = isPrinting ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' };
 
@@ -1099,6 +1136,86 @@ const Event: React.FC = () => {
                     <IonCol>
                       <IonLabel>{startTime} to {endTime}
                       </IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              {isBikeBus && isEventLeader && (
+                <div>
+                  <IonGrid className="bikebus-event-updateStartTime">
+                    <IonRow>
+                      <IonCol>
+                        <IonButton size="small" onClick={() => setShowStartDateTimeModal(true)}>Update Start Time</IonButton>
+                        <IonModal isOpen={showStartDateTimeModal} onDidDismiss={() => setShowStartDateTimeModal(false)}>
+                          <IonDatetime
+                            presentation='date-time'
+                            onIonChange={e => {
+                              if (typeof e.detail.value === 'string') {
+                                const startDateTime = new Date(e.detail.value);
+                                console.log('Start DateTime selected', startDateTime);
+                                setStartDateTime(startDateTime.toISOString());
+                                setEventEndTime(startDateTime.toISOString());
+                                // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
+                                const duration = routeData?.duration ?? 0;
+                                console.log('duration:', duration);
+                                setExpectedDuration(duration);
+
+                                // Define addDuration here
+                                const addDuration = (duration: number) => {
+                                  console.log('startDateTime:', startDateTime);
+                                  const endTimeDate = new Date(startDateTime);
+                                  console.log('endTimeDate:', endTimeDate);
+                                  duration = Math.ceil(duration);
+                                  endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
+                                  const endTime = endTimeDate.toString();
+                                  console.log('endTime:', endTime);
+                                  setEventEndTime(endTime);
+                                };
+
+                                addDuration(duration);
+                              }
+                            }}
+
+                          ></IonDatetime>
+                          <IonButton onClick={handleUpdateTimeEvent}>Update Event Start and End Time</IonButton>
+                        </IonModal>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </div>
+              )}
+              <div>
+                <IonGrid className="bikebus-event-notes">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{eventData?.notes}</IonLabel>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </div>
+              {isBikeBus && isEventLeader && (
+                <div>
+                  <IonGrid className="bikebus-event-updateNotes">
+                    <IonRow>
+                      <IonCol>
+                        <IonButton size="small" onClick={() => setShowNotesModal(true)}>Update Notes</IonButton>
+                        <IonModal isOpen={showNotesModal} onDidDismiss={() => setShowNotesModal(false)}>
+                          <IonTextarea
+                            value={notes}
+                            onIonChange={(e) => setNotes(e.detail.value!)}
+                          ></IonTextarea>
+                          <IonButton onClick={handleUpdateNotes}>Update Notes</IonButton>
+                        </IonModal>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </div>
+              )}
+              <div>
+                <IonGrid className="bikebus-event-status">
+                  <IonRow>
+                    <IonCol>
+                      <IonLabel>{eventData?.status}</IonLabel>
                     </IonCol>
                   </IonRow>
                 </IonGrid>

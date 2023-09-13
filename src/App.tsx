@@ -476,9 +476,6 @@ const App: React.FC = () => {
                         <IonItem button routerLink="/Map" routerDirection="none">
                           <IonLabel>Map</IonLabel>
                         </IonItem>
-                        <IonItem button routerLink="/ViewSchedule" routerDirection="none">
-                          <IonLabel>View Schedule</IonLabel>
-                        </IonItem>
                         <IonItem button routerLink='/ViewRouteList' routerDirection="none">
                           <IonLabel>View Routes</IonLabel>
                         </IonItem>
