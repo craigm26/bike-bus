@@ -2,12 +2,9 @@ import {
   IonContent,
   IonPage,
   IonItem,
-  IonList,
   IonInput,
   IonLabel,
   IonButton,
-  IonHeader,
-  IonToolbar,
   IonTitle,
   IonSelect,
   IonSelectOption,
@@ -19,16 +16,12 @@ import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, FieldPath, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
-import { get } from 'http';
-import { is } from 'date-fns/locale';
-import { update } from 'firebase/database';
-import { set } from 'date-fns';
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -432,6 +425,11 @@ const EditRoute: React.FC = () => {
       return;
     }
 
+    if (!selectedRoute.startPoint || !selectedRoute.endPoint) {
+      alert("Missing startPoint or endPoint!");
+      return;
+    }
+
     const routeRef = doc(db, 'routes', id);
     const routeSnap = await getDoc(routeRef);
     const routeData = routeSnap.data() as Route;
@@ -450,18 +448,15 @@ const EditRoute: React.FC = () => {
     if (routeBikeBusStopIds.length > 0) {
       const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds));
       const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-      bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
+      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
       })) as unknown as Array<BikeBusStops>;
-      setBikeBusStops(bikeBusStopsData);
-
-      BikeBusStops.forEach(stop => {
+  
+      bikeBusStopsData.forEach(stop => {
         const location = new google.maps.LatLng(stop.lat, stop.lng);
-        // basically, each location becomes a waypoint, so let's set each as a waypoint for later use
         waypoints.push({ location });
       });
-      console.log('location: ', location);
     }
 
     setBikeBusStops(bikeBusStopsData);
@@ -507,20 +502,6 @@ const EditRoute: React.FC = () => {
       console.error('Error generating new route:', error);
       alert('Failed to generate new route. Please try again.');
     }
-  };
-
-
-
-  const updateRoute = async (updatedRoute: Route) => {
-    const routeRef = doc(db, 'routes', id);
-
-    const bikeBusStopRefs = updatedRoute.BikeBusStopIds;
-
-
-    await updateDoc(routeRef, {
-      ...updatedRoute,
-      BikeBusStopIds: bikeBusStopRefs,
-    });
   };
 
   const handleDeleteStop = async (StopId: string) => {
@@ -646,11 +627,13 @@ const EditRoute: React.FC = () => {
           </IonRow>
           <IonRow>
             <IonLabel>Route Name:</IonLabel>
-            <IonInput value={selectedRoute?.routeName}
+            <IonInput
+              value={selectedRoute?.routeName}
               onIonChange={e => {
                 console.log('Before:', selectedRoute?.routeName);
-                console.log('Event:', e);
-                selectedRoute && ({ ...selectedRoute, routeName: e.detail.value });
+                if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
+                  setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
+                }
                 console.log('After:', selectedRoute?.routeName);
               }}
             />
