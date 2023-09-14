@@ -29,7 +29,6 @@ import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
 import { HeaderContext } from "../components/HeaderContext";
-import LocationInput from "../components/LocationInput";
 import SearchBar from "../components/SearchBar";
 import React from "react";
 import Avatar from "../components/Avatar";
@@ -40,7 +39,6 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
-import { on } from "events";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -1208,46 +1206,11 @@ const Map: React.FC = () => {
   }, [openTripsEnabled, user]);
 
 
-  const avatarElement = user ? (
-    avatarUrl ? (
-      <IonAvatar>
-        <Avatar uid={user.uid} size="extrasmall" />
-      </IonAvatar>
-    ) : (
-      <IonIcon icon={personCircleOutline} />
-    )
-  ) : (
-    <IonIcon icon={personCircleOutline} />
-  );
-
-  useEffect(() => {
-    if (user) {
-      const uid = user.uid;
-      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
-
-      // Set up a real-time subscription
-      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
-        const newLocation = snapshot.val();
-        if (newLocation) {
-          setOpenTripLeaderLocation(newLocation);
-        }
-      });
-
-      // Clean up the subscription when the component unmounts
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [isLoaded, loadError]);
-
-
-
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
 
     // if the page has a selected end location, then update some const values that are updated when the destination is changed
     if (PlaceAddress !== null) {
-      console.log('PlaceAddress', PlaceAddress)
       // then we need to set a bunch of const values to the values of the selected end location
       setRouteEndFormattedAddress(`${PlaceAddress}` ?? '');
     }
@@ -1257,12 +1220,10 @@ const Map: React.FC = () => {
       map.addListener("bounds_changed", () => {
         const bounds = map.getBounds();
         if (bounds) {
-          console.log("Map bounds:", bounds.toJSON());
           ref.setBounds(bounds);
 
           const searchBoxBounds = ref.getBounds();
           if (searchBoxBounds) {
-            console.log("Search box bounds set to:", searchBoxBounds.toJSON());
           }
         }
       });
@@ -1325,12 +1286,10 @@ const Map: React.FC = () => {
       map.addListener("bounds_changed", () => {
         const bounds = map.getBounds();
         if (bounds) {
-          console.log("Map bounds:", bounds.toJSON());
           ref.setBounds(bounds);
 
           const searchBoxBounds = ref.getBounds();
           if (searchBoxBounds) {
-            console.log("Search box bounds set to:", searchBoxBounds.toJSON());
           }
         }
       });
@@ -1484,6 +1443,9 @@ const Map: React.FC = () => {
                     longitude: latLng.lng(),
                   }));
                   const newSimplifiedPathPoints = ramerDouglasPeucker(newRoutePathPoints, epsilon);
+
+                  // Update pathCoordinates state
+                  setPathCoordinates(newRoutePathPoints);
                   resolve(newSimplifiedPathPoints);
                 }
               });
@@ -1680,77 +1642,6 @@ const Map: React.FC = () => {
     }
   };
 
-
-
-  const saveDestination = () => {
-    if (user) {
-      console.log("user is logged in");
-      const userRef = doc(db, "users", user.uid);
-      updateDoc(userRef, {
-        savedDestinations: arrayUnion({
-          name: routeEndName,
-          address: routeEndFormattedAddress,
-        }),
-      }).then(() => {
-        console.log("Destination successfully saved to your account!");
-        // set the showSaveDestinationButton to false so that the user can't save the same destination multiple times
-        // setShowSaveDestinationButton(false);
-      });
-
-    } else {
-      console.log("user is not logged in");
-      setShowLoginModal(true);
-    }
-  };
-
-
-  // when the bikebus button is clicked, show the bikebus routes on the map
-  const handleBikeBusButtonClick = (routeId: string) => {
-    const bikeBusGroup = bikeBusRoutes.find((route) => route.id === routeId);
-    if (bikeBusGroup) {
-      const bikeBusGroupName = bikeBusGroup.BikeBusName;
-      const bikeBusGroupId = bikeBusGroup.BikeBusGroupId;
-      const bikeBusGroupIdArray = bikeBusGroupId?.split("/");
-      const bikeBusGroupIdString = bikeBusGroupIdArray?.[2];
-      console.log("bikeBusGroupIdString: ", bikeBusGroupIdString);
-      // Show an InfoWindow with the BikeBusGroup name
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div>${bikeBusGroupName}
-            // link to the page for the corresponding bike/bus group
-            <a href="/bikebusgrouppage/${bikeBusGroupIdString}">Go to Bike/Bus Group Page</a>
-            </div>`,
-
-      });
-      infoWindow.open(mapRef.current, bikeBusGroupId);
-      // Redirect to the page for the corresponding bike/bus group
-      history.push(`/bikebusgrouppage/${bikeBusGroupIdString}`);
-    }
-  };
-
-  const handleMarkerClick = (stop: any) => {
-    console.log("handleMarkerClick called");
-    console.log("stop: ", stop);
-    const stopId = stop.id;
-    const stopName = stop.name;
-    const stopRoutes = stop.routes;
-    const stopRoutesArray = stopRoutes?.split(",");
-    const stopRoutesString = stopRoutesArray?.join(", ");
-    console.log("stopRoutesString: ", stopRoutesString);
-    // Show an InfoWindow with the stop name
-    const infoWindow = new google.maps.InfoWindow({
-      content: `<div>${stopName}
-            <br>
-            Routes: ${stopRoutesString}
-            </div>`,
-    });
-    infoWindow.open(mapRef.current, stopId);
-    // show the routes that stop at this stop and then show the next 3 arrival times for each route
-    // get the routes that stop at this stop
-    const stopRoutesArray2 = stopRoutes?.split(",");
-    console.log("stopRoutesArray2: ", stopRoutesArray2);
-    // get the routes that stop at this stop from firebase
-
-  };
 
   const handleBikeBusRouteClick = async (route: any) => {
 
@@ -2095,27 +1986,6 @@ const Map: React.FC = () => {
     }
   }
 
-  function generateSVG(label: string, avatarUrl: string) {
-    const encodedUrl = encodeURIComponent(avatarUrl);
-    const svgString = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <image href="${encodedUrl}" x="0" y="0" height="100" width="100"/>
-        <circle cx="50" cy="50" r="40" fill="#c3ecb2" filter="url(#glow)"/>
-        <text x="50%" y="55%" alignment-baseline="middle" text-anchor="middle" fill="white" font-size="14px" font-family="Arial, sans-serif">${label}</text>
-      </svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
-
-  }
-
   function generateSVGBikeBus(label: string) {
     const fontSize = 14;
     const padding = 10;
@@ -2171,12 +2041,9 @@ const Map: React.FC = () => {
   }
 
   useEffect(() => {
-    if (pathCoordinates.length > 0) {
+    if (pathCoordinates.length) {
     }
   }, [pathCoordinates]);
-
-
-
 
 
   const handleBicyclingLayerToggle = (enabled: boolean) => {
@@ -2189,14 +2056,6 @@ const Map: React.FC = () => {
     }
   };
 
-
-
-  const getPlaceLocation = async () => {
-    const OrganizationRef = doc(db, 'organizations', id);
-    const orgSnapshot = await getDoc(OrganizationRef);
-    const orgData = orgSnapshot.data() as Organization;
-    return orgData.Location;
-  };
 
   const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
     const schoolName = place.name;
@@ -2215,26 +2074,6 @@ const Map: React.FC = () => {
     );
   }
 
-  const fetchSchools = async () => {
-    const OrganizationRef = doc(db, 'organizations', id);
-    const orgSnapshot = await getDoc(OrganizationRef);
-
-    // Get the Schools array and handle possible undefined data
-    const orgData = orgSnapshot.data() as Organization;
-    const schoolRefs = orgData?.Schools || [];
-
-    // Fetch each school document
-    const schoolPromises = schoolRefs.map(ref => getDoc(ref));
-    const schoolSnapshots = await Promise.all(schoolPromises);
-
-    // Transform snapshots to schools
-    const schools = schoolSnapshots.map(snapshot => ({
-      id: snapshot.id,
-      ...snapshot.data()
-    })) as School[];
-
-    setFetchedSchools(schools);
-  };
 
   // if the setPlaceLocation has changed, run onPlaceChangedDestination function
   useEffect(() => {
@@ -2242,6 +2081,27 @@ const Map: React.FC = () => {
       onPlaceChangedDestination();
     }
   }, [PlaceLocation]);
+
+  useEffect(() => {
+    if (user) {
+      const uid = user.uid;
+      const openTripLeaderLocationRef = ref(rtdb, `userLocations/${uid}`);
+
+      // Set up a real-time subscription
+      const unsubscribe = onValue(openTripLeaderLocationRef, (snapshot) => {
+        const newLocation = snapshot.val();
+        if (newLocation) {
+          setOpenTripLeaderLocation(newLocation);
+        }
+      });
+
+      // Clean up the subscription when the component unmounts
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [isLoaded, loadError]);
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
