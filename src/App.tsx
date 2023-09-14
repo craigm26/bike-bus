@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Route, Redirect, useParams, Switch, BrowserRouter } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonIcon, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonModal, IonActionSheet } from '@ionic/react';
+import { useEffect, useMemo, useState } from 'react';
+import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
-import { getDoc, doc, Timestamp, DocumentReference } from 'firebase/firestore';
-import { db, rtdb } from './firebaseConfig';
+import { getDoc, doc, DocumentReference } from 'firebase/firestore';
+import { db } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
-import { DataSnapshot } from '@firebase/database';
-import { ref, get } from "firebase/database";
 import { Share } from '@capacitor/share';
 
 import Map from './pages/Map';
@@ -33,13 +31,12 @@ import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { arrowUp, chatbubblesOutline, clipboardOutline, helpCircleOutline, homeOutline, logoInstagram, logoTwitter, mailOutline, mapOutline, personCircleOutline, phonePortraitOutline, shareOutline, textOutline } from 'ionicons/icons';
+import { logoInstagram, logoTwitter, mailOutline, phonePortraitOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
 import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
-import SearchForBikeBus from './pages/SearchForBikeBus';
 import Event from './pages/Event';
 import ViewRouteList from './pages/ViewRouteList';
 import EditRoute from './pages/EditRoute';
@@ -52,8 +49,6 @@ import OrganizationProfile from './pages/OrganizationProfile';
 import ViewOrganization from './pages/ViewOrganization';
 import ViewOrganizationList from './pages/ViewOrganizationList';
 import BulletinBoards from './pages/BulletinBoards';
-import { useBikeBusGroupContext } from "./components/BikeBusGroup/useBikeBusGroup";
-import useEvent from "./components/BikeBusGroup/useEvent";
 import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -78,9 +73,7 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
-import { type } from 'os';
 import { CurrentLocationProvider } from './components/CurrentLocationContext';
-import { is } from 'date-fns/locale';
 
 
 setupIonicReact();
@@ -116,46 +109,14 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
   const [showHeader, setShowHeader] = useState(true);
   const [accountType, setAccountType] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
-  const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
-  const [isUserMember, setIsUserMember] = useState<boolean>(false);
-  const { fetchedGroups } = useBikeBusGroupContext();
-  const [showModal, setShowModal] = useState(false);
-  const [eventStatuses, setEventStatuses] = useState<Record<string, string>>({});
-  const { fetchedEvents } = useEvent();
-  const [relevantEvents, setRelevantEvents] = useState<any[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
-  const [upcomingEvent, setUpcomingEvent] = useState<Group['event'] | null>(null);
-  const [upcomingGroup, setUpcomingGroup] = useState<Group | null>(null);
-  const [startPoint, setStartPoint] = useState<{ lat: number; lng: number }>({
-    lat: 0,
-    lng: 0,
-  });
-  const [showPostMessageModal, setShowPostMessageModal] = useState(false);
 
-  const toggleModal = () => {
-    setShowPostMessageModal(!showPostMessageModal);
-  };
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-
-
-  function formatDate(timestamp: Timestamp) {
-    const dateObject = timestamp.toDate(); // Converts Firestore timestamp to JavaScript Date
-    return dateObject.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    });
-  }
 
   const label = user?.username ? user.username : "anonymous";
 
@@ -219,213 +180,6 @@ const App: React.FC = () => {
 
 
 
-  const getUserLocation = useCallback(async () => {
-    if (!user) return null;
-    const userLocationRef = ref(rtdb, `userLocations/${user.uid}`);
-    const snapshot = await get(userLocationRef);
-    return snapshot.val();
-  }
-    , [user]);
-
-  const getUserGroups = useCallback(async () => {
-    if (!user) return [];
-    const userRef = doc(db, 'users', user.uid);
-    const docSnapshot = await getDoc(userRef);
-    if (docSnapshot.exists()) {
-      const userData = docSnapshot.data();
-      if (userData && userData.bikebusgroups) {
-        const groupRefs = userData.bikebusgroups; // getting the group document references
-        const groups = [];
-        for (let i = 0; i < groupRefs.length; i++) {
-          const groupSnapshot = await getDoc(groupRefs[i]);
-          if (groupSnapshot.exists()) {
-            groups.push(groupSnapshot.data());
-          }
-        }
-        return groups; // return fetched group data
-      }
-    }
-    return [];
-  }
-    , [user]);
-
-  const getRoute = useCallback(async () => {
-    if (!user) return null;
-    const userRef = doc(db, 'users', user.uid);
-    const docSnapshot = await getDoc(userRef);
-    if (docSnapshot.exists()) {
-      const userData = docSnapshot.data();
-      if (userData && userData.bikebusgroups) {
-        const groupRefs = userData.bikebusgroups; // getting the group document references
-        const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref))); // Fetch all group documents in parallel
-        for (const groupSnapshot of groupSnapshots) {
-          if (groupSnapshot.exists()) {
-            const groupData = groupSnapshot.data() as Group;  // Add type assertion here
-            if (groupData && groupData.BikeBusRoutes) {
-              const routeRef = groupData.BikeBusRoutes[0];
-              const routeSnapshot = await getDoc(routeRef);
-              if (routeSnapshot.exists()) {
-                return routeSnapshot.data() as GRoute;
-              }
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }, [user]);
-
-
-  // Function to check if an event is within the required distance and if the event belongs to a group the user is part of
-  const isEventRelevant = useCallback(async (event: any) => {
-    return new Promise(async (resolve, reject) => {
-
-      if (event.start && event.start < Date.now()) {
-        resolve(false);
-        return;
-      }
-
-      const userLocation = await getUserLocation(); // Get the user's location
-      const userGroups = await getUserGroups(); // Get the groups the user is part of
-      const groupRoute = await getRoute() as GRoute | null;
-      // event.location doesn't exist, so we can't calculate distance. We need to get the route associated with the event and calculate distance from the user's location to the route
-
-      // Helper function to calculate the distance between two lat/long points
-      function getDistanceFromLatLonInMiles(lat1: any, lon1: any, lat2: any, lon2: any) {
-        var R = 6371; // Radius of the earth in km
-        var dLat = deg2rad(lat2 - lat1);
-        var dLon = deg2rad(lon2 - lon1);
-        var a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2)
-          ;
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var d = R * c; // Distance in km
-        return d * 0.621371; // Convert to miles
-      }
-
-      function deg2rad(deg: any) {
-        return deg * (Math.PI / 180)
-      }
-
-
-      if (userLocation && event && groupRoute?.startPoint && groupRoute.endPoint) {
-        const eventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, groupRoute.startPoint.lat, groupRoute.startPoint.lng);
-
-
-        if (eventDistance <= 30) {
-          resolve(true);
-        }
-        // if eventDistance is greater than 5, show the next event in my bikebusgroup
-        else {
-          const group = fetchedGroups.find((group: any) => group.event && group.event.length > 0 && group.event[0].id === event.id);
-
-          if (group) {
-            const groupEvents = group.event;
-            const groupEventIndex = groupEvents.findIndex((groupEvent: any) => groupEvent.id === event.id);
-
-            if (groupEventIndex !== -1 && groupEventIndex < groupEvents.length - 1) {
-              const nextEvent = groupEvents[groupEventIndex + 1];
-              if (nextEvent && nextEvent.location) {
-                const nextEventDistance = getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, nextEvent.location.lat, nextEvent.location.lng);
-                if (nextEventDistance <= 10) {
-                  resolve(true);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      for (const group of userGroups as Group[]) {
-        if (group.event.id === event.id) {
-          resolve(true);
-        }
-      }
-
-      const isRelevant = event.location ? getDistanceFromLatLonInMiles(userLocation.lat, userLocation.lng, event.location.lat, event.location.lng) <= 10 : false;
-
-      resolve(isRelevant);
-
-    });
-  }, [fetchedGroups, getRoute, getUserGroups, getUserLocation]);
-
-
-  useEffect(() => {
-    if (fetchedEvents && fetchedEvents.length > 0) {
-      Promise.all(fetchedEvents.map(isEventRelevant)) // Map each event to a promise that resolves to a boolean
-        .then(relevanceArray => {
-          const relevantEvents = fetchedEvents.filter((_, index) => relevanceArray[index]); // Filter events based on the relevance array
-          setRelevantEvents(relevantEvents);
-        });
-    }
-  }, [fetchedEvents, isEventRelevant]);
-
-  useEffect(() => {
-    if (!fetchedGroups || fetchedGroups.length === 0) return;
-
-    // Fetch all event documents from their references in parallel
-    const eventFetchPromises = fetchedGroups.flatMap((group) =>
-      group.event ? group.event.map((eventRef: DocumentReference<unknown>) => getDoc(eventRef)) : []
-    );
-
-    Promise.all(eventFetchPromises).then((eventSnapshots) => {
-      // Keep track of the current index within fetchedGroups
-      let groupIndex = 0;
-      // Keep track of the current event index within the current group
-      let eventIndex = 0;
-
-      // Extract event data from snapshots
-      const allEvents = eventSnapshots.map((eventSnapshot) => {
-        // If we've processed all events in the current group, move to the next group
-        if (eventIndex >= fetchedGroups[groupIndex].event.length) {
-          groupIndex++;
-          eventIndex = 0;
-        }
-
-        const event = {
-          ...eventSnapshot.data(),
-          id: eventSnapshot.id,
-          groupId: fetchedGroups[groupIndex].id,
-        };
-
-        eventIndex++;
-        return event;
-      });
-
-      // Filter out events in the past
-      const futureEvents = allEvents.filter(event => {
-        // event.start is a timestamp object, so we need to check if it exists and if it has a seconds property
-        if (event.start && typeof event.start.seconds !== 'undefined') {
-          return new Date(event.start.seconds * 1000).getTime() > Date.now();
-        } else {
-          return false;
-        }
-      });
-
-      // Sort all the future events by start in ascending order
-      const sortedEvents = [...futureEvents].sort(
-        (a, b) =>
-          new Date(a.start.seconds * 1000).getTime() - new Date(b.start.seconds * 1000).getTime()
-      );
-
-      // Now, the first event in sortedEvents is the upcoming event
-      const upcomingEvent = sortedEvents[0];
-
-      // Find the group that the upcoming event belongs to
-      const upcomingGroup = upcomingEvent
-        ? fetchedGroups.find((group) => group.id === upcomingEvent.groupId)
-        : null;
-
-      setUpcomingEvent(upcomingEvent);
-      setUpcomingGroup(upcomingGroup);
-    });
-  }, [fetchedGroups]);
-
-
-
-
   const avatarElement = useMemo(() => {
     return user ? (
       avatarUrl ? (
@@ -469,61 +223,18 @@ const App: React.FC = () => {
                 <IonContent>
                   <IonList>
                     <IonMenuToggle auto-hide="false">
-                      <IonCard>
-                        <IonItem button routerLink="/BulletinBoards" routerDirection="none">
-                          <IonLabel>Bulletin Boards</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink="/Map" routerDirection="none">
-                          <IonLabel>Map</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/ViewRouteList' routerDirection="none">
-                          <IonLabel>View Routes</IonLabel>
-                        </IonItem>
-                        <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
-                          <IonLabel>View BikeBusses</IonLabel>
-                        </IonItem>
-                      </IonCard>
-                      {accountType === 'App Admin' &&
-                        <IonCard>
-                          <IonLabel>Org Admin Functions</IonLabel>
-                          <IonItem button routerLink="/ViewSchedule" routerDirection="none">
-                            <IonLabel>View Schedule</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/UpdateBikeBusGroups' routerDirection="none">
-                            <IonLabel>Update BikeBusGroups</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/UpdateOrganization' routerDirection="none">
-                            <IonLabel>Update Organization</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
-                            <IonLabel>View Organizations</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/CreateOrganization" routerDirection="none">
-                            <IonLabel>Create Organization</IonLabel>
-                          </IonItem>
-                        </IonCard>}
-                      {accountType === 'App Admin' &&
-                        <IonCard>
-                          <IonLabel>App Admin Functions</IonLabel>
-                          <IonItem button routerLink='/UpgradeAccountToPremium' routerDirection="none">
-                            <IonLabel>Upgrade Account to Premium</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/UpdateUsers" routerDirection="none">
-                            <IonLabel>Update Users' Data</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/UpdateOrganizationalData" routerDirection="none">
-                            <IonLabel>Update Organizational Data</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/UpdateBikeBusGroupData" routerDirection="none">
-                            <IonLabel>Update BikeBusGroup Data</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/UpdateRouteData" routerDirection="none">
-                            <IonLabel>Update Route Data</IonLabel>
-                          </IonItem>
-                          <IonItem button routerLink="/UpdateBikeBusStationData" routerDirection="none">
-                            <IonLabel>Update BikeBusStation Data</IonLabel>
-                          </IonItem>
-                        </IonCard>}
+                      <IonItem button routerLink="/BulletinBoards" routerDirection="none">
+                        <IonLabel>Bulletin Boards</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink="/Map" routerDirection="none">
+                        <IonLabel>Map</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink='/ViewRouteList' routerDirection="none">
+                        <IonLabel>Routes</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
+                        <IonLabel>BikeBusses</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>About</IonLabel>
                       </IonItem>
@@ -663,9 +374,7 @@ const App: React.FC = () => {
                         <Route path="/editbikebus/:id" exact>
                           <EditBikeBus />
                         </Route>
-                        <Route path="/editorganization/:id" exact>
-                          <EditOrganization />
-                        </Route>
+
                         <Route path="/event/:id">
                           <Event />
                         </Route>
@@ -690,33 +399,12 @@ const App: React.FC = () => {
                         <Route exact path="/ViewRoute">
                           <ViewRoute />
                         </Route>
-                        <Route exact path="/SearchForRoute">
-                          <SearchForRoute />
-                        </Route>
-                        <Route exact path="/CreateOrganization">
-                          <CreateOrganization />
-                        </Route>
-                        <Route exact path="/OrganizationProfile/:id">
-                          <OrganizationProfile />
-                        </Route>
-                        <Route exact path="/ViewOrganization/:id">
-                          <ViewOrganization />
-                        </Route>
-                        <Route exact path="/OrganizationMap/:id">
-                          <OrganizationMap />
-                        </Route>
-                        <Route exact path="/ViewOrganizationList">
-                          <ViewOrganizationList />
-                        </Route>
                         <Route exact path="/CreateRoute">
                           <CreateRoute />
                         </Route>
                         <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
                         <Route path="/CreateBikeBusStops/:id">
                           <CreateBikeBusStops />
-                        </Route>
-                        <Route exact path="/UpgradeAccountToPremium">
-                          <UpgradeAccountToPremium />
                         </Route>
                         <Route exact path="/Login">
                           <Login />
@@ -733,20 +421,11 @@ const App: React.FC = () => {
                         <Route exact path="/about">
                           <About />
                         </Route>
-                        <Route exact path="/trips/:tripDataId">
-                          <Trip />
-                        </Route>
                         <Route exact path="/EventSummary/:id">
                           <EventSummary />
                         </Route>
                         <Route exact path="/settings">
                           <Settings />
-                        </Route>
-                        <Route exact path="/notifications">
-                          <Notifications />
-                        </Route>
-                        <Route exact path="/Welcome">
-                          <Welcome />
                         </Route>
                         <Switch>
                           <Route exact path="/Map/:id?" component={Map} />
@@ -773,33 +452,7 @@ const App: React.FC = () => {
                       </IonFabButton>
                     </IonFab>
                   </div>
-                  {upcomingGroup && user.uid !== 'anonymous' && (
-                    <div className="bikebusname-button-container">
-                      {upcomingGroup ? (
-                        <div className="button-group">
-                          <IonButton
-                            className="group-button"
-                            shape="round"
-                            size="large"
-                            key={upcomingGroup.id}
-                            routerLink={upcomingEvent ? `/Event/${upcomingEvent.id}` : `/bikebusgrouppage/${upcomingGroup.id}`}
-                            routerDirection="none"
-                          >
-                            <IonLabel className="BikeBusFont" text-wrap>
-                              {upcomingGroup.BikeBusName}
-                              {upcomingEvent && (
-                                <IonText className="EventTimeFont">
-                                  {formatDate(upcomingEvent.start)}
-                                </IonText>
-                              )}
-                            </IonLabel>
-                          </IonButton>
-                        </div>
-                      ) : (
-                        <p>Loading BikeBus Event...</p>
-                      )}
-                    </div>
-                  )}
+
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="end" slot="fixed">
                       <IonFabButton routerLink="/BulletinBoards/" routerDirection="none">
