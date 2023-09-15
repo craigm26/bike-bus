@@ -14,6 +14,7 @@ import {
   IonList,
   IonText,
   IonCardTitle,
+  IonTitle,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import useAuth from "../useAuth";
@@ -39,6 +40,7 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
+import BikeBusDirectory from "../components/BikeBusDirectory";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -377,7 +379,6 @@ const Map: React.FC = () => {
     console.log("handleStartMap called");
     console.log("placeName", PlaceName);
     console.log("PlaceAddress", formattedAddress);
-    requestLocationPermission();
     onPlaceChangedDestination();
     if (PlaceName) {
       setDestinationValue(formattedAddress);
@@ -1988,7 +1989,7 @@ const Map: React.FC = () => {
 
   function generateSVGBikeBus(label: string) {
     const fontSize = 14;
-    const padding = 10;
+    const padding = 0;
 
     // Create a temporary SVG to measure text width
     const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1999,19 +2000,24 @@ const Map: React.FC = () => {
     tempSvg.appendChild(textElem);
     document.body.appendChild(tempSvg);
     const textWidth = textElem.getBBox().width;
+    console.log('Text Width:', textWidth);
     document.body.removeChild(tempSvg);
 
     // Calculate the dimensions
     const rectWidth = textWidth + padding * 2;
+    console.log('Rectangle Width:', rectWidth);
     const rectHeight = fontSize + padding * 2;
 
     const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
-      <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#ffd800"/>
-      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#ffd800" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
-    </svg>`;
+      <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
+        <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" 
+              fill="#000000" stroke="#ffffff" stroke-width="10px" 
+              font-size="${fontSize}px" font-family="Arial, sans-serif">${label}</text>
+      </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
+
+
 
   function generateSVGUserRoutes(label: string) {
     const fontSize = 14;
@@ -2138,6 +2144,18 @@ const Map: React.FC = () => {
                       </IonButton>
                     </IonLabel>
                   </IonCol>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
+            <IonGrid>
+              <IonRow>
+                <IonCol>
+                  <IonTitle className="BikeBusDirectory">BikeBus Directory</IonTitle>
+                </IonCol>
+              </IonRow>
+              <IonRow>
+                <IonCol>
+                  <BikeBusDirectory />
                 </IonCol>
               </IonRow>
             </IonGrid>
@@ -2360,7 +2378,7 @@ const Map: React.FC = () => {
                         position={route.startPoint}
                         icon={{
                           url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
@@ -2372,7 +2390,7 @@ const Map: React.FC = () => {
                         position={route.endPoint}
                         icon={{
                           url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
@@ -2460,7 +2478,7 @@ const Map: React.FC = () => {
                         position={route.startPoint}
                         icon={{
                           url: generateSVGUserRoutes(route.routeName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleUserRouteClick(route) }}
                       />
@@ -2472,7 +2490,7 @@ const Map: React.FC = () => {
                         position={route.endPoint}
                         icon={{
                           url: generateSVGUserRoutes(route.routeName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleUserRouteClick(route) }}
                       />
@@ -2550,7 +2568,7 @@ const Map: React.FC = () => {
                         position={route.startPoint}
                         icon={{
                           url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
@@ -2564,7 +2582,7 @@ const Map: React.FC = () => {
                           position={stop.stopLocation}
                           icon={{
                             url: generateSVGBikeBus(stop.stopName),
-                            scaledSize: new google.maps.Size(60, 20),
+                            scaledSize: new google.maps.Size(260, 20),
                           }}
                           onClick={() => { handleBikeBusRouteClick(route) }}
                         />
@@ -2579,7 +2597,7 @@ const Map: React.FC = () => {
                         position={route.endPoint}
                         icon={{
                           url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
@@ -2685,7 +2703,7 @@ const Map: React.FC = () => {
                         position={trip.eventLeaderLocation}
                         icon={{
                           url: generateSVGBikeBus(trip.eventName),
-                          scaledSize: new google.maps.Size(60, 20),
+                          scaledSize: new google.maps.Size(260, 20),
                         }}
                         onClick={() => { handleOpenTripRouteClick(trip) }}
                       />
