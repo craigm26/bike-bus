@@ -457,7 +457,6 @@ const Map: React.FC = () => {
           BikeBusRoutesData.push(routeData);
 
           endPointCoordinates.push(routeData.endPoint);
-          // we'll also need to figure out how to pass the BikeBusGroupId to the markers so that we can use it to populate the onClick "BikeBus
         }
       }
 
@@ -1785,7 +1784,7 @@ const Map: React.FC = () => {
   const handleBikeBusRouteClusterClick = async (route: any) => {
 
     // let's get the events for this bikebus group
-    const bikeBusGroupId = route.BikeBusGroupId.id;
+    const bikeBusGroupId = route.BikeBusGroupClusterId.id;
     console.log("bikeBusGroupId: ", bikeBusGroupId);
     const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
 
@@ -1874,7 +1873,7 @@ const Map: React.FC = () => {
       ;
 
     // Set position to the startPoint of the route (or any other point you prefer)
-    const position = route.startPoint;
+    const position = route.endPoint;
 
     setInfoWindow({ isOpen: true, content, position });
   };
