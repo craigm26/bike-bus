@@ -499,13 +499,12 @@ const BikeBusGroupPage: React.FC = () => {
           <IonCardContent>
             <div>
               {!isUserMember &&
-                <IonButton onClick={joinBikeBus}>Join BikeBus</IonButton>
+                <IonButton size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
               }
               {isUserMember &&
-                <IonButton onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+                <IonButton size="small"  onClick={leaveBikeBus}>Leave BikeBus</IonButton>
               }
-              <IonButton onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
-
+              <IonButton size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
               <IonModal isOpen={showInviteModal}>
                 <IonHeader>
                   <IonToolbar>
