@@ -25,7 +25,7 @@ import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
 
 
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
@@ -87,6 +87,11 @@ interface RouteData {
   accountType: string;
   routeId: string;
   name: string;
+}
+
+interface MarkerType {
+  position: { lat: number; lng: number; };
+  label: string;
 }
 
 
@@ -280,6 +285,8 @@ const Map: React.FC = () => {
   const [searchInfoWindow, setSearchInfoWindow] = useState<{ isOpen: boolean, content: { PlaceName: any, PlaceAddress: any, PlaceLatitude: number, PlaceLongitude: number } | null, position: { lat: number, lng: number } | null }>({ isOpen: false, content: null, position: null });
   const [destinationValue, setDestinationValue] = useState('');
   const [destinationInput, setDestinationInput] = useState(PlaceName);
+  const [markerData, setMarkerData] = useState<MarkerType[]>([]);
+
 
   interface Trip {
     id: string;
@@ -420,10 +427,46 @@ const Map: React.FC = () => {
   };
 
   useEffect(() => {
-    // perform a fetch of the fetchData function
-
     const fetchData = async () => {
       if (!user) return;
+
+      const bikeBusGroupsRef = collection(db, 'bikebusgroups');
+      const q = query(bikeBusGroupsRef);
+      const querySnapshot = await getDocs(q);
+
+      let endPointCoordinates: any[] = [];
+      let BikeBusNames: string[] = [];
+
+      querySnapshot.docs.forEach(doc => {
+        const bikeBusGroupData = doc.data();
+        BikeBusNames.push(bikeBusGroupData.BikeBusName || ''); // Replace 'BikeBusName' with the actual field name
+      });
+
+      let BikeBusRoutesRef = querySnapshot.docs.map(doc => doc.data().BikeBusRoutes);
+      BikeBusRoutesRef = BikeBusRoutesRef.flat();
+
+      const BikeBusRoutesData: RouteData[] = [];
+      for (const routeRef of BikeBusRoutesRef) {
+        if (routeRef instanceof DocumentReference) {
+          const routeDoc = await getDoc(routeRef);
+          const routeData = routeDoc.data() as RouteData;
+          BikeBusRoutesData.push(routeData);
+
+          endPointCoordinates.push(routeData.endPoint);
+        }
+      }
+      console.log('endPointCoordinates', endPointCoordinates);
+      console.log('BikeBusNames', BikeBusNames);
+
+      const markers = endPointCoordinates.map((coordinate, index) => {
+        return {
+          position: coordinate,
+          label: BikeBusNames[index] || 'Unnamed'
+        };
+      });
+      setMarkerData(markers);
+      console.log('markers', markers);
+
 
       try {
         const userRef = doc(db, 'users', user.uid);
@@ -432,27 +475,22 @@ const Map: React.FC = () => {
         if (userSnapshot.exists()) {
           const userData = userSnapshot.data();
           if (userData) {
-            // get the uid of the user
             const uid = user.uid;
           }
         }
 
         if (id) {
-
           const tripsRef = doc(db, 'event', id);
           const tripSnapshot = await getDoc(tripsRef);
 
           const eventDataRef = doc(db, 'event', id);
           const eventSnapshot = await getDoc(eventDataRef);
 
-
           if (eventSnapshot.exists()) {
             const eventData = eventSnapshot.data();
-            // set isActiveBikeBusEvent to true if the event is a bikebus event
             if (eventData?.eventType === 'BikeBus') {
               setIsActiveBikeBusEvent(true);
             }
-            // find the eventCheckInLeader and set the leaderUID to the user.uid of the leader
             const extractedUID = eventData.eventCheckInLeader;
             setLeaderUID(extractedUID);
 
@@ -2080,7 +2118,6 @@ const Map: React.FC = () => {
     );
   }
 
-
   // if the setPlaceLocation has changed, run onPlaceChangedDestination function
   useEffect(() => {
     if (PlaceLocation) {
@@ -2153,9 +2190,58 @@ const Map: React.FC = () => {
                   <IonTitle className="BikeBusDirectory">BikeBus Directory</IonTitle>
                 </IonCol>
               </IonRow>
-              <IonRow>
+            </IonGrid>
+            <IonGrid className="home-map-flex-container">
+              <IonRow className="home-map-row">
                 <IonCol>
-                  <BikeBusDirectory />
+                  <GoogleMap
+                    onLoad={(map) => {
+                      mapRef.current = map;
+                      bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+                    }}
+                    mapContainerStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    center={userLocationDefault}
+                    zoom={4}
+                    options={{
+                      disableDefaultUI: true,
+                      zoomControl: false,
+                      zoomControlOptions: {
+                        position: window.google.maps.ControlPosition.LEFT_CENTER
+                      },
+                      mapTypeControl: false,
+                      mapTypeControlOptions: {
+                        position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                      },
+                      disableDoubleClickZoom: true,
+                      minZoom: 3,
+                      maxZoom: 18,
+                      mapId: 'b75f9f8b8cf9c287',
+                    }}
+                  >
+                    <MarkerClusterer
+                      averageCenter
+                      enableRetinaIcons
+                      gridSize={60}
+                    >
+                      {(clusterer) => (
+                        <>
+                          {markerData.map((marker, index) => (
+                            <Marker
+                              key={index}
+                              clusterer={clusterer}
+                              position={marker.position}
+                              label={marker.label}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </MarkerClusterer>
+
+                  </GoogleMap>
                 </IonCol>
               </IonRow>
             </IonGrid>

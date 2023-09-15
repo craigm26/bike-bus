@@ -445,6 +445,27 @@
   overflow: hidden;
 }
 
+.home-map-flex-container {
+  display: flex;
+  flex-direction: column;
+  height: 75vh; /* default height */
+  overflow: hidden;
+}
+
+@media (max-height: 600px) { /* or another height that triggers the scroll */
+  .home-map-flex-container {
+    height: 60vh; /* reduced height for smaller screens */
+  }
+}
+
+
+.home-map-row {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+
 /* General Styles for the Event Details */
 .bikebus-event-name,
 .bikebus-event-route,

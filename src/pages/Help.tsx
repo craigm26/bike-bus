@@ -1,11 +1,8 @@
 import {
   IonContent,
-  IonHeader,
   IonPage,
-  IonToolbar,
   IonAvatar,
   IonIcon,
-  IonTitle,
   IonCardTitle,
   IonCard,
   IonCardContent,
@@ -15,7 +12,6 @@ import {
   IonButton,
   IonItemGroup,
   IonInput,
-  IonItemDivider,
   IonLabel,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
@@ -26,7 +22,6 @@ import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
 import { doc, setDoc, collection, getDoc } from "firebase/firestore";
 import { db } from '../firebaseConfig';
-import { add } from 'date-fns';
 
 const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
