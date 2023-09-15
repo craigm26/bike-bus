@@ -452,18 +452,25 @@
   overflow: hidden;
 }
 
-@media (max-height: 600px) { /* or another height that triggers the scroll */
-  .home-map-flex-container {
-    height: 60vh; /* reduced height for smaller screens */
-  }
-}
-
 
 .home-map-row {
   flex: 1;
   position: relative;
   overflow: hidden;
 }
+
+@media (orientation: portrait) {
+  .home-map-row {
+    height: 60vh;
+  }
+}
+
+@media (orientation: landscape) {
+  .home-map-row {
+    height: 75vh;
+  }
+}
+
 
 
 /* General Styles for the Event Details */
