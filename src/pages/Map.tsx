@@ -63,7 +63,7 @@ interface BikeBusStop {
 interface RouteData {
   eventCheckInLeader: any;
   startPoint: { lat: number; lng: number };
-  endPoint: { lat: number; lng: number };
+  endPoint: { lat: number, lng: number };
   pathCoordinates: { lat: number; lng: number }[];
   startPointName: string;
   endPointName: string;
@@ -140,20 +140,20 @@ const Map: React.FC = () => {
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
-  const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
+  const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 41.8827, lng: -87.6227 });
   const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
-  const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
+  const [userLocation, setUserLocation] = useState({ lat: 41.8827, lng: -87.6227 });
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
   const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
   const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
-  const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
-  const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
+  const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
+  const [endGeo, setEndGeo] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: startGeo.lat,
     lng: startGeo.lng,
   });
-  const [mapZoom, setMapZoom] = useState(15);
+  const [mapZoom, setMapZoom] = useState(13);
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
@@ -261,6 +261,7 @@ const Map: React.FC = () => {
   const [destinationInput, setDestinationInput] = useState(PlaceName);
   const [markerData, setMarkerData] = useState<MarkerType[]>([]);
   const [BikeBusGroupClusterId, setBikeBusGroupClusterId] = useState<string[]>([]);
+  const [position, setPosition] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
 
 
   interface Trip {
@@ -1724,99 +1725,110 @@ const Map: React.FC = () => {
 
   const handleBikeBusRouteClusterClick = async (route: any) => {
     console.log("Function handleBikeBusRouteClusterClick triggered");
-    console.log("bikebusgroups document id ", route);
     // let's get the events for this bikebus group
     const bikeBusGroupId = route;
     console.log("bikeBusGroupId: ", bikeBusGroupId);
-    const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
+    try {
+      console.log("bikebusgroups document id ", route);
 
-    // get the events for this bikebus group
-    const eventsRef = query(
-      collection(db, "event"),
-      where('BikeBusGroup', '==', bikeBusGroupRef),
-    );
-    const querySnapshot = getDocs(eventsRef);
-    // once we have the docs, let's figure out the next 3 events for this bikebus group in order of start time
-    const events: BikeBusEvent[] = [];
-    console.log("Events fetched from Firestore: ", events);
-    const currentTime = new Date().getTime(); // Get the current time in milliseconds
-    (await querySnapshot).forEach((doc) => {
-      const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent; // cast the object as BikeBusEvent
+      const bikeBusGroupId = route;
+      const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
+      const eventsRef = query(
+        collection(db, "event"),
+        where('BikeBusGroup', '==', bikeBusGroupRef)
+      );
 
-      // Extract the date from the 'start' field
-      const eventStartDate = new Date(eventData.start.seconds * 1000);
-      const eventStartTime = new Date(eventData.start.seconds * 1000);
+      // Fetch both the bikeBusGroup data and the events in a single step
+      const [bikeBusGroupDoc, querySnapshot] = await Promise.all([
+        getDoc(bikeBusGroupRef),
+        getDocs(eventsRef)
+      ]);
 
-      // Combine the date and time
-      eventStartDate.setHours(eventStartTime.getHours());
-      eventStartDate.setMinutes(eventStartTime.getMinutes());
-      eventStartDate.setSeconds(eventStartTime.getSeconds());
-
-      // Convert the combined date and time back to seconds
-
-      if (eventStartDate.getTime() > currentTime) {
-        events.push(eventData);
+      if (!bikeBusGroupDoc.exists) {
+        console.error("bikeBusGroup document doesn't exist!");
+        return;
       }
-    });
-    console.log("events: ", events);
-    // sort the events by start time
-    events.sort((a, b) => (a.start.seconds - b.start.seconds));
-    // get the next 3 events
-    const next3Events = events.slice(0, 3);
-    // get the next 3 events' start times
 
-    let next3EventsHTML = '<span style="color: black;">No Events Scheduled</span>'; // Default message
+      const bikeBusGroupData = bikeBusGroupDoc.data();
+      console.log("bikeBusGroupData: ", bikeBusGroupData);
 
-    if (next3Events.length > 0) {
-      const next3EventsLinks = next3Events.map((event) => {
-        const eventId = event.id;
+      const events: BikeBusEvent[] = [];
+      const currentTime = new Date().getTime();
+      querySnapshot.forEach((doc) => {
+        const eventData = { id: doc.id, ...doc.data() } as BikeBusEvent;
 
-        // Convert the Timestamp to a Date object
-        const eventStartDate = new Date(event.start.seconds * 1000);
+        const eventStartDate = new Date(eventData.start.seconds * 1000);
+        const eventStartTime = new Date(eventData.start.seconds * 1000);
 
-        // Format the date
-        const eventStartFormatted = eventStartDate.toLocaleString(); // or use date-fns or similar
+        eventStartDate.setHours(eventStartTime.getHours());
+        eventStartDate.setMinutes(eventStartTime.getMinutes());
+        eventStartDate.setSeconds(eventStartTime.getSeconds());
 
-        return `<a href="/event/${eventId}" style="color: black;">${eventStartFormatted}</a>`;
+        if (eventStartDate.getTime() > currentTime) {
+          events.push(eventData);
+        }
+      }
+      );
+      console.log("events: ", events);
+      events.sort((a, b) => (a.start.seconds - b.start.seconds));
+      const next3Events = events.slice(0, 3);
+
+      let next3EventsHTML = '<span style="color: black;">No Events Scheduled</span>';
+      if (next3Events.length > 0) {
+        const next3EventsLinks = next3Events.map((event) => {
+          const eventId = event.id;
+
+          const eventStartDate = new Date(event.start.seconds * 1000);
+
+          const eventStartFormatted = eventStartDate.toLocaleString();
+
+          return `<a href="/event/${eventId}" style="color: black;">${eventStartFormatted}</a>`;
+        });
+        next3EventsHTML = next3EventsLinks.join('<br>');
+      }
+
+      const content = `
+        <div style="margin-top: 10px;">
+        <h4>Upcoming Events:</h4>
+        ${next3EventsHTML}
+        </div>
+        <a href="/bikebusgrouppage/${route}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+        View BikeBus
+        </a>`
+        ;
+
+      // position is actually a field from the document that is passed in bikeBusGroupData?.BikeBusRoutes array of document references. The endPoint can be found in the routes document collection
+      // first step is to get the document reference from the bikeBusGroupData?.BikeBusRoutes array of document references
+      // then get the document from the document reference
+      // then get the endPoint from the document
+
+            // let's ensure the endPoint is set before we set the position
+      await getDoc(bikeBusGroupData?.BikeBusRoutes[0]).then((doc) => {
+        if (doc.exists()) {
+          const routeData = doc.data() as RouteData;
+          console.log("routeData: ", routeData);
+          // set routeData to the routeData from the document reference
+          setEndPoint(routeData?.endPoint);
+          setPosition(routeData?.endPoint);
+          setMapCenter(routeData?.endPoint);
+          console.log("routeData?.endPoint: ", routeData?.endPoint);
+        }
       });
-      next3EventsHTML = next3EventsLinks.join('<br>');
+
+      // ensure the position is set before we set the infoWindow
+      console.log("position: ", position);
+      console.log("content: ", content);
+
+      setInfoWindow({ isOpen: true, content, position });
+      console.log("InfoWindow state: ", infoWindow);
+
+      console.log("Before update: ", infoWindow);
+      setInfoWindowClusterBikeBus({ isOpen: true, content, position });
+      console.log("After update: ", infoWindow);
+
+    } catch (error) {
+      console.log("Error: ", error);
     }
-
-    // for each of the qualified next3Events, let's create a link to the event page for that event /event/id
-
-    // route is the bikebusgroup document id. We need to fetch the bikebusgroup document from firestore
-    const bikeBusGroupRef2 = doc(db, 'bikebusgroups', bikeBusGroupId);
-    const bikeBusGroupDoc = await getDoc(bikeBusGroupRef2);
-    const bikeBusGroupData = bikeBusGroupDoc.data();
-    console.log("bikeBusGroupData: ", bikeBusGroupData);
-    // now set the BikeBusRoute field to as the route document id
-    console.log("bikeBusGroupData?.BikeBusRoutes: ", bikeBusGroupData?.BikeBusRoute)
-    // BikeBusRoutes is an array of route document ids. We need to fetch the route document from firestore
-    const routeRef = doc(db, 'routes', bikeBusGroupData?.BikeBusRoute[0].id);
-    const routeDoc = await getDoc(routeRef);
-    const routeData = routeDoc.data();
-    console.log("routeData: ", routeData);
-
-    // set the route data field "endPoint" to the routeData.endPoint
-
-    // Set content to whatever you want to display inside the InfoWindow
-    const content = `  
-    <div style="margin-top: 10px;">
-    <h4>Upcoming Events:</h4>
-    ${next3EventsHTML}
-  </div>
-    <a href="/bikebusgrouppage/${route}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
-    View ${bikeBusGroupData?.BikeBusName}
-  </a>`
-      ;
-
-    // Set position to the startPoint of the route (or any other point you prefer)
-    const position = routeData?.endPoint;
-    console.log("position: ", position);
-    console.log("content: ", content);
-
-    setInfoWindowClusterBikeBus({ isOpen: true, content, position });
-    console.log("InfoWindow state: ", infoWindow);
   };
 
   const handleUserRouteClick = async (route: any) => {
@@ -1858,21 +1870,25 @@ const Map: React.FC = () => {
   // create a function to handle the click "Focus on Leader" - this will center the map on the leader's location
 
   const handleClusterClick = (cluster: any) => {
+    console.log("handleClusterClick called");
     // when the cluster is clicked, we want to zoom in on the cluster
     // get the cluster's center
     const clusterCenter = cluster.center;
     // set the mapCenter to the clusterCenter
     setMapCenter(clusterCenter);
-    // set the mapZoom to 15
-    setMapZoom(15);
+    // set the mapZoom to 13
+    setMapZoom(13);
+    console.log("clusterCenter: ", clusterCenter);
   };
 
 
   const handleCloseOpenTripClick = () => {
+    console.log("handleCloseOpenTripClick called");
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
   };
 
   const handleCloseClick = () => {
+    console.log("handleCloseClick called");
     setInfoWindow({ isOpen: false, content: '', position: null });
   };
 
@@ -2202,7 +2218,7 @@ const Map: React.FC = () => {
                   </IonCol>
                   <IonCol>
                     <IonButton color="primary" onClick={handleStartMap}>
-                      <IonText color="secondary">Start Map</IonText>
+                      <IonText color="secondary">Find Destination</IonText>
                     </IonButton>
                   </IonCol>
                   <IonCol>
@@ -2213,13 +2229,6 @@ const Map: React.FC = () => {
                       </IonButton>
                     </IonLabel>
                   </IonCol>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-            <IonGrid>
-              <IonRow>
-                <IonCol style={{ height: '100%', width: '100%' }}>
-                  <IonTitle className="BikeBusDirectory">BikeBus Directory</IonTitle>
                 </IonCol>
               </IonRow>
             </IonGrid>
@@ -2234,8 +2243,8 @@ const Map: React.FC = () => {
                       width: "100%",
                       height: "100%",
                     }}
-                    center={userLocationDefault}
-                    zoom={4}
+                    center={mapCenter || userLocationDefault}
+                    zoom={5}
                     options={{
                       clickableIcons: false,
                       disableDefaultUI: true,
@@ -2256,7 +2265,7 @@ const Map: React.FC = () => {
                     <MarkerClusterer
                       averageCenter
                       enableRetinaIcons
-                      gridSize={60}
+                      gridSize={80}
                       onClick={handleClusterClick}
                     >
                       {(clusterer) => (
@@ -2280,13 +2289,25 @@ const Map: React.FC = () => {
                     </MarkerClusterer>
                     {infoWindow.isOpen && infoWindow.position && (
                       <InfoWindow
-                        position={infoWindow.position}
+                        position={mapCenter}
                         onCloseClick={() => setInfoWindowClusterBikeBus({ isOpen: false, position: null, content: '' })}
                       >
                         <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
                       </InfoWindow>
                     )}
+                    <div>
+                      <IonGrid className="toggle-bikebus-container">
+                        <IonRow>
+                          <IonCol>
+                            <IonButton onClick={getLocation}>
+                              <IonIcon icon={locateOutline} />
+                            </IonButton>
+                          </IonCol>
+                        </IonRow>
+                      </IonGrid>
+                    </div>
                   </GoogleMap>
+
                 </IonCol>
               </IonRow>
             </IonGrid>
@@ -2308,6 +2329,7 @@ const Map: React.FC = () => {
               center={mapCenter}
               zoom={15}
               options={{
+                clickableIcons: false,
                 disableDefaultUI: true,
                 zoomControl: false,
                 zoomControlOptions: {
