@@ -448,7 +448,7 @@
 .home-map-flex-container {
   display: flex;
   flex-direction: column;
-  height: 75vh; /* default height */
+  height: 79vh; /* default height */
   overflow: hidden;
 }
 
@@ -458,20 +458,6 @@
   position: relative;
   overflow: hidden;
 }
-
-@media (orientation: portrait) {
-  .home-map-row {
-    height: 60vh;
-  }
-}
-
-@media (orientation: landscape) {
-  .home-map-row {
-    height: 75vh;
-  }
-}
-
-
 
 /* General Styles for the Event Details */
 .bikebus-event-name,
