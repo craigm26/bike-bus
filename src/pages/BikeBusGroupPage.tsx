@@ -545,7 +545,7 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonContent>
               </IonModal>
               {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
-                <IonButton routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                <IonButton size='small' routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
               }
               {isUserLeader && Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
                 <IonItem key={index}>

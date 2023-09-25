@@ -125,7 +125,7 @@ const EditBikeBus: React.FC = () => {
             BikeBusName: selectedBikeBus.BikeBusName,
             BikeBusDescription: selectedBikeBus.BikeBusDescription,
             BikeBusType: selectedBikeBus.BikeBusType,
-            AdditionalInformation: selectedBikeBus.AdditionalInformation,
+            AdditionalInformation: selectedBikeBus.AdditionalInformation ? selectedBikeBus.AdditionalInformation : '',
         };
         console.log(updatedBikeBus);
         await updateDoc(BikeBusRef, updatedBikeBus);
