@@ -541,7 +541,6 @@ const BulletinBoards: React.FC = () => {
     };
 
     const submitMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
 
         const postToFirestore = async (messageData: any, bulletinBoardData: any) => {
             const messageRef = await addDoc(collection(db, 'messages'), messageData);
@@ -713,17 +712,17 @@ const BulletinBoards: React.FC = () => {
 
     const handleAction = useCallback(async (action: string) => {
         console.log('Action:', action);
-    
+
         if (!selectedMessage) {
             console.log("No selected message.");
             return;
         }
-    
+
         console.log('Selected Message:', selectedMessage);
-    
+
         let MessageId = selectedMessage.id;
         console.log('Initial Message ID:', MessageId);
-    
+
         // Function to handle Edit Mode
         const handleEditMode = async (MessageId: string) => {
             const messageRef = doc(db, 'messages', MessageId);
@@ -736,22 +735,22 @@ const BulletinBoards: React.FC = () => {
                 }
             }
         };
-    
+
         // Function to handle Message Deletion
         const handleDelete = async (MessageId: string, bulletinboardRef: any) => {
             const messageRef = doc(db, 'messages', MessageId);
-            
+
             if (bulletinboardRef instanceof DocumentReference) {
                 await updateDoc(bulletinboardRef, {
                     Messages: arrayRemove(messageRef),
                 });
             }
-    
+
             await deleteDoc(messageRef);
-    
+
             console.log('Message successfully deleted!');
         };
-    
+
         // Update the Message ID if required
         const messageRef = query(collection(db, 'messages'), where('message', '==', selectedMessage.message));
         const querySnapshot = await getDocs(messageRef);
@@ -765,16 +764,16 @@ const BulletinBoards: React.FC = () => {
                 MessageId = doc.id;
             }
         });
-    
+
         const bulletinboardRef = selectedMessage?.bulletinboard;
         console.log('Bulletinboard Ref:', bulletinboardRef);
-    
+
         if (action === 'edit') {
             await handleEditMode(MessageId);
         } else if (action === 'delete') {
             await handleDelete(MessageId, bulletinboardRef);
         }
-    
+
         // Close the action sheet
         setShowActionSheet(false);
         // refresh the chat-list
@@ -783,9 +782,9 @@ const BulletinBoards: React.FC = () => {
             setCombinedList([communityOption, ...orgs, ...bikebus]);
         });
 
-    
+
     }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
-    
+
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (user && user.uid && event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
@@ -900,7 +899,7 @@ const BulletinBoards: React.FC = () => {
                                         )}
                                     </IonRow>
                                     <IonRow className="chat-button-row">
-                                        <IonButton type="submit" disabled={isLoading}>
+                                        <IonButton type="button" onClick={submitMessage} disabled={isLoading}>
                                             Post Bulletin Board Message
                                         </IonButton>
                                         {isLoading && <IonSpinner name="crescent" />}
