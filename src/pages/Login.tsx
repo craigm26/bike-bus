@@ -34,7 +34,6 @@ const Login: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     try {
       const userCredential = await signInWithEmailAndPassword(email, password);
       const user = userCredential?.user;
@@ -181,7 +180,7 @@ const Login: React.FC = () => {
             </IonButton>
           </p>
         </IonText>
-        <form className="email-input" onSubmit={handleSubmit}>
+        <form className="email-input">
           <IonText color="danger">{errorMessage}</IonText>
           <IonText color="success">{successMessage}</IonText>
           <IonItem>
@@ -202,7 +201,7 @@ const Login: React.FC = () => {
               onIonChange={(e) => setPassword(e.detail.value!)}
             />
           </IonItem>
-          <IonButton className="email-button" type="submit">
+          <IonButton className="email-button" type="button" onClick={handleSubmit}>
             Login with Email
           </IonButton>
         </form>
