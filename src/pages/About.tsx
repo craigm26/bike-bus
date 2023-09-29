@@ -92,15 +92,6 @@ const About: React.FC = () => {
         </IonCard>
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Privacy Policy</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonText>
-            </IonText>
-          </IonCardContent>
-        </IonCard>
-        <IonCard>
-          <IonCardHeader>
             <IonCardTitle>Terms of Service</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
