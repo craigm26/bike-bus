@@ -1402,6 +1402,8 @@ const Map: React.FC = () => {
   }
 
   const getDirections = () => {
+    // let's show a message to the user that we're getting directions
+    window.alert("The blue line on the map allows you to drag the route to change it. The white dots represent the proposed change to the route. After the route is saved by clicking 'Create Route', you can modify the route");
     return new Promise(async (resolve, reject) => {
       if (selectedStartLocation && selectedEndLocation) {
         console.log("getDirections called");
@@ -1802,7 +1804,7 @@ const Map: React.FC = () => {
       // then get the document from the document reference
       // then get the endPoint from the document
 
-            // let's ensure the endPoint is set before we set the position
+      // let's ensure the endPoint is set before we set the position
       await getDoc(bikeBusGroupData?.BikeBusRoutes[0]).then((doc) => {
         if (doc.exists()) {
           const routeData = doc.data() as RouteData;
@@ -2217,14 +2219,14 @@ const Map: React.FC = () => {
                     <IonText>{PlaceName}</IonText>
                   </IonCol>
                   <IonCol>
-                    <IonButton color="primary" onClick={handleStartMap}>
+                    <IonButton size="small" className="black-border-button" onClick={handleStartMap}>
                       <IonText color="secondary">Find Destination</IonText>
                     </IonButton>
                   </IonCol>
                   <IonCol>
                     <IonLabel>
                       or Visit
-                      <IonButton color="primary" routerLink="/Help">
+                      <IonButton size="small" className="black-border-button" routerLink="/Help">
                         <IonText color="secondary"> Help</IonText>
                       </IonButton>
                     </IonLabel>

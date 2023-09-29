@@ -26,6 +26,11 @@
   width: 100%;
 }
 
+.black-border-button {
+  border: 2px solid black;
+}
+
+
 @media (max-width: 768px) {
   /* Custom sizes for icons and buttons */
   [style*="24px"] {
