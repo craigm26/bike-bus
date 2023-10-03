@@ -15,8 +15,10 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
+import { FirebaseAuthentication, SignInWithOAuthOptions } from '@capacitor-firebase/authentication';
 
-interface UserData { 
+
+interface UserData {
   uid: string;
   email: string;
   username: string;
@@ -24,7 +26,7 @@ interface UserData {
   lastName: string;
   accountType: "Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin";
   enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'Org Admin' | 'App Admin'>;
-  enabledOrgModes: Array<'OrganizationCreator' | 'OrganizationMembers' | 'OrganizationAdmins' | 'OrganizationManagers' | 'OrganizationEmployees' | 'Organization' >;
+  enabledOrgModes: Array<'OrganizationCreator' | 'OrganizationMembers' | 'OrganizationAdmins' | 'OrganizationManagers' | 'OrganizationEmployees' | 'Organization'>;
   // Add other properties specific to user data
 }
 
@@ -49,37 +51,52 @@ const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | 
   }
 };
 
-const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
-  let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] = [];
-  let enabledOrgModes: ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization" )[] = [];
 
-  // Fetch additional user data from the database or other sources
-  const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
-  const userData = userSnapshot.data();
-  
-  
-
-  if (userData && userData.accountType) {
-    enabledAccountModes = getEnabledAccountModes(userData.accountType);
-  }
-
-  return {
-    uid: firebaseUser.uid,
-    email: firebaseUser.email || '',
-    username: firebaseUser.displayName || '',
-    firstName: '',
-    lastName: '',
-    accountType: userData?.accountType || '',
-    enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[],
-    enabledOrgModes: enabledOrgModes as ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization" )[],
-    // Add other properties specific to user data
-  };
-});
 
 const useAuth = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [error, setError] = useState(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+
+  const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
+    let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] = [];
+    let enabledOrgModes: ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization")[] = [];
+
+    // Fetch additional user data from the database or other sources
+    const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
+    const userData = userSnapshot.data();
+
+    if (userData && userData.accountType) {
+      enabledAccountModes = getEnabledAccountModes(userData.accountType);
+    }
+
+    return {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || '',
+      username: firebaseUser.displayName || '',
+      firstName: '',
+      lastName: '',
+      accountType: userData?.accountType || '',
+      enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[],
+      enabledOrgModes: enabledOrgModes as ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization")[],
+      // Add other properties specific to user data
+    };
+  });
+
+  const mapMobileSignInResultToUserCredential = (result: any): UserCredential => {
+    const user = result.user;
+    const credential = result.credential;
+    const operationType = result.operationType;
+    const additionalUserInfo = result.additionalUserInfo;
+    const userCredential = {
+      user,
+      credential,
+      operationType,
+      additionalUserInfo,
+      providerId: credential.providerId
+    };
+    return userCredential;
+  }
 
 
   useEffect(() => {
@@ -93,16 +110,16 @@ const useAuth = () => {
         setFirebaseUser(null);
       }
     });
-  
+
     return () => {
       unsubscribe();
     };
   }, []);
 
   const isAnonymous = firebaseUser?.isAnonymous || false;
-  
 
-  const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName:string): Promise<UserCredential> => {
+
+  const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName: string): Promise<UserCredential> => {
     const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
     const user = userCredential.user;
     await updateProfile(user, { displayName: username });
@@ -113,6 +130,20 @@ const useAuth = () => {
     return userCredential;
   };
 
+  const signUpWithEmailAndPasswordMobile = async (email: string, password: string): Promise<UserCredential> => {
+    try {
+      const result = await FirebaseAuthentication.createUserWithEmailAndPassword({ email, password });
+      // Map result to UserCredential
+      const userCredential = mapMobileSignInResultToUserCredential(result);
+      return userCredential;
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw error;
+    }
+  };
+  
+  
+
   const signInWithEmailAndPassword = async (email: string, password: string): Promise<UserCredential> => {
     try {
       const userCredential = await firebaseSignInWithEmailAndPassword(firebaseAuth, email, password);
@@ -121,8 +152,21 @@ const useAuth = () => {
       console.error('Error signing in:', error);
       throw error;
     }
-};
+  };
 
+  const signInWithEmailAndPasswordMobile = async (email: string, password: string): Promise<UserCredential | null> => {
+    try {
+      const result = await FirebaseAuthentication.signInWithEmailAndPassword({ email, password });
+      // Map result to UserCredential
+      const userCredential = mapMobileSignInResultToUserCredential(result);
+      return userCredential;
+    }
+    catch (error) {
+      console.error('Error signing in:', error);
+      throw error;
+    }
+  }
+  
   const sendResetEmail = async (email: string) => {
     try {
       await sendPasswordResetEmail(firebaseAuth, email);
@@ -142,35 +186,49 @@ const useAuth = () => {
     }
   };
 
-  const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
-    const provider = new GoogleAuthProvider();
+  const signInWithGoogleMobile = async (options?: SignInWithOAuthOptions): Promise<UserCredential | null> => {
     try {
-      const result = await signInWithPopup(firebaseAuth, provider);
-      return result;
+      const result = await FirebaseAuthentication.signInWithGoogle(options);
+      const userCredential = mapMobileSignInResultToUserCredential(result);
+      return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
       return null;
     }
   };
+  
+  
 
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
       const userCredential = await firebaseSignInAnonymously(firebaseAuth);
       const user = userCredential.user;
-  
-      if(user) {
+
+      if (user) {
         const userRef = doc(db, 'users', user.uid);
         const userData = {
           accountType: "Anonymous",
           enabledAccountModes: ["Anonymous"]
         };
-  
+
         await setDoc(userRef, userData, { merge: true });
-  
+
         const mappedUser = await mapFirebaseUserToUserData(user);
         setUser(mappedUser);
       }
-  
+
+      return userCredential;
+    } catch (error) {
+      console.error('Error signing in anonymously:', error);
+      throw error;
+    }
+  };
+
+  const signInAnonymouslyMobile = async (): Promise<UserCredential> => {
+    try {
+      const result = await FirebaseAuthentication.signInAnonymously();
+      // Map result to UserCredential
+      const userCredential = mapMobileSignInResultToUserCredential(result);
       return userCredential;
     } catch (error) {
       console.error('Error signing in anonymously:', error);
@@ -178,6 +236,7 @@ const useAuth = () => {
     }
   };
   
+
 
 
   const signOut = async () => {
@@ -189,11 +248,20 @@ const useAuth = () => {
     }
   };
 
+  const signOutMobile = async () => {
+    try {
+      await FirebaseAuthentication.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  }
+
   const checkAndUpdateAccountModes = async (uid: string) => {
     try {
       const userRef = doc(collection(db, 'users'), uid);
       const userDoc = await getDoc(userRef);
-  
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData && userData.accountType) {
@@ -214,12 +282,16 @@ const useAuth = () => {
     firebaseUser,
     checkAndUpdateAccountModes,
     signUpWithEmailAndPassword,
+    signUpWithEmailAndPasswordMobile,
     signInWithEmailAndPassword,
+    signInWithEmailAndPasswordMobile,
     sendResetEmail,
     signInWithGoogle,
     signInWithGoogleMobile,
     signInAnonymously,
+    signInAnonymouslyMobile,
     signOut,
+    signOutMobile,
     error,
     setError,
     isAnonymous,

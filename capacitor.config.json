@@ -7,9 +7,13 @@
     "androidScheme": "https"
   },
   "plugins": {
+    "@capacitor-firebase/authentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com", "password", "emailLink", "phone"]
+    },
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com"]
+      "providers": ["google.com", "password", "emailLink", "phone"]
     }
   }
 }
