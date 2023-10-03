@@ -33,7 +33,6 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
-
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAQkOvALlYX7R-_OppgdZy51-oHXmd9xow"

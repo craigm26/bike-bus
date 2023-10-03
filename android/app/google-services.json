@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "787807444789",
+    "firebase_url": "https://bikebus-71dd5-default-rtdb.firebaseio.com",
+    "project_id": "bikebus-71dd5",
+    "storage_bucket": "bikebus-71dd5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787807444789:android:5d8a1bfbde6b110994b67c",
+        "android_client_info": {
+          "package_name": "app.bikebusapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787807444789-vglj0rhs4dim0b0sigs6rubfkrm1k5me.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh0689hgDUSRecOzvQuje0wB6FoYZ8Y74"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787807444789-j1rddlpn39prpvbfk5uuebckg4s1v9m4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
