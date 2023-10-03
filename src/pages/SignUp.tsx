@@ -1,11 +1,10 @@
 import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonCol, IonContent, IonGrid, IonHeader, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
+import { IonButton, IonCol, IonContent, IonGrid, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
 import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
-import { HeaderContext } from '../components/HeaderContext';
 
 
 const Signup: React.FC = () => {
@@ -17,7 +16,6 @@ const Signup: React.FC = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [isUsernameTaken, setIsUsernameTaken] = useState(false);
-    const headerContext = useContext(HeaderContext);
     const [redirectToMap, setRedirectToMap] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const {
@@ -39,14 +37,6 @@ const Signup: React.FC = () => {
             setIsUsernameTaken(true);
         }
     };
-
-
-    useEffect(() => {
-        if (headerContext) {
-            headerContext.setShowHeader(false);
-        }
-    }
-        , [headerContext]);
 
     const handleSignup = async (email: string, password: string, username: string, firstName: string, lastName: string) => {
         try {
