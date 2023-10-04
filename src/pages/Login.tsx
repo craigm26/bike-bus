@@ -61,7 +61,7 @@ const Login: React.FC = () => {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         // Mobile browsers do not support redirect sign-in
-        // so we need to use popup sign-in instead
+        // so we need to use the capacitor plugin instead
         console.log("Starting signInWithGoogle");
         const userCredential = await signInWithGoogleMobile();
         console.log("Finished signInWithGoogle");
