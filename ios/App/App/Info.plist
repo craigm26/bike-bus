@@ -45,5 +45,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BikeBus App uses your location to help find BikeBusses, create routes and show your avatar on the map</string>
 </dict>
 </plist>
