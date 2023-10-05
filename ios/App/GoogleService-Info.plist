@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>787807444789-aed7g495c295nvgt27vu1b7cq3v1m82e.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.787807444789-aed7g495c295nvgt27vu1b7cq3v1m82e</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>787807444789-qtpimalripqilaugqlvtbkn06213jeee.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBOYhDs51OoBQzB260zxbbAQkjOJjdbVsQ</string>
+	<key>GCM_SENDER_ID</key>
+	<string>787807444789</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>app.bikebusapp</string>
+	<key>PROJECT_ID</key>
+	<string>bikebus-71dd5</string>
+	<key>STORAGE_BUCKET</key>
+	<string>bikebus-71dd5.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:787807444789:ios:097a2bc7a2de159294b67c</string>
+	<key>DATABASE_URL</key>
+	<string>https://bikebus-71dd5-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
