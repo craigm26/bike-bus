@@ -70,7 +70,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "env-cmd -f .env.production react-scripts build",
+    "build": "env-cmd -f .env.production react-scripts build && npm run copy:plist",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint . --ignore-path .gitignore",
@@ -79,9 +79,9 @@
     "logs": "firebase functions:log",
     "build:functions": "tsc --project functions",
     "watch:functions": "tsc --watch --project functions",
-    "build:ui": "npm run build",
+    "build:ui": "npm run build && npm run copy:plist",
     "watch:ui": "npm run start",
-    "build:all": "npm run build:functions && npm run build:ui",
+    "build:all": "npm run build:functions && npm run build:ui && npm run copy:plist",
     "watch:all": "npm run watch:functions & npm run watch:ui"
   },
   "eslintConfig": {
