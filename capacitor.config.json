@@ -9,7 +9,7 @@
   "plugins": {
     "@capacitor-firebase/authentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com", "password", "emailLink", "phone"],
+      "providers": ["google.com", "password", "emailLink"],
       "google": {
         "clientId": "787807444789-qtpimalripqilaugqlvtbkn06213jeee.apps.googleusercontent.com",
         "serverClientId": "787807444789-qtpimalripqilaugqlvtbkn06213jeee.apps.googleusercontent.com"
@@ -17,7 +17,7 @@
     },
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com", "password", "emailLink", "phone"]
+      "providers": ["google.com", "password", "emailLink"]
     }
   }
 }
