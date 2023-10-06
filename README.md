@@ -43,11 +43,39 @@ We think technology could help make this a smoother, more fun experience while p
 -npm install
 -ionic develop
 
-## To push to Firebase Hosting
+## To push to Firebase Hosting (for now this is production)
 
 -firebase deploy
 
-### future build commands that will be needed for a cleaner dev / prod build process
+## To deploy for Android:
+
+-ionic build
+-npx cap sync
+-npx sync Android
+-clean build in Android Studio
+-perform a build in Android Studio - .aab file
+-upload to Google Play Store as a new release (production for now)
+## To deploy for iOS: 
+
+-ionic build
+-npx cap sync
+-npx sync ios
+-manually modify the config.xml file to add the following lines:
+
+```
+<?xml version='1.0' encoding='utf-8'?>
+<widget version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+  <access origin="*" />
+  <platform name="ios">
+      <resource-file src="GoogleService-Info.plist" />
+  </platform>
+</widget>
+
+```
+
+- commit to github
+- find the commit on appflow and build it while selecting the prod environment destination
+# future build commands that will be needed for a cleaner dev / prod build process
 
 ### will have to figure out how to deploy preview builds to ios and android
 
@@ -66,6 +94,7 @@ We think technology could help make this a smoother, more fun experience while p
 -npx sync ios
 -npx sync android
 -firebase deploy --only hosting:production
+
 
 ## How does this app make money?
 
