@@ -153,6 +153,8 @@ http://ionicframework.com/docs/theming/ */
 
     --ion-item-text-color: #fff;
     --ion-item-background: #000;
+
+    --ion-text-color: #000;
   }
 
   /*
