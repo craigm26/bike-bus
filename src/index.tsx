@@ -9,6 +9,7 @@ import { EventProvider } from './components/BikeBusGroup/EventContext';
 import { OrganizationProvider } from './components/Organizations/useOrganization';
 
 import './global.css'
+import './i18n';
 
 import * as functions from "firebase-functions";
 

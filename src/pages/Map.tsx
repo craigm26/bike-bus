@@ -7,40 +7,33 @@ import {
   IonRow,
   IonGrid,
   IonCol,
-  IonAvatar,
   IonSegment,
   IonSegmentButton,
-  IonItem,
-  IonList,
   IonText,
   IonCardTitle,
-  IonTitle,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useRef, useContext } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, Timestamp } from "firebase/firestore";
+import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, locateOutline, personCircleOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, locateOutline, walkOutline } from "ionicons/icons";
+import { useTranslation } from 'react-i18next';
 
 
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
-import { HeaderContext } from "../components/HeaderContext";
 import SearchBar from "../components/SearchBar";
 import React from "react";
-import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
 import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
-import { getStorage } from 'firebase/storage';
-import BikeBusDirectory from "../components/BikeBusDirectory";
 
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
@@ -135,6 +128,7 @@ const Map: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
   const [showMap, setShowMap] = useState(false);
   const [isActiveEvent, setIsActiveEvent] = useState(false);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
@@ -2208,8 +2202,8 @@ const Map: React.FC = () => {
               <IonRow>
                 <IonCol>
                   <IonLabel>
-                    <IonCardTitle className="BikeBusFont">Welcome to BikeBus!</IonCardTitle>
-                    <IonText>BikeBus is a group of people who want to bike together</IonText>
+                    <IonCardTitle className="BikeBusFont">{t('Welcome to BikeBus!')}</IonCardTitle>
+                    <IonText>{t('BikeBus is a group of people who want to bike together')}</IonText>
                   </IonLabel>
                   <IonCol>
                     <SearchBar setPlaceLatitude={setPlaceLatitude} setPlaceLongitude={setPlaceLongitude} onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName}
