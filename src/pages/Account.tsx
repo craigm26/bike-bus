@@ -63,9 +63,6 @@ const Account: React.FC = () => {
     const [uploadComplete, setUploadComplete] = useState(false);
     const [routes, setRoutes] = useState<Route[]>([]);
 
-
-
-
     useEffect(() => {
         if (user) {
             checkAndUpdateAccountModes(user.uid);
@@ -217,6 +214,9 @@ const Account: React.FC = () => {
                     </IonButton>
                     <IonButton routerLink='/DeleteAccount'>
                         Delete Account
+                    </IonButton>
+                    <IonButton routerLink='/SetLanguage'>
+                        Set Language
                     </IonButton>
                     <IonCardContent>
                         <IonList>

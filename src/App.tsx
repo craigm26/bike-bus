@@ -8,6 +8,9 @@ import { db } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
 import { Share } from '@capacitor/share';
+import i18n from './i18n';
+import { useTranslation } from 'react-i18next';
+
 
 import Map from './pages/Map';
 import Login from './pages/Login';
@@ -52,6 +55,8 @@ import BulletinBoards from './pages/BulletinBoards';
 import OrganizationMap from './pages/OrganizationMap';
 import EditOrganization from './pages/EditOrganization';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import DeleteAccount from './components/DeleteAccount';
+import SetLanguage from './components/SetLanguage';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -59,6 +64,8 @@ import { ReactComponent as HouseIcon } from './assets/fontawesome/svgs/regular/h
 import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/arrow-up-from-bracket.svg';
 import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
 import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
+import { ReactComponent as BikeIcon } from './assets/fontawesome/svgs/regular/bicycle.svg';
+import { ReactComponent as Language} from './assets/fontawesome/svgs/regular/language.svg';
 
 
 import '@ionic/react/css/core.css';
@@ -114,6 +121,7 @@ const App: React.FC = () => {
   const [accountType, setAccountType] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
+  const { t } = useTranslation(); 
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -132,10 +140,17 @@ const App: React.FC = () => {
           if (userData && userData.accountType) {
             setAccountType(userData.accountType);
           }
+  
+          // Assuming the user's preferred language is stored as 'preferredLanguage' in userData
+          if (userData && userData.preferredLanguage) {
+            i18n.changeLanguage(userData.preferredLanguage);  // Set the language in i18next
+          } else {
+            i18n.changeLanguage('en');  // Default to English if preferred language is not set
+          }
         }
       });
     }
-
+  
   }, [user]);
 
 
@@ -217,29 +232,29 @@ const App: React.FC = () => {
               <IonMenu side="start" content-id="main-content">
                 <IonHeader>
                   <IonToolbar>
-                    <IonTitle class="BikeBusFont">Menu</IonTitle>
+                    <IonTitle class="BikeBusFont">{t('Menu')}</IonTitle>
                   </IonToolbar>
                 </IonHeader>
                 <IonContent>
                   <IonList>
                     <IonMenuToggle auto-hide="false">
                       <IonItem button routerLink="/BulletinBoards" routerDirection="none">
-                        <IonLabel>Bulletin Boards</IonLabel>
+                        <IonLabel>{t('Bulletin Boards')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink="/Map" routerDirection="none">
-                        <IonLabel>Map</IonLabel>
+                        <IonLabel>{t('Map')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/ViewRouteList' routerDirection="none">
-                        <IonLabel>Routes</IonLabel>
+                        <IonLabel>{t('Routes')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
-                        <IonLabel>BikeBusses</IonLabel>
+                        <IonLabel>{t('BikeBusses')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink="/about" routerDirection="none">
-                        <IonLabel>About</IonLabel>
+                        <IonLabel>{t('About')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink="/PrivacyPolicy" routerDirection="none">
-                        <IonLabel>Privacy Policy</IonLabel>
+                        <IonLabel>{t('Privacy Policy')}</IonLabel>
                       </IonItem>
                     </IonMenuToggle>
                   </IonList>
@@ -333,6 +348,9 @@ const App: React.FC = () => {
                         <IonButton routerLink='/help'>
                           <HelpIcon style={{ width: '18px', height: '18px' }} />
                         </IonButton>
+                        <IonButton routerLink='/SetLanguage'>
+                          <Language style={{ width: '18px', height: '18px' }} />
+                        </IonButton>
                       </IonButtons>
                     </IonToolbar>
                   </IonHeader>
@@ -420,6 +438,12 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/about">
                           <About />
+                        </Route>
+                        <Route exact path="/SetLanguage">
+                          <SetLanguage />
+                        </Route>
+                        <Route exact path="/DeleteAccount">
+                          <DeleteAccount />
                         </Route>
                         <Route exact path="/EventSummary/:id">
                           <EventSummary />
