@@ -10,7 +10,7 @@
 }
 
 .ion-padding-top {
-  padding-top: var(--ion-safe-area-top, 26)
+  padding-top: var(--ion-safe-area-top, 26px);
 }
 
 .ion-header {
@@ -25,6 +25,7 @@
   overflow: hidden;
   background-color: #ffd800;
 }
+
 
 .static-map-event {
   display: flex;
