@@ -13,6 +13,10 @@
   padding-top: var(--ion-safe-area-top, 26)
 }
 
+.ion-header {
+  padding-top: var(--ion-safe-area-top, 26px);
+}
+
 .ion-flex-offset-app {
   display: flex;
   justify-content: center;
