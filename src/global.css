@@ -21,7 +21,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: calc(69px + var(--ion-safe-area-top, 0px));
+  padding-top: calc(76px + var(--ion-safe-area-top, 0px));
   overflow: hidden;
   background-color: #ffd800;
 }
