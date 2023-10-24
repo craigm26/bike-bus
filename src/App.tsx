@@ -262,6 +262,7 @@ const App: React.FC = () => {
               </IonMenu>
               <IonPage id="main-content" >
                 <IonContent fullscreen>
+                  <div className="ion-flex-offset-app-header">
                   <IonHeader>
                     <IonToolbar color="primary" >
                       <IonButtons color="secondary" slot="start">
@@ -354,6 +355,7 @@ const App: React.FC = () => {
                       </IonButtons>
                     </IonToolbar>
                   </IonHeader>
+                  </div>
                   <BrowserRouter>
                     <IonRouterOutlet>
                       <React.Fragment>
