@@ -10,20 +10,16 @@
 }
 
 .ion-padding-top {
-  padding-top: var(--ion-safe-area-top, 26px);
-}
-
-.ion-header {
-  padding-top: var(--ion-safe-area-top, 26px);
+  padding-top: var(--ion-safe-area-top);
 }
 
 .ion-flex-offset-app {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 70px;
+  padding-top: calc(61px + var(--ion-safe-area-top, 0px));
   overflow: hidden;
-  background-color: #ffd800;
+  background-color: #c2c2c2;
 }
 
 
