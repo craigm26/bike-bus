@@ -120,7 +120,7 @@ const BulletinBoards: React.FC = () => {
     const [groupType, setGroupType] = useState<string>('');
     const [bulletinboardType, setBulletinboardType] = useState<string>('');
     const [combinedList, setCombinedList] = useState<SelectOption[]>([]);
-    const [selectedBBOROrgValue, setselectedBBOROrgValue] = useState<string>('') || undefined;
+    const [selectedBBOROrgValue, setselectedBBOROrgValue] = useState<string>('OZrruuBJptp9wkAAVUt7');
     const [groupId, setGroupId] = useState<string | undefined>('');
     const [groupData, setGroupData] = useState<any | undefined>(undefined);
     const [username, setUsername] = useState<string | undefined>('');
@@ -143,7 +143,13 @@ const BulletinBoards: React.FC = () => {
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
     const [isFileUploaded, setIsFileUploaded] = useState(false);
 
-
+    const addUserToGlobal = async (userId: string) => {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+            organizations: arrayUnion('Global')  // Assume organizations is an array field
+        });
+    };
+    
 
 
     useEffect(() => {
@@ -163,6 +169,13 @@ const BulletinBoards: React.FC = () => {
                     if (username) {
                         setUsername(username);
                     }
+                    if (userData) {
+                        const isMemberOfGlobal = userData.organizations.includes('Global');
+                        if (!isMemberOfGlobal) {
+                            addUserToGlobal(user.uid);
+                        }
+                    }
+                    
                 } else {
                 }
             });
@@ -816,7 +829,12 @@ const BulletinBoards: React.FC = () => {
         }
     };
 
-
+    useEffect(() => {
+        if(selectedBBOROrgValue === null) {
+            setselectedBBOROrgValue('Global');
+        }
+    }, []);
+    
 
     return (
         <IonPage className="ion-flex-offset-app">
@@ -848,8 +866,8 @@ const BulletinBoards: React.FC = () => {
                         <IonChip>
                             <IonSelect
                                 className="custom-ion-select"
-                                value={selectedBBOROrgValue}
-                                placeholder="Choose a Bulletin Board"
+                                value={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
+                                placeholder="Global"
                                 onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
                             >
                                 {combinedList.map((item, index) => (
@@ -918,7 +936,7 @@ const BulletinBoards: React.FC = () => {
                                                     key={index}
                                                     avatarElement={avatarElement}
                                                     user={user}
-                                                    selectedBBOROrgValue={selectedBBOROrgValue}
+                                                    selectedBBOROrgValue={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
                                                     combinedList={combinedList}
                                                     groupData={groupData}
                                                     sortedMessagesData={sortedMessagesData}

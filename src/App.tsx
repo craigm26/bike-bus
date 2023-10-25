@@ -250,6 +250,9 @@ const App: React.FC = () => {
                       <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                         <IonLabel>{t('BikeBusses')}</IonLabel>
                       </IonItem>
+                      <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
+                        <IonLabel>{t('Organizations')}</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>{t('About')}</IonLabel>
                       </IonItem>
@@ -366,6 +369,15 @@ const App: React.FC = () => {
                           <CurrentLocationProvider>
                             <BulletinBoards />
                           </CurrentLocationProvider>
+                        </Route>
+                        <Route exact path="/CreateOrganization">
+                          <CreateOrganization />
+                        </Route>
+                        <Route exact path="/ViewOrganization/:id">
+                          <ViewOrganization />
+                        </Route>
+                        <Route exact path="/ViewOrganizationList">
+                          <ViewOrganizationList />
                         </Route>
                         <Route path="/viewroute/:id" exact>
                           <ViewRoute />
