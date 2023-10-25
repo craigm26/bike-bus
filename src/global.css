@@ -13,15 +13,20 @@
   padding-top: var(--ion-safe-area-top);
 }
 
-.ion-flex-offset-app-header {
-  padding-top: calc(env(safe-area-inset-top) + 25px);
+
+@media only screen and (max-width: 768px) {
+  .ion-flex-offset-app {
+    padding-top: calc(60px + var(--ion-safe-area-top, 0px));
+    background-color: #ffd800;
+  }
 }
+
 
 .ion-flex-offset-app {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: calc(76px + var(--ion-safe-area-top, 0px));
+  padding-top: calc(60px + var(--ion-safe-area-top, 0px));
   overflow: hidden;
   background-color: #ffd800;
 }
