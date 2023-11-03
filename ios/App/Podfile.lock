@@ -6,11 +6,11 @@ PODS:
   - CapacitorApp (5.0.6):
     - Capacitor
   - CapacitorCordova (5.4.1)
-  - CapacitorFirebaseAuthentication (5.1.0):
+  - CapacitorFirebaseAuthentication (5.2.0):
     - Capacitor
-    - CapacitorFirebaseAuthentication/Lite (= 5.1.0)
+    - CapacitorFirebaseAuthentication/Lite (= 5.2.0)
     - FirebaseAuth (= 10.8.0)
-  - CapacitorFirebaseAuthentication/Lite (5.1.0):
+  - CapacitorFirebaseAuthentication/Lite (5.2.0):
     - Capacitor
     - FirebaseAuth (= 10.8.0)
   - CapacitorGoogleMaps (5.3.2):
@@ -131,7 +131,7 @@ SPEC CHECKSUMS:
   CapacitorActionSheet: ffcdc28d01d731661745efd5cb75f9117e18530e
   CapacitorApp: 024e1b1bea5f883d79f6330d309bc441c88ad04a
   CapacitorCordova: 1222fdd78bfd0d323cc22bf254eed1484fe6c92a
-  CapacitorFirebaseAuthentication: a90743b8923b81945c4b5c772b95de1f9c50820f
+  CapacitorFirebaseAuthentication: 1278b10587edcf1adba0d136d367e024e9c38400
   CapacitorGoogleMaps: 7d8c56896802630004b3d3748ea2426dd08208e2
   CapacitorHaptics: 1fffc1217c7e64a472d7845be50fb0c2f7d4204c
   CapacitorKeyboard: b978154b024a5f65e044908e37d15b7de58b9d12
@@ -149,4 +149,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: f2cfb553ee39814986789e43ac2680199090bf76
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.14.2
