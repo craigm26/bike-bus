@@ -187,6 +187,14 @@ const useAuth = () => {
   };
 
   const signInWithGoogleMobile = async (options?: SignInWithOAuthOptions): Promise<UserCredential | null> => {
+    console.log('signInWithGoogleMobile options', options);
+    console.log('signInWithGoogleMobile FirebaseAuthentication', FirebaseAuthentication)
+    console.log('signInWithGoogleMobile FirebaseAuthentication.signInWithGoogle', FirebaseAuthentication.signInWithGoogle)
+    const optionsDefault: SignInWithOAuthOptions = {
+      scopes: ['email', 'profile']
+    };
+    options = options || optionsDefault;
+    console.log('signInWithGoogleMobile options', options);
     try {
       const result = await FirebaseAuthentication.signInWithGoogle(options);
       const userCredential = mapMobileSignInResultToUserCredential(result);
