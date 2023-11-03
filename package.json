@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "dependencies": {
-    "@capacitor-firebase/authentication": "^5.1.0",
+    "@capacitor-firebase/authentication": "5.2.0",
     "@capacitor/action-sheet": "^5.0.6",
     "@capacitor/android": "^5.4.1",
     "@capacitor/app": "5.0.6",

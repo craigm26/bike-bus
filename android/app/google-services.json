@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "787807444789-qtpimalripqilaugqlvtbkn06213jeee.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.bikebusapp",
+            "certificate_hash": "53c3f177ede239bc19125bcd54c7719a75f68407"
+          }
+        },
+        {
           "client_id": "787807444789-vglj0rhs4dim0b0sigs6rubfkrm1k5me.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -30,6 +38,14 @@
             {
               "client_id": "787807444789-j1rddlpn39prpvbfk5uuebckg4s1v9m4.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "787807444789-ac5phgs23uk4omg65dvca4v3asphip0c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.bikebusapp",
+                "app_store_id": "6468116707"
+              }
             }
           ]
         }
