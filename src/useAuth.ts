@@ -197,7 +197,9 @@ const useAuth = () => {
     console.log('signInWithGoogleMobile options', options);
     try {
       const result = await FirebaseAuthentication.signInWithGoogle(options);
+      console.log('signInWithGoogleMobile result', result);
       const userCredential = mapMobileSignInResultToUserCredential(result);
+      console.log('signInWithGoogleMobile userCredential', userCredential);
       return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
