@@ -23,6 +23,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const {
     signInWithEmailAndPassword,
+    signInWithEmailAndPasswordMobile,
     signInWithGoogle,
     signInWithGoogleMobile,
     signInAnonymously,
@@ -35,6 +36,8 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     try {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (!isMobile) {
       const userCredential = await signInWithEmailAndPassword(email, password);
       const user = userCredential?.user;
       if (user && user.uid) {
@@ -46,6 +49,20 @@ const Login: React.FC = () => {
       console.log("Pushing to /Map");
       history.push('/Map');
       console.log("Pushed to /Map");
+    }
+      else {
+        const userCredential = await signInWithEmailAndPasswordMobile(email, password);
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          console.log("Starting checkAndUpdateAccountModes");
+          await checkAndUpdateAccountModes(user.uid);
+          console.log("Finished checkAndUpdateAccountModes");
+        }
+        setSuccessMessage('Successfully logged in!');
+        console.log("Pushing to /Map");
+        history.push('/Map');
+        console.log("Pushed to /Map");
+      }
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
