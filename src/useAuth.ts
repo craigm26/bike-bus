@@ -186,26 +186,24 @@ const useAuth = () => {
     }
   };
 
-  const signInWithGoogleMobile = async (options?: SignInWithOAuthOptions): Promise<UserCredential | null> => {
-    console.log('signInWithGoogleMobile options', options);
-    console.log('signInWithGoogleMobile FirebaseAuthentication', FirebaseAuthentication)
-    console.log('signInWithGoogleMobile FirebaseAuthentication.signInWithGoogle', FirebaseAuthentication.signInWithGoogle)
-    const optionsDefault: SignInWithOAuthOptions = {
-      scopes: ['email', 'profile']
-    };
-    options = options || optionsDefault;
-    console.log('signInWithGoogleMobile options', options);
+  const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
+    console.log("signInWithGoogleMobile")
+    console.log(FirebaseAuthentication)
+    console.log(FirebaseAuthentication.signInWithGoogle)
     try {
-      const result = await FirebaseAuthentication.signInWithGoogle(options);
-      console.log('signInWithGoogleMobile result', result);
+      // now trying to use the firebase authentication plugin for capacitor for google sign in:
+      console.log("trying to use the firebase authentication plugin for capacitor for google sign in:")
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log("result:")
+      // Map result to UserCredential
       const userCredential = mapMobileSignInResultToUserCredential(result);
-      console.log('signInWithGoogleMobile userCredential', userCredential);
+      console.log("userCredential:")
       return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
       return null;
     }
-  };
+  }
   
   
 
