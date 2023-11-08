@@ -63,7 +63,7 @@ const Login: React.FC = () => {
         // Mobile browsers do not support redirect sign-in
         // so we need to use the capacitor plugin instead
         console.log("Starting signInWithGoogleMobile");
-        const userCredential = await signInWithGoogle();
+        const userCredential = await signInWithGoogleMobile();
         // switch for signInWithGoogleMobile
         // const userCredential = await signInWithGoogleMobile();
         console.log("Finished signInWithGoogleMobile");
