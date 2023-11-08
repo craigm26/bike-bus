@@ -38,18 +38,18 @@ const Login: React.FC = () => {
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (!isMobile) {
-      const userCredential = await signInWithEmailAndPassword(email, password);
-      const user = userCredential?.user;
-      if (user && user.uid) {
-        console.log("Starting checkAndUpdateAccountModes");
-        await checkAndUpdateAccountModes(user.uid);
-        console.log("Finished checkAndUpdateAccountModes");
+        const userCredential = await signInWithEmailAndPassword(email, password);
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          console.log("Starting checkAndUpdateAccountModes");
+          await checkAndUpdateAccountModes(user.uid);
+          console.log("Finished checkAndUpdateAccountModes");
+        }
+        setSuccessMessage('Successfully logged in!');
+        console.log("Pushing to /Map");
+        history.push('/Map');
+        console.log("Pushed to /Map");
       }
-      setSuccessMessage('Successfully logged in!');
-      console.log("Pushing to /Map");
-      history.push('/Map');
-      console.log("Pushed to /Map");
-    }
       else {
         const userCredential = await signInWithEmailAndPasswordMobile(email, password);
         const user = userCredential?.user;

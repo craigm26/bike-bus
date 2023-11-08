@@ -6,6 +6,9 @@ import { getFirestore } from '@firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import firebase from 'firebase/compat/app';
+import { Capacitor } from '@capacitor/core';
+import { indexedDBLocalPersistence, initializeAuth } from '@firebase/auth';
+
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -21,7 +24,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const auth = getAuth(app);
+// Initialize Firebase Auth with conditional persistence
+const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, {
+      persistence: indexedDBLocalPersistence,
+    })
+  : getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
