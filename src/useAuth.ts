@@ -12,6 +12,7 @@ import {
   UserCredential,
   updateProfile,
   signInWithRedirect,
+  signInWithCredential,
   signInWithPopup
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
@@ -143,14 +144,29 @@ const useAuth = () => {
     }
   };
 
-  const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
-    const provider = new GoogleAuthProvider();
+  const getGoogleUser = async () => {
     try {
-      const result = await signInWithRedirect(firebaseAuth, provider);
-      return result;
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log('Google SignIn Result:', result);
+      // Assuming result has a property called idToken directly
+      // return { idToken: result.idToken }; // Adjust this to match the actual property path in the result
     } catch (error) {
       console.error('Error signing in with Google:', error);
-      return null;
+      throw error;
+    }
+  };
+  
+  
+
+  const signInWithGoogleMobile = async () => {
+    try {
+      const googleUser = await getGoogleUser(); // You need to implement this method
+      // const credential = GoogleAuthProvider.credential(googleUser.idToken);
+      const userCredential = await signInWithCredential(firebaseAuth, credential);
+      const user = userCredential.user;
+      // Proceed with user
+    } catch (error) {
+      // Handle errors
     }
   };
 

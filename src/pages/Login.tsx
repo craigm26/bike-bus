@@ -15,7 +15,7 @@ import { useHistory } from 'react-router-dom';
 import './Login.css';
 import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
-import { getRedirectResult } from '@firebase/auth';
+import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 
 const Login: React.FC = () => {
@@ -24,6 +24,7 @@ const Login: React.FC = () => {
   const {
     signInWithEmailAndPassword,
     signInWithGoogle,
+    signInWithGoogleMobile,
     signInAnonymously,
     checkAndUpdateAccountModes,
   } = useAuth();
@@ -57,25 +58,54 @@ const Login: React.FC = () => {
   const handleGoogleSubmit = async () => {
     console.log("handleGoogleSubmit");
     try {
-      // Desktop browsers support redirect sign-in
-      console.log("Starting signInWithGoogle");
-
-      const userCredential = await signInWithGoogle();
-      const user = userCredential?.user;
-      if (user && user.uid) {
-        await checkAndUpdateAccountModes(user.uid);
-      }
-      const username = user?.displayName;
-      if (username) {
-        // user has a username, so redirect to the map page
-        console.log("Pushing to /Map");
-        history.push('/Map');
-        console.log("Pushed to /Map");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Mobile browsers do not support redirect sign-in
+        // so we need to use the capacitor plugin instead
+        console.log("Starting signInWithGoogleMobile");
+        const userCredential = await signInWithGoogleMobile();
+        // switch for signInWithGoogleMobile
+        // const userCredential = await signInWithGoogleMobile();
+        console.log("Finished signInWithGoogleMobile");
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          console.log("Starting checkAndUpdateAccountModes");
+          await checkAndUpdateAccountModes(user.uid);
+          console.log("Finished checkAndUpdateAccountModes");
+        }
+        const username = user?.displayName;
+        if (username) {
+          // user has a username, so redirect to the map page
+          console.log("Pushing to /Map");
+          history.push('/Map');
+          console.log("Pushed to /Map");
+        } else {
+          // user does not have a username, so redirect to the set username page
+          console.log("Pushing to /SetUsername");
+          history.push('/SetUsername');
+          console.log("Pushed to /SetUsername");
+        }
       } else {
-        // user does not have a username, so redirect to the set username page
-        console.log("Pushing to /SetUsername");
-        history.push('/SetUsername');
-        console.log("Pushed to /SetUsername");
+        // Desktop browsers support redirect sign-in
+        console.log("Starting signInWithGoogle");
+
+        const userCredential = await signInWithGoogle();
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          await checkAndUpdateAccountModes(user.uid);
+        }
+        const username = user?.displayName;
+        if (username) {
+          // user has a username, so redirect to the map page
+          console.log("Pushing to /Map");
+          history.push('/Map');
+          console.log("Pushed to /Map");
+        } else {
+          // user does not have a username, so redirect to the set username page
+          console.log("Pushing to /SetUsername");
+          history.push('/SetUsername');
+          console.log("Pushed to /SetUsername");
+        }
       }
     } catch (error) {
       if (error instanceof Error) {
