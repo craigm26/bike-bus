@@ -16,7 +16,7 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
-import { FirebaseAuthentication, SignInWithOAuthOptions } from '@capacitor-firebase/authentication';
+import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
 
 
 interface UserData {
@@ -148,27 +148,22 @@ const useAuth = () => {
     try {
       const result = await FirebaseAuthentication.signInWithGoogle();
       console.log('Google SignIn Result:', result);
-      // Assuming result has a property called idToken directly
-      // return { idToken: result.idToken }; // Adjust this to match the actual property path in the result
+      // Use a type assertion if you are sure that idToken exists on the result object
+      return { accessToken: (result as any).idToken };
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
     }
   };
   
-  
-
-  const signInWithGoogleMobile = async () => {
-    try {
-      const googleUser = await getGoogleUser(); // You need to implement this method
-      // const credential = GoogleAuthProvider.credential(googleUser.idToken);
+  const signInWithGoogleMobile = async (): Promise<UserCredential> => {
+      const googleUser = await getGoogleUser(); // Implement this method to get the Google User
+      const credential = GoogleAuthProvider.credential(googleUser.accessToken)
       const userCredential = await signInWithCredential(firebaseAuth, credential);
-      const user = userCredential.user;
-      // Proceed with user
-    } catch (error) {
+      return userCredential; // Make sure to return the userCredential
       // Handle errors
-    }
   };
+  
 
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
