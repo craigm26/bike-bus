@@ -23,9 +23,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const {
     signInWithEmailAndPassword,
-    signInWithEmailAndPasswordMobile,
     signInWithGoogle,
-    signInWithGoogleMobile,
     signInAnonymously,
     checkAndUpdateAccountModes,
   } = useAuth();
@@ -36,33 +34,17 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (!isMobile) {
-        const userCredential = await signInWithEmailAndPassword(email, password);
-        const user = userCredential?.user;
-        if (user && user.uid) {
-          console.log("Starting checkAndUpdateAccountModes");
-          await checkAndUpdateAccountModes(user.uid);
-          console.log("Finished checkAndUpdateAccountModes");
-        }
-        setSuccessMessage('Successfully logged in!');
-        console.log("Pushing to /Map");
-        history.push('/Map');
-        console.log("Pushed to /Map");
+      const userCredential = await signInWithEmailAndPassword(email, password);
+      const user = userCredential?.user;
+      if (user && user.uid) {
+        console.log("Starting checkAndUpdateAccountModes");
+        await checkAndUpdateAccountModes(user.uid);
+        console.log("Finished checkAndUpdateAccountModes");
       }
-      else {
-        const userCredential = await signInWithEmailAndPasswordMobile(email, password);
-        const user = userCredential?.user;
-        if (user && user.uid) {
-          console.log("Starting checkAndUpdateAccountModes");
-          await checkAndUpdateAccountModes(user.uid);
-          console.log("Finished checkAndUpdateAccountModes");
-        }
-        setSuccessMessage('Successfully logged in!');
-        console.log("Pushing to /Map");
-        history.push('/Map');
-        console.log("Pushed to /Map");
-      }
+      setSuccessMessage('Successfully logged in!');
+      console.log("Pushing to /Map");
+      history.push('/Map');
+      console.log("Pushed to /Map");
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
@@ -75,54 +57,25 @@ const Login: React.FC = () => {
   const handleGoogleSubmit = async () => {
     console.log("handleGoogleSubmit");
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        // Mobile browsers do not support redirect sign-in
-        // so we need to use the capacitor plugin instead
-        console.log("Starting signInWithGoogleMobile");
-        const userCredential = await signInWithGoogleMobile();
-        // switch for signInWithGoogleMobile
-        // const userCredential = await signInWithGoogleMobile();
-        console.log("Finished signInWithGoogleMobile");
-        const user = userCredential?.user;
-        if (user && user.uid) {
-          console.log("Starting checkAndUpdateAccountModes");
-          await checkAndUpdateAccountModes(user.uid);
-          console.log("Finished checkAndUpdateAccountModes");
-        }
-        const username = user?.displayName;
-        if (username) {
-          // user has a username, so redirect to the map page
-          console.log("Pushing to /Map");
-          history.push('/Map');
-          console.log("Pushed to /Map");
-        } else {
-          // user does not have a username, so redirect to the set username page
-          console.log("Pushing to /SetUsername");
-          history.push('/SetUsername');
-          console.log("Pushed to /SetUsername");
-        }
-      } else {
-        // Desktop browsers support redirect sign-in
-        console.log("Starting signInWithGoogle");
+      // Desktop browsers support redirect sign-in
+      console.log("Starting signInWithGoogle");
 
-        const userCredential = await signInWithGoogle();
-        const user = userCredential?.user;
-        if (user && user.uid) {
-          await checkAndUpdateAccountModes(user.uid);
-        }
-        const username = user?.displayName;
-        if (username) {
-          // user has a username, so redirect to the map page
-          console.log("Pushing to /Map");
-          history.push('/Map');
-          console.log("Pushed to /Map");
-        } else {
-          // user does not have a username, so redirect to the set username page
-          console.log("Pushing to /SetUsername");
-          history.push('/SetUsername');
-          console.log("Pushed to /SetUsername");
-        }
+      const userCredential = await signInWithGoogle();
+      const user = userCredential?.user;
+      if (user && user.uid) {
+        await checkAndUpdateAccountModes(user.uid);
+      }
+      const username = user?.displayName;
+      if (username) {
+        // user has a username, so redirect to the map page
+        console.log("Pushing to /Map");
+        history.push('/Map');
+        console.log("Pushed to /Map");
+      } else {
+        // user does not have a username, so redirect to the set username page
+        console.log("Pushing to /SetUsername");
+        history.push('/SetUsername');
+        console.log("Pushed to /SetUsername");
       }
     } catch (error) {
       if (error instanceof Error) {

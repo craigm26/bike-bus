@@ -83,22 +83,6 @@ const useAuth = () => {
     };
   });
 
-  const mapMobileSignInResultToUserCredential = (result: any): UserCredential => {
-    const user = result.user;
-    const credential = result.credential;
-    const operationType = result.operationType;
-    const additionalUserInfo = result.additionalUserInfo;
-    const userCredential = {
-      user,
-      credential,
-      operationType,
-      additionalUserInfo,
-      providerId: credential.providerId
-    };
-    return userCredential;
-  }
-
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (fUser) => {
       if (fUser) {
@@ -130,20 +114,6 @@ const useAuth = () => {
     return userCredential;
   };
 
-  const signUpWithEmailAndPasswordMobile = async (email: string, password: string): Promise<UserCredential> => {
-    try {
-      const result = await FirebaseAuthentication.createUserWithEmailAndPassword({ email, password });
-      // Map result to UserCredential
-      const userCredential = mapMobileSignInResultToUserCredential(result);
-      return userCredential;
-    } catch (error) {
-      console.error('Error signing up:', error);
-      throw error;
-    }
-  };
-  
-  
-
   const signInWithEmailAndPassword = async (email: string, password: string): Promise<UserCredential> => {
     try {
       const userCredential = await firebaseSignInWithEmailAndPassword(firebaseAuth, email, password);
@@ -153,19 +123,6 @@ const useAuth = () => {
       throw error;
     }
   };
-
-  const signInWithEmailAndPasswordMobile = async (email: string, password: string): Promise<UserCredential | null> => {
-    try {
-      const result = await FirebaseAuthentication.signInWithEmailAndPassword({ email, password });
-      // Map result to UserCredential
-      const userCredential = mapMobileSignInResultToUserCredential(result);
-      return userCredential;
-    }
-    catch (error) {
-      console.error('Error signing in:', error);
-      throw error;
-    }
-  }
   
   const sendResetEmail = async (email: string) => {
     try {
@@ -187,25 +144,15 @@ const useAuth = () => {
   };
 
   const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogleMobile")
-    console.log(FirebaseAuthentication)
-    console.log(FirebaseAuthentication.signInWithGoogle)
+    const provider = new GoogleAuthProvider();
     try {
-      // now trying to use the firebase authentication plugin for capacitor for google sign in:
-      console.log("trying to use the firebase authentication plugin for capacitor for google sign in:")
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      console.log("result:")
-      // Map result to UserCredential
-      const userCredential = mapMobileSignInResultToUserCredential(result);
-      console.log("userCredential:")
-      return userCredential;
+      const result = await signInWithRedirect(firebaseAuth, provider);
+      return result;
     } catch (error) {
       console.error('Error signing in with Google:', error);
       return null;
     }
-  }
-  
-  
+  };
 
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
@@ -232,21 +179,6 @@ const useAuth = () => {
     }
   };
 
-  const signInAnonymouslyMobile = async (): Promise<UserCredential> => {
-    try {
-      const result = await FirebaseAuthentication.signInAnonymously();
-      // Map result to UserCredential
-      const userCredential = mapMobileSignInResultToUserCredential(result);
-      return userCredential;
-    } catch (error) {
-      console.error('Error signing in anonymously:', error);
-      throw error;
-    }
-  };
-  
-
-
-
   const signOut = async () => {
     try {
       await firebaseSignOut(firebaseAuth);
@@ -255,15 +187,6 @@ const useAuth = () => {
       console.error('Error signing out:', error);
     }
   };
-
-  const signOutMobile = async () => {
-    try {
-      await FirebaseAuthentication.signOut();
-      setUser(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  }
 
   const checkAndUpdateAccountModes = async (uid: string) => {
     try {
@@ -289,17 +212,13 @@ const useAuth = () => {
     user,
     firebaseUser,
     checkAndUpdateAccountModes,
+    signInWithGoogleMobile,
     signUpWithEmailAndPassword,
-    signUpWithEmailAndPasswordMobile,
     signInWithEmailAndPassword,
-    signInWithEmailAndPasswordMobile,
     sendResetEmail,
     signInWithGoogle,
-    signInWithGoogleMobile,
     signInAnonymously,
-    signInAnonymouslyMobile,
     signOut,
-    signOutMobile,
     error,
     setError,
     isAnonymous,
