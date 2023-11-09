@@ -144,8 +144,24 @@ const useAuth = () => {
     }
   };
 
+  const getCurrentUser = async () => {
+    const result = await FirebaseAuthentication.getCurrentUser();
+    return result.user;
+  };
+  
+  const getIdToken = async () => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      return;
+    }
+    const result = await FirebaseAuthentication.getIdToken();
+    return result.token;
+  };
+
+
   const getGoogleUser = async () => {
     try {
+      console.log('Signing in with Google with capacitor-firebase-authentication...');
       const result = await FirebaseAuthentication.signInWithGoogle();
       console.log('Google SignIn Result:', result);
       // Use a type assertion if you are sure that idToken exists on the result object
@@ -157,6 +173,7 @@ const useAuth = () => {
   };
   
   const signInWithGoogleMobile = async (): Promise<UserCredential> => {
+      console.log('Signing in with Google...');
       const googleUser = await getGoogleUser(); // Implement this method to get the Google User
       const credential = GoogleAuthProvider.credential(googleUser.accessToken)
       const userCredential = await signInWithCredential(firebaseAuth, credential);
