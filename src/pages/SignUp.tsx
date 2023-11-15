@@ -21,7 +21,7 @@ const Signup: React.FC = () => {
     const {
         signInWithEmailAndPassword,
         signInWithGoogle,
-        signInWithGoogleMobile,
+        signInWithGoogleNative,
         signInAnonymously,
         checkAndUpdateAccountModes,
     } = useAuth();
@@ -67,7 +67,7 @@ const Signup: React.FC = () => {
                 // Mobile browsers do not support redirect sign-in
                 // so we need to use popup sign-in instead
                 console.log("Starting signInWithGoogle");
-                const userCredential = await signInWithGoogleMobile();
+                const userCredential = await signInWithGoogleNative();
                 console.log("Finished signInWithGoogle");
                 const user = userCredential?.user;
                 if (user && user.uid) {

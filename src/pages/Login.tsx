@@ -24,7 +24,7 @@ const Login: React.FC = () => {
   const {
     signInWithEmailAndPassword,
     signInWithGoogle,
-    signInWithGoogleMobile,
+    signInWithGoogleNative,
     signInAnonymously,
     checkAndUpdateAccountModes,
   } = useAuth();
@@ -62,11 +62,11 @@ const Login: React.FC = () => {
       if (isMobile) {
         // Mobile browsers do not support redirect sign-in
         // so we need to use the capacitor plugin instead
-        console.log("Starting signInWithGoogleMobile");
-        const userCredential = await signInWithGoogleMobile();
-        // switch for signInWithGoogleMobile
-        // const userCredential = await signInWithGoogleMobile();
-        console.log("Finished signInWithGoogleMobile");
+        console.log("Starting signInWithGoogleNative");
+        const userCredential = await signInWithGoogleNative();
+        // switch for signInWithGoogleNative
+        // const userCredential = await signInWithGoogleNative();
+        console.log("Finished signInWithGoogleNative");
         const user = userCredential?.user;
         if (user && user.uid) {
           console.log("Starting checkAndUpdateAccountModes");
