@@ -13,7 +13,6 @@ import {
   updateProfile,
   signInWithRedirect,
   signInWithCredential,
-  signInWithPopup
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
@@ -144,17 +143,6 @@ const useAuth = () => {
     }
   };
 
-  const signInWithGoogleMobile = async (): Promise<UserCredential | null> => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(firebaseAuth, provider);
-      return result;
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      return null;
-    }
-  };
-
   const getCurrentUser = async () => {
     const result = await FirebaseAuthentication.getCurrentUser();
     return result.user;
@@ -183,7 +171,7 @@ const useAuth = () => {
     }
   };
   
-  /* const signInWithGoogleMobile = async (): Promise<UserCredential> => {
+  /* const signInWithGoogleNative = async (): Promise<UserCredential> => {
       console.log('Signing in with Google...');
       const googleUser = await getGoogleUser(); // Implement this method to get the Google User
       const credential = GoogleAuthProvider.credential(googleUser.accessToken)
@@ -192,6 +180,18 @@ const useAuth = () => {
       // Handle errors
   };
   */
+
+  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
+    try {
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      const credential = GoogleAuthProvider.credential((result as any).idToken);
+      const userCredential = await signInWithCredential(firebaseAuth, credential);
+      return userCredential;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      return null;
+    }
+  };
   
 
   const signInAnonymously = async (): Promise<UserCredential> => {
@@ -252,7 +252,7 @@ const useAuth = () => {
     user,
     firebaseUser,
     checkAndUpdateAccountModes,
-    signInWithGoogleMobile,
+    signInWithGoogleNative,
     signUpWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendResetEmail,
