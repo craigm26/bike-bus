@@ -123,7 +123,7 @@ const useAuth = () => {
       throw error;
     }
   };
-  
+
   const sendResetEmail = async (email: string) => {
     try {
       await sendPasswordResetEmail(firebaseAuth, email);
@@ -147,7 +147,7 @@ const useAuth = () => {
     const result = await FirebaseAuthentication.getCurrentUser();
     return result.user;
   };
-  
+
   const getIdToken = async () => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -170,16 +170,7 @@ const useAuth = () => {
       throw error;
     }
   };
-  
-  /* const signInWithGoogleNative = async (): Promise<UserCredential> => {
-      console.log('Signing in with Google...');
-      const googleUser = await getGoogleUser(); // Implement this method to get the Google User
-      const credential = GoogleAuthProvider.credential(googleUser.accessToken)
-      const userCredential = await signInWithCredential(firebaseAuth, credential);
-      return userCredential; // Make sure to return the userCredential
-      // Handle errors
-  };
-  */
+
 
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
@@ -189,10 +180,22 @@ const useAuth = () => {
       return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
+      // Detailed logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        });
+      } else if (typeof error === 'object') {
+        console.error('Error object:', error);
+      } else {
+        console.error('Unknown error type:', error);
+      }
       return null;
     }
   };
-  
+
 
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
