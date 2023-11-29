@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D3134F52B17DC6E00F36CEC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0D3134F42B17DC6E00F36CEC /* GoogleService-Info.plist */; };
 		0D3EAECF2B05545A003A9C1D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAECE2B05545A003A9C1D /* FirebaseAnalytics */; };
 		0D3EAED12B05545A003A9C1D /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAED02B05545A003A9C1D /* FirebaseAnalyticsOnDeviceConversion */; };
 		0D3EAED32B05545A003A9C1D /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAED22B05545A003A9C1D /* FirebaseAnalyticsSwift */; };
@@ -32,8 +33,6 @@
 		0D3EAEFB2B05545A003A9C1D /* FirebaseRemoteConfigSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAEFA2B05545A003A9C1D /* FirebaseRemoteConfigSwift */; };
 		0D3EAEFD2B05545A003A9C1D /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAEFC2B05545A003A9C1D /* FirebaseStorage */; };
 		0D3EAEFF2B05545A003A9C1D /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 0D3EAEFE2B05545A003A9C1D /* FirebaseStorageCombine-Community */; };
-		0D3EAF012B0567E4003A9C1D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0D3EAF002B0567E4003A9C1D /* GoogleService-Info.plist */; };
-		0D6EC18D2AE32AAD00CA53EC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0D6EC18C2AE32AAD00CA53EC /* GoogleService-Info.plist */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -45,8 +44,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0D3EAF002B0567E4003A9C1D /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		0D6EC18C2AE32AAD00CA53EC /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		0D3134F42B17DC6E00F36CEC /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0D6EC18E2AE336FD00CA53EC /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
@@ -128,10 +126,9 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				0D3134F42B17DC6E00F36CEC /* GoogleService-Info.plist */,
 				0D6EC18E2AE336FD00CA53EC /* App.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
-				0D6EC18C2AE32AAD00CA53EC /* GoogleService-Info.plist */,
-				0D3EAF002B0567E4003A9C1D /* GoogleService-Info.plist */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -245,13 +242,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
-				0D3EAF012B0567E4003A9C1D /* GoogleService-Info.plist in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
-				0D6EC18D2AE32AAD00CA53EC /* GoogleService-Info.plist in Resources */,
+				0D3134F52B17DC6E00F36CEC /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -454,7 +450,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = WYGG3JXWMG;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -479,7 +475,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = WYGG3JXWMG;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;

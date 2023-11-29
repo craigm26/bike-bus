@@ -2,9 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write access for all documents until Dec 1, 2023
+    // Allow read and write access for all documents until Dec 1, 2024
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2023, 12, 1);
+      allow read, write: if request.time < timestamp.date(2024, 12, 1);
     }
 
     // Allow read access to user data for members of the bikebusgroup

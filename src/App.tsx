@@ -362,6 +362,9 @@ const App: React.FC = () => {
                   <BrowserRouter>
                     <IonRouterOutlet>
                       <React.Fragment>
+                        <Route exact path="/Welcome">
+                          <Welcome />
+                        </Route>
                         <Route exact path="/PrivacyPolicy">
                           <PrivacyPolicy />
                         </Route>
@@ -468,7 +471,7 @@ const App: React.FC = () => {
                         <Switch>
                           <Route exact path="/Map/:id?" component={Map} />
                           <Route exact path="/">
-                            <Redirect to="/Map/" />
+                            <Redirect to="/Welcome/" />
                           </Route>
                         </Switch>
                         <Switch>

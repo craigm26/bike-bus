@@ -13,6 +13,7 @@ import {
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import './Login.css';
+import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
 import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect } from '@firebase/auth';
@@ -215,14 +216,13 @@ const Login: React.FC = () => {
         <PasswordReset email={email} />
         <IonText className="use-google">
           <p>
-            <IonButton
-              onClick={handleGoogleSubmit}
-            >
+            <IonButton onClick={handleGoogleSubmit}>
+              <img src={GoogleLogo} alt="Google logo" style={{ marginRight: '8px' }} />
               Login with Google
             </IonButton>
-
           </p>
         </IonText>
+
         <IonText className="use-anonymously">
           <p>
             <IonButton
