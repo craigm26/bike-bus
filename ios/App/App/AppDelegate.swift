@@ -11,7 +11,7 @@ class YourSimpleAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
       return AppAttestProvider(app: app)
     } else {
       // Fallback to Debug provider or another appropriate provider for simulators
-      return nil
+      return DeviceCheckProvider(app: app)
     }
   }
   
