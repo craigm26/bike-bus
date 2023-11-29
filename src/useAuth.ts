@@ -175,12 +175,31 @@ const useAuth = () => {
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
       const result = await FirebaseAuthentication.signInWithGoogle();
-      const credential = GoogleAuthProvider.credential((result as any).idToken);
+  
+      // Check if the credential object is not null
+      if (!result.credential) {
+        throw new Error('No credential returned from Google sign-in');
+      }
+  
+      // Extract the ID token from the credential object within the SignInResult
+      const idToken = result.credential.idToken;
+  
+      // Check if the ID token exists
+      if (!idToken) {
+        throw new Error('No ID token returned from Google sign-in');
+      }
+  
+      // Create a Firebase Auth credential using the Google ID token
+      const credential = GoogleAuthProvider.credential(idToken);
+  
+      // Sign in to Firebase using the Google credential
       const userCredential = await signInWithCredential(firebaseAuth, credential);
+  
+      // Return the user credential on successful sign-in
       return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
-      // Detailed logging
+      // Detailed error logging
       if (error instanceof Error) {
         console.error('Error details:', {
           message: error.message,
@@ -195,6 +214,9 @@ const useAuth = () => {
       return null;
     }
   };
+  
+  
+  
 
 
   const signInAnonymously = async (): Promise<UserCredential> => {
