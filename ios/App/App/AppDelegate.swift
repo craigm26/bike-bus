@@ -1,6 +1,29 @@
 import UIKit
 import Capacitor
 import FirebaseCore
+import FirebaseAppCheck
+
+// Define your custom App Check provider factory
+class YourSimpleAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
+  func createProvider(with app: FirebaseApp) -> AppCheckProvider? {
+    // Check if App Attest is supported and the app is not running in a simulator.
+    if #available(iOS 14.0, *), !isRunningInSimulator() {
+      return AppAttestProvider(app: app)
+    } else {
+      // Fallback to Debug provider or another appropriate provider for simulators
+      return nil
+    }
+  }
+  
+  // Helper method to determine if the app is running in a simulator
+  private func isRunningInSimulator() -> Bool {
+    #if targetEnvironment(simulator)
+    return true
+    #else
+    return false
+    #endif
+  }
+}
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,13 +31,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    do {
+        
+        // Instantiate your custom App Check provider factory
+        let providerFactory = YourSimpleAppCheckProviderFactory()
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+        
+        // Configure Firebase with your custom App Check provider
         FirebaseApp.configure()
-    } catch let error {
-        print("Error configuring Firebase: \(error)")
+
+        // Additional Capacitor setup if needed
+
+        return true
     }
-    return true
-    }
+
 
 
     func applicationWillResignActive(_ application: UIApplication) {
