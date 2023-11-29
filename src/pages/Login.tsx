@@ -216,9 +216,8 @@ const Login: React.FC = () => {
         <PasswordReset email={email} />
         <IonText className="use-google">
           <p>
-            <IonButton onClick={handleGoogleSubmit}>
-              <img src={GoogleLogo} alt="Google logo" style={{ marginRight: '8px' }} />
-              Login with Google
+            <IonButton color="clear" onClick={handleGoogleSubmit}>
+              <img src={GoogleLogo} alt="Google logo" style={{ marginRight: '0px' }} />
             </IonButton>
           </p>
         </IonText>

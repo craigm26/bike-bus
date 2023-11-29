@@ -26,9 +26,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: calc(70px + var(--ion-safe-area-top, 0px));
+  padding-top: calc(62px + var(--ion-safe-area-top, 0px));
   overflow: hidden;
-  background-color: #ffd800;
 }
 
 
@@ -193,14 +192,12 @@
   color: #ffd800;
   font-size: 3rem;
   font-family: 'Indie-Flower', sans-serif;
-  background-color: #ffd800;
 }
 
 .welcome-to-bikebus-about {
   display: flex;
   justify-content: center;
   text-align: center;
-  background-color: #ffd800;
 }
 
 .welcome-to-bikebus-buttons {

@@ -10,7 +10,7 @@ import {
   IonCol,
 } from '@ionic/react';
 import './Welcome.css';
-import { HeaderContext } from '../components/HeaderContext'; 
+import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
 import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect } from '@firebase/auth';
@@ -115,41 +115,41 @@ const Welcome: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonHeader>
-      </IonHeader>
       <IonContent>
-        <IonGrid>
+        <IonGrid className="welcome-grid">
           <IonRow className="welcome-to-bikebus">
-            <IonText color="primary">
+            <IonCol size="12">
               <h1>BikeBus</h1>
-            </IonText>
+            </IonCol>
           </IonRow>
-          <IonRow className="welcome-to-bikebus-about">
-            <IonText className="ion-align-items-center">
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="12">
               <h4>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides</h4>
-              <h4>It is currently under development</h4>
-              <h4>Drop a line on Twitter @BikeBusApp</h4>
-            </IonText>
+            </IonCol>
           </IonRow>
-          <IonRow className="welcome-to-bikebus-buttons">
-            <IonCol>
-              <IonButton routerLink='/Signup'>Signup</IonButton>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="5">
+              <IonButton expand="block" routerLink='/Signup'>Signup</IonButton>
             </IonCol>
-            <IonCol>
-              <IonButton routerLink='/Login'>Login</IonButton>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="5">
+              <IonButton expand="block" routerLink='/Login'>Login</IonButton>
             </IonCol>
-            <IonCol>
-            <IonButton onClick={handleGoogleSubmit}>
-              <img src={GoogleLogo} alt="Google logo" style={{ marginRight: '8px' }} />
-              Login with Google
-            </IonButton>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="5">
+              <img src={GoogleLogo} alt="Sign in with Google" onClick={handleGoogleSubmit} className="google-sign-in" />
             </IonCol>
-            <IonCol>
-              <IonButton routerLink='/PrivacyPolicy'>Privacy Policy</IonButton>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="5">
+            <a href="/PrivacyPolicy" className="privacy-policy-link">Privacy Policy</a>
             </IonCol>
           </IonRow>
         </IonGrid>
       </IonContent>
+
     </IonPage>
   );
 };
