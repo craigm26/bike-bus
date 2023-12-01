@@ -2201,10 +2201,6 @@ const Map: React.FC = () => {
             <IonGrid className="location-app-intro-container">
               <IonRow>
                 <IonCol>
-                  <IonLabel>
-                    <IonCardTitle className="BikeBusFont">{t('Welcome to BikeBus!')}</IonCardTitle>
-                    <IonText>{t('BikeBus is a group of people who want to bike together')}</IonText>
-                  </IonLabel>
                   <IonCol>
                     <SearchBar setPlaceLatitude={setPlaceLatitude} setPlaceLongitude={setPlaceLongitude} onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName}
                     />

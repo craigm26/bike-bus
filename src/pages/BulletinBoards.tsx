@@ -149,7 +149,7 @@ const BulletinBoards: React.FC = () => {
             organizations: arrayUnion('Global')  // Assume organizations is an array field
         });
     };
-    
+
 
 
     useEffect(() => {
@@ -175,7 +175,7 @@ const BulletinBoards: React.FC = () => {
                             addUserToGlobal(user.uid);
                         }
                     }
-                    
+
                 } else {
                 }
             });
@@ -830,11 +830,11 @@ const BulletinBoards: React.FC = () => {
     };
 
     useEffect(() => {
-        if(selectedBBOROrgValue === null) {
+        if (selectedBBOROrgValue === null) {
             setselectedBBOROrgValue('Global');
         }
     }, []);
-    
+
 
     return (
         <IonPage className="ion-flex-offset-app">
@@ -849,17 +849,7 @@ const BulletinBoards: React.FC = () => {
                         </IonButton>
                     </>
                 )}
-                <IonCardTitle>Bulletin Boards
-                    {!geoConsent && !anonAccess && (
-                        <IonButton color="success" className="share-location-button-chat"
-                            onClick={() => {
-                                getLocation();
-                            }}
-                        >
-                            Share Location to Enable Community Boards
-                            <IonIcon icon={locationOutline} slot="start" />
-                        </IonButton>
-                    )}
+                <IonCardTitle className="bulletinboard-title">Bulletin Boards
                 </IonCardTitle>
                 {!anonAccess && (
                     <>
@@ -877,46 +867,60 @@ const BulletinBoards: React.FC = () => {
                                 ))}
                             </IonSelect>
                         </IonChip>
+                        {!geoConsent && !anonAccess && (
+                            <IonButton color="success" className="share-location-button-chat"
+                                onClick={() => {
+                                    getLocation();
+                                }}
+                            >
+                                Share Location to Enable Community Boards
+                                <IonIcon icon={locationOutline} slot="start" />
+                            </IonButton>
+                        )}
                         {selectedBBOROrgValue !== '' && (
                             <div className="chat-container">
+
                                 <form onSubmit={submitMessage} className="chat-input-form">
-                                    <IonChip className={uploadedImageUrl ? "ion-chip-with-image" : ""}>
-                                        {uploadedImageUrl ? (
-                                            <img
-                                                src={uploadedImageUrl}
-                                                alt="Uploaded preview"
-                                                style={{ maxWidth: '100%', maxHeight: '100%' }}
-                                            />
-                                        ) : (
-                                            <IonInput
-                                                required={true}
-                                                aria-label='Message'
-                                                type='text'
-                                                value={messageInput}
-                                                placeholder="Enter your message"
-                                                onIonChange={e => setMessageInput(e.detail.value || '')}
-                                            />
-                                        )}
-                                        <label htmlFor="upload-button">
-                                            <IonIcon icon={cameraOutline} />
-                                        </label>
-                                        <input
-                                            id="upload-button"
-                                            type="file"
-                                            accept="image/*"
-                                            style={{ display: 'none' }}
-                                            onChange={handleImageUpload}
-                                        />
-                                    </IonChip>
                                     <IonRow>
-                                        {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
-                                            <IonLabel>
-                                                Cross-Post to Community Board?
-                                                <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                            </IonLabel>
-                                        )}
+                                        <IonChip className={uploadedImageUrl ? "ion-chip-with-image" : ""}>
+                                            {uploadedImageUrl ? (
+                                                <img
+                                                    src={uploadedImageUrl}
+                                                    alt="Uploaded preview"
+                                                    style={{ maxWidth: '100%', maxHeight: '100px' }}
+                                                />
+                                            ) : (
+                                                <IonInput
+                                                    required={true}
+                                                    aria-label='Message'
+                                                    type='text'
+                                                    min='1'
+                                                    max='1000'
+                                                    
+                                                    value={messageInput}
+                                                    placeholder="Enter your message"
+                                                    onIonChange={e => setMessageInput(e.detail.value || '')}
+                                                />
+                                            )}
+                                            <label htmlFor="upload-button">
+                                                <IonIcon icon={cameraOutline} />
+                                            </label>
+                                            <input
+                                                id="upload-button"
+                                                type="file"
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                                onChange={handleImageUpload}
+                                            />
+                                        </IonChip>
                                     </IonRow>
                                     <IonRow className="chat-button-row">
+                                        {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
+                                            <IonLabel>
+                                                <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                                Cross-Post to Community Board?
+                                            </IonLabel>
+                                        )}
                                         <IonButton type="button" onClick={submitMessage} disabled={isLoading}>
                                             Post Bulletin Board Message
                                         </IonButton>
