@@ -43,6 +43,9 @@
     display: block; 
 }
 
+.bulletinboard-title {
+    text-align: center;
+}
 
 
 .avatarChat .avatarChat.small.md {

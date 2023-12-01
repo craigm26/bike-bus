@@ -113,6 +113,52 @@ const Welcome: React.FC = () => {
     }
   };
 
+
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(firebaseAuth);
+        if (result) {
+          const user = result.user;
+          if (user && user.uid) {
+            console.log("Starting checkAndUpdateAccountModes");
+            await checkAndUpdateAccountModes(user.uid);
+            console.log("Finished checkAndUpdateAccountModes");
+
+            // The same username check and redirect logic as in handleGoogleSubmit
+            const username = user.displayName;
+            if (username) {
+              console.log("Pushing to /Map");
+              history.push('/Map');
+              console.log("Pushed to /Map");
+            } else {
+              console.log("Pushing to /SetUsername");
+              history.push('/SetUsername');
+              console.log("Pushed to /SetUsername");
+            }
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
+            setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
+          } else {
+            setErrorMessage("Error logging in with Google: " + error.message);
+          }
+        } else {
+          setErrorMessage("Error logging in with Google.");
+        }
+      }
+    };
+
+    handleRedirectResult();
+
+    if (headerContext) {
+      headerContext.setShowHeader(false);
+    }
+  }, [headerContext, checkAndUpdateAccountModes, history]);
+
+
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
@@ -142,6 +188,26 @@ const Welcome: React.FC = () => {
               <img src={GoogleLogo} alt="Sign in with Google" onClick={handleGoogleSubmit} className="google-sign-in" />
             </IonCol>
           </IonRow>
+          <IonText className="use-anonymously">
+          <p>
+            <IonButton
+              onClick={async () => {
+                try {
+                  const userCredential = await signInAnonymously();
+                  const user = userCredential?.user;
+                  if (user && user.uid) {
+                    await checkAndUpdateAccountModes(user.uid);
+                  }
+                  history.push('/Map');
+                } catch (error) {
+                  // Handle the error (e.g., display an error message)
+                }
+              }}
+            >
+              Login Anonymously
+            </IonButton>
+          </p>
+        </IonText>
           <IonRow className="ion-justify-content-center">
             <IonCol size="5">
             <a href="/PrivacyPolicy" className="privacy-policy-link">Privacy Policy</a>
