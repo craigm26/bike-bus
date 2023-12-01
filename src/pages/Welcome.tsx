@@ -58,10 +58,12 @@ const Welcome: React.FC = () => {
           // const userCredential = await signInWithGoogleNative();
           console.log("Finished signInWithGoogleNative");
           const user = userCredential?.user;
+          console.log("user: " + user);
+          console.log("user.uid: " + user?.uid)
           if (user && user.uid) {
-            console.log("Starting checkAndUpdateAccountModes");
+            console.log("Starting native checkAndUpdateAccountModes");
             await checkAndUpdateAccountModes(user.uid);
-            console.log("Finished checkAndUpdateAccountModes");
+            console.log("Finished native checkAndUpdateAccountModes");
           }
           const username = user?.displayName;
           if (username) {
@@ -121,9 +123,9 @@ const Welcome: React.FC = () => {
         if (result) {
           const user = result.user;
           if (user && user.uid) {
-            console.log("Starting checkAndUpdateAccountModes");
+            console.log("Starting web checkAndUpdateAccountModes");
             await checkAndUpdateAccountModes(user.uid);
-            console.log("Finished checkAndUpdateAccountModes");
+            console.log("Finished web checkAndUpdateAccountModes");
 
             // The same username check and redirect logic as in handleGoogleSubmit
             const username = user.displayName;
