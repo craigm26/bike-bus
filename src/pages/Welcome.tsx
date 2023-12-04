@@ -56,6 +56,7 @@ const Welcome: React.FC = () => {
 
           // switch for signInWithGoogleNative
           // const userCredential = await signInWithGoogleNative();
+          console.log("userCredential: " + userCredential);
           console.log("Finished signInWithGoogleNative");
           const user = userCredential?.user;
           console.log("user: " + user);

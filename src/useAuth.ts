@@ -175,6 +175,7 @@ const useAuth = () => {
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
       const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log('Google SignIn Result from useAuth page:', result);
   
       // Check if the credential object is not null
       if (!result.credential) {
@@ -194,6 +195,7 @@ const useAuth = () => {
   
       // Sign in to Firebase using the Google credential
       const userCredential = await signInWithCredential(firebaseAuth, credential);
+      console.log('Google SignIn Result from useAuth page:', userCredential);
   
       // Return the user credential on successful sign-in
       return userCredential;
