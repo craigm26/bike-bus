@@ -174,6 +174,7 @@ const useAuth = () => {
 
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
+      console.log('Signing in with Google with capacitor-firebase-authentication...');
       const result = await FirebaseAuthentication.signInWithGoogle();
       console.log('Google SignIn Result from useAuth page:', result);
   
@@ -184,6 +185,7 @@ const useAuth = () => {
   
       // Extract the ID token from the credential object within the SignInResult
       const idToken = result.credential.idToken;
+      console.log('Google ID Token:', idToken);
   
       // Check if the ID token exists
       if (!idToken) {
@@ -192,12 +194,13 @@ const useAuth = () => {
   
       // Create a Firebase Auth credential using the Google ID token
       const credential = GoogleAuthProvider.credential(idToken);
-  
+      console.log('Firebase Auth credential:', credential);
       // Sign in to Firebase using the Google credential
       const userCredential = await signInWithCredential(firebaseAuth, credential);
       console.log('Google SignIn Result from useAuth page:', userCredential);
   
       // Return the user credential on successful sign-in
+      console.log('now going to return userCredential');
       return userCredential;
     } catch (error) {
       console.error('Error signing in with Google:', error);
