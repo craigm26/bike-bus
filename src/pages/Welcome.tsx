@@ -13,7 +13,7 @@ import './Welcome.css';
 import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
-import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect } from '@firebase/auth';
+import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
 
@@ -50,33 +50,14 @@ const Welcome: React.FC = () => {
       if (isMobile) {
         // Mobile browsers do not support redirect sign-in
         // so we need to use the capacitor plugin instead
-        console.log("Starting signInWithGoogleNative");
+        console.log("Starting signInWithGoogleNative going from welcome to useAuth");
         try {
           const userCredential = await signInWithGoogleNative();
-
-          // switch for signInWithGoogleNative
-          // const userCredential = await signInWithGoogleNative();
-          console.log("userCredential: " + userCredential);
-          console.log("Finished signInWithGoogleNative");
-          const user = userCredential?.user;
-          console.log("user: " + user);
-          console.log("user.uid: " + user?.uid)
-          if (user && user.uid) {
-            console.log("Starting native checkAndUpdateAccountModes");
-            await checkAndUpdateAccountModes(user.uid);
-            console.log("Finished native checkAndUpdateAccountModes");
-          }
-          const username = user?.displayName;
-          if (username) {
-            // user has a username, so redirect to the map page
-            console.log("Pushing to /Map");
-            history.push('/Map');
-            console.log("Pushed to /Map");
-          } else {
-            // user does not have a username, so redirect to the set username page
-            console.log("Pushing to /SetUsername");
-            history.push('/SetUsername');
-            console.log("Pushed to /SetUsername");
+          console.log("Finished signInWithGoogleNative going from welcome to useAuth");
+          console.log("userCredential on welcome page: " + userCredential);
+          if (userCredential) {
+            processUser(userCredential.user);
+            console.log("Finished processUser");
           }
         } catch (error) {
           console.log("signInWithGoogleNative error: " + error);
@@ -112,6 +93,20 @@ const Welcome: React.FC = () => {
         }
       } else {
         setErrorMessage("Error logging in with Google.");
+      }
+    }
+  };
+
+  const processUser = async (user: User) => {
+    if (user && user.uid) {
+      await checkAndUpdateAccountModes(user.uid);
+      const username = user.displayName;
+      if (username) {
+        // User has a username, redirect to the map page
+        history.push('/Map');
+      } else {
+        // User does not have a username, redirect to the set username page
+        history.push('/SetUsername');
       }
     }
   };
@@ -154,7 +149,42 @@ const Welcome: React.FC = () => {
       }
     };
 
+    // we're going to make a similar handler for the native sign-in
+    // but we're going to use the capacitor plugin instead of the firebase web sdk
+    const handleNativeRedirectResult = async () => {
+      try {
+        const userCredential = await signInWithGoogleNative();
+        const user = userCredential?.user;
+        if (user && user.uid) {
+          await checkAndUpdateAccountModes(user.uid);
+        }
+        const username = user?.displayName;
+        if (username) {
+          // user has a username, so redirect to the map page
+          console.log("Pushing to /Map");
+          history.push('/Map');
+          console.log("Pushed to /Map");
+        } else {
+          // user does not have a username, so redirect to the set username page
+          console.log("Pushing to /SetUsername");
+          history.push('/SetUsername');
+          console.log("Pushed to /SetUsername");
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
+            setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
+          } else {
+            setErrorMessage("Error logging in with Google: " + error.message);
+          }
+        } else {
+          setErrorMessage("Error logging in with Google.");
+        }
+      }
+    };
+
     handleRedirectResult();
+    handleNativeRedirectResult();
 
     if (headerContext) {
       headerContext.setShowHeader(false);
@@ -192,28 +222,28 @@ const Welcome: React.FC = () => {
             </IonCol>
           </IonRow>
           <IonText className="use-anonymously">
-          <p>
-            <IonButton
-              onClick={async () => {
-                try {
-                  const userCredential = await signInAnonymously();
-                  const user = userCredential?.user;
-                  if (user && user.uid) {
-                    await checkAndUpdateAccountModes(user.uid);
+            <p>
+              <IonButton
+                onClick={async () => {
+                  try {
+                    const userCredential = await signInAnonymously();
+                    const user = userCredential?.user;
+                    if (user && user.uid) {
+                      await checkAndUpdateAccountModes(user.uid);
+                    }
+                    history.push('/Map');
+                  } catch (error) {
+                    // Handle the error (e.g., display an error message)
                   }
-                  history.push('/Map');
-                } catch (error) {
-                  // Handle the error (e.g., display an error message)
-                }
-              }}
-            >
-              Login Anonymously
-            </IonButton>
-          </p>
-        </IonText>
+                }}
+              >
+                Login Anonymously
+              </IonButton>
+            </p>
+          </IonText>
           <IonRow className="ion-justify-content-center">
             <IonCol size="5">
-            <a href="/PrivacyPolicy" className="privacy-policy-link">Privacy Policy</a>
+              <a href="/PrivacyPolicy" className="privacy-policy-link">Privacy Policy</a>
             </IonCol>
           </IonRow>
         </IonGrid>

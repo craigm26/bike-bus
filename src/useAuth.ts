@@ -13,6 +13,7 @@ import {
   updateProfile,
   signInWithRedirect,
   signInWithCredential,
+  signInWithPopup,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
@@ -148,80 +149,31 @@ const useAuth = () => {
     return result.user;
   };
 
-  const getIdToken = async () => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      return;
-    }
-    const result = await FirebaseAuthentication.getIdToken();
-    return result.token;
-  };
-
-
-  const getGoogleUser = async () => {
-    try {
-      console.log('Signing in with Google with capacitor-firebase-authentication...');
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      console.log('Google SignIn Result:', result);
-      // Use a type assertion if you are sure that idToken exists on the result object
-      return { accessToken: (result as any).idToken };
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      throw error;
-    }
-  };
 
 
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
-      console.log('Signing in with Google with capacitor-firebase-authentication...');
       const result = await FirebaseAuthentication.signInWithGoogle();
-      console.log('Google SignIn Result from useAuth page:', result);
-  
-      // Check if the credential object is not null
       if (!result.credential) {
         throw new Error('No credential returned from Google sign-in');
       }
-  
-      // Extract the ID token from the credential object within the SignInResult
       const idToken = result.credential.idToken;
-      console.log('Google ID Token:', idToken);
-  
-      // Check if the ID token exists
       if (!idToken) {
         throw new Error('No ID token returned from Google sign-in');
       }
   
       // Create a Firebase Auth credential using the Google ID token
-      const credential = GoogleAuthProvider.credential(idToken);
-      console.log('Firebase Auth credential:', credential);
-      // Sign in to Firebase using the Google credential
-      const userCredential = await signInWithCredential(firebaseAuth, credential);
-      console.log('Google SignIn Result from useAuth page:', userCredential);
+      const firebaseCredential = GoogleAuthProvider.credential(idToken);
   
-      // Return the user credential on successful sign-in
-      console.log('now going to return userCredential');
-      return userCredential;
+      // Sign in to Firebase using the Google credential and return the UserCredential
+      return await signInWithCredential(firebaseAuth, firebaseCredential);
     } catch (error) {
-      console.error('Error signing in with Google:', error);
-      // Detailed error logging
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-        });
-      } else if (typeof error === 'object') {
-        console.error('Error object:', error);
-      } else {
-        console.error('Unknown error type:', error);
-      }
+      console.error('Error in signInWithGoogleNative:', error);
       return null;
     }
   };
   
-  
-  
+
 
 
   const signInAnonymously = async (): Promise<UserCredential> => {
