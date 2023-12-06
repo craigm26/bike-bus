@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { db, auth as firebaseAuth } from './firebaseConfig';
 import {
   GoogleAuthProvider,
@@ -17,6 +17,8 @@ import {
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
+import { useHistory } from 'react-router-dom';
+
 
 
 interface UserData {
@@ -28,7 +30,6 @@ interface UserData {
   accountType: "Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin";
   enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'Org Admin' | 'App Admin'>;
   enabledOrgModes: Array<'OrganizationCreator' | 'OrganizationMembers' | 'OrganizationAdmins' | 'OrganizationManagers' | 'OrganizationEmployees' | 'Organization'>;
-  // Add other properties specific to user data
 }
 
 const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] => {
@@ -151,28 +152,29 @@ const useAuth = () => {
 
 
 
-  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
+  const signInWithGoogleNative = async () => {
     try {
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      if (!result.credential) {
-        throw new Error('No credential returned from Google sign-in');
+      const userCredential = await FirebaseAuthentication.signInWithGoogle();
+      if (!userCredential) {
+        throw new Error('No user returned from Google sign-in');
       }
-      const idToken = result.credential.idToken;
-      if (!idToken) {
-        throw new Error('No ID token returned from Google sign-in');
+
+      // Get the Firebase user from the user credential
+      const firebaseUser = userCredential.user;
+
+      // Check if the user has a username and redirect accordingly
+      if (firebaseUser?.displayName) {
+        (history as unknown as { push: (path: string) => void }).push('/Map');
+      } else {
+        (history as unknown as { push: (path: string) => void }).push('/SetUsername');
       }
-  
-      // Create a Firebase Auth credential using the Google ID token
-      const firebaseCredential = GoogleAuthProvider.credential(idToken);
-  
-      // Sign in to Firebase using the Google credential and return the UserCredential
-      return await signInWithCredential(firebaseAuth, firebaseCredential);
+      // Update the user's account modes if needed
+      await checkAndUpdateAccountModes(firebaseUser?.uid || '');
     } catch (error) {
       console.error('Error in signInWithGoogleNative:', error);
-      return null;
     }
   };
-  
+
 
 
 

@@ -5,6 +5,7 @@ import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { User } from '@firebase/auth';
 
 
 const Signup: React.FC = () => {
@@ -60,71 +61,33 @@ const Signup: React.FC = () => {
     };
 
     const handleGoogleSubmit = async () => {
-        console.log("handleGoogleSubmit");
         try {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                // Mobile browsers do not support redirect sign-in
-                // so we need to use popup sign-in instead
-                console.log("Starting signInWithGoogle");
-                const userCredential = await signInWithGoogleNative();
-                console.log("Finished signInWithGoogle");
-                const user = userCredential?.user;
-                if (user && user.uid) {
-                    console.log("Starting checkAndUpdateAccountModes");
-                    await checkAndUpdateAccountModes(user.uid);
-                    console.log("Finished checkAndUpdateAccountModes");
-                }
-                const username = user?.displayName;
-                if (username) {
-                    // user has a username, so redirect to the map page
-                    console.log("Pushing to /Map");
-                    history.replace('/Map');
-                    console.log("Pushed to /Map");
-                    setRedirectToMap(true);
-                } else {
-                    // user does not have a username, so redirect to the set username page
-                    console.log("Pushing to /Map");
-                    history.replace('/Map');
-                    console.log("Pushed to /Map");
-                    setRedirectToMap(true);
-                }
-            } else {
-                // Desktop browsers support redirect sign-in
-                console.log("Starting signInWithGoogle");
-
-                const userCredential = await signInWithGoogle();
-                const user = userCredential?.user;
-                if (user && user.uid) {
-                    await checkAndUpdateAccountModes(user.uid);
-                }
-                const username = user?.displayName;
-                if (username) {
-                    // user has a username, so redirect to the map page
-                    console.log("Pushing to /Map");
-                    history.replace('/Map');
-                    console.log("Pushed to /Map");
-                    setRedirectToMap(true);
-                } else {
-                    // user does not have a username, so redirect to the set username page
-                    console.log("Pushing to /Map");
-                    history.replace('/Map');
-                    console.log("Pushed to /Map");
-                    setRedirectToMap(true);
-                }
-            }
+    
+          const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
+          if (isMobile) {
+            await signInWithGoogleNative();
+          } else {
+            const userCredential = await signInWithGoogle();
+            await processUser(userCredential?.user);
+          }
         } catch (error) {
-            if (error instanceof Error) {
-                if (error.message.includes("Failed to execute 'postMessage' on 'Window'")) {
-                    setErrorMessage("Error logging in with Google. Please try again or use another sign-in method.");
-                } else {
-                    setErrorMessage("Error logging in with Google: " + error.message);
-                }
-            } else {
-                setErrorMessage("Error logging in with Google.");
-            }
+    
+        } finally {
+    
         }
-    };
+      };
+    
+      const processUser = async (user: User | undefined) => {
+        if (user) {
+          await checkAndUpdateAccountModes(user.uid);
+          const username = user.displayName;
+          if (username) {
+            history.push('/Map');
+          } else {
+            history.push('/SetUsername');
+          }
+        }
+      };
 
     useEffect(() => {
         if (redirectToMap) {
