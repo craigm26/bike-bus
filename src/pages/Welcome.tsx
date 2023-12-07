@@ -4,7 +4,6 @@ import {
   IonContent,
   IonButton,
   IonText,
-  IonHeader,
   IonRow,
   IonGrid,
   IonCol,
@@ -13,19 +12,13 @@ import './Welcome.css';
 import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
-import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect, User } from '@firebase/auth';
+import { getRedirectResult, GoogleAuthProvider, signInWithCredential, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
-
-
-
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 const Welcome: React.FC = () => {
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const {
-    signInWithEmailAndPassword,
     signInWithGoogle,
     signInWithGoogleNative,
     signInAnonymously,
@@ -33,9 +26,6 @@ const Welcome: React.FC = () => {
   } = useAuth();
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-
 
   useEffect(() => {
     if (headerContext) {
@@ -45,22 +35,53 @@ const Welcome: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
-
       const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
       if (isMobile) {
-        await signInWithGoogleNative();
+        const userCredential = await signInWithGoogleNative();
+        if (userCredential?.user) {
+          const firebaseUser = await authenticateWithFirebase();
+          await processUser(firebaseUser);
+        }
       } else {
         const userCredential = await signInWithGoogle();
         await processUser(userCredential?.user);
       }
     } catch (error) {
-
-    } finally {
-
+      console.error('Error during Google sign in:', error);
     }
   };
 
-  const processUser = async (user: User | undefined) => {
+  const authenticateWithFirebase = async () => {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      console.error('No current user found for Firebase authentication');
+      return null;
+    }
+
+    const idTokenResult = await getIdToken();
+    const idToken = idTokenResult?.token;
+
+    if (idToken) {
+      const credential = GoogleAuthProvider.credential(idToken);
+      const firebaseUserCredential = await signInWithCredential(firebaseAuth, credential);
+      return firebaseUserCredential.user;
+    } else {
+      console.error('ID Token not available for Firebase authentication');
+      return null;
+    }
+  };
+
+  const getCurrentUser = async () => {
+    const result = await FirebaseAuthentication.getCurrentUser();
+    return result.user;
+  };
+
+  const getIdToken = async () => {
+    const result = await FirebaseAuthentication.getIdToken();
+    return result;
+  };
+
+  const processUser = async (user: User | null | undefined) => {
     if (user) {
       await checkAndUpdateAccountModes(user.uid);
       const username = user.displayName;
@@ -80,13 +101,13 @@ const Welcome: React.FC = () => {
           await processUser(result.user);
         }
       } catch (error) {
-        console.log(error);       }
+        console.log(error);
+      }
     })();
+  }, [checkAndUpdateAccountModes, history]);
 
-    if (headerContext) {
-      headerContext.setShowHeader(false);
-    }
-  }, [headerContext, checkAndUpdateAccountModes, history]);
+
+
 
   return (
     <IonPage className="ion-flex-offset-app">
