@@ -12,7 +12,7 @@ import './Welcome.css';
 import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
-import { getRedirectResult, GoogleAuthProvider, signInWithCredential, User } from '@firebase/auth';
+import { getRedirectResult, GoogleAuthProvider, signInWithCredential, User, UserInfo } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -23,6 +23,8 @@ const Welcome: React.FC = () => {
     signInWithGoogleNative,
     signInAnonymously,
     checkAndUpdateAccountModes,
+    mapFirebaseUserToUserData,
+    authenticateWithFirebase,
   } = useAuth();
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
@@ -38,9 +40,15 @@ const Welcome: React.FC = () => {
       const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
       if (isMobile) {
         const userCredential = await signInWithGoogleNative();
+        console.log('userCredential from welcome page', userCredential);
+        // let's pass the userCredential to the authenticateWithFirebase function
+        await authenticateWithFirebase(); // Remove the argument here
+        // have we authenticated with Firebase?
+        console.log('after authenticateWithFirebase');
+        // let's test to see if we can get the user from Firebase
         if (userCredential?.user) {
-          const firebaseUser = await authenticateWithFirebase();
-          await processUser(firebaseUser);
+          console.log('starting processUser');
+          await processUser(userCredential?.user);
         }
       } else {
         const userCredential = await signInWithGoogle();
@@ -51,40 +59,28 @@ const Welcome: React.FC = () => {
     }
   };
 
-  const authenticateWithFirebase = async () => {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      console.error('No current user found for Firebase authentication');
-      return null;
-    }
-
-    const idTokenResult = await getIdToken();
-    const idToken = idTokenResult?.token;
-
-    if (idToken) {
-      const credential = GoogleAuthProvider.credential(idToken);
-      const firebaseUserCredential = await signInWithCredential(firebaseAuth, credential);
-      return firebaseUserCredential.user;
-    } else {
-      console.error('ID Token not available for Firebase authentication');
-      return null;
-    }
-  };
-
   const getCurrentUser = async () => {
     const result = await FirebaseAuthentication.getCurrentUser();
+    console.log('getCurrentUser', result);
     return result.user;
   };
 
   const getIdToken = async () => {
     const result = await FirebaseAuthentication.getIdToken();
+    console.log('getIdToken', result);
     return result;
   };
 
   const processUser = async (user: User | null | undefined) => {
     if (user) {
+      console.log('user during processUser', user);
+      console.log('user.uid', user.uid);
+      console.log('user.displayName', user.displayName);
+      console.log('user.email', user.email);
       await checkAndUpdateAccountModes(user.uid);
+      console.log('after checkAndUpdateAccountModes');
       const username = user.displayName;
+      console.log('username', username);
       if (username) {
         history.push('/Map');
       } else {

@@ -42,6 +42,9 @@ const Signup: React.FC = () => {
     const handleSignup = async (email: string, password: string, username: string, firstName: string, lastName: string) => {
         try {
             // Create the user in Firebase Authentication
+            console.log('starting signUpWithEmailAndPassword');
+            console.log('email', email);
+            console.log('password', password);
             const userCredential = await signUpWithEmailAndPassword(email, password, username, firstName, lastName);
             const user = userCredential.user;
             const userRef = doc(db, 'users', user.uid);
@@ -65,7 +68,11 @@ const Signup: React.FC = () => {
     
           const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
           if (isMobile) {
-            await signInWithGoogleNative();
+            console.log('starting signInWithGoogleNative');
+            const userCredential = await signInWithGoogleNative();
+            console.log('userCredential', userCredential);
+            console.log('starting processUser');
+            // await processUser(userCredential);
           } else {
             const userCredential = await signInWithGoogle();
             await processUser(userCredential?.user);
