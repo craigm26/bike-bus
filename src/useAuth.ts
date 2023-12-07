@@ -15,6 +15,7 @@ import {
   signInWithCredential,
   signInWithPopup,
   ProviderId,
+  signInWithCustomToken,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
@@ -108,12 +109,20 @@ const useAuth = () => {
 
 
   const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName: string): Promise<UserCredential> => {
+    console.log('signUpWithEmailAndPassword in useAuth called');
+    console.log('email:', email);
+    console.log('password:', password);
     const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    console.log('userCredential:', userCredential);
     const user = userCredential.user;
+    console.log('user:', user);
     await updateProfile(user, { displayName: username });
+    console.log('user updated with username:', user);
 
     const userData = await mapFirebaseUserToUserData(user);
+    console.log('userData:', userData);
     setUser(userData);
+    console.log('user set in useAuth');
 
     return userCredential;
   };
@@ -148,17 +157,69 @@ const useAuth = () => {
   };
 
 
-  const signInWithGoogleNative = async () => {
+  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
       const result = await FirebaseAuthentication.signInWithGoogle();
-      return result;
+      console.log('result on useAuth page', result);
+      // let's example the result and see if it can match the required userCredential type
+      const userCredential = result as unknown as UserCredential;
+      console.log('userCredential on useAuth page', userCredential);
+      console.log('userCredential.user on useAuth page', userCredential.user);
+      if (userCredential && userCredential.user) {
+        return userCredential;
+      } else {
+        return null;
+      }
     } catch (error) {
       console.error('Error in signInWithGoogleNative:', error);
+      return null;
     }
+
   };
 
+  const authenticateWithFirebase = async (): Promise<UserCredential | null> => {
+    const currentUser = await getCurrentUser();
+    console.log('currentUser', currentUser);
+    if (!currentUser) {
+      console.error('No current user found for Firebase authentication');
+      return null;
+    }
+    console.log('currentUser.uid', currentUser.uid);
+    const idTokenResult = await getIdToken();
+    console.log('idTokenResult', idTokenResult);
+    const idToken = idTokenResult?.token;
+    console.log('idToken', idToken);
+  
+    if (idToken) {
+      const credential = GoogleAuthProvider.credential(idToken);
+      console.log('credential', credential);
+      try {
+        // Sign in with credential from the Google user and return the UserCredential object.
+        const firebaseUserCredential = await signInWithCredential(firebaseAuth, credential);
+        console.log('firebaseUserCredential', firebaseUserCredential);
+        return firebaseUserCredential;
+      } catch (error) {
+        console.error('Error signing in with Firebase:', error);
+        return null;
+      }
+    } else {
+      console.error('ID Token not available for Firebase authentication');
+      return null;
+    }
+  };
+  
 
+  const getCurrentUser = async () => {
+    const result = await FirebaseAuthentication.getCurrentUser();
+    console.log('getCurrentUser', result);
+    return result.user;
+  };
 
+  const getIdToken = async () => {
+    const result = await FirebaseAuthentication.getIdToken();
+    console.log('getIdToken', result);
+    return result;
+  };
 
   const signInAnonymously = async (): Promise<UserCredential> => {
     try {
@@ -196,12 +257,18 @@ const useAuth = () => {
 
   const checkAndUpdateAccountModes = async (uid: string) => {
     try {
+      console.log('Checking and updating account modes for user:', uid);
       const userRef = doc(collection(db, 'users'), uid);
+      console.log('userRef:', userRef);
       const userDoc = await getDoc(userRef);
+      console.log('userDoc:', userDoc);
 
       if (userDoc.exists()) {
+        console.log('userDoc exists');
         const userData = userDoc.data();
+        console.log('userData:', userData);
         if (userData && userData.accountType) {
+          console.log('userData.accountType exists');
           // Only update if enabledAccountModes does not exist or is empty
           if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
             const enabledAccountModes = getEnabledAccountModes(userData.accountType);
@@ -225,6 +292,8 @@ const useAuth = () => {
     signInWithGoogle,
     signInAnonymously,
     signOut,
+    mapFirebaseUserToUserData,
+    authenticateWithFirebase,
     error,
     setError,
     isAnonymous,
