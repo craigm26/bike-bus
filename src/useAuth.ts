@@ -14,10 +14,12 @@ import {
   signInWithRedirect,
   signInWithCredential,
   signInWithPopup,
+  ProviderId,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
 import { useHistory } from 'react-router-dom';
+import { set } from 'date-fns';
 
 
 
@@ -145,31 +147,11 @@ const useAuth = () => {
     }
   };
 
-  const getCurrentUser = async () => {
-    const result = await FirebaseAuthentication.getCurrentUser();
-    return result.user;
-  };
-
-
 
   const signInWithGoogleNative = async () => {
     try {
-      const userCredential = await FirebaseAuthentication.signInWithGoogle();
-      if (!userCredential) {
-        throw new Error('No user returned from Google sign-in');
-      }
-
-      // Get the Firebase user from the user credential
-      const firebaseUser = userCredential.user;
-
-      // Check if the user has a username and redirect accordingly
-      if (firebaseUser?.displayName) {
-        (history as unknown as { push: (path: string) => void }).push('/Map');
-      } else {
-        (history as unknown as { push: (path: string) => void }).push('/SetUsername');
-      }
-      // Update the user's account modes if needed
-      await checkAndUpdateAccountModes(firebaseUser?.uid || '');
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      return result;
     } catch (error) {
       console.error('Error in signInWithGoogleNative:', error);
     }
