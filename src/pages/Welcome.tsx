@@ -40,18 +40,15 @@ const Welcome: React.FC = () => {
       const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
       if (isMobile) {
         const userCredential = await signInWithGoogleNative();
-        console.log('userCredential from welcome page', userCredential);
-        // let's pass the userCredential to the authenticateWithFirebase function
-        await authenticateWithFirebase(); // Remove the argument here
-        // have we authenticated with Firebase?
-        console.log('after authenticateWithFirebase');
-        // let's test to see if we can get the user from Firebase
-        if (userCredential?.user) {
-          console.log('starting processUser');
-          await processUser(userCredential?.user);
-        }
+        console.log('starting processUser');
+        console.log('userCredential', userCredential);
+        console.log('userCredential?.user', userCredential?.user);
+        await processUser(userCredential?.user);
       } else {
         const userCredential = await signInWithGoogle();
+        console.log('starting processUser');
+        console.log('userCredential', userCredential);
+        console.log('userCredential?.user', userCredential?.user);
         await processUser(userCredential?.user);
       }
     } catch (error) {
