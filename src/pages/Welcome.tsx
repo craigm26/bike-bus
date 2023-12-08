@@ -42,8 +42,7 @@ const Welcome: React.FC = () => {
         const userCredential = await signInWithGoogleNative();
         console.log('starting processUser');
         console.log('userCredential', userCredential);
-        console.log('userCredential?.user', userCredential?.user);
-        await processUser(userCredential?.user);
+        await processUser(userCredential);
       } else {
         const userCredential = await signInWithGoogle();
         console.log('starting processUser');
