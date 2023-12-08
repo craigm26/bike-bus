@@ -92,19 +92,25 @@ const useAuth = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (fUser) => {
       if (fUser) {
+        // User is signed in
+        const idToken = await fUser.getIdToken(); // Get the ID token
+        console.log("ID Token:", idToken);
+  
         const userData = await mapFirebaseUserToUserData(fUser);
         setUser(userData);
         setFirebaseUser(fUser);
       } else {
+        // User is signed out
         setUser(null);
         setFirebaseUser(null);
       }
     });
-
+  
     return () => {
-      unsubscribe();
+      unsubscribe(); // Clean up the subscription
     };
   }, []);
+  
 
   const isAnonymous = firebaseUser?.isAnonymous || false;
 
@@ -160,23 +166,14 @@ const useAuth = () => {
   };
 
 
-  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
+  const signInWithGoogleNative = async () => {
     try {
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      console.log('result on useAuth page', result);
-      // let's example the result and see if it can match the required userCredential type
-      const userCredential = result as unknown as UserCredential;
-      console.log('userCredential on useAuth page', userCredential);
-      console.log('userCredential.user on useAuth page', userCredential.user);
-      // kick off the authentication process with Firebase
-      const user = userCredential.user;
-
-      const accessToken = result?.credential?.accessToken || '';
-      console.log('accessToken on useAuth page', accessToken);
-      const idToken = result?.credential?.idToken || '';
-      console.log('idToken on useAuth page', idToken);
-      // map the user to the userData object
-      return userCredential;
+      console.log('signInWithGoogleNative called');
+      // let's use the firebase sign in with popup method
+      const result = FirebaseAuthentication.signInWithGoogle();
+      console.log('result:', result);
+      // find the provider in the result
+  
 
     } catch (error) {
       console.error('Error in signInWithGoogleNative:', error);
