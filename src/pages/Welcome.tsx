@@ -24,7 +24,6 @@ const Welcome: React.FC = () => {
     signInAnonymously,
     checkAndUpdateAccountModes,
     mapFirebaseUserToUserData,
-    authenticateWithFirebase,
   } = useAuth();
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
@@ -40,9 +39,9 @@ const Welcome: React.FC = () => {
       const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
       if (isMobile) {
         const userCredential = await signInWithGoogleNative();
-        console.log('starting processUser');
         console.log('userCredential', userCredential);
-        await processUser(userCredential);
+        console.log('userCredential?.user', userCredential?.user);
+        await processUser(userCredential?.user);
       } else {
         const userCredential = await signInWithGoogle();
         console.log('starting processUser');
