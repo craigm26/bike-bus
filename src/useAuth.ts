@@ -95,7 +95,7 @@ const useAuth = () => {
         // User is signed in
         const idToken = await fUser.getIdToken(); // Get the ID token
         console.log("ID Token:", idToken);
-  
+
         const userData = await mapFirebaseUserToUserData(fUser);
         setUser(userData);
         setFirebaseUser(fUser);
@@ -105,12 +105,12 @@ const useAuth = () => {
         setFirebaseUser(null);
       }
     });
-  
+
     return () => {
       unsubscribe(); // Clean up the subscription
     };
   }, []);
-  
+
 
   const isAnonymous = firebaseUser?.isAnonymous || false;
 
@@ -166,55 +166,31 @@ const useAuth = () => {
   };
 
 
-  const signInWithGoogleNative = async () => {
+  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
       console.log('signInWithGoogleNative called');
-      // let's use the firebase sign in with popup method
-      const result = FirebaseAuthentication.signInWithGoogle();
-      console.log('result:', result);
-      // find the provider in the result
+      const result = await FirebaseAuthentication.signInWithGoogle();
   
-
+      console.log('result as string:', JSON.stringify(result));
+  
+      if (result.credential && result.credential.idToken && result.credential.accessToken) {
+        const { idToken, accessToken } = result.credential;
+        console.log('token:', accessToken);
+        console.log('idToken:', idToken);
+  
+        // the provider is google
+        const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
+        return userCredential;
+      } else {
+        console.error('No credentials found in result.');
+        return null;
+      }
     } catch (error) {
       console.error('Error in signInWithGoogleNative:', error);
       return null;
     }
-
   };
-
-  const getCurrentUser = async () => {
-    const result = await FirebaseAuthentication.getCurrentUser();
-    console.log('getCurrentUser', result);
-    return result.user;
-  };
-
-  const getIdToken = async () => {
-    const result = await FirebaseAuthentication.getIdToken();
-    console.log('getIdToken', result);
-    return result;
-  };
-
-  const authenticateWithFirebase = async (providerId: typeof ProviderId, accessToken: string, idToken: string): Promise<UserData | null> => {
-    console.log('authenticateWithFirebase called');
-    console.log('providerId:', providerId);
-    console.log('accessToken:', accessToken);
-    console.log('idToken:', idToken);
-    let userCredential: UserCredential | null = null;
-    userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
-
-
-    console.log('userCredential:', userCredential);
-
-
-    const user = userCredential.user;
-    console.log('user:', user);
-    const userData = await mapFirebaseUserToUserData(user);
-    console.log('userData:', userData);
-    setUser(userData);
-    console.log('user set in useAuth');
-    return userData;
-  }
-
+  
 
 
   const signInAnonymously = async (): Promise<UserCredential> => {
@@ -304,7 +280,6 @@ const useAuth = () => {
     signInAnonymously,
     signOut,
     mapFirebaseUserToUserData,
-    authenticateWithFirebase,
     error,
     setError,
     isAnonymous,
