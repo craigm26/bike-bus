@@ -33,6 +33,11 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BikeBus App uses your location to help find BikeBusses, create routes and show your avatar on the map</string>
 	<key>UILaunchStoryboardName</key>
@@ -56,6 +61,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleGetInfoString</key>
+	<string></string>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

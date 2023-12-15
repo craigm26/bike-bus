@@ -28,7 +28,7 @@ import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOpt
 import { useHistory } from 'react-router-dom';
 import { set } from 'date-fns';
 import { get } from 'http';
-
+import firebase from 'firebase/compat/app';
 
 
 interface UserData {
@@ -129,7 +129,7 @@ const useAuth = () => {
       return getAuth();
     }
   };
- 
+
   const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName: string): Promise<UserCredential> => {
     console.log('signUpWithEmailAndPassword in useAuth called');
     console.log('email:', email);
@@ -184,223 +184,256 @@ const useAuth = () => {
   const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
     try {
       console.log('signInWithGoogleNative called');
-      const result = await FirebaseAuthentication.signInWithGoogle();
+      // test to see if this is not ios:
+      const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
 
-      console.log('result as string:', JSON.stringify(result));
+      if (!isIOS) {
 
-      if (result.credential && result.credential.idToken && result.credential.accessToken) {
-        const { idToken, accessToken } = result.credential;
-        console.log('token:', accessToken);
-        console.log('idToken:', idToken);
+        const result = await FirebaseAuthentication.signInWithGoogle();
 
-        try {
-          // the provider is google
-          const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
-          return userCredential;
-        } catch (signInError) {
-          console.error('Error during signInWithCredential:', signInError);
-          // Log additional error details if available
-          if ((signInError as any).code) console.error('Error code:', (signInError as any).code);
-          if ((signInError as any).message) console.error('Error message:', (signInError as any).message);
-          if ((signInError as any).stack) console.error('Error stack:', (signInError as any).stack);
+        console.log('result as string:', JSON.stringify(result));
+
+        if (result.credential && result.credential.idToken && result.credential.accessToken) {
+          const { idToken, accessToken } = result.credential;
+          console.log('token:', accessToken);
+          console.log('idToken:', idToken);
+
+          try {
+            // the provider is google
+            const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
+            return userCredential;
+          } catch (signInError) {
+            console.error('Error during signInWithCredential:', signInError);
+            // Log additional error details if available
+            if ((signInError as any).code) console.error('Error code:', (signInError as any).code);
+            if ((signInError as any).message) console.error('Error message:', (signInError as any).message);
+            if ((signInError as any).stack) console.error('Error stack:', (signInError as any).stack);
+            return null;
+          }
+
+        } else {
+          console.error('No credentials found in result.');
           return null;
         }
-
       } else {
-        console.error('No credentials found in result.');
+        // this is ios so go to signInWithGoogleOniOS
+        console.log('isIOS');
+        signInWithGoogleOniOS();
         return null;
       }
     } catch (error) {
-      console.error('Error in signInWithGoogleNative:', error);
+      console.error('Error signing in with Google:', error);
       return null;
     }
-  };
+  }
 
-  const signInWithGoogleOniOS = async () => {
-    console.log('signInWithGoogleOniOS called');
+    const signInWithGoogleOniOS = async () => {
+      console.log('signInWithGoogleOniOS called');
 
-    try {
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      console.log('result:', result);
-
-      if (!result.credential?.idToken) {
-        throw new Error('No idToken found in the result.');
-      }
-
-      const credential = GoogleAuthProvider.credential(result.credential.idToken);
-      console.log('credential:', credential);
-
-      const auth = getAuth();
-      console.log('auth:', auth);
-
-      console.log('starting signInWithCredential');
-      await signInWithCredential(auth, credential);
-      console.log('signInWithCredential successful');
-
-      const user = auth.currentUser;
-      console.log('user:', user);
-
-      if (user) {
-        const mappedUser = await mapFirebaseUserToUserData(user);
-        console.log('mappedUser:', mappedUser);
-        setUser(mappedUser);
-        console.log('user set in useAuth');
-      } else {
-        throw new Error('User is null after signInWithCredential');
-      }
-    } catch (error) {
-      console.error('Error in signInWithGoogleOniOS:', error);
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-    }
-  };
-
-
-
-
-  const signInAnonymously = async (): Promise<UserCredential> => {
-    const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
-
-    if (isIOS) {
-      console.log('isIOS');
       try {
-        console.log('signInAnonymously on iOS called');
-        const authInstance = firebaseAuth;
-        console.log('authInstance:', authInstance);
-        const userCredential = await firebaseSignInAnonymously(authInstance);
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        console.log('result:', result);
 
-        console.log('userCredential:', userCredential);
-        const user = userCredential.user;
+        if (!result.credential?.idToken) {
+          throw new Error('No idToken found in the result.');
+        }
+
+
+        const auth = getAuth();
+        console.log('auth:', auth);
+
+        try {
+          const credential = GoogleAuthProvider.credential(result.credential.idToken);
+
+          const signInPromise = signInWithCredential(firebaseAuth, credential);
+
+          // Create a timeout promise
+          const timeoutPromise = new Promise((resolve, reject) => {
+            setTimeout(() => reject(new Error('Timeout waiting for signInWithCredential')), 10000); // 10 seconds timeout
+          });
+      
+          // Race the signIn promise against the timeout
+          const userCredential = await Promise.race([signInPromise, timeoutPromise]) as firebase.auth.UserCredential;
+
+          const user = userCredential.user;
+
+          if (user) {
+            console.log('Successfully signed in with Google!', user);
+            // Handle successful sign in
+          } else {
+            console.error('Failed to sign in with Google. User is null.');
+            // Handle the sign in failure
+          }
+        } catch (error) {
+          console.error('Error during signInWithCredential:', error);
+          // Handle the error
+        }
+        
+
+        const user = auth.currentUser;
+        console.log('user:', user);
 
         if (user) {
-          console.log('user exists');
-          console.log('user.uid:', user.uid);
-          const userRef = doc(db, 'users', user.uid);
-          console.log('userRef:', userRef);
-          const userData = {
-            accountType: "Anonymous",
-            enabledAccountModes: ["Anonymous"]
-          };
-          console.log('userData:', userData);
-
-          await setDoc(userRef, userData, { merge: true });
-          console.log('userRef set with userData');
-
           const mappedUser = await mapFirebaseUserToUserData(user);
           console.log('mappedUser:', mappedUser);
           setUser(mappedUser);
+          console.log('user set in useAuth');
+        } else {
+          throw new Error('User is null after signInWithCredential');
         }
-
-        return userCredential;
       } catch (error) {
-        console.error('Error signing in anonymously:', error);
-        throw error;
-      }
-    } else {
-
-
-      try {
-        console.log('signInAnonymously called');
-        const userCredential = await firebaseSignInAnonymously(firebaseAuth);
-        console.log('userCredential:', userCredential);
-        const user = userCredential.user;
-
-        if (user) {
-          console.log('user exists');
-          console.log('user.uid:', user.uid);
-          const userRef = doc(db, 'users', user.uid);
-          console.log('userRef:', userRef);
-          const userData = {
-            accountType: "Anonymous",
-            enabledAccountModes: ["Anonymous"]
-          };
-          console.log('userData:', userData);
-
-          await setDoc(userRef, userData, { merge: true });
-          console.log('userRef set with userData');
-
-          const mappedUser = await mapFirebaseUserToUserData(user);
-          console.log('mappedUser:', mappedUser);
-          setUser(mappedUser);
+        console.error('Error in signInWithGoogleOniOS:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
         }
-
-        return userCredential;
-      } catch (error) {
-        console.error('Error signing in anonymously:', error);
-        throw error;
       }
-    }
-  };
+    };
 
-  const signOut = async () => {
-    try {
-      await firebaseSignOut(firebaseAuth);
-      setUser(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
-  const checkAndUpdateAccountModes = async (uid: string) => {
-    try {
-      console.log('Checking and updating account modes for user:', uid);
-      const userRef = doc(collection(db, 'users'), uid);
-      console.log('userRef:', userRef);
-      const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
-      if (isMobile) {
-        // somehow need to update userData from userRef. Not sure why getDoc is not working for mobile
-        console.log('isMobile');
-        //getDoc should be the users' uid from firebase - this is a string, whereas getDoc is expecting a DocumentReference. 
-        // how do we get the DocumentReference from the users' uid?
-        const userDocRef = doc(db, 'users', uid);
-        console.log('userDocRef:', userDocRef);
-        const userDoc = await getDocFromServer(userDocRef);
-        console.log('userDoc:', userDoc);
-        const userData = userDoc.data();
-        console.log('userData:', userData);
+
+
+    const signInAnonymously = async (): Promise<UserCredential> => {
+      const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
+
+      if (isIOS) {
+        console.log('isIOS');
+        try {
+          console.log('signInAnonymously on iOS called');
+          const authInstance = firebaseAuth;
+          console.log('authInstance:', authInstance);
+          const userCredential = await firebaseSignInAnonymously(authInstance);
+
+          console.log('userCredential:', userCredential);
+          const user = userCredential.user;
+
+          if (user) {
+            console.log('user exists');
+            console.log('user.uid:', user.uid);
+            const userRef = doc(db, 'users', user.uid);
+            console.log('userRef:', userRef);
+            const userData = {
+              accountType: "Anonymous",
+              enabledAccountModes: ["Anonymous"]
+            };
+            console.log('userData:', userData);
+
+            await setDoc(userRef, userData, { merge: true });
+            console.log('userRef set with userData');
+
+            const mappedUser = await mapFirebaseUserToUserData(user);
+            console.log('mappedUser:', mappedUser);
+            setUser(mappedUser);
+          }
+
+          return userCredential;
+        } catch (error) {
+          console.error('Error signing in anonymously:', error);
+          throw error;
+        }
       } else {
-        const userDoc = await getDoc(userRef);
 
-        console.log('userDoc:', userDoc);
 
-        if (userDoc.exists()) {
-          console.log('userDoc exists');
+        try {
+          console.log('signInAnonymously called');
+          const userCredential = await firebaseSignInAnonymously(firebaseAuth);
+          console.log('userCredential:', userCredential);
+          const user = userCredential.user;
+
+          if (user) {
+            console.log('user exists');
+            console.log('user.uid:', user.uid);
+            const userRef = doc(db, 'users', user.uid);
+            console.log('userRef:', userRef);
+            const userData = {
+              accountType: "Anonymous",
+              enabledAccountModes: ["Anonymous"]
+            };
+            console.log('userData:', userData);
+
+            await setDoc(userRef, userData, { merge: true });
+            console.log('userRef set with userData');
+
+            const mappedUser = await mapFirebaseUserToUserData(user);
+            console.log('mappedUser:', mappedUser);
+            setUser(mappedUser);
+          }
+
+          return userCredential;
+        } catch (error) {
+          console.error('Error signing in anonymously:', error);
+          throw error;
+        }
+      }
+    };
+
+    const signOut = async () => {
+      try {
+        await firebaseSignOut(firebaseAuth);
+        setUser(null);
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
+    };
+
+    const checkAndUpdateAccountModes = async (uid: string) => {
+      try {
+        console.log('Checking and updating account modes for user:', uid);
+        const userRef = doc(collection(db, 'users'), uid);
+        console.log('userRef:', userRef);
+        const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
+        if (isMobile) {
+          // somehow need to update userData from userRef. Not sure why getDoc is not working for mobile
+          console.log('isMobile');
+          //getDoc should be the users' uid from firebase - this is a string, whereas getDoc is expecting a DocumentReference. 
+          // how do we get the DocumentReference from the users' uid?
+          const userDocRef = doc(db, 'users', uid);
+          console.log('userDocRef:', userDocRef);
+          const userDoc = await getDocFromServer(userDocRef);
+          console.log('userDoc:', userDoc);
           const userData = userDoc.data();
           console.log('userData:', userData);
-          if (userData && userData.accountType) {
-            console.log('userData.accountType exists');
-            // Only update if enabledAccountModes does not exist or is empty
-            if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
-              const enabledAccountModes = getEnabledAccountModes(userData.accountType);
-              await updateDoc(userRef, { enabledAccountModes });
+        } else {
+          const userDoc = await getDoc(userRef);
+
+          console.log('userDoc:', userDoc);
+
+          if (userDoc.exists()) {
+            console.log('userDoc exists');
+            const userData = userDoc.data();
+            console.log('userData:', userData);
+            if (userData && userData.accountType) {
+              console.log('userData.accountType exists');
+              // Only update if enabledAccountModes does not exist or is empty
+              if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
+                const enabledAccountModes = getEnabledAccountModes(userData.accountType);
+                await updateDoc(userRef, { enabledAccountModes });
+              }
             }
           }
         }
+      } catch (error) {
+        console.error('Error checking and updating account modes:', error);
       }
-    } catch (error) {
-      console.error('Error checking and updating account modes:', error);
-    }
+    };
+
+    return {
+      user,
+      firebaseUser,
+      checkAndUpdateAccountModes,
+      signInWithGoogleNative,
+      signInWithGoogleOniOS,
+      signUpWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      sendResetEmail,
+      signInWithGoogle,
+      signInAnonymously,
+      signOut,
+      mapFirebaseUserToUserData,
+      error,
+      setError,
+      isAnonymous,
+    };
   };
 
-  return {
-    user,
-    firebaseUser,
-    checkAndUpdateAccountModes,
-    signInWithGoogleNative,
-    signInWithGoogleOniOS,
-    signUpWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    sendResetEmail,
-    signInWithGoogle,
-    signInAnonymously,
-    signOut,
-    mapFirebaseUserToUserData,
-    error,
-    setError,
-    isAnonymous,
-  };
-};
-
-export default useAuth;
+  export default useAuth;
