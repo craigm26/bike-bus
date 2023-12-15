@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { auth, db, auth as firebaseAuth } from './firebaseConfig';
+import { Capacitor } from '@capacitor/core';
 import {
   GoogleAuthProvider,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
@@ -17,11 +18,16 @@ import {
   ProviderId,
   signInWithCustomToken,
   UserInfo,
+  getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc, getDocFromServer } from 'firebase/firestore';
+import { getApp } from 'firebase/app';
 import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
 import { useHistory } from 'react-router-dom';
 import { set } from 'date-fns';
+import { get } from 'http';
 
 
 
@@ -114,7 +120,16 @@ const useAuth = () => {
 
   const isAnonymous = firebaseUser?.isAnonymous || false;
 
-
+  const getFirebaseAuth = async () => {
+    if (Capacitor.isNativePlatform()) {
+      return initializeAuth(getApp(), {
+        persistence: indexedDBLocalPersistence,
+      });
+    } else {
+      return getAuth();
+    }
+  };
+ 
   const signUpWithEmailAndPassword = async (email: string, password: string, username: string, firstName: string, lastName: string): Promise<UserCredential> => {
     console.log('signUpWithEmailAndPassword in useAuth called');
     console.log('email:', email);
@@ -170,17 +185,27 @@ const useAuth = () => {
     try {
       console.log('signInWithGoogleNative called');
       const result = await FirebaseAuthentication.signInWithGoogle();
-  
+
       console.log('result as string:', JSON.stringify(result));
-  
+
       if (result.credential && result.credential.idToken && result.credential.accessToken) {
         const { idToken, accessToken } = result.credential;
         console.log('token:', accessToken);
         console.log('idToken:', idToken);
-  
-        // the provider is google
-        const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
-        return userCredential;
+
+        try {
+          // the provider is google
+          const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
+          return userCredential;
+        } catch (signInError) {
+          console.error('Error during signInWithCredential:', signInError);
+          // Log additional error details if available
+          if ((signInError as any).code) console.error('Error code:', (signInError as any).code);
+          if ((signInError as any).message) console.error('Error message:', (signInError as any).message);
+          if ((signInError as any).stack) console.error('Error stack:', (signInError as any).stack);
+          return null;
+        }
+
       } else {
         console.error('No credentials found in result.');
         return null;
@@ -190,31 +215,122 @@ const useAuth = () => {
       return null;
     }
   };
-  
+
+  const signInWithGoogleOniOS = async () => {
+    console.log('signInWithGoogleOniOS called');
+
+    try {
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log('result:', result);
+
+      if (!result.credential?.idToken) {
+        throw new Error('No idToken found in the result.');
+      }
+
+      const credential = GoogleAuthProvider.credential(result.credential.idToken);
+      console.log('credential:', credential);
+
+      const auth = getAuth();
+      console.log('auth:', auth);
+
+      console.log('starting signInWithCredential');
+      await signInWithCredential(auth, credential);
+      console.log('signInWithCredential successful');
+
+      const user = auth.currentUser;
+      console.log('user:', user);
+
+      if (user) {
+        const mappedUser = await mapFirebaseUserToUserData(user);
+        console.log('mappedUser:', mappedUser);
+        setUser(mappedUser);
+        console.log('user set in useAuth');
+      } else {
+        throw new Error('User is null after signInWithCredential');
+      }
+    } catch (error) {
+      console.error('Error in signInWithGoogleOniOS:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+    }
+  };
+
+
 
 
   const signInAnonymously = async (): Promise<UserCredential> => {
-    try {
-      const userCredential = await firebaseSignInAnonymously(firebaseAuth);
-      const user = userCredential.user;
+    const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
 
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        const userData = {
-          accountType: "Anonymous",
-          enabledAccountModes: ["Anonymous"]
-        };
+    if (isIOS) {
+      console.log('isIOS');
+      try {
+        console.log('signInAnonymously on iOS called');
+        const authInstance = firebaseAuth;
+        console.log('authInstance:', authInstance);
+        const userCredential = await firebaseSignInAnonymously(authInstance);
 
-        await setDoc(userRef, userData, { merge: true });
+        console.log('userCredential:', userCredential);
+        const user = userCredential.user;
 
-        const mappedUser = await mapFirebaseUserToUserData(user);
-        setUser(mappedUser);
+        if (user) {
+          console.log('user exists');
+          console.log('user.uid:', user.uid);
+          const userRef = doc(db, 'users', user.uid);
+          console.log('userRef:', userRef);
+          const userData = {
+            accountType: "Anonymous",
+            enabledAccountModes: ["Anonymous"]
+          };
+          console.log('userData:', userData);
+
+          await setDoc(userRef, userData, { merge: true });
+          console.log('userRef set with userData');
+
+          const mappedUser = await mapFirebaseUserToUserData(user);
+          console.log('mappedUser:', mappedUser);
+          setUser(mappedUser);
+        }
+
+        return userCredential;
+      } catch (error) {
+        console.error('Error signing in anonymously:', error);
+        throw error;
       }
+    } else {
 
-      return userCredential;
-    } catch (error) {
-      console.error('Error signing in anonymously:', error);
-      throw error;
+
+      try {
+        console.log('signInAnonymously called');
+        const userCredential = await firebaseSignInAnonymously(firebaseAuth);
+        console.log('userCredential:', userCredential);
+        const user = userCredential.user;
+
+        if (user) {
+          console.log('user exists');
+          console.log('user.uid:', user.uid);
+          const userRef = doc(db, 'users', user.uid);
+          console.log('userRef:', userRef);
+          const userData = {
+            accountType: "Anonymous",
+            enabledAccountModes: ["Anonymous"]
+          };
+          console.log('userData:', userData);
+
+          await setDoc(userRef, userData, { merge: true });
+          console.log('userRef set with userData');
+
+          const mappedUser = await mapFirebaseUserToUserData(user);
+          console.log('mappedUser:', mappedUser);
+          setUser(mappedUser);
+        }
+
+        return userCredential;
+      } catch (error) {
+        console.error('Error signing in anonymously:', error);
+        throw error;
+      }
     }
   };
 
@@ -273,6 +389,7 @@ const useAuth = () => {
     firebaseUser,
     checkAndUpdateAccountModes,
     signInWithGoogleNative,
+    signInWithGoogleOniOS,
     signUpWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendResetEmail,
