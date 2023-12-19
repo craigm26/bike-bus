@@ -98,6 +98,7 @@ PODS:
   - PromisesObjC (2.3.1)
 
 DEPENDENCIES:
+  - AppAuth
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorActionSheet (from `../../node_modules/@capacitor/action-sheet`)"
   - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
@@ -171,6 +172,6 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: 41b9ef0b4c08a6db4b7eb51a21ae5183ec99a2c8
   PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
 
-PODFILE CHECKSUM: 6c5e86b7f2403f5bacdd7dbb8e8754369c6a9e8f
+PODFILE CHECKSUM: 50dd11bcb07a36c5b98bee9babcd45ac5ad4b831
 
 COCOAPODS: 1.14.3

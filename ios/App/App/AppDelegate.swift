@@ -2,6 +2,7 @@ import UIKit
 import Capacitor
 import FirebaseCore
 import FirebaseAppCheck
+import AppAuth
 
 // Define your custom App Check provider factory
 class YourSimpleAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
@@ -29,6 +30,8 @@ class YourSimpleAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    
+    var currentAuthorizationFlow: OIDExternalUserAgentSession?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
@@ -69,8 +72,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
+        // Check if this URL was sent by AppAuth, if so handle it
+        if let authorizationFlow = currentAuthorizationFlow, authorizationFlow.resumeExternalUserAgentFlow(with: url) {
+            currentAuthorizationFlow = nil
+            return true
+        }
+        
+        // Existing handling of the URL
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 
