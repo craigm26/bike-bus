@@ -38,6 +38,7 @@ target 'App' do
   pod 'FirebaseRemoteConfig', '~> 10.0.0'
   pod 'FirebasePerformance', '~> 10.0.0'
   pod 'FirebaseInstallations', '~> 10.0.0'
+  pod 'FirebaseAppCheck', '~> 10.0.0'
   
 end
 
