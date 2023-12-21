@@ -8,15 +8,13 @@ import {
   IonInput,
   IonButton,
   IonText,
-  IonHeader,
-  IonRow,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import './Login.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
-import { getRedirectResult, GoogleAuthProvider, signInWithCredential, signInWithRedirect, User } from '@firebase/auth';
+import { getRedirectResult, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 
 const Login: React.FC = () => {
@@ -25,7 +23,6 @@ const Login: React.FC = () => {
   const {
     signInWithEmailAndPassword,
     signInWithGoogle,
-    signInWithGoogleNative,
     signInAnonymously,
     checkAndUpdateAccountModes,
   } = useAuth();
@@ -58,18 +55,16 @@ const Login: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
-
-      const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
-      if (isMobile) {
-        await signInWithGoogleNative();
-      } else {
         const userCredential = await signInWithGoogle();
-        await processUser(userCredential?.user);
-      }
+        if (userCredential?.user) {
+          await processUser(userCredential.user);
+        }
     } catch (error) {
-
-    } finally {
-
+      if (error instanceof Error) {
+        setErrorMessage("Error logging in: " + error.message);
+      } else {
+        setErrorMessage("Error logging in.");
+      }
     }
   };
 

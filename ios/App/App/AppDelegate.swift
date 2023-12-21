@@ -1,7 +1,9 @@
 import UIKit
 import Capacitor
+import Firebase
 import FirebaseCore
 import FirebaseAppCheck
+import FirebaseAuth
 import AppAuth
 
 // Define your custom App Check provider factory
@@ -75,6 +77,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Check if this URL was sent by AppAuth, if so handle it
         if let authorizationFlow = currentAuthorizationFlow, authorizationFlow.resumeExternalUserAgentFlow(with: url) {
             currentAuthorizationFlow = nil
+            return true
+        }
+        
+        if Auth.auth().canHandle(url) {
             return true
         }
         

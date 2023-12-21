@@ -1,15 +1,15 @@
 import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonButton, IonCol, IonContent, IonGrid, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
-import useAuth from '../useAuth';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { User } from '@firebase/auth';
+import { AuthContext } from '../AuthContext';
 
 
 const Signup: React.FC = () => {
-    const { signUpWithEmailAndPassword } = useAuth();
+    const { signUpWithEmailAndPassword, signInWithGoogle, checkAndUpdateAccountModes } = useContext(AuthContext);
     const history = useHistory();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,13 +19,6 @@ const Signup: React.FC = () => {
     const [isUsernameTaken, setIsUsernameTaken] = useState(false);
     const [redirectToMap, setRedirectToMap] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const {
-        signInWithEmailAndPassword,
-        signInWithGoogle,
-        signInWithGoogleNative,
-        signInAnonymously,
-        checkAndUpdateAccountModes,
-    } = useAuth();
 
     const checkUsername = async (username: string) => {
         const usersCollectionRef = collection(db, 'users');
@@ -65,18 +58,10 @@ const Signup: React.FC = () => {
 
     const handleGoogleSubmit = async () => {
         try {
-    
-          const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
-          if (isMobile) {
-            console.log('starting signInWithGoogleNative');
-            const userCredential = await signInWithGoogleNative();
-            console.log('userCredential', userCredential);
-            console.log('starting processUser');
-            // await processUser(userCredential);
-          } else {
             const userCredential = await signInWithGoogle();
-            await processUser(userCredential?.user);
-          }
+            if (userCredential?.user) {
+                await processUser(userCredential.user);
+            }
         } catch (error) {
     
         } finally {

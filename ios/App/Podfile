@@ -26,6 +26,18 @@ target 'App' do
   # Add your Pods here
   pod 'CapacitorFirebaseAuthentication/Google', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'AppAuth'
+  pod 'FirebaseAuth', '~> 10.8.0'
+  pod 'Firebase/Core', '~> 10.0.0'
+  pod 'FirebaseAnalytics', '~> 10.0.0'
+  pod 'FirebaseFirestore', '~> 10.0.0'
+  pod 'FirebaseStorage', '~> 10.0.0'
+  pod 'FirebaseFunctions', '~> 10.0.0'
+  pod 'FirebaseMessaging', '~> 10.0.0'
+  pod 'FirebaseCrashlytics', '~> 10.0.0'
+  pod 'FirebaseDynamicLinks', '~> 10.0.0'
+  pod 'FirebaseRemoteConfig', '~> 10.0.0'
+  pod 'FirebasePerformance', '~> 10.0.0'
+  pod 'FirebaseInstallations', '~> 10.0.0'
   
 end
 

@@ -19,7 +19,7 @@ const SetUsername: React.FC = () => {
   };
 
   return (
-    <IonPage style={{ height: '100%' }}>
+    <IonPage className="ion-flex-offset-app">
       <IonHeader>
         <IonTitle>Set Username</IonTitle>
       </IonHeader>
