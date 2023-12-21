@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { auth, db, auth as firebaseAuth } from './firebaseConfig';
+import { db, auth as firebaseAuth } from './firebaseConfig';
 import { Capacitor } from '@capacitor/core';
 import {
   GoogleAuthProvider,
@@ -12,23 +12,15 @@ import {
   User,
   UserCredential,
   updateProfile,
-  signInWithRedirect,
   signInWithCredential,
-  signInWithPopup,
-  ProviderId,
-  signInWithCustomToken,
-  UserInfo,
   getAuth,
   indexedDBLocalPersistence,
   initializeAuth,
+  signInWithPopup,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc, getDocFromServer } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
-import { FirebaseAuthentication, SignInWithOAuthOptions, SignInResult, SignInOptions } from '@capacitor-firebase/authentication';
-import { useHistory } from 'react-router-dom';
-import { set } from 'date-fns';
-import { get } from 'http';
-import firebase from 'firebase/compat/app';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 
 interface UserData {
@@ -67,7 +59,7 @@ const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | 
 
 const useAuth = () => {
   const [user, setUser] = useState<UserData | null>(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
 
   const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
@@ -94,28 +86,19 @@ const useAuth = () => {
       // Add other properties specific to user data
     };
   });
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (fUser) => {
-      if (fUser) {
-        // User is signed in
-        const idToken = await fUser.getIdToken(); // Get the ID token
-        console.log("ID Token:", idToken);
-
-        const userData = await mapFirebaseUserToUserData(fUser);
-        setUser(userData);
-        setFirebaseUser(fUser);
-      } else {
-        // User is signed out
-        setUser(null);
-        setFirebaseUser(null);
-      }
-    });
-
-    return () => {
-      unsubscribe(); // Clean up the subscription
-    };
-  }, []);
+  
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+        if (user) {
+          const userData = await mapFirebaseUserToUserData(user);
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      });
+  
+      return unsubscribe;
+    }, []);
 
 
   const isAnonymous = firebaseUser?.isAnonymous || false;
@@ -168,129 +151,28 @@ const useAuth = () => {
   };
 
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    const provider = new GoogleAuthProvider();
     try {
-      console.log('signInWithGoogle called');
-      const result = await signInWithRedirect(firebaseAuth, provider);
-      console.log('result on useAuth page', result);
-      return result;
+      const provider = new GoogleAuthProvider();
+      if (Capacitor.isNativePlatform()) {
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        const credential = GoogleAuthProvider.credential(result.credential?.idToken);
+        return await signInWithCredential(firebaseAuth, credential);
+      } else {
+        // Use Firebase JS SDK for web authentication
+        return await signInWithPopup(firebaseAuth, provider);
+      }
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      // Handle error
+      if ( error instanceof Error ) {
+        console.error('Error signing in with Google:', error);
+        setError(error.message);
+      } else {
+        console.error('Error signing in with Google:', error);
+        setError('An unknown error occurred. Please try again later.')
+      }
       return null;
     }
   };
-
-
-  const signInWithGoogleNative = async (): Promise<UserCredential | null> => {
-    try {
-      console.log('signInWithGoogleNative called');
-      // test to see if this is not ios:
-      const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
-
-      if (!isIOS) {
-
-        const result = await FirebaseAuthentication.signInWithGoogle();
-
-        console.log('result as string:', JSON.stringify(result));
-
-        if (result.credential && result.credential.idToken && result.credential.accessToken) {
-          const { idToken, accessToken } = result.credential;
-          console.log('token:', accessToken);
-          console.log('idToken:', idToken);
-
-          try {
-            // the provider is google
-            const userCredential = await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken, accessToken));
-            return userCredential;
-          } catch (signInError) {
-            console.error('Error during signInWithCredential:', signInError);
-            // Log additional error details if available
-            if ((signInError as any).code) console.error('Error code:', (signInError as any).code);
-            if ((signInError as any).message) console.error('Error message:', (signInError as any).message);
-            if ((signInError as any).stack) console.error('Error stack:', (signInError as any).stack);
-            return null;
-          }
-
-        } else {
-          console.error('No credentials found in result.');
-          return null;
-        }
-      } else {
-        // this is ios so go to signInWithGoogleOniOS
-        console.log('isIOS');
-        signInWithGoogleOniOS();
-        return null;
-      }
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      return null;
-    }
-  }
-
-    const signInWithGoogleOniOS = async () => {
-      console.log('signInWithGoogleOniOS called');
-
-      try {
-        const result = await FirebaseAuthentication.signInWithGoogle();
-        console.log('result:', result);
-
-        if (!result.credential?.idToken) {
-          throw new Error('No idToken found in the result.');
-        }
-
-
-        const auth = getAuth();
-        console.log('auth:', auth);
-
-        try {
-          const credential = GoogleAuthProvider.credential(result.credential.idToken);
-
-          const signInPromise = signInWithCredential(firebaseAuth, credential);
-
-          // Create a timeout promise
-          const timeoutPromise = new Promise((resolve, reject) => {
-            setTimeout(() => reject(new Error('Timeout waiting for signInWithCredential')), 10000); // 10 seconds timeout
-          });
-      
-          // Race the signIn promise against the timeout
-          const userCredential = await Promise.race([signInPromise, timeoutPromise]) as firebase.auth.UserCredential;
-
-          const user = userCredential.user;
-
-          if (user) {
-            console.log('Successfully signed in with Google!', user);
-            // Handle successful sign in
-          } else {
-            console.error('Failed to sign in with Google. User is null.');
-            // Handle the sign in failure
-          }
-        } catch (error) {
-          console.error('Error during signInWithCredential:', error);
-          // Handle the error
-        }
-        
-
-        const user = auth.currentUser;
-        console.log('user:', user);
-
-        if (user) {
-          const mappedUser = await mapFirebaseUserToUserData(user);
-          console.log('mappedUser:', mappedUser);
-          setUser(mappedUser);
-          console.log('user set in useAuth');
-        } else {
-          throw new Error('User is null after signInWithCredential');
-        }
-      } catch (error) {
-        console.error('Error in signInWithGoogleOniOS:', error);
-        if (error instanceof Error) {
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-        }
-      }
-    };
-
-
 
 
     const signInAnonymously = async (): Promise<UserCredential> => {
@@ -421,8 +303,6 @@ const useAuth = () => {
       user,
       firebaseUser,
       checkAndUpdateAccountModes,
-      signInWithGoogleNative,
-      signInWithGoogleOniOS,
       signUpWithEmailAndPassword,
       signInWithEmailAndPassword,
       sendResetEmail,

@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useEffect, useContext } from 'react';
 import {
   IonPage,
   IonContent,
@@ -12,18 +12,15 @@ import './Welcome.css';
 import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
-import { getRedirectResult, GoogleAuthProvider, signInWithCredential, User, UserInfo } from '@firebase/auth';
+import { getRedirectResult, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 const Welcome: React.FC = () => {
   const {
     signInWithGoogle,
-    signInWithGoogleNative,
     signInAnonymously,
     checkAndUpdateAccountModes,
-    mapFirebaseUserToUserData,
   } = useAuth();
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
@@ -36,34 +33,14 @@ const Welcome: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
-      const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
-      if (isMobile) {
-        const userCredential = await signInWithGoogleNative();
-        console.log('userCredential', userCredential);
-        console.log('userCredential?.user', userCredential?.user);
-        await processUser(userCredential?.user);
-      } else {
-        const userCredential = await signInWithGoogle();
-        console.log('starting processUser');
-        console.log('userCredential', userCredential);
-        console.log('userCredential?.user', userCredential?.user);
-        await processUser(userCredential?.user);
+      const userCredential = await signInWithGoogle();
+      console.log('userCredential', userCredential);
+      if (userCredential) {
+        await processUser(userCredential.user);
       }
     } catch (error) {
       console.error('Error during Google sign in:', error);
     }
-  };
-
-  const getCurrentUser = async () => {
-    const result = await FirebaseAuthentication.getCurrentUser();
-    console.log('getCurrentUser', result);
-    return result.user;
-  };
-
-  const getIdToken = async () => {
-    const result = await FirebaseAuthentication.getIdToken();
-    console.log('getIdToken', result);
-    return result;
   };
 
   const processUser = async (user: User | null | undefined) => {

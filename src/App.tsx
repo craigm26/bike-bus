@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonCard, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc, DocumentReference } from 'firebase/firestore';
@@ -24,13 +24,10 @@ import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
 import ViewRoute from './pages/ViewRoute';
-import SearchForRoute from './pages/SearchForRoute';
 import SetUsername from './components/SetUsername';
-import Notifications from './pages/Notifications';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
 import CreateBikeBusStops from './pages/CreateBikeBusStops';
-import UpgradeAccountToPremium from './pages/UpgradeAccountToPremium';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
@@ -46,14 +43,10 @@ import EditRoute from './pages/EditRoute';
 import ViewBikeBusList from './pages/ViewBikeBusList';
 import EditBikeBus from './pages/EditBikeBus';
 import EditSchedule from './pages/EditSchedule';
-import Trip from './pages/Trip';
 import EventSummary from './pages/EventSummary';
-import OrganizationProfile from './pages/OrganizationProfile';
 import ViewOrganization from './pages/ViewOrganization';
 import ViewOrganizationList from './pages/ViewOrganizationList';
 import BulletinBoards from './pages/BulletinBoards';
-import OrganizationMap from './pages/OrganizationMap';
-import EditOrganization from './pages/EditOrganization';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DeleteAccount from './components/DeleteAccount';
 import SetLanguage from './components/SetLanguage';
@@ -64,7 +57,6 @@ import { ReactComponent as HouseIcon } from './assets/fontawesome/svgs/regular/h
 import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/arrow-up-from-bracket.svg';
 import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
 import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
-import { ReactComponent as BikeIcon } from './assets/fontawesome/svgs/regular/bicycle.svg';
 import { ReactComponent as Language} from './assets/fontawesome/svgs/regular/language.svg';
 
 
