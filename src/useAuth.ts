@@ -153,9 +153,14 @@ const useAuth = () => {
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     try {
       const provider = new GoogleAuthProvider();
+      console.log('provider:', provider);
       if (Capacitor.isNativePlatform()) {
+        console.log('isNativePlatform');
+        console.log('FirebaseAuthentication:', FirebaseAuthentication);
         const result = await FirebaseAuthentication.signInWithGoogle();
+        console.log('result:', result);
         const credential = GoogleAuthProvider.credential(result.credential?.idToken);
+        console.log('credential:', credential);
         return await signInWithCredential(firebaseAuth, credential);
       } else {
         // Use Firebase JS SDK for web authentication
@@ -166,9 +171,12 @@ const useAuth = () => {
       if ( error instanceof Error ) {
         console.error('Error signing in with Google:', error);
         setError(error.message);
+        throw new Error(error.message);
+        return null;
       } else {
         console.error('Error signing in with Google:', error);
         setError('An unknown error occurred. Please try again later.')
+        return null;
       }
       return null;
     }

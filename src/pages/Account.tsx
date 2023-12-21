@@ -13,7 +13,7 @@ import {
     IonTitle,
     IonIcon,
 } from '@ionic/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import './Account.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -23,6 +23,7 @@ import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'fireb
 import React from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import { cogOutline } from 'ionicons/icons';
+import { AuthContext } from '../AuthContext';
 
 interface Group {
     id: string;
@@ -51,7 +52,7 @@ interface Route {
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
-    const { user, checkAndUpdateAccountModes } = useAuth();
+    const { user, logout, checkAndUpdateAccountModes } = useContext(AuthContext);
     const { avatarUrl, refresh } = useAvatar(user?.uid);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');

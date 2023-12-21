@@ -33,8 +33,13 @@ const Welcome: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
+      console.log('starting signInWithGoogle');
       const userCredential = await signInWithGoogle();
       console.log('userCredential', userCredential);
+      if (!userCredential) {
+        throw new Error('userCredential is null, Failed to sign in with Google.');
+        console.log('userCredential is null');
+      }
       if (userCredential) {
         await processUser(userCredential.user);
       }
@@ -62,16 +67,12 @@ const Welcome: React.FC = () => {
   };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const result = await getRedirectResult(firebaseAuth);
-        if (result) {
-          await processUser(result.user);
-        }
-      } catch (error) {
-        console.log(error);
+    const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+      if (user) {
+        await processUser(user);
       }
-    })();
+    });
+    return unsubscribe;
   }, [checkAndUpdateAccountModes, history]);
 
 

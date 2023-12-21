@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import {
   IonContent,
   IonHeader,
@@ -10,7 +10,7 @@ import {
   IonItemDivider,
 } from '@ionic/react';
 import './Profile.css';
-import useAuth from '../useAuth';
+import { AuthContext } from '../AuthContext';
 import { useAvatar } from './useAvatar';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import { db, storage } from '../firebaseConfig';
@@ -20,7 +20,7 @@ import AccountModeSelector from '../components/AccountModeSelector';
 import { doc, getDoc } from 'firebase/firestore';
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useContext(AuthContext);
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [accountType, setaccountType] = useState<string>('');
