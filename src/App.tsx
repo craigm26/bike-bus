@@ -50,6 +50,7 @@ import BulletinBoards from './pages/BulletinBoards';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DeleteAccount from './components/DeleteAccount';
 import SetLanguage from './components/SetLanguage';
+import News from './pages/News';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -230,6 +231,12 @@ const App: React.FC = () => {
                 <IonContent>
                   <IonList>
                     <IonMenuToggle auto-hide="false">
+                      <IonItem button routerLink="/Welcome" routerDirection="none">
+                        <IonLabel>{t('Home')}</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink="/News" routerDirection="none">
+                        <IonLabel>{t('News')}</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink="/BulletinBoards" routerDirection="none">
                         <IonLabel>{t('Bulletin Boards')}</IonLabel>
                       </IonItem>
@@ -410,6 +417,9 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/Account">
                           <Account />
+                        </Route>
+                        <Route exact path="/News">
+                          <News />
                         </Route>
                         <Route exact path="/SetUsername">
                           <SetUsername />
