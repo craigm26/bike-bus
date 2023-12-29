@@ -651,8 +651,8 @@ const Event: React.FC = () => {
 
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime instanceof Timestamp
-  ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions)
-  : new Date(eventData?.endTime).toLocaleTimeString(undefined, timeOptions); // Fallback to JavaScript Date
+    ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions)
+    : new Date(eventData?.endTime).toLocaleTimeString(undefined, timeOptions); // Fallback to JavaScript Date
 
 
 
@@ -785,14 +785,14 @@ const Event: React.FC = () => {
     setShowStartDateTimeModal(false);
   };
 
-    // create a function that allows the leader to changet the notes for the event
-    const handleUpdateNotes = async () => {
-      const docRef = doc(db, 'event', id);
-      await updateDoc(docRef, {
-        notes: notes
-      });
-      setShowNotesModal(false);
-    };
+  // create a function that allows the leader to changet the notes for the event
+  const handleUpdateNotes = async () => {
+    const docRef = doc(db, 'event', id);
+    await updateDoc(docRef, {
+      notes: notes
+    });
+    setShowNotesModal(false);
+  };
 
 
   const printRef = useRef(null);
@@ -865,6 +865,32 @@ const Event: React.FC = () => {
             >
               {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
                 <div>
+                  <Polyline
+                    path={pathCoordinates.map(coord => ({ lat: coord.lat, lng: coord.lng }))}
+                    options={{
+                      strokeColor: "#000000", // Black color for the outline
+                      strokeOpacity: 1.0,
+                      strokeWeight: 6, 
+                      geodesic: true,
+                      editable: false,
+                      draggable: false,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#000000", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 6,
+                            fillColor: "#000000",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ]
+                    }}
+                  />
                   <Polyline
                     path={pathCoordinates.map(coord => ({ lat: coord.lat, lng: coord.lng }))}
                     options={{

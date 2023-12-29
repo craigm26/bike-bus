@@ -1,6 +1,14 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
+
+interface NewsArticle {
+  title: string;
+  link: string;
+  pubDate: string;
+}
+
 admin.initializeApp();
 
 // Set your SendGrid API key
@@ -55,3 +63,33 @@ exports.sendInviteEmail = functions.firestore
     }
   });
 
+
+const fetchAndStoreNewsArticles = async (query: string) => {
+  const Parser = require("rss-parser");
+
+  const parser = new Parser();
+  const rssFeedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  const feed = await parser.parseURL(rssFeedUrl);
+
+  const newsArticles = feed.items.map((item: { title: unknown; link: unknown; pubDate: unknown; }) => ({
+    title: item.title,
+    link: item.link,
+    pubDate: item.pubDate,
+  } as NewsArticle));
+
+  const batch = admin.firestore().batch();
+  newsArticles.forEach((article: unknown) => {
+    const docRef = admin.firestore().collection("newsArticles").doc(); // Generating a new doc ID
+    batch.set(docRef, article);
+  });
+
+  await batch.commit();
+  console.log(`News articles for query "${query}" written to Firestore.`);
+};
+
+exports.scheduledFetchNewsArticles = functions.pubsub.schedule("every 24 hours").onRun(async _context => {
+  await fetchAndStoreNewsArticles("BIKEBUS");
+  await fetchAndStoreNewsArticles("BiciBus");
+  await fetchAndStoreNewsArticles("Bike Train");
+  console.log("Scheduled fetch and store of news articles complete.");
+});

@@ -232,7 +232,7 @@ const App: React.FC = () => {
                   <IonList>
                     <IonMenuToggle auto-hide="false">
                       <IonItem button routerLink="/Welcome" routerDirection="none">
-                        <IonLabel>{t('Home')}</IonLabel>
+                        <IonLabel>{t('Welcome')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink="/News" routerDirection="none">
                         <IonLabel>{t('News')}</IonLabel>

@@ -89,7 +89,12 @@ const Welcome: React.FC = () => {
           </IonRow>
           <IonRow className="ion-justify-content-center">
             <IonCol size="12">
-              <h4>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides</h4>
+              <h4>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides and help kids ride to school safely.</h4>
+            </IonCol>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="14">
+              <iframe width="560" height="315" src="https://www.youtube.com/embed/rKBRXcU9MYk" title="How to Start a BikeBus" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
             </IonCol>
           </IonRow>
           <IonRow className="ion-justify-content-center">
