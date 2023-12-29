@@ -24,7 +24,7 @@ interface BikeBusStops {
     BikeBusStopName: string;
     BikBusGroupId: DocumentReference;
     BikeBusRouteId: DocumentReference;
-    lat: number;  
+    lat: number;
     lng: number;
     BikeBusStopIds: DocumentReference[];
     BikeBusGroupId: string;
@@ -67,7 +67,6 @@ const UpdateRouteManually: React.FC = () => {
     const [accountType, setaccountType] = useState<string>('');
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const polylineRef = useRef<{ paths: Coordinate[] }>({ paths: [] });
     const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
     const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
@@ -80,6 +79,9 @@ const UpdateRouteManually: React.FC = () => {
     });
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const [pathCoordinates, setPathCoordinates] = useState<Coordinate[]>([]);
+    const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
+    const polylineRef = useRef<{ paths: Coordinate[] }>({ paths: [] });
+
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -97,6 +99,11 @@ const UpdateRouteManually: React.FC = () => {
     useEffect(() => {
         if (id) fetchSingleRoute(id);
     }, [id]);
+
+    const selectMarkerForDeletion = (index: number) => {
+        setSelectedMarkerIndex(index);
+    };
+
 
 
     // when the map is loading, set startGeo to the route's startPoint
@@ -133,12 +140,12 @@ const UpdateRouteManually: React.FC = () => {
                 console.log("BikeBusStopsData", BikeBusStopsData);
                 // BikeBusStopsData is an array of documents from the document collection bikebusstops. It includes the lat and lng of the bikebusstop and stored as number
                 const BikeBusStopsCoordinates = BikeBusStopsData.map((BikeBusStop) => {
-                    return { 
-                        lat: BikeBusStop.lat, 
+                    return {
+                        lat: BikeBusStop.lat,
                         lng: BikeBusStop.lng,
                         bikeBusStopName: BikeBusStop.BikeBusStopName
                     };
-                });                
+                });
                 // BikeBusStopsCoordinates is an array of coordinates of the bikebusstops
                 console.log("BikeBusStopsCoordinates", BikeBusStopsCoordinates);
                 setBikeBusStops(BikeBusStopsCoordinates);
@@ -320,6 +327,9 @@ const UpdateRouteManually: React.FC = () => {
                         <IonCol>
                             <IonButton onClick={handleRouteSave}>Save</IonButton>
                             <IonButton routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+                            <IonButton onClick={() => setSelectedMarkerIndex(null)}>Deselect Marker</IonButton>
+                            <IonButton onClick={() => selectedMarkerIndex !== null && setPathCoordinates(prev => prev.filter((_, i) => i !== selectedMarkerIndex))}>Delete Selected Marker</IonButton>
+                            <IonButton onClick={resetPath}>Reset Path</IonButton>
                         </IonCol>
                     </IonRow>
                     {selectedRoute && (
@@ -369,7 +379,7 @@ const UpdateRouteManually: React.FC = () => {
                                     {selectedRoute?.pathCoordinates.length > 0 &&
                                         <Polyline
                                             path={pathCoordinates}
-                                            options={{ strokeColor: "#FF0000" }}
+                                            options={{ strokeColor: "#FF0000", editable: true, draggable: true }}
                                         />
                                     }
                                     <Polyline path={pathCoordinates} />
@@ -378,6 +388,7 @@ const UpdateRouteManually: React.FC = () => {
                                             position={coordinate}
                                             draggable={true}
                                             onDragEnd={handleDragEnd(index)}
+                                            onClick={() => selectMarkerForDeletion(index)}
                                         />
                                     ))}
 
