@@ -129,7 +129,7 @@ const Map: React.FC = () => {
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const [isActiveEvent, setIsActiveEvent] = useState(false);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setUsername] = useState<string>("");
@@ -295,6 +295,7 @@ const Map: React.FC = () => {
   };
 
   const renderMap = (location: React.SetStateAction<{ lat: number; lng: number; }>) => {
+    requestLocationPermission();
     setGetLocationClicked(true);
     setShowMap(true);
     setMapCenter(location);
@@ -2196,117 +2197,6 @@ const Map: React.FC = () => {
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-        {!showMap && !id && (
-          <>
-            <IonGrid className="location-app-intro-container">
-              <IonRow>
-                <IonCol>
-                  <IonCol>
-                    <SearchBar setPlaceLatitude={setPlaceLatitude} setPlaceLongitude={setPlaceLongitude} onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName}
-                    />
-                  </IonCol>
-                  <IonCol>
-                    <IonText>{PlaceName}</IonText>
-                  </IonCol>
-                  <IonCol>
-                    <IonButton size="small" className="black-border-button" onClick={handleStartMap}>
-                      <IonText color="secondary">Find Destination</IonText>
-                    </IonButton>
-                  </IonCol>
-                  <IonCol>
-                    <IonLabel>
-                      or Visit
-                      <IonButton size="small" className="black-border-button" routerLink="/Help">
-                        <IonText color="secondary"> Help</IonText>
-                      </IonButton>
-                    </IonLabel>
-                  </IonCol>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-            <IonGrid className="home-map-flex-container">
-              <IonRow className="home-map-row">
-                <IonCol style={{ height: '100%', width: '100%', overflow: 'hidden', position: 'absolute' }}>
-                  <GoogleMap
-                    onLoad={(map) => {
-                      mapRef.current = map;
-                    }}
-                    mapContainerStyle={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    center={mapCenter || userLocationDefault}
-                    zoom={5}
-                    options={{
-                      clickableIcons: false,
-                      disableDefaultUI: true,
-                      zoomControl: true,
-                      zoomControlOptions: {
-                        position: window.google.maps.ControlPosition.LEFT_CENTER
-                      },
-                      mapTypeControl: true,
-                      mapTypeControlOptions: {
-                        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
-                      },
-                      disableDoubleClickZoom: true,
-                      minZoom: 3,
-                      maxZoom: 18,
-                      mapId: 'b75f9f8b8cf9c287',
-                    }}
-                  >
-                    <MarkerClusterer
-                      averageCenter
-                      enableRetinaIcons
-                      gridSize={80}
-                      onClick={handleClusterClick}
-                    >
-                      {(clusterer) => (
-                        <>
-                          {markerData.map((marker, index) => (
-                            <Marker
-                              key={index}
-                              clusterer={clusterer}
-                              position={marker.position}
-                              label={marker.label}
-                              zIndex={9999}
-                              icon={{
-                                url: generateSVGBikeBus(marker.label),
-                                scaledSize: new google.maps.Size(260, 20),
-                              }}
-                              onClick={() => { handleBikeBusRouteClusterClick(marker.BikeBusGroupClusterId) }}
-                            />
-                          ))}
-                        </>
-                      )}
-                    </MarkerClusterer>
-                    {infoWindow.isOpen && infoWindow.position && (
-                      <InfoWindow
-                        position={mapCenter}
-                        onCloseClick={() => setInfoWindowClusterBikeBus({ isOpen: false, position: null, content: '' })}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                      </InfoWindow>
-                    )}
-                    <div>
-                      <IonGrid className="toggle-bikebus-container">
-                        <IonRow>
-                          <IonCol>
-                            <IonButton onClick={getLocation}>
-                              <IonIcon icon={locateOutline} />
-                            </IonButton>
-                          </IonCol>
-                        </IonRow>
-                      </IonGrid>
-                    </div>
-                  </GoogleMap>
-
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-
-          </>
-        )
-        }
         {showMap && (
           <IonRow className="map-base">
             <GoogleMap

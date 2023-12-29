@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 import {
   IonPage,
   IonContent,
@@ -14,6 +14,7 @@ import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
 import { getRedirectResult, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
+import SearchBar from "../components/SearchBar";
 import useAuth from '../useAuth';
 
 const Welcome: React.FC = () => {
@@ -23,13 +24,7 @@ const Welcome: React.FC = () => {
     checkAndUpdateAccountModes,
   } = useAuth();
   const history = useHistory();
-  const headerContext = useContext(HeaderContext);
 
-  useEffect(() => {
-    if (headerContext) {
-      headerContext.setShowHeader(false);
-    }
-  }, [headerContext]);
 
   const handleGoogleSubmit = async () => {
     try {
