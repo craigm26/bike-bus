@@ -153,10 +153,14 @@
 .chat-item-right .chat-message {
     background-color: #007bff;
     color: white;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .chat-item-left .chat-message {
     margin-right: auto;
+    padding-top: 5px;
+    padding-bottom: 5px;
     /* Align to the left */
 }
 

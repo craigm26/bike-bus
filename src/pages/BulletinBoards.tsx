@@ -25,7 +25,9 @@ import {
     IonCard,
     IonProgressBar,
     IonText,
-    IonAlert
+    IonAlert,
+    IonImg,
+    IonThumbnail
 } from '@ionic/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -34,7 +36,7 @@ import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
-import { add, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, trashOutline, videocamOutline } from 'ionicons/icons';
+import { add, closeCircleOutline, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, trashOutline, videocamOutline } from 'ionicons/icons';
 import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
 import { db, storage } from '../firebaseConfig';
 import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
@@ -846,36 +848,65 @@ const BulletinBoards: React.FC = () => {
         }
     };
 
+    // set max video size to 1gb
+    const MAX_VIDEO_SIZE = 1000000000; // Maximum size in bytes
+    const MAX_VIDEO_DURATION = 300; // Maximum duration in seconds
+    
     const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user?.uid}/${Date.now()}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    // Update progress
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploadProgress(progress);
-                },
-                (error) => {
-                    // Handle errors
-                    console.error('Error uploading video:', error);
-                    setUploadError('Error uploading video.');
-                    setUploadProgress(0); // Reset progress
-                },
-                () => {
-                    // Handle successful upload
-                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                        console.log('File available at', downloadURL);
-                        setUploadedVideoUrl(downloadURL);
-                        setMessageInput(downloadURL);
-                        setShowContentModal(false); // Close the modal
-                    });
+    
+            // Check file size
+            if (file.size > MAX_VIDEO_SIZE) {
+                alert("Video size should not exceed 10MB");
+                return;
+            }
+    
+            // Check video duration
+            const video = document.createElement("video");
+            video.preload = "metadata";
+    
+            video.onloadedmetadata = function() {
+                window.URL.revokeObjectURL(video.src);
+    
+                const duration = video.duration;
+                if (duration > MAX_VIDEO_DURATION) {
+                    alert("Video duration should not exceed 30 seconds");
+                    return;
                 }
-            );
+    
+                // Continue with the upload process since the checks have passed
+                const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user?.uid}/${Date.now()}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+    
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        // Update progress
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        setUploadProgress(progress);
+                    },
+                    (error) => {
+                        // Handle errors
+                        console.error('Error uploading video:', error);
+                        setUploadError('Error uploading video.');
+                        setUploadProgress(0); // Reset progress
+                    },
+                    () => {
+                        // Handle successful upload
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            console.log('File available at', downloadURL);
+                            setUploadedVideoUrl(downloadURL);
+                            setMessageInput(downloadURL);
+                            setShowContentModal(false); // Close the modal
+                        });
+                    }
+                );
+            };
+    
+            video.src = URL.createObjectURL(file);
         }
     };
+    
 
 
 
@@ -948,7 +979,15 @@ const BulletinBoards: React.FC = () => {
                         <IonIcon icon={locationOutline} slot="end" />
                     </IonButton>
                 )}
-    */
+    
+                                {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
+                                    <IonLabel className="cross-post-label">
+                                        Cross-Post to Community Board?
+                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                    </IonLabel>
+                                )}
+
+                */
 
 
     return (
@@ -1015,11 +1054,15 @@ const BulletinBoards: React.FC = () => {
                                         </IonCol>
                                         <IonCol size="10" className="custom-chat-input-col">
                                             {uploadedImageUrl ? (
-                                                <img
-                                                    src={uploadedImageUrl}
-                                                    alt="Uploaded preview"
-                                                    style={{ maxWidth: '100%', maxHeight: '100px' }}
-                                                />
+                                                <>
+                                                <IonImg src={uploadedImageUrl} />
+                                                <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedImageUrl(null); setMessageInput(''); }} />
+                                                </>
+                                            ) : uploadedVideoUrl ? (
+                                                <>
+                                                <video width="240" height="120" src={uploadedVideoUrl} controls />
+                                                <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedVideoUrl(null); setMessageInput(''); }} />
+                                                </>
                                             ) : (
                                                 <IonInput
                                                     required={true}
@@ -1050,7 +1093,7 @@ const BulletinBoards: React.FC = () => {
                                     <IonAlert
                                         isOpen={showContentTypeAlert}
                                         onDidDismiss={() => setShowContentTypeAlert(false)}
-                                        header={'Select Content Type'}
+                                        header={'Select Content'}
                                         buttons={[
                                             {
                                                 text: 'Photo',
@@ -1069,13 +1112,6 @@ const BulletinBoards: React.FC = () => {
                                     />
                                 </form>
 
-                                {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
-                                    <IonLabel className="cross-post-label">
-                                        Cross-Post to Community Board?
-                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                    </IonLabel>
-                                )}
-
                                 <IonList className="chat-list">
                                     {sortedMessagesData.length > 0 ? (
                                         sortedMessagesData.map((message, index) => {
@@ -1085,7 +1121,6 @@ const BulletinBoards: React.FC = () => {
                                                 : getAvatarElement(message?.user?.id);
 
                                             return (
-                                                <IonCard className="chat-card-item" key={index}>
                                                     <div className="chat-item" key={index}>
                                                         <ChatListScroll
                                                             key={index}
@@ -1103,7 +1138,6 @@ const BulletinBoards: React.FC = () => {
                                                             handleAction={handleAction}
                                                         />
                                                     </div>
-                                                </IonCard>
                                             );
                                         })
                                     )
