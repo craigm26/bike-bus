@@ -13,17 +13,17 @@ import {
     IonTitle,
     IonIcon,
 } from '@ionic/react';
-import { useCallback, useContext, useEffect, useState } from 'react';
 import './Account.css';
-import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { db, storage } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import React from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import { cogOutline } from 'ionicons/icons';
 import { AuthContext } from '../AuthContext';
+import { useHistory } from 'react-router-dom';
+
 
 interface Group {
     id: string;
@@ -52,7 +52,7 @@ interface Route {
 const DEFAULT_ACCOUNT_MODES = ['Member'];
 
 const Account: React.FC = () => {
-    const { user, logout, checkAndUpdateAccountModes } = useContext(AuthContext);
+    const { user, loadingAuthState } = useContext(AuthContext);
     const { avatarUrl, refresh } = useAvatar(user?.uid);
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
@@ -63,57 +63,36 @@ const Account: React.FC = () => {
     const [savedDestinations, setSavedDestinations] = useState<Group[]>([]);
     const [uploadComplete, setUploadComplete] = useState(false);
     const [routes, setRoutes] = useState<Route[]>([]);
+    const history = useHistory();
+
+
 
     useEffect(() => {
-        if (user) {
-            checkAndUpdateAccountModes(user.uid);
-            const userRef = doc(db, 'users', user.uid);
-            getDoc(userRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    // Get the BikeBusGroups
-                    const q = query(collection(db, 'bikebusgroups'), where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user.uid}`)));
 
-                    getDocs(q).then((querySnapshot) => {
-                        const groups = querySnapshot.docs.map((doc) => ({
-                            id: doc.id,
-                            BikeBusName: doc.data().BikeBusName,  // assuming the document has a field named 'BikeBusName'
-                            BikeBusMembers: doc.data().BikeBusMembers, // assuming the document has a field named 'BikeBusMembers'
-                        }));
-                        setBikeBusGroups(groups);
-                    });
-
-
-                    const userData = docSnapshot.data();
-                    if (userData) {
-                        if (userData.enabledAccountModes) {
-                            setEnabledAccountModes(userData.enabledAccountModes);
-                        } else {
-                            setEnabledAccountModes(DEFAULT_ACCOUNT_MODES);
-                            updateDoc(userRef, { enabledAccountModes: DEFAULT_ACCOUNT_MODES });
-                        }
-
-                        // Other user data checks
-                    }
-                    if (userData && userData.firstName) {
-                        setFirstName(userData.firstName);
-                    }
-
-                    if (userData && userData.lastName) {
-                        setLastName(userData.lastName);
-                    }
-                    if (userData && userData.username) {
-                        setUsername(userData.username);
-                    }
-                    if (userData && userData.accountType) {
-                        setaccountType(userData.accountType);
-                    }
-                    if (userData && userData.enabledAccountModes) {
-                        setEnabledAccountModes(userData.enabledAccountModes);
-                    }
-                }
-            });
+        if (!loadingAuthState && !user) {
+            // Redirect to login if not loading and no user
+            history.push('/login');
+            return;
         }
-    }, [user, checkAndUpdateAccountModes]);
+        const fetchUser = async () => {
+            if (user?.uid) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                const userData = userDoc.data();
+                if (userData) {
+                    setFirstName(userData.firstName);
+                    setLastName(userData.lastName);
+                    setUsername(userData.username);
+                    setaccountType(userData.accountType);
+                    setEnabledAccountModes(userData.enabledAccountModes || DEFAULT_ACCOUNT_MODES);
+                    setBikeBusGroups(userData.BikeBusGroups);
+                    setSavedDestinations(userData.savedDestinations);
+                }
+            }
+        };
+        fetchUser();
+
+      }, [user, loadingAuthState]);
+        
 
     const fetchRoutes = useCallback(async () => {
         // Assuming that your uid is stored in the user.uid
@@ -139,17 +118,8 @@ const Account: React.FC = () => {
         setRoutes(routesData);
     }, [user]); // here user is a dependency
 
-
-
-    useEffect(() => {
-        fetchRoutes();
-    }, [fetchRoutes]);
-
-
-
     // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
     const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
-
 
     const refreshAvatar = () => {
         if (user) {
@@ -181,7 +151,6 @@ const Account: React.FC = () => {
             );
         }
     };
-
 
     return (
         <IonPage className="ion-flex-offset-app">
@@ -223,7 +192,7 @@ const Account: React.FC = () => {
                         <IonList>
                             <IonItem>
                                 <IonLabel position="stacked">First Name</IonLabel>
-                                <IonText>{firstName}</IonText>
+                                <IonText>{user?.firstName}</IonText>
                             </IonItem>
                             <IonItem>
                                 <IonLabel position="stacked">Last Name</IonLabel>

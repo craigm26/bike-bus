@@ -18,7 +18,7 @@ import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, locateOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
 
 
@@ -171,7 +171,7 @@ const Map: React.FC = () => {
   const [selectedStartLocationAddress, setSelectedStartLocationAddress] = useState<string>('');
   const [endPointAdress, setEndPointAdress] = useState<string>('');
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [userLocationAddress, setUserLocationAddress] = useState("Loading...");
+  const [userLocationAddress, setUserLocationAddress] = useState("Set Your Starting Point");
   const [route, setRoute] = useState<DocumentData | null>(null);
 
   type Point = {
@@ -295,7 +295,6 @@ const Map: React.FC = () => {
   };
 
   const renderMap = (location: React.SetStateAction<{ lat: number; lng: number; }>) => {
-    requestLocationPermission();
     setGetLocationClicked(true);
     setShowMap(true);
     setMapCenter(location);
@@ -379,7 +378,7 @@ const Map: React.FC = () => {
         position: { lat: PlaceLatitude!, lng: PlaceLongitude! },
       });
     } else {
-      requestLocationPermission();
+      alert("Please select a location.");
     }
   };
 
@@ -427,7 +426,11 @@ const Map: React.FC = () => {
           const routeData = routeDoc.data() as RouteData;
           BikeBusRoutesData.push(routeData);
 
-          endPointCoordinates.push(routeData.endPoint);
+          if (routeData && routeData.endPoint) {
+            endPointCoordinates.push(routeData.endPoint);
+          } else {
+            console.error('routeData.endPoint is undefined');
+          }
         }
       }
 
@@ -1041,12 +1044,6 @@ const Map: React.FC = () => {
 
     }
   }, [user]);
-
-  useEffect(() => {
-    if (id) {
-      handleStartMap();
-    }
-  }, [id]);
 
 
   useEffect(() => {
@@ -2247,7 +2244,11 @@ const Map: React.FC = () => {
                               height: "40px",
                             }}
                           />
+                                              <IonButton onClick={getLocation}>
+                        <IonIcon icon={locateOutline} />
+                      </IonButton>
                         </div>
+                        
                       </StandaloneSearchBox>
                     </IonCol>
                   </IonRow>
@@ -2792,17 +2793,6 @@ const Map: React.FC = () => {
                     }}
                   />
                 )}
-              </div>
-              <div>
-                <IonGrid className="toggle-bikebus-container">
-                  <IonRow>
-                    <IonCol>
-                      <IonButton onClick={getLocation}>
-                        <IonIcon icon={locateOutline} />
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
               </div>
               <Sidebar
                 mapRef={mapRef}
