@@ -15,22 +15,34 @@ import {
     IonIcon,
     IonActionSheet,
     IonSpinner,
-    IonChip
+    IonChip,
+    IonCardSubtitle,
+    IonHeader,
+    IonTitle,
+    IonToolbar,
+    IonCol,
+    IonGrid,
+    IonModal,
+    IonCardHeader,
+    IonCard,
+    IonProgressBar,
+    IonText
 } from '@ionic/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
-import { cameraOutline, closeOutline, locationOutline, personCircleOutline, trashOutline } from 'ionicons/icons';
+import { add, cameraOutline, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, sendOutline, trashOutline, videocamOutline } from 'ionicons/icons';
 import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
 import { db, storage } from '../firebaseConfig';
 import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
 import { set } from 'date-fns';
 import { is } from 'date-fns/locale';
 import { get } from 'http';
+import { event } from 'firebase-functions/v1/analytics';
 
 
 interface UserDocument {
@@ -143,8 +155,15 @@ const BulletinBoards: React.FC = () => {
     const [showActionSheet, setShowActionSheet] = useState(false);
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
     const [isFileUploaded, setIsFileUploaded] = useState(false);
-    const supportedFileTypes = 'image/*,video/*'; // Support both images and videos
+    const supportedFileTypes = 'image/*,video/*';
     const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+    const [showContentModal, setShowContentModal] = useState(false);
+    const [selectedContentType, setSelectedContentType] = useState('');
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState('');
+
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
 
     const addUserToGlobal = async (userId: string) => {
@@ -804,63 +823,67 @@ const BulletinBoards: React.FC = () => {
     }, [selectedMessage, handleCommunitySelection, fetchOrganizations, fetchBikeBus, editMode, editMessage, setEditMode, setEditMessage]);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+        if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            if (file) {
-                setIsFileUploaded(true);
-                const storageRef = ref(storage, `chat_images/${selectedBBOROrgValue}/${user.uid}/${Date.now()}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
+            const storageRef = ref(storage, `chat_images/${selectedBBOROrgValue}/${user?.uid}/${Date.now()}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
 
-                uploadTask.on(
-                    'state_changed',
-                    (snapshot: any) => {
-                        console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                    },
-                    (error: any) => {
-                        console.error('Error uploading image:', error);
-                    },
-                    () => {
-                        // TODO: Update your chat message state with the new image URL here
-                        // For instance, you might push this new message into your `sortedMessagesData` array
-                        // You might also want to update the `messagesData` state to include the new message
-                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            console.log('File available at', downloadURL);
-                            setUploadedImageUrl(downloadURL); // Set the state variable with the URL
-                            setMessageInput(downloadURL);
-                        });
-                    },
-                );
-            }
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Update progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadProgress(progress);
+                },
+                (error) => {
+                    // Handle errors
+                    console.error('Error uploading image:', error);
+                    setUploadError('Error uploading image.');
+                    setUploadProgress(0); // Reset progress
+                },
+                () => {
+                    // Handle successful upload
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log('File available at', downloadURL);
+                        setUploadedImageUrl(downloadURL);
+                        setMessageInput(downloadURL);
+                        setShowContentModal(false); // Close the modal
+                    });
+                }
+            );
         }
     };
 
     const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+        if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            if (file) {
-                setIsFileUploaded(true);
-                const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user.uid}/${Date.now()}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
+            const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user?.uid}/${Date.now()}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
 
-                uploadTask.on(
-                    'state_changed',
-                    (snapshot: any) => {
-                        console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                    },
-                    (error: any) => {
-                        console.error('Error uploading video:', error);
-                    },
-                    () => {
-                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            console.log('File available at', downloadURL);
-                            setUploadedVideoUrl(downloadURL);
-                            setMessageInput(downloadURL);
-                        });
-                    }
-                );
-            }
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Update progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadProgress(progress);
+                },
+                (error) => {
+                    // Handle errors
+                    console.error('Error uploading video:', error);
+                    setUploadError('Error uploading video.');
+                    setUploadProgress(0); // Reset progress
+                },
+                () => {
+                    // Handle successful upload
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log('File available at', downloadURL);
+                        setUploadedVideoUrl(downloadURL);
+                        setMessageInput(downloadURL);
+                        setShowContentModal(false); // Close the modal
+                    });
+                }
+            );
         }
-    }
+    };
+    
 
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -871,12 +894,12 @@ const BulletinBoards: React.FC = () => {
                 const isVideo = file.type.startsWith('video');
                 // Set file upload state
                 setIsFileUploaded(true);
-    
+
                 // Firebase Storage reference
                 const fileExtension = file.name.split('.').pop();
                 const storageRef = ref(storage, `chat_media/${selectedBBOROrgValue}/${user.uid}/${Date.now()}.${fileExtension}`);
                 const uploadTask = uploadBytesResumable(storageRef, file);
-    
+
                 // Handle the upload process
                 uploadTask.on(
                     'state_changed',
@@ -906,6 +929,14 @@ const BulletinBoards: React.FC = () => {
         }
     };
 
+    const handleContentTypeSelection = (type: 'photo' | 'video') => {
+        setSelectedContentType(type);
+        setShowContentModal(false);
+        setTimeout(() => {
+            fileInputRef.current?.click();
+        }, 0);
+    };
+
     useEffect(() => {
         if (selectedBBOROrgValue === null) {
             setselectedBBOROrgValue('Global');
@@ -915,7 +946,34 @@ const BulletinBoards: React.FC = () => {
 
     return (
         <IonPage className="ion-flex-offset-app">
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Bulletin Boards</IonTitle>
+                </IonToolbar>
+            </IonHeader>
             <IonContent fullscreen>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                    <IonProgressBar value={uploadProgress / 100}></IonProgressBar>
+                )}
+                {uploadError && (
+                    <IonText color="danger">Upload failed: {uploadError}</IonText>
+                )}
+                <IonModal isOpen={showContentModal} onDidDismiss={() => setShowContentModal(false)}>
+                    <IonContent>
+                        <IonList>
+                            <IonItem button onClick={() => handleContentTypeSelection('photo')}>
+                                <IonLabel>Photo</IonLabel>
+                                <IonIcon icon={imageOutline} slot="end" />
+                            </IonItem>
+                            <IonItem button onClick={() => handleContentTypeSelection('video')}>
+                                <IonLabel>Video</IonLabel>
+                                <IonIcon icon={videocamOutline} slot="end" />
+                            </IonItem>
+                            {/* Add more items for routes and bikebusses */}
+                        </IonList>
+                        <IonButton onClick={() => setShowContentModal(false)}>Cancel</IonButton>
+                    </IonContent>
+                </IonModal>
                 {anonAccess && (
                     <>
                         <IonCardTitle>Anonymous Access</IonCardTitle>
@@ -926,40 +984,55 @@ const BulletinBoards: React.FC = () => {
                         </IonButton>
                     </>
                 )}
-                <IonCardTitle className="bulletinboard-title">Bulletin Boards
-                </IonCardTitle>
+                {!geoConsent && !anonAccess && (
+                    <IonButton color="success" className="share-location-button-chat"
+                        onClick={() => {
+                            getLocation();
+                        }}
+                    >
+                        Enable Community Boards
+                        <IonIcon icon={locationOutline} slot="end" />
+                    </IonButton>
+                )}
                 {!anonAccess && (
                     <>
-                        <IonChip>
-                            <IonSelect
-                                className="custom-ion-select"
-                                value={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
-                                placeholder="Global"
-                                onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
-                            >
-                                {combinedList.map((item, index) => (
-                                    <IonSelectOption key={index} value={item.value}>
-                                        {item.label}
-                                    </IonSelectOption>
-                                ))}
-                            </IonSelect>
-                        </IonChip>
-                        {!geoConsent && !anonAccess && (
-                            <IonButton color="success" className="share-location-button-chat"
-                                onClick={() => {
-                                    getLocation();
-                                }}
-                            >
-                                Share Location to Enable Community Boards
-                                <IonIcon icon={locationOutline} slot="start" />
-                            </IonButton>
-                        )}
+                        <IonRow>
+                            <IonCol size="12" className="bulletin-board-selection-title">
+                                <IonCardSubtitle className="bulletin-board-selection-title">
+                                    <IonSelect
+                                        className="custom-ion-select"
+                                        value={selectedBBOROrgValue}
+                                        placeholder="Global"
+                                        onIonChange={e => setselectedBBOROrgValue(e.detail.value)}
+                                    >
+                                        {combinedList.map((item, index) => (
+                                            <IonSelectOption key={index} value={item.value}>
+                                                {item.label}
+                                            </IonSelectOption>
+                                        ))}
+                                    </IonSelect>
+                                </IonCardSubtitle>
+                            </IonCol>
+                        </IonRow>
                         {selectedBBOROrgValue !== '' && (
                             <div className="chat-container">
-
                                 <form onSubmit={submitMessage} className="chat-input-form">
                                     <IonRow>
-                                        <IonChip className={uploadedImageUrl ? "ion-chip-with-image" : ""}>
+                                        <IonCol size="1" className="icon-col">
+                                            <div className="icon-container">
+                                                <IonButton fill="solid" color="primary" aria-label="Show/hide" onClick={() => setShowContentModal(true)}>
+                                                    <IonIcon icon={add} aria-hidden="true"></IonIcon>
+                                                    <input
+                                                        type="file"
+                                                        accept={selectedContentType === 'photo' ? 'image/*' : 'video/*'}
+                                                        style={{ display: 'none' }}
+                                                        onChange={selectedContentType === 'photo' ? handleImageUpload : handleVideoUpload}
+                                                        ref={fileInputRef}
+                                                    />
+                                                </IonButton>
+                                            </div>
+                                        </IonCol>
+                                        <IonCol size="10" className="custom-chat-input-col">
                                             {uploadedImageUrl ? (
                                                 <img
                                                     src={uploadedImageUrl}
@@ -971,66 +1044,74 @@ const BulletinBoards: React.FC = () => {
                                                     required={true}
                                                     aria-label='Message'
                                                     type='text'
-                                                    min='1'
+                                                    min='2'
                                                     max='1000'
-                                                    
+                                                    maxlength={500}
                                                     value={messageInput}
                                                     placeholder="Enter your message"
-                                                    onIonChange={e => setMessageInput(e.detail.value || '')}
+                                                    onIonChange={(e: CustomEvent) => setMessageInput(e.detail.value?.toString() || '')}
+                                                    className="custom-chat-input"
                                                 />
                                             )}
-                                            <label htmlFor="upload-button">
-                                                <IonIcon icon={cameraOutline} />
-                                            </label>
-                                            <input
-                                                id="upload-button"
-                                                type="file"
-                                                accept={supportedFileTypes}
-                                                style={{ display: 'none' }}
-                                                onChange={handleFileUpload}
-                                            />
-                                        </IonChip>
+                                        </IonCol>
+
+                                        <IonCol size="1" className="icon-col">
+                                            <div className="icon-container">
+                                                <IonButton type="button" onClick={submitMessage} disabled={isLoading}>
+                                                    <IonIcon icon={paperPlane} />
+                                                </IonButton>
+                                            </div>
+                                        </IonCol>
                                     </IonRow>
                                     <IonRow className="chat-button-row">
-                                        {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
-                                            <IonLabel>
-                                                <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
-                                                Cross-Post to Community Board?
-                                            </IonLabel>
-                                        )}
-                                        <IonButton type="button" onClick={submitMessage} disabled={isLoading}>
-                                            Post Bulletin Board Message
-                                        </IonButton>
                                         {isLoading && <IonSpinner name="crescent" />}
                                     </IonRow>
                                 </form>
-                                <IonList className="chat-list">
-                                    {sortedMessagesData.map((message, index) => {
-                                        const isCurrentUserMessage = user?.uid === message?.user?.id;
-                                        const avatarElement = isCurrentUserMessage
-                                            ? currentUserAvatarElement
-                                            : getAvatarElement(message?.user?.id);
+                                {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
+                                    <IonLabel className="cross-post-label">
+                                        Cross-Post to Community Board?
+                                        <IonCheckbox slot="start" checked={postToCommunity} onIonChange={e => setPostToCommunity(e.detail.checked)} />
+                                    </IonLabel>
+                                )}
 
-                                        return (
-                                            <div className="chat-item" key={index}>
-                                                <ChatListScroll
-                                                    key={index}
-                                                    avatarElement={avatarElement}
-                                                    user={user}
-                                                    selectedBBOROrgValue={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
-                                                    combinedList={combinedList}
-                                                    groupData={groupData}
-                                                    sortedMessagesData={sortedMessagesData}
-                                                    isCurrentUserMessage={isCurrentUserMessage}
-                                                    selectedMessage={null}
-                                                    isLoading={isLoading}
-                                                    onMessageSelected={handleSelectedMessage}
-                                                    setShowActionSheet={setShowActionSheet}
-                                                    handleAction={handleAction}
-                                                />
-                                            </div>
-                                        );
-                                    })}
+                                <IonList className="chat-list">
+                                    {sortedMessagesData.length > 0 ? (
+                                        sortedMessagesData.map((message, index) => {
+                                            const isCurrentUserMessage = user?.uid === message?.user?.id;
+                                            const avatarElement = isCurrentUserMessage
+                                                ? currentUserAvatarElement
+                                                : getAvatarElement(message?.user?.id);
+
+                                            return (
+                                                <IonCard className="chat-card-item" key={index}>
+                                                    <div className="chat-item" key={index}>
+                                                        <ChatListScroll
+                                                            key={index}
+                                                            avatarElement={avatarElement}
+                                                            user={user}
+                                                            selectedBBOROrgValue={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
+                                                            combinedList={combinedList}
+                                                            groupData={groupData}
+                                                            sortedMessagesData={sortedMessagesData}
+                                                            isCurrentUserMessage={isCurrentUserMessage}
+                                                            selectedMessage={null}
+                                                            isLoading={isLoading}
+                                                            onMessageSelected={handleSelectedMessage}
+                                                            setShowActionSheet={setShowActionSheet}
+                                                            handleAction={handleAction}
+                                                        />
+                                                    </div>
+                                                </IonCard>
+                                            );
+                                        })
+                                    )
+                                        : (
+                                            <IonCard className="chat-card-item">
+                                                <IonCardHeader>
+                                                    <IonLabel>There aren't any messages yet in this board, start it.</IonLabel>
+                                                </IonCardHeader>
+                                            </IonCard>
+                                        )}
                                 </IonList>
                             </div>
                         )}
@@ -1055,7 +1136,7 @@ const BulletinBoards: React.FC = () => {
                     ]}
                 />
             </IonContent>
-        </IonPage>
+        </IonPage >
     );
 };
 

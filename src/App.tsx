@@ -59,6 +59,7 @@ import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/a
 import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
 import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
 import { ReactComponent as Language} from './assets/fontawesome/svgs/regular/language.svg';
+import { ReactComponent as MapIcon } from './assets/fontawesome/svgs/regular/map.svg';
 
 
 import '@ionic/react/css/core.css';
@@ -491,7 +492,7 @@ const App: React.FC = () => {
                   <div className='map-button-container footer-content'>
                     <IonFab vertical="bottom" horizontal="start" slot="fixed">
                       <IonFabButton routerLink="/Map" routerDirection="none">
-                        <HouseIcon style={{ width: '24px', height: '24px' }} />
+                        <MapIcon style={{ width: '24px', height: '24px' }} />
                       </IonFabButton>
                     </IonFab>
                   </div>
