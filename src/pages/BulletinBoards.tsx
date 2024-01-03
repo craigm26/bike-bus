@@ -15,34 +15,29 @@ import {
     IonIcon,
     IonActionSheet,
     IonSpinner,
-    IonChip,
     IonCardSubtitle,
     IonHeader,
     IonTitle,
     IonToolbar,
     IonCol,
-    IonGrid,
     IonModal,
     IonCardHeader,
     IonCard,
     IonProgressBar,
-    IonText
+    IonText,
+    IonAlert
 } from '@ionic/react';
-import { SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
-import { add, cameraOutline, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, sendOutline, trashOutline, videocamOutline } from 'ionicons/icons';
+import { add, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, trashOutline, videocamOutline } from 'ionicons/icons';
 import ChatListScroll from '../components/BulletinBoards/ChatListScroll';
 import { db, storage } from '../firebaseConfig';
 import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
-import { set } from 'date-fns';
-import { is } from 'date-fns/locale';
-import { get } from 'http';
-import { event } from 'firebase-functions/v1/analytics';
 
 
 interface UserDocument {
@@ -161,10 +156,9 @@ const BulletinBoards: React.FC = () => {
     const [selectedContentType, setSelectedContentType] = useState('');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadError, setUploadError] = useState('');
-
+    const [showContentTypeAlert, setShowContentTypeAlert] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-
 
     const addUserToGlobal = async (userId: string) => {
         const userRef = doc(db, 'users', userId);
@@ -172,8 +166,6 @@ const BulletinBoards: React.FC = () => {
             organizations: arrayUnion('Global')  // Assume organizations is an array field
         });
     };
-
-
 
     useEffect(() => {
         setIsLoading(true);
@@ -263,70 +255,71 @@ const BulletinBoards: React.FC = () => {
 
     const handleCommunitySelection = async () => {
         return new Promise<Message[]>(async (resolve, reject) => {
-            if (geoConsent === true) {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(async (position) => {
-                        const { latitude, longitude } = position.coords;
-                        const userLocation = { lat: latitude, lng: longitude };
+            if (geoConsent) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const userLocation = { lat: latitude, lng: longitude };
 
-                        const communityMessagesRef = collection(db, 'messages');
-                        const communityMessagesQuery = query(communityMessagesRef, where('bulletinboardType', '==', 'Community'));
-                        const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
-                        const communityMessagesDataPromises = communityMessagesSnapshot.docs.map(async doc => {
-                            const userDataRef = doc.data().user; // Get the user document reference
-                            console.log('User Data Ref:', userDataRef);
-                            const userDoc = await getDoc(userDataRef); // Fetch the user document
-                            console.log('User Doc:', userDoc);
-                            if (!userDoc.exists()) {
-                                console.warn('User document does not exist for reference:', userDataRef);
+                    const communityMessagesRef = collection(db, 'messages');
+                    const communityMessagesQuery = query(communityMessagesRef, where('bulletinboardType', '==', 'Community'));
+                    const communityMessagesSnapshot = await getDocs(communityMessagesQuery);
+
+                    const communityMessagesData = await Promise.all(
+                        communityMessagesSnapshot.docs.map(async (docSnapshot) => {
+                            const messageData = docSnapshot.data();
+                            if (!messageData.user) {
+                                console.warn('User reference is missing in message:', docSnapshot.id);
+                                return null;
+                            }
+                            const userId = messageData.user.id;
+                            const userDataRef = doc(db, 'users', userId);
+
+                            const userDocSnapshot = await getDoc(userDataRef);
+                            console.log('messageData.user:', messageData.user);
+                            console.log('userDocSnapshot:', userDocSnapshot);
+                            console.log('userDocSnapshot.exists():', userDocSnapshot.exists());
+
+                            if (!userDocSnapshot.exists()) {
+                                console.warn('User document does not exist for reference:', userDataRef.path);
+                                return null;
                             }
 
+                            const userData = userDocSnapshot.data() as UserDocument;
+                            return {
+                                id: docSnapshot.id,
+                                message: messageData.message,
+                                timestamp: messageData.timestamp,
+                                bulletinboard: messageData.bulletinboard || "Community",
+                                bulletinboardType: messageData.bulletinboardType || "Community",
+                                geoHash: messageData.geoHash,
+                                userLocationSentMessage: messageData.userLocationSentMessage,
+                                user: {
+                                    id: userDocSnapshot.id,
+                                    username: userData.username,
+                                    avatarUrl: userData.avatarUrl
+                                }
+                            } as Message; // Ensure the object conforms to the Message interface
+                        })
+                    );
 
-                            if (userDoc.exists()) {
+                    // Filter out null and undefined values
+                    const validCommunityMessages = communityMessagesData.filter((message) => message !== null) as Message[];
 
-                                const userData = userDoc.data() as UserDocument; // Cast to the expected shape
-                                console.log('User Data:', userData);
+                    const communityMessagesWithinRadius = validCommunityMessages.filter(message => {
+                        if (!message.userLocationSentMessage) return false; // Check if userLocationSentMessage is available
 
-                                return {
-                                    ...doc.data(),
-                                    id: doc.id,
-                                    message: doc.data().message as string,
-                                    timestamp: doc.data().timestamp as FieldValue,
-                                    user: {
-                                        id: userDoc.id, // Include the document ID as the user ID
-                                        username: userData.username, // Extract the username
-                                        avatarUrl: userData.avatarUrl, // Include the avatar URL if it's needed
-                                    },
-                                    bulletinboard: doc.data().bulletinboard || "Community",
-                                    bulletinboardType: doc.data().bulletinboardType || "Community",
-                                    geoHash: doc.data().geoHash as string,
-                                    userLocationSentMessage: doc.data().userLocationSentMessage as UserLocation,
-                                };
-                            } else {
-                                console.warn('User document does not exist');
-                            }
-                        });
-
-                        const communityMessagesData = await Promise.all(communityMessagesDataPromises);
-
-                        // Filter out messages with valid 'message' and 'user' properties
-                        const validCommunityMessagesData = communityMessagesData.filter(message => message !== undefined && message.message && message.user) as Message[];
-
-                        // Find community boards from the validCommunityMessagesData that are within a 25-mile radius
-                        const communityMessages = validCommunityMessagesData.filter(message => {
-                            const messageLocation = message.userLocationSentMessage as UserLocation;
-                            const distanceInKm = geofire.distanceBetween([messageLocation.lat, messageLocation.lng], [userLocation.lat, userLocation.lng]);
-                            const distanceInM = distanceInKm * 1000;
-                            const radiusInM = 25 * 1609.34; // Convert miles to meters if radius is in miles
-                            return distanceInM <= radiusInM;
-                        });
-
-                        // Update the messagesData state with the community messages
-                        resolve(communityMessages);
-                        setMessagesData(communityMessages);
-
+                        const messageLocation = message.userLocationSentMessage;
+                        const distanceInKm = geofire.distanceBetween([messageLocation.lat, messageLocation.lng], [userLocation.lat, userLocation.lng]);
+                        const distanceInMeters = distanceInKm * 1000;
+                        const radiusInMeters = 25 * 1609.34; // 25 miles in meters
+                        return distanceInMeters <= radiusInMeters;
                     });
-                }
+
+                    resolve(communityMessagesWithinRadius);
+                }, (error) => {
+                    console.error("Error getting geolocation:", error);
+                    reject(error);
+                });
             }
         });
     };
@@ -883,7 +876,7 @@ const BulletinBoards: React.FC = () => {
             );
         }
     };
-    
+
 
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -931,7 +924,7 @@ const BulletinBoards: React.FC = () => {
 
     const handleContentTypeSelection = (type: 'photo' | 'video') => {
         setSelectedContentType(type);
-        setShowContentModal(false);
+        setShowContentTypeAlert(false);
         setTimeout(() => {
             fileInputRef.current?.click();
         }, 0);
@@ -942,6 +935,20 @@ const BulletinBoards: React.FC = () => {
             setselectedBBOROrgValue('Global');
         }
     }, []);
+
+    // save the below to implement the location consent for community boards later
+    /*
+    {!geoConsent && !anonAccess && (
+                    <IonButton color="success" className="share-location-button-chat"
+                        onClick={() => {
+                            getLocation();
+                        }}
+                    >
+                        Enable Community Boards
+                        <IonIcon icon={locationOutline} slot="end" />
+                    </IonButton>
+                )}
+    */
 
 
     return (
@@ -958,22 +965,6 @@ const BulletinBoards: React.FC = () => {
                 {uploadError && (
                     <IonText color="danger">Upload failed: {uploadError}</IonText>
                 )}
-                <IonModal isOpen={showContentModal} onDidDismiss={() => setShowContentModal(false)}>
-                    <IonContent>
-                        <IonList>
-                            <IonItem button onClick={() => handleContentTypeSelection('photo')}>
-                                <IonLabel>Photo</IonLabel>
-                                <IonIcon icon={imageOutline} slot="end" />
-                            </IonItem>
-                            <IonItem button onClick={() => handleContentTypeSelection('video')}>
-                                <IonLabel>Video</IonLabel>
-                                <IonIcon icon={videocamOutline} slot="end" />
-                            </IonItem>
-                            {/* Add more items for routes and bikebusses */}
-                        </IonList>
-                        <IonButton onClick={() => setShowContentModal(false)}>Cancel</IonButton>
-                    </IonContent>
-                </IonModal>
                 {anonAccess && (
                     <>
                         <IonCardTitle>Anonymous Access</IonCardTitle>
@@ -983,16 +974,6 @@ const BulletinBoards: React.FC = () => {
                             Sign In
                         </IonButton>
                     </>
-                )}
-                {!geoConsent && !anonAccess && (
-                    <IonButton color="success" className="share-location-button-chat"
-                        onClick={() => {
-                            getLocation();
-                        }}
-                    >
-                        Enable Community Boards
-                        <IonIcon icon={locationOutline} slot="end" />
-                    </IonButton>
                 )}
                 {!anonAccess && (
                     <>
@@ -1020,16 +1001,16 @@ const BulletinBoards: React.FC = () => {
                                     <IonRow>
                                         <IonCol size="1" className="icon-col">
                                             <div className="icon-container">
-                                                <IonButton fill="solid" color="primary" aria-label="Show/hide" onClick={() => setShowContentModal(true)}>
+                                                <IonButton fill="solid" color="primary" aria-label="Show/hide" onClick={() => setShowContentTypeAlert(true)}>
                                                     <IonIcon icon={add} aria-hidden="true"></IonIcon>
-                                                    <input
-                                                        type="file"
-                                                        accept={selectedContentType === 'photo' ? 'image/*' : 'video/*'}
-                                                        style={{ display: 'none' }}
-                                                        onChange={selectedContentType === 'photo' ? handleImageUpload : handleVideoUpload}
-                                                        ref={fileInputRef}
-                                                    />
                                                 </IonButton>
+                                                <input
+                                                    type="file"
+                                                    accept={selectedContentType === 'photo' ? 'image/*' : 'video/*'}
+                                                    style={{ display: 'none' }}
+                                                    onChange={selectedContentType === 'photo' ? handleImageUpload : handleVideoUpload}
+                                                    ref={fileInputRef}
+                                                />
                                             </div>
                                         </IonCol>
                                         <IonCol size="10" className="custom-chat-input-col">
@@ -1054,7 +1035,6 @@ const BulletinBoards: React.FC = () => {
                                                 />
                                             )}
                                         </IonCol>
-
                                         <IonCol size="1" className="icon-col">
                                             <div className="icon-container">
                                                 <IonButton type="button" onClick={submitMessage} disabled={isLoading}>
@@ -1066,7 +1046,29 @@ const BulletinBoards: React.FC = () => {
                                     <IonRow className="chat-button-row">
                                         {isLoading && <IonSpinner name="crescent" />}
                                     </IonRow>
+
+                                    <IonAlert
+                                        isOpen={showContentTypeAlert}
+                                        onDidDismiss={() => setShowContentTypeAlert(false)}
+                                        header={'Select Content Type'}
+                                        buttons={[
+                                            {
+                                                text: 'Photo',
+                                                handler: () => handleContentTypeSelection('photo')
+                                            },
+                                            {
+                                                text: 'Video',
+                                                handler: () => handleContentTypeSelection('video')
+                                            },
+                                            {
+                                                text: 'Cancel',
+                                                role: 'cancel',
+                                                handler: () => setShowContentTypeAlert(false)
+                                            }
+                                        ]}
+                                    />
                                 </form>
+
                                 {selectedBBOROrgValue !== 'Community' && selectedBBOROrgValue !== '' && (
                                     <IonLabel className="cross-post-label">
                                         Cross-Post to Community Board?
