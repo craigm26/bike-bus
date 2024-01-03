@@ -256,6 +256,8 @@ const Map: React.FC = () => {
   const [markerData, setMarkerData] = useState<MarkerType[]>([]);
   const [BikeBusGroupClusterId, setBikeBusGroupClusterId] = useState<string[]>([]);
   const [position, setPosition] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+
 
 
   interface Trip {
@@ -1338,6 +1340,9 @@ const Map: React.FC = () => {
           }
           setDestinationInput(`${place.formatted_address}` ?? { PlaceAddress });
           setRouteEndStreetName(streetName ?? '');
+          const newDestinationValue = place.formatted_address || '';
+          setDestinationValue(newDestinationValue);
+          setRouteEndFormattedAddress(newDestinationValue);
           setRouteEndName(`${place.name}` ?? '');
           console.log(place.formatted_address)
           console.log(PlaceAddress)
@@ -1487,6 +1492,28 @@ const Map: React.FC = () => {
       setDirectionsFetched(true);
     });
   };
+
+  const updateRoute = (newRoute: google.maps.DirectionsResult) => {
+    if (directionsRenderer) {
+      // Clear the existing route
+      directionsRenderer.setMap(null);
+    }
+
+    const newDirectionsRenderer = new google.maps.DirectionsRenderer({
+      // Your renderer options here
+    });
+    newDirectionsRenderer.setDirections(newRoute);
+    newDirectionsRenderer.setMap(mapRef.current);
+    setDirectionsRenderer(newDirectionsRenderer);
+  };
+
+  directionsRenderer?.addListener('directions_changed', () => {
+    const newDirections = directionsRenderer.getDirections();
+    if (newDirections) {
+      updateRoute(newDirections);
+    }
+  });
+
 
   const getStartPointAdress = async () => {
     if (startPoint) {
@@ -2244,11 +2271,10 @@ const Map: React.FC = () => {
                               height: "40px",
                             }}
                           />
-                                              <IonButton onClick={getLocation}>
-                        <IonIcon icon={locateOutline} />
-                      </IonButton>
+                          <IonButton onClick={getLocation}>
+                            <IonIcon icon={locateOutline} />
+                          </IonButton>
                         </div>
-                        
                       </StandaloneSearchBox>
                     </IonCol>
                   </IonRow>

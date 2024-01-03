@@ -253,6 +253,9 @@ const App: React.FC = () => {
                       <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
                         <IonLabel>{t('Organizations')}</IonLabel>
                       </IonItem>
+                      <IonItem button routerLink="/Help" routerDirection="none">
+                        <IonLabel>{t('Help')}</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink="/about" routerDirection="none">
                         <IonLabel>{t('About')}</IonLabel>
                       </IonItem>
