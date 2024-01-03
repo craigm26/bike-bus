@@ -23,7 +23,10 @@ import { getApp } from 'firebase/app';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 
-interface UserData {
+//export interface UserData {
+//  uid: string;
+
+export type UserData = {
   uid: string;
   email: string;
   username: string;
@@ -33,6 +36,7 @@ interface UserData {
   enabledAccountModes: Array<'Member' | 'Anonymous' | 'Leader' | 'Parent' | 'Kid' | 'Org Admin' | 'App Admin'>;
   enabledOrgModes: Array<'OrganizationCreator' | 'OrganizationMembers' | 'OrganizationAdmins' | 'OrganizationManagers' | 'OrganizationEmployees' | 'Organization'>;
 }
+
 
 const getEnabledAccountModes = (accountType: string): ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] => {
   switch (accountType) {
@@ -62,30 +66,47 @@ const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
 
-  const mapFirebaseUserToUserData = (async (firebaseUser: User): Promise<UserData> => {
-    let enabledAccountModes: ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[] = [];
-    let enabledOrgModes: ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization")[] = [];
-
-    // Fetch additional user data from the database or other sources
-    const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
-    const userData = userSnapshot.data();
-
-    if (userData && userData.accountType) {
-      enabledAccountModes = getEnabledAccountModes(userData.accountType);
-    }
-
-    return {
+  const mapFirebaseUserToUserData = async (firebaseUser: User): Promise<UserData> => {
+    // Define default values
+    const defaultUserData: UserData = {
       uid: firebaseUser.uid,
       email: firebaseUser.email || '',
       username: firebaseUser.displayName || '',
       firstName: '',
       lastName: '',
-      accountType: userData?.accountType || '',
-      enabledAccountModes: enabledAccountModes as ("Member" | "Anonymous" | "Leader" | "Parent" | "Kid" | "Org Admin" | "App Admin")[],
-      enabledOrgModes: enabledOrgModes as ("OrganizationCreator" | "OrganizationMembers" | "OrganizationAdmins" | "OrganizationManagers" | "OrganizationEmployees" | "Organization")[],
-      // Add other properties specific to user data
+      accountType: 'Member',
+      enabledAccountModes: [],
+      enabledOrgModes: []
     };
-  });
+  
+    try {
+      // Fetch additional user data from the database
+      const userSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const userData = userSnapshot.data();
+  
+      if (!userData) {
+        console.log('No additional user data found');
+        return defaultUserData;
+      }
+  
+  
+      // Extract and set additional fields
+      const accountType = userData.accountType || '';
+      const enabledAccountModes = userData.accountType ? getEnabledAccountModes(accountType) : [];
+      const enabledOrgModes: never[] = [];
+  
+      return {
+        ...defaultUserData,
+        accountType,
+        enabledAccountModes,
+        enabledOrgModes
+      };
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return defaultUserData;
+    }
+  };
+  
   
     useEffect(() => {
       const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
@@ -268,9 +289,7 @@ const useAuth = () => {
 
     const checkAndUpdateAccountModes = async (uid: string) => {
       try {
-        console.log('Checking and updating account modes for user:', uid);
         const userRef = doc(collection(db, 'users'), uid);
-        console.log('userRef:', userRef);
         const isMobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android/i);
         if (isMobile) {
           // somehow need to update userData from userRef. Not sure why getDoc is not working for mobile
@@ -278,22 +297,13 @@ const useAuth = () => {
           //getDoc should be the users' uid from firebase - this is a string, whereas getDoc is expecting a DocumentReference. 
           // how do we get the DocumentReference from the users' uid?
           const userDocRef = doc(db, 'users', uid);
-          console.log('userDocRef:', userDocRef);
           const userDoc = await getDocFromServer(userDocRef);
-          console.log('userDoc:', userDoc);
-          const userData = userDoc.data();
-          console.log('userData:', userData);
         } else {
           const userDoc = await getDoc(userRef);
 
-          console.log('userDoc:', userDoc);
-
           if (userDoc.exists()) {
-            console.log('userDoc exists');
             const userData = userDoc.data();
-            console.log('userData:', userData);
             if (userData && userData.accountType) {
-              console.log('userData.accountType exists');
               // Only update if enabledAccountModes does not exist or is empty
               if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
                 const enabledAccountModes = getEnabledAccountModes(userData.accountType);

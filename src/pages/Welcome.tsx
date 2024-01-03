@@ -24,6 +24,9 @@ const Welcome: React.FC = () => {
     checkAndUpdateAccountModes,
   } = useAuth();
   const history = useHistory();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+
 
 
   const handleGoogleSubmit = async () => {
@@ -45,20 +48,21 @@ const Welcome: React.FC = () => {
 
   const processUser = async (user: User | null | undefined) => {
     if (user) {
-      console.log('user during processUser', user);
-      console.log('user.uid', user.uid);
-      console.log('user.displayName', user.displayName);
-      console.log('user.email', user.email);
       await checkAndUpdateAccountModes(user.uid);
-      console.log('after checkAndUpdateAccountModes');
       const username = user.displayName;
-      console.log('username', username);
       if (username) {
-        history.push('/Map');
+        setIsLoggedIn(true);
+        setUsername(username);
       } else {
         history.push('/SetUsername');
       }
     }
+  };
+
+  const handleLogout = async () => {
+    await firebaseAuth.signOut();
+    setIsLoggedIn(false);
+    setUsername(null);
   };
 
   useEffect(() => {
@@ -80,44 +84,65 @@ const Welcome: React.FC = () => {
           <IonRow className="welcome-to-bikebus">
             <IonCol size="12">
               <h1>BikeBus</h1>
+              <h3>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides and help kids ride to school safely.</h3>
             </IonCol>
           </IonRow>
-          <IonRow className="ion-justify-content-center">
+          <IonRow className="ion-justify-content-center video-container">
             <IonCol size="12">
-              <h4>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides and help kids ride to school safely.</h4>
+              <div className="responsive-iframe-container">
+                <iframe
+                  src="https://www.youtube.com/embed/rKBRXcU9MYk"
+                  title="How to Start a BikeBus"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
             </IonCol>
           </IonRow>
-          <IonRow className="ion-justify-content-center">
-            <IonCol size="14">
-              <iframe width="560" height="315" src="https://www.youtube.com/embed/rKBRXcU9MYk" title="How to Start a BikeBus" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
-            </IonCol>
-          </IonRow>
-          <IonRow className="ion-justify-content-center">
-            <IonCol size="5">
-              <IonButton expand="block" routerLink='/Signup'>Signup</IonButton>
-            </IonCol>
-          </IonRow>
-          <IonRow className="ion-justify-content-center">
-            <IonCol size="5">
-              <IonButton expand="block" routerLink='/Login'>Login</IonButton>
-            </IonCol>
-          </IonRow>
-          <IonRow className="ion-justify-content-center">
-            <IonCol size="5">
-              <img src={GoogleLogo} alt="Sign in with Google" onClick={handleGoogleSubmit} className="google-sign-in" />
-            </IonCol>
-          </IonRow>
-          <IonText className="use-anonymously">
-            <IonButton onClick={async () => {
-              try {
-                await signInAnonymously();
-                history.push('/Map');
-              } catch (error) {
-              }
-            }}>
-              Login Anonymously
-            </IonButton>
-          </IonText>
+
+          {isLoggedIn && username ? (
+            <>
+              <IonRow className="ion-justify-content-center">
+                <IonCol size="10">
+                  <IonButton expand="block" onClick={() => history.push('/Map')}>Continue as {username}</IonButton>
+                </IonCol>
+              </IonRow>
+              <IonRow className="ion-justify-content-center">
+                <IonCol size="5">
+                  <IonButton expand="block" onClick={handleLogout}>Logout</IonButton>
+                </IonCol>
+              </IonRow>
+            </>
+          ) : (
+            <>
+              <IonRow className="ion-justify-content-center">
+                <IonCol size="5">
+                  <IonButton expand="block" routerLink='/Signup'>Signup</IonButton>
+                </IonCol>
+              </IonRow>
+              <IonRow className="ion-justify-content-center">
+                <IonCol size="5">
+                  <IonButton expand="block" routerLink='/Login'>Login</IonButton>
+                </IonCol>
+              </IonRow>
+              <IonRow className="ion-justify-content-center">
+                <IonCol size="5">
+                  <img src={GoogleLogo} alt="Sign in with Google" onClick={handleGoogleSubmit} className="google-sign-in" />
+                </IonCol>
+              </IonRow>
+              <IonText className="use-anonymously">
+                <IonButton onClick={async () => {
+                  try {
+                    await signInAnonymously();
+                    history.push('/Map');
+                  } catch (error) {
+                  }
+                }}>
+                  Login Anonymously
+                </IonButton>
+              </IonText>
+            </>
+          )}
           <IonRow className="ion-justify-content-center">
             <IonCol size="5">
               <a href="/PrivacyPolicy" className="privacy-policy-link">Privacy Policy</a>

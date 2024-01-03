@@ -30,6 +30,7 @@ import { db, storage } from '../firebaseConfig';
 import { getDownloadURL, ref, uploadBytesResumable } from '@firebase/storage';
 import { set } from 'date-fns';
 import { is } from 'date-fns/locale';
+import { get } from 'http';
 
 
 interface UserDocument {
@@ -142,6 +143,9 @@ const BulletinBoards: React.FC = () => {
     const [showActionSheet, setShowActionSheet] = useState(false);
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
     const [isFileUploaded, setIsFileUploaded] = useState(false);
+    const supportedFileTypes = 'image/*,video/*'; // Support both images and videos
+    const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+
 
     const addUserToGlobal = async (userId: string) => {
         const userRef = doc(db, 'users', userId);
@@ -630,6 +634,7 @@ const BulletinBoards: React.FC = () => {
                     });
                     setIsFileUploaded(false);
                     setUploadedImageUrl(null);
+                    setUploadedVideoUrl(null);
                     setMessageInput('');
                 }
             } catch (error) {
@@ -829,6 +834,78 @@ const BulletinBoards: React.FC = () => {
         }
     };
 
+    const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            if (file) {
+                setIsFileUploaded(true);
+                const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user.uid}/${Date.now()}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot: any) => {
+                        console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                    },
+                    (error: any) => {
+                        console.error('Error uploading video:', error);
+                    },
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            console.log('File available at', downloadURL);
+                            setUploadedVideoUrl(downloadURL);
+                            setMessageInput(downloadURL);
+                        });
+                    }
+                );
+            }
+        }
+    }
+
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user && user.uid && event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check if the file is an image or a video
+                const isVideo = file.type.startsWith('video');
+                // Set file upload state
+                setIsFileUploaded(true);
+    
+                // Firebase Storage reference
+                const fileExtension = file.name.split('.').pop();
+                const storageRef = ref(storage, `chat_media/${selectedBBOROrgValue}/${user.uid}/${Date.now()}.${fileExtension}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+    
+                // Handle the upload process
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot: any) => {
+                        // Handle upload progress
+                        console.log('Upload progress:', (snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                    },
+                    (error: any) => {
+                        // Handle upload error
+                        console.error('Error uploading file:', error);
+                    },
+                    () => {
+                        // Get download URL and update state
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            console.log('File available at', downloadURL);
+                            // Update state based on file type
+                            if (isVideo) {
+                                setUploadedVideoUrl(downloadURL);
+                            } else {
+                                setUploadedImageUrl(downloadURL);
+                            }
+                            setMessageInput(downloadURL);
+                        });
+                    },
+                );
+            }
+        }
+    };
+
     useEffect(() => {
         if (selectedBBOROrgValue === null) {
             setselectedBBOROrgValue('Global');
@@ -908,9 +985,9 @@ const BulletinBoards: React.FC = () => {
                                             <input
                                                 id="upload-button"
                                                 type="file"
-                                                accept="image/*"
+                                                accept={supportedFileTypes}
                                                 style={{ display: 'none' }}
-                                                onChange={handleImageUpload}
+                                                onChange={handleFileUpload}
                                             />
                                         </IonChip>
                                     </IonRow>

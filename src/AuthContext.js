@@ -3,6 +3,7 @@ import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 
+
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
