@@ -2,6 +2,10 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
+import axios from "axios";
+const cors = require("cors");
+const corsHandler = cors({ origin: true });
+
 
 interface NewsArticle {
   title: string;
@@ -93,3 +97,44 @@ exports.scheduledFetchNewsArticles = functions.pubsub.schedule("every 24 hours")
   await fetchAndStoreNewsArticles("Bike Train");
   console.log("Scheduled fetch and store of news articles complete.");
 });
+
+const getWebpageMetadata = async (url: string): Promise<{title: string, description: string, image: string}> => {
+  try {
+    const { data: html } = await axios.get(url);
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    const descMatch = html.match(/<meta name="description" content="(.*?)"/i);
+    const imageMatch = html.match(/<meta property="og:image" content="(.*?)"/i);
+
+    const title = titleMatch ? titleMatch[1] : "No title found";
+    const description = descMatch ? descMatch[1] : "No description found";
+    const image = imageMatch ? imageMatch[1] : "";
+
+    return { title, description, image };
+  } catch (error) {
+    console.error("Error retrieving webpage metadata:", error);
+    throw new Error("Error retrieving webpage metadata");
+  }
+};
+
+
+exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, () => {
+    if (request.method === "POST" && request.body.url) {
+      getWebpageMetadata(request.body.url)
+        .then(metadata => response.status(200).json(metadata))
+        .catch(error => {
+          console.error("Error fetching webpage metadata:", error);
+          response.status(500).send("Error fetching webpage metadata");
+        });
+    } else {
+      response.status(400).send("Bad Request. Please POST with a url parameter.");
+    }
+  });
+});
+
+exports.testFunction = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, () => {
+    response.send("This is a test function");
+  });
+});
+
