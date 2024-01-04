@@ -122,39 +122,42 @@ const News: React.FC = () => {
         return !newsSnapshot.empty || !userNewsSnapshot.empty;
     };
 
-    // Define submitUserNews at the top level of the component
-    const submitUserNews = async () => {
-        if (!proposedTitle.trim() || !newArticleContent.trim()) {
+    const submitUserNews = async (inputData: any) => {
+        const url = inputData.url;
+        const title = inputData.title || await fetchAndSetArticleTitle(url); // Use the provided title or fetch a new one
+
+        if (!title.trim() || !url.trim()) {
             alert('You must provide both a title and content for the article.');
             return;
         }
 
-        const isDuplicate = await checkForDuplicateArticle(newArticleContent);
+        const isDuplicate = await checkForDuplicateArticle(url);
         if (isDuplicate) {
             alert('This link has already been submitted.');
             return;
         }
 
+        // Here we match the Firestore structure based on the screenshot provided
         const userNews = {
-            title: proposedTitle,
-            content: newArticleContent,
-            submittedBy: user?.username || 'Anonymous',
+            author: user.email, // Assuming that `user.email` exists in your AuthContext
+            content: url,
+            submittedBy: user.displayName || 'Anonymous', // Use `displayName` or a default value
             timestamp: Timestamp.now(),
+            title: title,
         };
 
         const userNewsCollection = collection(db, 'userNews');
         await addDoc(userNewsCollection, userNews);
 
+        // Reset states and close the alert
         setNewArticleContent('');
-        setProposedTitle('');
-        setShowEditTitle(false);
+        setNewArticleTitle('');
+        setShowAlert(false);
+
+        // Fetch updated list of articles
         fetchAllArticles();
     };
 
-    // Define confirmTitleAndSubmit at the top level of the component
-    const confirmTitleAndSubmit = async () => {
-        await submitUserNews();
-    };
 
     const handleTitleEdit = (event: CustomEvent<InputChangeEventDetail>) => {
         setProposedTitle(event.detail.value || '');
@@ -250,106 +253,83 @@ const News: React.FC = () => {
             fetchAllArticles();
         }
     }
-    
 
-        return (
-            <IonPage className="ion-flex-offset-app">
-                <IonHeader>
-                    <IonToolbar>
-                        <IonTitle>News</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent fullscreen>
-                    <IonButton onClick={showAlertForNewArticle}>
-                        Add News Article
-                    </IonButton>
 
-                    <IonAlert
-                        isOpen={showAlert}
-                        onDidDismiss={() => setShowAlert(false)}
-                        header={'Add News Article'}
-                        inputs={[
-                            {
-                                name: 'url',
-                                type: 'url',
-                                placeholder: 'Article URL',
-                                value: newArticleContent, // Bind the input to your component's state
-                            },
-                            {
-                                name: 'title',
-                                placeholder: 'Article Title',
-                                value: newArticleTitle, // Bind the title input to the state
-                            }
-                        ]}
-                        buttons={[
-                            {
-                                text: 'Cancel',
-                                role: 'cancel',
-                                handler: () => setShowAlert(false)
-                            },
-                            {
-                                text: 'Submit',
-                                handler: (inputData) => handleAlertSubmit(inputData) // Handle the submission with the input data
-                            }
-                        ]}
-                    />
-                    <IonList style={{ marginTop: showAlert ? '150px' : '0' }}>
-                        {articles.map((article, index) => (
-                            <IonItem
-                                key={article.id || index}
-                                button
-                                onClick={() => {
-                                    if (article.content && typeof article.content === 'string') {
-                                        openLink(article.content);
-                                    }
-                                }}
-                            >
-                                <IonLabel>
-                                    <h2 className="article-title">{article.title}</h2>
-                                    <p>{article.content}</p>
-                                    <p>
-                                        Posted: {new Date(article.timestamp.toMillis()).toLocaleString()} by {article.submittedBy}
-                                    </p>
-                                </IonLabel>
-                            </IonItem>
-                        ))}
-                    </IonList>
-                    {showAlert && user && (
-                        <>
-                            <IonItem>
-                                <IonLabel position="stacked">Title</IonLabel>
-                                <IonInput
-                                    value={newArticleTitle}
-                                    onIonChange={handleTitleChange}
-                                />
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Link</IonLabel>
-                                <IonInput
-                                    value={newArticleContent}
-                                    onIonChange={handleContentChange}
-                                />
-                            </IonItem>
-                            <IonButton
-                                expand="block"
-                                onClick={submitUserNews}
-                            >
-                                Submit
-                            </IonButton>
-                        </>
-                    )}
-                    <IonInfiniteScroll
-                        onIonInfinite={loadMoreArticles}
-                        threshold="100px"
-                        disabled={isInfiniteDisabled}
-                    >
-                        <IonInfiniteScrollContent
-                            loadingText="Loading more articles...">
-                        </IonInfiniteScrollContent>
-                    </IonInfiniteScroll>
-                </IonContent>
-            </IonPage>
-        );
-    };
+    return (
+        <IonPage className="ion-flex-offset-app">
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>News</IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent fullscreen>
+                <IonButton onClick={showAlertForNewArticle}>
+                    Add News Article
+                </IonButton>
 
-    export default News;
+                <IonAlert
+                    isOpen={showAlert}
+                    onDidDismiss={() => setShowAlert(false)}
+                    header={'Add News Article'}
+                    inputs={[
+                        {
+                            name: 'url',
+                            type: 'url',
+                            placeholder: 'Article URL',
+                            value: newArticleContent,
+                        },
+                        {
+                            name: 'title',
+                            type: 'text',
+                            placeholder: 'Article Title',
+                            value: newArticleTitle,
+                        }
+                    ]}
+                    buttons={[
+                        {
+                            text: 'Cancel',
+                            role: 'cancel',
+                            handler: () => setShowAlert(false)
+                        },
+                        {
+                            text: 'Submit',
+                            handler: (inputData) => submitUserNews(inputData) // Pass the input data directly to the submit function
+                        }
+                    ]}
+                />
+                <IonList style={{ marginTop: showAlert ? '150px' : '0' }}>
+                    {articles.map((article, index) => (
+                        <IonItem
+                            key={article.id || index}
+                            button
+                            onClick={() => {
+                                if (article.content && typeof article.content === 'string') {
+                                    openLink(article.content);
+                                }
+                            }}
+                        >
+                            <IonLabel>
+                                <h2 className="article-title">{article.title}</h2>
+                                <p>{article.content}</p>
+                                <p>
+                                    Posted: {new Date(article.timestamp.toMillis()).toLocaleString()} by {article.submittedBy}
+                                </p>
+                            </IonLabel>
+                        </IonItem>
+                    ))}
+                </IonList>
+                <IonInfiniteScroll
+                    onIonInfinite={loadMoreArticles}
+                    threshold="100px"
+                    disabled={isInfiniteDisabled}
+                >
+                    <IonInfiniteScrollContent
+                        loadingText="Loading more articles...">
+                    </IonInfiniteScrollContent>
+                </IonInfiniteScroll>
+            </IonContent>
+        </IonPage>
+    );
+};
+
+export default News;
