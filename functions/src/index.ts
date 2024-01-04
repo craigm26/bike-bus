@@ -3,8 +3,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 import axios from "axios";
-const cors = require("cors");
-const corsHandler = cors({ origin: true });
+const cors = require("cors")({ origin: true });
 
 
 interface NewsArticle {
@@ -118,7 +117,7 @@ const getWebpageMetadata = async (url: string): Promise<{title: string, descript
 
 
 exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => {
-  corsHandler(request, response, () => {
+  cors(request, response, () => {
     if (request.method === "POST" && request.body.url) {
       getWebpageMetadata(request.body.url)
         .then(metadata => response.status(200).json(metadata))
@@ -129,12 +128,6 @@ exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => 
     } else {
       response.status(400).send("Bad Request. Please POST with a url parameter.");
     }
-  });
-});
-
-exports.testFunction = functions.https.onRequest((request, response) => {
-  corsHandler(request, response, () => {
-    response.send("This is a test function");
   });
 });
 
