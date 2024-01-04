@@ -1060,7 +1060,7 @@ const BulletinBoards: React.FC = () => {
                                                 </>
                                             ) : uploadedVideoUrl ? (
                                                 <>
-                                                <video width="240" height="120" src={uploadedVideoUrl} controls />
+                                                <video width="480" height="240" src={uploadedVideoUrl} controls />
                                                 <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedVideoUrl(null); setMessageInput(''); }} />
                                                 </>
                                             ) : (

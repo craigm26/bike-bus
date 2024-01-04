@@ -108,9 +108,9 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
     const virtuoso = useRef(null);
 
     const handleMediaLoad = () => {
-        // Force Virtuoso to recalculate item sizes
-        (virtuoso.current as any)?.adjustForPrependedItems(0);
+        virtuoso.current && (virtuoso.current as any).adjustForPrependedItems(0);
     };
+
 
     const getAvatarElement = (userId: string | undefined) => {
         // You can replace this with the logic to get the avatar URL for the given user ID
@@ -160,24 +160,35 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
                         const isVideoURL = (url: any) => {
                             return url.match(/^https:\/\/firebasestorage.googleapis.com\/v0\/b\/bikebus-71dd5.appspot.com\/o\/chat_videos/) != null;
                         };
-                    
-                        const isYouTubeURL = (url: any) => {
-                            return url.match(/(youtube.com|youtu.be)/) != null;
+
+                        const handleMediaLoad = () => {
+                            virtuoso.current && (virtuoso.current as any).adjustForPrependedItems(0);
                         };
 
-                        const renderMessageContent = (message: string) => {
-                            if (isImageURL(message)) {
-                                return <img src={message} onLoad={handleMediaLoad} alt="chat image" />;
-                            } else if (isVideoURL(message)) {
-                                return <video src={message} onLoad={handleMediaLoad} controls />;
-                            } else if (isYouTubeURL(message)) {
-                                const videoId = new URL(message).searchParams.get('v');
-                                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                                return <iframe src={embedUrl} onLoad={handleMediaLoad} title="YouTube video" style={{ maxWidth: "100%", maxHeight: "200px" }} />;
+                        const isYouTubeURL = (url: string) => {
+                            return url.match(/(youtube\.com\/watch\?v=|youtu\.be\/)/) !== null;
+                        };
+                        
+                        const renderMessageContent = (messageContent: string) => {
+                            if (isImageURL(messageContent)) {
+                                return <img src={messageContent} onLoad={handleMediaLoad} alt="chat image" style={{ maxWidth: "100%" }} />;
+                            } else if (isVideoURL(messageContent)) {
+                                return <video src={messageContent} onLoad={handleMediaLoad} controls style={{ maxWidth: "100%" }} />;
+                            } else if (isYouTubeURL(messageContent)) {
+                                const videoIdMatch = messageContent.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+                                const videoId = videoIdMatch ? videoIdMatch[1] : null;
+                                if (videoId) {
+                                    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                                    return <iframe src={embedUrl} title="YouTube video" frameBorder="0" allowFullScreen style={{ maxWidth: "100%" }} />;
+                                } else {
+                                    // If video ID could not be extracted, return a placeholder or error message
+                                    return <div>Video could not be loaded.</div>;
+                                }
                             } else {
-                                return message;
+                                return <span>{messageContent}</span>;
                             }
                         };
+                        
 
                         return (
                             <IonPage>
@@ -186,6 +197,7 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
                                         <IonRefresherContent></IonRefresherContent>
                                     </IonRefresher>
                                     <Virtuoso className="ion-content-scroll-host"
+                                        ref={virtuoso}
                                         style={{ height: '100%' }}
                                         totalCount={sortedMessagesData.length}
                                         itemContent={(index) => {
