@@ -1,0 +1,4 @@
+.article-title {
+    white-space: normal; /* Allow wrapping */
+    overflow-wrap: break-word; /* Break words to prevent overflow */
+}

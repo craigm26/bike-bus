@@ -12,6 +12,7 @@ import {
     IonInfiniteScroll,
     IonInfiniteScrollContent,
     IonModal,
+    IonAlert,
 } from '@ionic/react';
 import { InputChangeEventDetail } from '@ionic/core';
 import React, { useState, useEffect, useContext } from 'react';
@@ -21,6 +22,7 @@ import { collection, query, orderBy, startAfter, getDocs, addDoc, Timestamp, lim
 // what's the browser import of capacitor?
 import { Browser } from '@capacitor/browser';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import './News.css';
 
 
 
@@ -35,9 +37,11 @@ interface Article {
 const News: React.FC = () => {
     const { user } = useContext(AuthContext);
     const [articles, setArticles] = useState<DocumentData[]>([]);
-    const [showForm, setShowForm] = useState<boolean>(false);
+    const [showAlert, setShowAlert] = useState<boolean>(false);
     const [newArticleTitle, setNewArticleTitle] = useState<string>('');
     const [newArticleContent, setNewArticleContent] = useState<string>('');
+    const [showEditTitle, setShowEditTitle] = useState<boolean>(false);
+    const [proposedTitle, setProposedTitle] = useState<string>('');
     const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
     const [isInfiniteDisabled, setIsInfiniteDisabled] = useState(false);
     const functions = getFunctions();
@@ -71,7 +75,7 @@ const News: React.FC = () => {
         }));
 
         const combinedArticles = [...newsArticles, ...userNewsArticles];
-        combinedArticles.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis()); // Sorting by timestamp
+        combinedArticles.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
         setArticles(combinedArticles);
     };
@@ -81,11 +85,33 @@ const News: React.FC = () => {
         fetchAllArticles();
     }, []);
 
-    const toggleForm = () => {
-        setShowForm(prevShowForm => !prevShowForm);
+    const fetchAndSetArticleTitle = async (url: string) => {
+        if (url) {
+            try {
+                const { data } = await getWebpageMetadata({ url });
+                return (data as any).title || '';
+            } catch (error) {
+                console.error('Error retrieving webpage metadata:', error);
+                return '';
+            }
+        }
+        return '';
     };
 
+    const handleURLSubmit = async (url: string) => {
+        setNewArticleContent(url);
+        if (url) {
+            try {
+                const { data } = await getWebpageMetadata({ url });
+                setProposedTitle((data as any).title); // Set the proposed title
+                setShowEditTitle(true); // Show the title edit field
+            } catch (error) {
+                console.error('Error retrieving webpage metadata:', error);
+            }
+        }
+    };
 
+    // Define checkForDuplicateArticle at the top level of the component
     const checkForDuplicateArticle = async (url: string) => {
         const newsQuery = query(collection(db, 'newsArticles'), where('content', '==', url));
         const userNewsQuery = query(collection(db, 'userNews'), where('content', '==', url));
@@ -96,8 +122,12 @@ const News: React.FC = () => {
         return !newsSnapshot.empty || !userNewsSnapshot.empty;
     };
 
+    // Define submitUserNews at the top level of the component
     const submitUserNews = async () => {
-        if (!newArticleTitle?.trim() || !newArticleContent?.trim()) return;
+        if (!proposedTitle.trim() || !newArticleContent.trim()) {
+            alert('You must provide both a title and content for the article.');
+            return;
+        }
 
         const isDuplicate = await checkForDuplicateArticle(newArticleContent);
         if (isDuplicate) {
@@ -106,14 +136,28 @@ const News: React.FC = () => {
         }
 
         const userNews = {
-            title: newArticleTitle,
+            title: proposedTitle,
             content: newArticleContent,
-            author: user?.email || 'Anonymous',
-            timestamp: Timestamp.now()
+            submittedBy: user?.username || 'Anonymous',
+            timestamp: Timestamp.now(),
         };
 
         const userNewsCollection = collection(db, 'userNews');
         await addDoc(userNewsCollection, userNews);
+
+        setNewArticleContent('');
+        setProposedTitle('');
+        setShowEditTitle(false);
+        fetchAllArticles();
+    };
+
+    // Define confirmTitleAndSubmit at the top level of the component
+    const confirmTitleAndSubmit = async () => {
+        await submitUserNews();
+    };
+
+    const handleTitleEdit = (event: CustomEvent<InputChangeEventDetail>) => {
+        setProposedTitle(event.detail.value || '');
     };
 
     const handleTitleChange = (event: CustomEvent<InputChangeEventDetail>) => {
@@ -125,16 +169,25 @@ const News: React.FC = () => {
         setNewArticleContent(url);
 
         if (url) {
-            // Call the backend function to retrieve metadata
             try {
+                // Attempt to fetch the webpage metadata as soon as the URL is entered
                 const { data } = await getWebpageMetadata({ url });
-                setNewArticleTitle((data as any).title);
-                // Handle image picker logic here using `data.imageUrls`
+                // Set the title from the fetched metadata, allowing the user to edit it if necessary
+                setProposedTitle((data as any).title || '');
+                setShowEditTitle(true); // Show the title input field for potential editing
             } catch (error) {
+                // If there's an error fetching the metadata, log it and still allow the user to edit the title
                 console.error('Error retrieving webpage metadata:', error);
+                setProposedTitle(''); // Reset the proposed title
+                setShowEditTitle(true); // Show the title input field for editing
             }
+        } else {
+            // If the URL is cleared, reset the title and hide the edit field
+            setProposedTitle('');
+            setShowEditTitle(false);
         }
     };
+
 
     const loadMoreArticles = (event: CustomEvent<void>) => {
         fetchAllArticles().then(() => {
@@ -146,6 +199,20 @@ const News: React.FC = () => {
         );
     }
 
+    const showAlertForNewArticle = () => {
+        setShowAlert(true);
+    };
+
+    const handleAlertSubmit = async (inputData: any) => {
+        const url = inputData.url;
+        if (url) {
+            const title = await fetchAndSetArticleTitle(url);
+            setNewArticleContent(url); // Set the article content to the URL entered
+            setProposedTitle(title); // Set the title to the fetched title
+            setShowEditTitle(true); // Allow the user to edit the title
+        }
+    };
+
     return (
         <IonPage className="ion-flex-offset-app">
             <IonHeader>
@@ -154,48 +221,35 @@ const News: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <IonButton onClick={toggleForm}>
-                    {showForm ? 'Hide Form' : 'Add News Article'}
+                <IonButton onClick={() => setShowAlert(true)}>
+                    Add News Article
                 </IonButton>
 
-                <IonModal isOpen={showForm} onDidDismiss={toggleForm}>
-                    {user && (
-                        <>
-                            <IonItem>
-                                <IonLabel position="stacked">Title</IonLabel>
-                                <IonInput
-                                    value={newArticleTitle}
-                                    onIonChange={handleTitleChange}
-                                />
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Link</IonLabel>
-                                <IonInput
-                                    value={newArticleContent}
-                                    onIonChange={handleContentChange}
-                                />
-                            </IonItem>
-                            <div style={{ display: 'flex', justifyContent: 'space-evenly', padding: '10px' }}>
-
-                                <IonButton
-                                    expand="block"
-                                    onClick={submitUserNews}
-                                >
-                                    Submit
-                                </IonButton>
-                                <IonButton
-                                    color="medium"
-                                    expand="block"
-                                    onClick={toggleForm}
-                                >
-                                    Cancel
-                                </IonButton>
-                            </div>
-                        </>
-                    )}
-                </IonModal>
-
-                <IonList style={{ marginTop: showForm ? '150px' : '0' }}> {/* Adjust margin-top based on form visibility */}
+                <IonAlert
+                    isOpen={showAlert}
+                    onDidDismiss={() => setShowAlert(false)}
+                    header={'Add News Article'}
+                    inputs={[
+                        {
+                            name: 'url',
+                            type: 'url',
+                            placeholder: 'Article URL'
+                        },
+                        // Removed the title input from here as we fetch it automatically
+                    ]}
+                    buttons={[
+                        {
+                            text: 'Cancel',
+                            role: 'cancel',
+                            handler: () => setShowAlert(false)
+                        },
+                        {
+                            text: 'Submit',
+                            handler: (inputData) => handleAlertSubmit(inputData)
+                        }
+                    ]}
+                />
+                <IonList style={{ marginTop: showAlert ? '150px' : '0' }}>
                     {articles.map((article, index) => (
                         <IonItem
                             key={article.id || index}
@@ -207,17 +261,30 @@ const News: React.FC = () => {
                             }}
                         >
                             <IonLabel>
-                                <h2>{article.title}</h2>
+                                <h2 className="article-title">{article.title}</h2>
                                 <p>{article.content}</p>
-                                {/* Display the timestamp */}
                                 <p>
-                                    Posted: {new Date(article.timestamp.toMillis()).toLocaleString()}
+                                    Posted: {new Date(article.timestamp.toMillis()).toLocaleString()} by {article.submittedBy}
                                 </p>
                             </IonLabel>
                         </IonItem>
                     ))}
                 </IonList>
-                {showForm && user && (
+                {showEditTitle && (
+                    <>
+                        <IonItem>
+                            <IonLabel position="stacked">Edit Article Title</IonLabel>
+                            <IonInput
+                                value={proposedTitle}
+                                onIonChange={handleTitleEdit}
+                            />
+                        </IonItem>
+                        <IonButton expand="block" onClick={confirmTitleAndSubmit}>
+                            Confirm Title and Submit
+                        </IonButton>
+                    </>
+                )}
+                {showAlert && user && (
                     <>
                         <IonItem>
                             <IonLabel position="stacked">Title</IonLabel>
