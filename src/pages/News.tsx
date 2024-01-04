@@ -86,9 +86,11 @@ const News: React.FC = () => {
     }, []);
 
     const fetchAndSetArticleTitle = async (url: string) => {
+        console.log('Fetching webpage metadata for:', url);
         if (url) {
             try {
                 const { data } = await getWebpageMetadata({ url });
+                console.log('Retrieved webpage metadata:', data);
                 return (data as any).title || '';
             } catch (error) {
                 console.error('Error retrieving webpage metadata:', error);
