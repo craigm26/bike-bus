@@ -1,5 +1,6 @@
 .ion-content-scroll-host {
     flex-grow: 1;
+    overflow-y: hidden;
 }
 
 .ion-flex-offset-app, .ion-page, ion-content {
@@ -13,6 +14,23 @@
     overflow-x: hidden;
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+.chat-message-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    /* Make it take up remaining space */
+    padding-bottom: 5px !important;
+    padding-top: 5px !important;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    overflow-x: hidden;
+    /* Disable horizontal scrolling */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 

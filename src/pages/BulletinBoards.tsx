@@ -588,8 +588,6 @@ const BulletinBoards: React.FC = () => {
             console.error('Message input is empty or whitespace only');
             return;
         }
-        console.log('Message Input:', messageInput);
-        console.log('selectedBBOROrgValue:', selectedBBOROrgValue);
 
         // first check to see what selectedBBOROrgValue is set to. If it is set to Community, then we need to post to the community board only
         // If it is set to an organization or bikebus, then we need to post to that board only
@@ -731,6 +729,9 @@ const BulletinBoards: React.FC = () => {
             });
         }
         setMessageInput('');
+        setIsFileUploaded(false); // Reset the file uploaded state
+        setUploadedImageUrl(null); // Reset the image URL
+        setUploadedVideoUrl(null); // Reset the video URL
     };
 
     const sortedMessagesData = [...messagesData].sort((b, a) => {
@@ -851,34 +852,34 @@ const BulletinBoards: React.FC = () => {
     // set max video size to 1gb
     const MAX_VIDEO_SIZE = 1000000000; // Maximum size in bytes
     const MAX_VIDEO_DURATION = 300; // Maximum duration in seconds
-    
+
     const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-    
+
             // Check file size
             if (file.size > MAX_VIDEO_SIZE) {
                 alert("Video size should not exceed 10MB");
                 return;
             }
-    
+
             // Check video duration
             const video = document.createElement("video");
             video.preload = "metadata";
-    
-            video.onloadedmetadata = function() {
+
+            video.onloadedmetadata = function () {
                 window.URL.revokeObjectURL(video.src);
-    
+
                 const duration = video.duration;
                 if (duration > MAX_VIDEO_DURATION) {
                     alert("Video duration should not exceed 30 seconds");
                     return;
                 }
-    
+
                 // Continue with the upload process since the checks have passed
                 const storageRef = ref(storage, `chat_videos/${selectedBBOROrgValue}/${user?.uid}/${Date.now()}`);
                 const uploadTask = uploadBytesResumable(storageRef, file);
-    
+
                 uploadTask.on('state_changed',
                     (snapshot) => {
                         // Update progress
@@ -894,19 +895,18 @@ const BulletinBoards: React.FC = () => {
                     () => {
                         // Handle successful upload
                         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            console.log('File available at', downloadURL);
                             setUploadedVideoUrl(downloadURL);
-                            setMessageInput(downloadURL);
+                            setMessageInput('');
                             setShowContentModal(false); // Close the modal
                         });
                     }
                 );
             };
-    
+
             video.src = URL.createObjectURL(file);
         }
     };
-    
+
 
 
 
@@ -1055,13 +1055,13 @@ const BulletinBoards: React.FC = () => {
                                         <IonCol size="10" className="custom-chat-input-col">
                                             {uploadedImageUrl ? (
                                                 <>
-                                                <IonImg src={uploadedImageUrl} />
-                                                <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedImageUrl(null); setMessageInput(''); }} />
+                                                    <IonImg src={uploadedImageUrl} />
+                                                    <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedImageUrl(null); setMessageInput(''); }} />
                                                 </>
                                             ) : uploadedVideoUrl ? (
                                                 <>
-                                                <video width="480" height="240" src={uploadedVideoUrl} controls />
-                                                <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedVideoUrl(null); setMessageInput(''); }} />
+                                                    <video width="480" height="240" src={uploadedVideoUrl} controls />
+                                                    <IonIcon icon={closeCircleOutline} onClick={() => { setUploadedVideoUrl(null); setMessageInput(''); }} />
                                                 </>
                                             ) : (
                                                 <IonInput
@@ -1121,23 +1121,23 @@ const BulletinBoards: React.FC = () => {
                                                 : getAvatarElement(message?.user?.id);
 
                                             return (
-                                                    <div className="chat-item" key={index}>
-                                                        <ChatListScroll
-                                                            key={index}
-                                                            avatarElement={avatarElement}
-                                                            user={user}
-                                                            selectedBBOROrgValue={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
-                                                            combinedList={combinedList}
-                                                            groupData={groupData}
-                                                            sortedMessagesData={sortedMessagesData}
-                                                            isCurrentUserMessage={isCurrentUserMessage}
-                                                            selectedMessage={null}
-                                                            isLoading={isLoading}
-                                                            onMessageSelected={handleSelectedMessage}
-                                                            setShowActionSheet={setShowActionSheet}
-                                                            handleAction={handleAction}
-                                                        />
-                                                    </div>
+                                                <div className="chat-item" key={index}>
+                                                    <ChatListScroll
+                                                        key={index}
+                                                        avatarElement={avatarElement}
+                                                        user={user}
+                                                        selectedBBOROrgValue={'OZrruuBJptp9wkAAVUt7' || selectedBBOROrgValue}
+                                                        combinedList={combinedList}
+                                                        groupData={groupData}
+                                                        sortedMessagesData={sortedMessagesData}
+                                                        isCurrentUserMessage={isCurrentUserMessage}
+                                                        selectedMessage={null}
+                                                        isLoading={isLoading}
+                                                        onMessageSelected={handleSelectedMessage}
+                                                        setShowActionSheet={setShowActionSheet}
+                                                        handleAction={handleAction}
+                                                    />
+                                                </div>
                                             );
                                         })
                                     )
