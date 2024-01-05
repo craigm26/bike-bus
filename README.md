@@ -15,6 +15,8 @@ BikeBus is a term to describe a group of cyclists that is usually guided by a le
 
 No ads or selling of user data with PII. Anonymous users and anonymized data wherever possible.  
 
+Chicago Bike Routes: https://data.cityofchicago.org/Transportation/Bike-Routes/3w5d-sru8 
+
 ## Why
 
 We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets with data for policy makers on street design.

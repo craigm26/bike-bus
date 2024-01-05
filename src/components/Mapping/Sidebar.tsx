@@ -4,6 +4,9 @@ import { useState } from 'react';
 
 type SidebarProps = {
     mapRef: React.RefObject<google.maps.Map | null>;
+    showKmlChicagoLayer: boolean;
+    toggleKmlChicagoLayer: (enabled: boolean) => void;
+    handleChicagoLayerToggle: (enabled: boolean) => void;
     getLocation: () => void;
     bikeBusEnabled: boolean;
     userRoutesEnabled: boolean;
@@ -18,6 +21,9 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({
     mapRef,
+    showKmlChicagoLayer,
+    toggleKmlChicagoLayer,
+    handleChicagoLayerToggle,
     getLocation,
     bikeBusEnabled,
     setBikeBusEnabled,
@@ -61,65 +67,76 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <IonIcon icon={isOpen ? arrowBack : arrowForward} />
             </IonButton>
             <IonContent className="sidebar-content">
-            <div className="content-wrapper">
-                <div>
-                    <IonLabel>Map Options</IonLabel>
-                </div>
-                <div>
-                    <div className="zoom-controls">
-                        <IonGrid>
-                            
-                        <IonLabel>Zoom</IonLabel>
-                        <IonCol>
-                        <IonButton size="small" onClick={handleZoomIn}>
-                            <IonIcon slot="icon-only" icon={addOutline} />
-                        </IonButton>
-                        <IonButton size="small" onClick={handleZoomOut}>
-                            <IonIcon slot="icon-only" icon={removeOutline} />
-                        </IonButton>
-                        </IonCol>
-                        </IonGrid>
+                <div className="content-wrapper">
+                    <div>
+                        <IonLabel>Map Options</IonLabel>
                     </div>
-                    <div className="map-type-controls">
-                        <IonLabel>Map Type</IonLabel>
-                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
-                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
-                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
-                        <IonButton size="small"  onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
-                    </div>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>BikeBus</IonLabel>
-                            <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>Routes</IonLabel>
-                            <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>Open Trips</IonLabel>
-                            <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>Bicycling Layer</IonLabel>
-                            <IonToggle
-                                checked={bicyclingLayerEnabled}
-                                onIonChange={(e) => {
+                    <div>
+                        <div className="zoom-controls">
+                            <IonGrid>
+
+                                <IonLabel>Zoom</IonLabel>
+                                <IonCol>
+                                    <IonButton size="small" onClick={handleZoomIn}>
+                                        <IonIcon slot="icon-only" icon={addOutline} />
+                                    </IonButton>
+                                    <IonButton size="small" onClick={handleZoomOut}>
+                                        <IonIcon slot="icon-only" icon={removeOutline} />
+                                    </IonButton>
+                                </IonCol>
+                            </IonGrid>
+                        </div>
+                        <div className="map-type-controls">
+                            <IonLabel>Map Type</IonLabel>
+                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
+                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
+                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
+                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
+                        </div>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>BikeBus</IonLabel>
+                                <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Routes</IonLabel>
+                                <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Open Trips</IonLabel>
+                                <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Bicycling Layer</IonLabel>
+                                <IonToggle
+                                    checked={bicyclingLayerEnabled}
+                                    onIonChange={(e) => {
+                                        const enabled = e.detail.checked;
+                                        setBicyclingLayerEnabled(enabled);
+                                        handleBicyclingLayerToggle(enabled);
+                                    }}
+                                />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Chicago Bicycle Network</IonLabel>
+                                <IonToggle checked={showKmlChicagoLayer} onIonChange={(e => {
                                     const enabled = e.detail.checked;
-                                    setBicyclingLayerEnabled(enabled);
-                                    handleBicyclingLayerToggle(enabled);
-                                }}
-                            />
-                        </IonCol>
-                    </IonRow>
+                                    toggleKmlChicagoLayer(enabled);
+                                    handleChicagoLayerToggle(enabled);
+                                }
+                                )} />
+                            </IonCol>
+                        </IonRow>
+                    </div>
                 </div>
-            </div>
             </IonContent>
         </div>
     );
