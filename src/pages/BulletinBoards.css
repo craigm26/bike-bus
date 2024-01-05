@@ -249,7 +249,7 @@
     padding-bottom: 5px !important;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 100;
     background: #f8f8f8;
 }
 

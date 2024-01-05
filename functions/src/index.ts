@@ -4,6 +4,8 @@ import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 import axios from "axios";
 const cors = require("cors")({ origin: true });
+const { format } = require("date-fns");
+
 
 
 interface NewsArticle {
@@ -131,3 +133,62 @@ exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => 
   });
 });
 
+
+exports.sendWeeklySummary = functions.pubsub.schedule("every sunday 09:00").timeZone("America/New_York").onRun(async context => {
+  try {
+    // Fetch articles from the last week
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const articlesSnapshot = await admin.firestore().collection("newsArticles")
+      .where("timestamp", ">=", oneWeekAgo)
+      .get();
+
+    const articles = articlesSnapshot.docs.map(doc => doc.data());
+
+    // Fetch subscribers
+    const subscribersSnapshot = await admin.firestore().collection("users")
+      .where("isSubscribed", "==", true)
+      .get();
+
+    const subscribers = subscribersSnapshot.docs.map(doc => doc.data());
+
+    // Send email to each subscriber
+    subscribers.forEach(async (subscriber) => {
+      const emailContent = articles.map(article => 
+        `<li><a href="${article.link}">${article.title}</a> - Posted on ${format(article.timestamp.toDate(), "PPP")}</li>`
+      ).join("");
+
+      const msg = {
+        to: subscriber.email,
+        from: "newsletter@bikebus.app",
+        subject: "Weekly News Summary",
+        html: `
+            <style>    
+                .BikeBusFont {
+                    font-family: 'Indie-Flower', sans-serif;
+                }
+            </style>
+            <div style="background-color: #ffd800; color: black; text-align: center; padding: 10px;" class="BikeBusFont">
+                <span style="font-size: 24px;">BikeBus</span>
+            </div>
+            <h1>Weekly News Summary</h1>
+            <ul>${emailContent}</ul>
+            <p>Check out more articles on our <a href="https://bikebus.app/news">News Page</a>.</p>
+        `,
+      };
+    
+    
+
+      try {
+        await sgMail.send(msg);
+      } catch (error) {
+        console.error("Error sending email to subscriber:", subscriber.email, error);
+      }
+    });
+
+    console.log("Weekly summary email sent successfully.");
+  } catch (error) {
+    console.error("Error sending weekly summary:", error);
+  }
+});

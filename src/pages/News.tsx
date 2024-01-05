@@ -13,16 +13,19 @@ import {
     IonInfiniteScrollContent,
     IonModal,
     IonAlert,
+    IonCol,
+    IonRow,
 } from '@ionic/react';
 import { InputChangeEventDetail } from '@ionic/core';
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
 import { db } from '../firebaseConfig';
-import { collection, query, orderBy, startAfter, getDocs, addDoc, Timestamp, limit, DocumentData, QueryDocumentSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, startAfter, getDocs, addDoc, Timestamp, limit, DocumentData, QueryDocumentSnapshot, where, getDoc, doc, updateDoc } from 'firebase/firestore';
 // what's the browser import of capacitor?
 import { Browser } from '@capacitor/browser';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import './News.css';
+import { set } from 'date-fns';
 
 
 
@@ -46,6 +49,13 @@ const News: React.FC = () => {
     const [isInfiniteDisabled, setIsInfiniteDisabled] = useState(false);
     const functions = getFunctions();
     const getWebpageMetadata = httpsCallable(functions, 'getWebpageMetadata');
+    const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+    const [firstName, setFirstName] = useState<string>('');
+    const [lastName, setLastName] = useState<string>('');
+    const [username, setUsername] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+
+
 
 
     const openLink = async (url: string) => {
@@ -83,14 +93,44 @@ const News: React.FC = () => {
 
     useEffect(() => {
         fetchAllArticles();
-    }, []);
+        checkUserSubscription();
+    }, [user]);
+
+    const checkUserSubscription = async () => {
+        if (user && user.uid) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    setIsSubscribed(userData.isSubscribed);
+                } else {
+                    console.log('User document not found');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+    };
+
+    const toggleSubscription = async () => {
+        if (user && user.uid) {
+            try {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, { isSubscribed: !isSubscribed });
+                setIsSubscribed(!isSubscribed);
+            } catch (error) {
+                console.error('Error updating subscription:', error);
+            }
+        } else {
+            alert('You must be logged in to subscribe.');
+        }
+    };
+
 
     const fetchAndSetArticleTitle = async (url: string) => {
-        console.log('Fetching webpage metadata for:', url);
         if (url) {
             try {
                 const { data } = await getWebpageMetadata({ url });
-                console.log('Retrieved webpage metadata:', data);
                 return (data as any).title || '';
             } catch (error) {
                 console.error('Error retrieving webpage metadata:', error);
@@ -265,10 +305,40 @@ const News: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <IonButton onClick={showAlertForNewArticle}>
-                    Add News Article
-                </IonButton>
-
+                {!user && (
+                    <>
+                        <IonRow className="sticky-row">
+                            <IonCol>
+                                <IonLabel>
+                                    <h2 className="article-title">Please log in to submit articles or to subscribe to the weekly newsletter</h2>
+                                </IonLabel>
+                            </IonCol>
+                        </IonRow>
+                        <IonRow className="sticky-row">
+                            <IonCol>
+                                <IonButton routerLink="/login">
+                                    Log in
+                                </IonButton>
+                            </IonCol>
+                        </IonRow>
+                    </>
+                )}
+                {user && (
+                    <>
+                        <IonRow className="sticky-row">
+                            <IonCol>
+                                <IonButton onClick={showAlertForNewArticle}>
+                                    Add Article
+                                </IonButton>
+                            </IonCol>
+                            <IonCol>
+                                <IonButton onClick={toggleSubscription}>
+                                    {isSubscribed ? 'Unsubscribe from Newsletter' : 'Subscribe to Newsletter'}
+                                </IonButton>
+                            </IonCol>
+                        </IonRow>
+                    </>
+                )}
                 <IonAlert
                     isOpen={showAlert}
                     onDidDismiss={() => setShowAlert(false)}

@@ -2,3 +2,12 @@
     white-space: normal; /* Allow wrapping */
     overflow-wrap: break-word; /* Break words to prevent overflow */
 }
+
+.sticky-row {
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1;
+    z-index: 1;
+    overflow: break-word;
+    white-space: normal;
+}
