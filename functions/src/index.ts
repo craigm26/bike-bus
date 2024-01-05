@@ -175,6 +175,10 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every sunday 09:00").time
             <h1>Weekly News Summary</h1>
             <ul>${emailContent}</ul>
             <p>Check out more articles on our <a href="https://bikebus.app/news">News Page</a>.</p>
+            <p>Thanks,</p>
+            <p>BikeBus and Craig Merry</p>
+            <p><a href="https://bikebus.app">https://bikebus.app</a></p>
+            <p>To unsubscribe from this newsletter, please <a href="https://bikebus.app/news">click here</a> and then select "Unsubscribe" after logging in.</p>
         `,
       };
     

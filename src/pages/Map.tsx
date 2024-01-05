@@ -22,7 +22,7 @@ import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline,
 import { useTranslation } from 'react-i18next';
 
 
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer, KmlLayer } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
@@ -257,7 +257,19 @@ const Map: React.FC = () => {
   const [BikeBusGroupClusterId, setBikeBusGroupClusterId] = useState<string[]>([]);
   const [position, setPosition] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+  const [showKmlChicagoLayer, setShowKmlChicagoLayer] = useState(false);
+  const [handleChicagoLayerToggle, setHandleChicagoLayerToggle] = useState(false);
 
+  const toggleKmlChicagoLayer = async () => {
+    console.log('toggleKmlChicagoLayer');
+    setShowKmlChicagoLayer(!showKmlChicagoLayer);
+    console.log('showKmlChicagoLayer', showKmlChicagoLayer);
+  };
+
+  const kmlFileName = 'Chicago Bike Network.kml';
+  const kmlUrl = `${window.location.origin}/${encodeURIComponent(kmlFileName)}`;
+  
+  
 
 
   interface Trip {
@@ -354,36 +366,6 @@ const Map: React.FC = () => {
       history.push("/");
     }
   };
-
-  // You can call this function when the "start map" button is clicked
-  const handleStartMap = () => {
-    console.log("handleStartMap called");
-    console.log("placeName", PlaceName);
-    console.log("PlaceAddress", formattedAddress);
-    onPlaceChangedDestination();
-    if (PlaceName) {
-      setDestinationValue(formattedAddress);
-      setEndPoint({ lat: PlaceLatitude!, lng: PlaceLongitude! });
-      setEndPointAdress(formattedAddress);
-      setMapCenter({ lat: PlaceLatitude!, lng: PlaceLongitude! });
-      // update the end location to the selected location of PlaceLatitude and PlaceLongitude
-      setSelectedEndLocation({ lat: PlaceLatitude!, lng: PlaceLongitude! });
-      // we need to show the getDirections row by setting the state to true
-      setGetLocationClicked(true);
-      renderMap({ lat: PlaceLatitude!, lng: PlaceLongitude! });
-      setShowCreateRouteButton(true);
-      setShowGetDirectionsButton(true);
-      // show the infoWindow of the place
-      setSearchInfoWindow({
-        isOpen: true,
-        content: { PlaceName, PlaceAddress, PlaceLatitude: PlaceLatitude!, PlaceLongitude: PlaceLongitude! },
-        position: { lat: PlaceLatitude!, lng: PlaceLongitude! },
-      });
-    } else {
-      alert("Please select a location.");
-    }
-  };
-
 
   const fetchUser = async (username: string): Promise<FetchedUserData | undefined> => {
     const usersRef = collection(db, 'users');
@@ -1400,7 +1382,7 @@ const Map: React.FC = () => {
 
   const getDirections = () => {
     // let's show a message to the user that we're getting directions
-    window.alert("The blue line on the map allows you to drag the route to change it. The white dots represent the proposed change to the route. After the route is saved by clicking 'Create Route', you can modify the route");
+    window.alert("The blue line on the map allows you to drag the route to change it. After the route is saved by clicking 'Create Route', you can modify the route");
     return new Promise(async (resolve, reject) => {
       if (selectedStartLocation && selectedEndLocation) {
         console.log("getDirections called");
@@ -2482,6 +2464,7 @@ const Map: React.FC = () => {
                         strokeOpacity: .7,
                         strokeWeight: 3, // Border thickness
                         clickable: true,
+                        draggable: true,
                         icons: [
                           {
                             icon: {
@@ -2572,6 +2555,7 @@ const Map: React.FC = () => {
                         strokeOpacity: .7,
                         strokeWeight: 3, // Border thickness
                         clickable: true,
+                        draggable: false,
                         icons: [
                           {
                             icon: {
@@ -2822,6 +2806,9 @@ const Map: React.FC = () => {
               </div>
               <Sidebar
                 mapRef={mapRef}
+                toggleKmlChicagoLayer={toggleKmlChicagoLayer}
+                handleChicagoLayerToggle={() => handleChicagoLayerToggle}
+                showKmlChicagoLayer={showKmlChicagoLayer}
                 getLocation={getLocation}
                 bikeBusEnabled={bikeBusEnabled}
                 userRoutesEnabled={userRoutesEnabled}
@@ -2840,10 +2827,21 @@ const Map: React.FC = () => {
                   strokeOpacity: 1.0,
                   strokeWeight: 2,
                   geodesic: true,
-                  editable: true,
-                  draggable: true,
+                  clickable: false,
+                  editable: false,
+                  draggable: false,
                 }}
               />
+              {showKmlChicagoLayer && (
+                <KmlLayer
+                  url={kmlUrl}
+                  options={{
+                    preserveViewport: true,
+                    suppressInfoWindows: false,
+                    clickable: true,
+                  }}
+                />
+              )}
             </GoogleMap>
           </IonRow>
         )

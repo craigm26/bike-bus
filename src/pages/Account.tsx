@@ -192,7 +192,7 @@ const Account: React.FC = () => {
                         <IonList>
                             <IonItem>
                                 <IonLabel position="stacked">First Name</IonLabel>
-                                <IonText>{user?.firstName}</IonText>
+                                <IonText>{firstName}</IonText>
                             </IonItem>
                             <IonItem>
                                 <IonLabel position="stacked">Last Name</IonLabel>
