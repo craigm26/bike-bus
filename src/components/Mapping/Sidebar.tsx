@@ -124,17 +124,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 />
                             </IonCol>
                         </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Chicago Bicycle Network</IonLabel>
-                                <IonToggle checked={showKmlChicagoLayer} onIonChange={(e => {
-                                    const enabled = e.detail.checked;
-                                    toggleKmlChicagoLayer(enabled);
-                                    handleChicagoLayerToggle(enabled);
-                                }
-                                )} />
-                            </IonCol>
-                        </IonRow>
                     </div>
                 </div>
             </IonContent>

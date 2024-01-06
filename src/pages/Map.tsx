@@ -97,7 +97,10 @@ type School = {
 }
 
 
-
+interface Point {
+  lat: number;
+  lng: number;
+}
 
 interface FetchedUserData {
   username: string;
@@ -135,7 +138,7 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 41.8827, lng: -87.6227 });
-  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number }>({ lat: 41.8827, lng: -87.6227 });
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 41.8827, lng: -87.6227 });
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
@@ -259,6 +262,8 @@ const Map: React.FC = () => {
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const [showKmlChicagoLayer, setShowKmlChicagoLayer] = useState(false);
   const [handleChicagoLayerToggle, setHandleChicagoLayerToggle] = useState(false);
+  const [endPointAddress, setEndPointAddress] = useState("");
+
 
   const toggleKmlChicagoLayer = async () => {
     console.log('toggleKmlChicagoLayer');
@@ -268,8 +273,8 @@ const Map: React.FC = () => {
 
   const kmlFileName = 'Chicago Bike Network.kml';
   const kmlUrl = `${window.location.origin}/${encodeURIComponent(kmlFileName)}`;
-  
-  
+
+
 
 
   interface Trip {
@@ -845,8 +850,6 @@ const Map: React.FC = () => {
     }
   }, [leaderUID]);
 
-
-
   const watchLocation = useCallback(() => {
     if (!isLoaded || !user) return;
     if (navigator.geolocation) {
@@ -1388,8 +1391,6 @@ const Map: React.FC = () => {
         console.log("getDirections called");
         console.log("selectedStartLocation: ", selectedStartLocation);
         console.log("selectedEndLocation: ", selectedEndLocation);
-        getEndPointAdress();
-        getStartPointAdress();
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
         directionsRenderer.setMap(mapRef.current);
@@ -1497,36 +1498,48 @@ const Map: React.FC = () => {
   });
 
 
-  const getStartPointAdress = async () => {
-    if (startPoint) {
+  const getStartPointAddress = async (startPoint: Point) => {
+    try {
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${startPoint.lat},${startPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
       const data = await response.json();
-      setSelectedStartLocationAddress(data.results[0].formatted_address);
-
-      console.log("getStartPointAdress called");
-      console.log("selectedStartLocation: ", startPoint);
-      console.log("selectedStartLocationAddress: ", data.results[0].formatted_address);
+      if (data.status === 'OK' && data.results[0]) {
+        return data.results[0].formatted_address;
+      } else {
+        throw new Error('Failed to get start point address');
+      }
+    } catch (error) {
+      console.error('Error fetching start point address:', error);
+      throw error; // Re-throw the error to be handled by the caller
     }
   };
 
-
-  const getEndPointAdress = async () => {
-    console.log("getEndPointAdress called");
-    console.log("selectedEndLocation: ", endPoint);
-    if (endPoint) {
+  const getEndPointAddress = async (endPoint: Point) => {
+    try {
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${endPoint.lat},${endPoint.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`);
       const data = await response.json();
-      setSelectedEndLocationAddress(data.results[0].formatted_address);
-      console.log("selectedEndLocationAddress: ", data.results[0].formatted_address);
+      if (data.status === 'OK' && data.results[0]) {
+        return data.results[0].formatted_address;
+      } else {
+        throw new Error('Failed to get end point address');
+      }
+    } catch (error) {
+      console.error('Error fetching end point address:', error);
+      throw error; // Re-throw the error to be handled by the caller
     }
   };
 
-  const createRoute = () => {
+
+  const createRoute = async () => {
     try {
       console.log("createRoute called");
       console.log("selectedEndLocation: ", selectedEndLocation);
-      getEndPointAdress();
-      getStartPointAdress();
+      const startPointAddress = await getStartPointAddress(selectedStartLocation);
+      const endPointAddress = await getEndPointAddress(selectedEndLocation);
+
+      // Verify user and locations
+      if (!user || !selectedStartLocation || !selectedEndLocation) {
+        throw new Error('Required user and location data is missing');
+      }
 
       if (user) {
 
@@ -1562,8 +1575,7 @@ const Map: React.FC = () => {
                     lat: route?.legs[0]?.end_location?.lat(),
                     lng: route?.legs[0]?.end_location?.lng()
                   },
-                  startPointAddress: routeStartFormattedAddress,
-                  endPointAddress: selectedEndLocationAddress,
+                  startPointAddress: startPointAdress,
                   startPoint: selectedStartLocation,
                   endPoint: selectedEndLocation,
                   routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
@@ -1571,6 +1583,7 @@ const Map: React.FC = () => {
                   startPointStreetName: routeStartStreetName,
                   routeEndStreetName: routeEndStreetName,
                   endPointName: routeEndName,
+                  endPointAddress: endPointAddress,
                   routeCreator: "/users/" + user.uid,
                   routeLeader: "/users/" + user.uid,
                   routeDescription: description,
@@ -1579,7 +1592,7 @@ const Map: React.FC = () => {
                 };
                 console.log("Route Data: ", routeData);
                 console.log("routeName: ", routeStartName + " to " + routeEndName);
-                handleCreateRouteSubmit();
+                handleCreateRouteSubmit("", startPointAddress, endPointAddress);
               } else {
                 console.error("Directions request failed due to " + status);
               }
@@ -1595,10 +1608,8 @@ const Map: React.FC = () => {
   };
 
 
-  const handleCreateRouteSubmit = async (routeType = "") => {
+  const handleCreateRouteSubmit = async (routeType = "", startPointAddress: string, endPointAddress: string) => {
     try {
-      getEndPointAdress();
-      getStartPointAdress();
 
       if (user) {
 
@@ -1625,9 +1636,9 @@ const Map: React.FC = () => {
           routeLeader: "/users/" + user?.uid,
           pathCoordinates: convertedPathCoordinates,
           startPointName: routeStartName,
-          startPointAddress: routeStartFormattedAddress,
           endPointName: routeEndName,
-          endPointAddress: selectedEndLocationAddress,
+          startPointAddress: startPointAddress,
+          endPointAddress: endPointAddress,
           distance: distance,
         });
 
@@ -1637,6 +1648,7 @@ const Map: React.FC = () => {
         // if this is not part of the open trip feature, then redirect to the view route page
         // if route is not "Open Trip", then redirect to the view route page
         // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
+        console.log("Route created with ID: ", routeDocRef.id);
         if (routeType !== "openTrip") {
           history.push(`/viewroute/${routeDocRef.id}`);
         }
