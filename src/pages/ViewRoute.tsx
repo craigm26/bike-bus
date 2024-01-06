@@ -290,9 +290,7 @@ const ViewRoute: React.FC = () => {
           <IonRow>
             <IonCol>
               <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-              {!isBikeBus && (
-                <IonButton onClick={deleteRoute}>Delete Route</IonButton>
-              )}
+              <IonButton onClick={deleteRoute}>Delete Route</IonButton>
               <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
               {isBikeBus && (
                 <IonButton routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroupId?.id}`}>Go to BikeBus</IonButton>
