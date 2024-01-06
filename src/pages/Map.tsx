@@ -138,7 +138,7 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [accountType, setAccountType] = useState<string>("");
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 41.8827, lng: -87.6227 });
-  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number }>({ lat: 41.8827, lng: -87.6227 });
+  const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showCreateRouteButton, setShowCreateRouteButton] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 41.8827, lng: -87.6227 });
   const [showGetDirectionsButton, setShowGetDirectionsButton] = useState(false);
@@ -263,6 +263,7 @@ const Map: React.FC = () => {
   const [showKmlChicagoLayer, setShowKmlChicagoLayer] = useState(false);
   const [handleChicagoLayerToggle, setHandleChicagoLayerToggle] = useState(false);
   const [endPointAddress, setEndPointAddress] = useState("");
+  const [startPointName, setStartPointName] = useState("");
 
 
   const toggleKmlChicagoLayer = async () => {
@@ -316,7 +317,7 @@ const Map: React.FC = () => {
   const renderMap = (location: React.SetStateAction<{ lat: number; lng: number; }>) => {
     setGetLocationClicked(true);
     setShowMap(true);
-    setMapCenter(location);
+    //setMapCenter(location);
     watchLocation();
     onPlaceChangedStart();
     setCurrentLocationRow(false);
@@ -344,7 +345,7 @@ const Map: React.FC = () => {
 
 
   const getLocation = () => {
-
+    console.log("Getting location...");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -352,8 +353,11 @@ const Map: React.FC = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+          console.log("userLocation", userLocation);
           setUserLocation(userLocation);
           renderMap(userLocation);
+          // set mapCenter to userLocation
+          setMapCenter(userLocation);
         },
         (error) => {
           alert("An error occurred while fetching your location. Please enable location services in your browser settings.");
@@ -1251,6 +1255,7 @@ const Map: React.FC = () => {
 
           setRouteStartStreetName(streetName ?? '');
           setRouteStartName(`${place.name}` ?? '');
+          setStartPointName(`${place.name}` ?? '');
           setRouteStartFormattedAddress(`${place.formatted_address}` ?? '');
         }
       }
@@ -1534,8 +1539,12 @@ const Map: React.FC = () => {
       console.log("createRoute called");
       console.log("selectedEndLocation: ", selectedEndLocation);
       const startPointAddress = await getStartPointAddress(selectedStartLocation);
-      const endPointAddress = await getEndPointAddress(selectedEndLocation);
 
+    // Check if selectedEndLocation is not null before calling getEndPointAddress
+    let endPointAddress = '';
+    if (selectedEndLocation) {
+      endPointAddress = await getEndPointAddress(selectedEndLocation);
+    }
       // Verify user and locations
       if (!user || !selectedStartLocation || !selectedEndLocation) {
         throw new Error('Required user and location data is missing');
@@ -1578,7 +1587,9 @@ const Map: React.FC = () => {
                   startPointAddress: startPointAdress,
                   startPoint: selectedStartLocation,
                   endPoint: selectedEndLocation,
-                  routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
+                  // if routeStartName is '', then set the routeStartName to be startPointAddress
+                  routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
+                  
                   startPointName: routeStartName,
                   startPointStreetName: routeStartStreetName,
                   routeEndStreetName: routeEndStreetName,
@@ -1622,7 +1633,7 @@ const Map: React.FC = () => {
         console.log("user.uid: ", user?.uid);
 
         const routeDocRef = await addDoc(collection(db, 'routes'), {
-          routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName ? routeEndName + ' on ' : ''}${routeEndStreetName}`,
+          routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
           description: description,
           isBikeBus: false,
           BikeBusGroupId: "",
@@ -1635,7 +1646,7 @@ const Map: React.FC = () => {
           routeCreator: "/users/" + user?.uid,
           routeLeader: "/users/" + user?.uid,
           pathCoordinates: convertedPathCoordinates,
-          startPointName: routeStartName,
+          startPointName: startPointAddress,
           endPointName: routeEndName,
           startPointAddress: startPointAddress,
           endPointAddress: endPointAddress,
@@ -2231,7 +2242,7 @@ const Map: React.FC = () => {
               options={{
                 clickableIcons: false,
                 disableDefaultUI: true,
-                zoomControl: false,
+                zoomControl: true,
                 zoomControlOptions: {
                   position: window.google.maps.ControlPosition.LEFT_CENTER
                 },
