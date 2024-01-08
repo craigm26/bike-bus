@@ -22,6 +22,7 @@
       {
         "label": "off"
       }
-    ]
+    ],
+    "typescript-config/is-valid": "off"
   }
 }

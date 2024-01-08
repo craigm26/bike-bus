@@ -54,6 +54,7 @@ const News: React.FC = () => {
     const [lastName, setLastName] = useState<string>('');
     const [username, setUsername] = useState<string>('');
     const [email, setEmail] = useState<string>('');
+    const [titleFetchSuccess, setTitleFetchSuccess] = useState(true);
 
 
 
@@ -145,13 +146,22 @@ const News: React.FC = () => {
         if (url) {
             try {
                 const { data } = await getWebpageMetadata({ url });
-                setProposedTitle((data as any).title); // Set the proposed title
+                if (data && (data as { title: string }).title) {
+                    setProposedTitle((data as { title: string }).title);
+                    setTitleFetchSuccess(true); // Indicate the title was fetched successfully
+                } else {
+                    setProposedTitle(''); // Clear the proposed title
+                    setTitleFetchSuccess(false); // Indicate the title fetch was not successful
+                }
                 setShowEditTitle(true); // Show the title edit field
             } catch (error) {
                 console.error('Error retrieving webpage metadata:', error);
+                setTitleFetchSuccess(false); // Indicate the title fetch was not successful
+                setShowEditTitle(true); // Show the title edit field
             }
         }
     };
+    
 
     // Define checkForDuplicateArticle at the top level of the component
     const checkForDuplicateArticle = async (url: string) => {
@@ -343,6 +353,7 @@ const News: React.FC = () => {
                     isOpen={showAlert}
                     onDidDismiss={() => setShowAlert(false)}
                     header={'Add News Article'}
+                    message={!titleFetchSuccess ? "The title could not be automatically fetched. Please input the title manually for a successful BikeBus submission." : ""}
                     inputs={[
                         {
                             name: 'url',
@@ -365,10 +376,18 @@ const News: React.FC = () => {
                         },
                         {
                             text: 'Submit',
-                            handler: (inputData) => submitUserNews(inputData) // Pass the input data directly to the submit function
+                            handler: (inputData) => {
+                                if (!inputData.title && !titleFetchSuccess) {
+                                    // If the title is empty and it was not fetched, do not close the alert
+                                    setTitleFetchSuccess(false); // Keep showing the message that the title needs to be input manually
+                                    return false; // Prevent the alert from being dismissed
+                                }
+                                submitUserNews(inputData); 
+                            }
                         }
                     ]}
                 />
+
                 <IonList style={{ marginTop: showAlert ? '150px' : '0' }}>
                     {articles.map((article, index) => (
                         <IonItem
