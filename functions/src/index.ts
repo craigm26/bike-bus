@@ -4,7 +4,8 @@ import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 import axios from "axios";
 const cors = require("cors")({ origin: true });
-const { format } = require("date-fns");
+import { format } from "date-fns";
+
 
 
 
@@ -133,8 +134,7 @@ exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => 
   });
 });
 
-
-exports.sendWeeklySummary = functions.pubsub.schedule("every sunday 09:00").timeZone("America/New_York").onRun(async context => {
+exports.sendWeeklySummary = functions.pubsub.schedule("every monday 09:45").timeZone("America/Los_Angeles").onRun(async context => {
   try {
     // Fetch articles from the last week
     const oneWeekAgo = new Date();
@@ -182,8 +182,6 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every sunday 09:00").time
         `,
       };
     
-    
-
       try {
         await sgMail.send(msg);
       } catch (error) {
