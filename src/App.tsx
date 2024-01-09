@@ -362,7 +362,6 @@ const App: React.FC = () => {
                     </IonToolbar>
                   </IonHeader>
                   </div>
-                  <BrowserRouter>
                     <IonRouterOutlet>
                       <React.Fragment>
                         <Route exact path="/Welcome">
@@ -487,7 +486,6 @@ const App: React.FC = () => {
                         </Switch>
                       </React.Fragment>
                     </IonRouterOutlet>
-                  </BrowserRouter>
                 </IonContent>
               </IonPage>
               {user && (
