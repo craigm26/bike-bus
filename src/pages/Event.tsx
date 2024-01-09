@@ -36,7 +36,7 @@ import { useReactToPrint } from 'react-to-print';
 
 
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Coordinate {

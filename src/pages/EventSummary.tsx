@@ -24,7 +24,7 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/
 import React from 'react';
 
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Coordinate {

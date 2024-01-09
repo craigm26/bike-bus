@@ -5,7 +5,7 @@ import { getDocs, collection, GeoPoint } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { IonCol, IonContent, IonIcon, IonRow } from '@ionic/react';
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Station {

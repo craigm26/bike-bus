@@ -78,7 +78,7 @@ type BikeBusGroup = {
     Organization: DocumentReference;
 }
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 const EditOrganization: React.FC = () => {
     const { user } = useAuth();

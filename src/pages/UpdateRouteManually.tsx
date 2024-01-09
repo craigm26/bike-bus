@@ -16,7 +16,8 @@ import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, Polyline, useJsApiLoader, Marker } from '@react-google-maps/api';
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
+
 
 interface BikeBusStops {
     id: string;

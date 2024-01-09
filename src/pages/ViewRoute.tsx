@@ -18,7 +18,7 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-
 import React from 'react';
 
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Coordinate {
@@ -87,10 +87,11 @@ const ViewRoute: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const { id } = useParams<{ id: string }>();
   const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
+  const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-    libraries,
+    libraries: libraries,
   });
   const [loading, setLoading] = useState(true);
   const [path, setPath] = useState<Coordinate[]>([]);
