@@ -6,7 +6,7 @@ import { db } from '../../firebaseConfig';
 import { IonCol, IonContent, IonIcon, IonRow } from '@ionic/react';
 import { Autocomplete,  } from '@react-google-maps/api';
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Station {

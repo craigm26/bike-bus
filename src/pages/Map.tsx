@@ -16,7 +16,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference } from "firebase/firestore";
+import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
@@ -35,7 +35,7 @@ import {
   doc as firestoreDoc,
 } from "firebase/firestore";
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
@@ -264,6 +264,9 @@ const Map: React.FC = () => {
   const [handleChicagoLayerToggle, setHandleChicagoLayerToggle] = useState(false);
   const [endPointAddress, setEndPointAddress] = useState("");
   const [startPointName, setStartPointName] = useState("");
+  const [endPointName, setEndPointName] = useState("");
+  const [routeId, setRouteId] = useState('');
+
 
 
   const toggleKmlChicagoLayer = async () => {
@@ -1540,11 +1543,11 @@ const Map: React.FC = () => {
       console.log("selectedEndLocation: ", selectedEndLocation);
       const startPointAddress = await getStartPointAddress(selectedStartLocation);
 
-    // Check if selectedEndLocation is not null before calling getEndPointAddress
-    let endPointAddress = '';
-    if (selectedEndLocation) {
-      endPointAddress = await getEndPointAddress(selectedEndLocation);
-    }
+      // Check if selectedEndLocation is not null before calling getEndPointAddress
+      let endPointAddress = '';
+      if (selectedEndLocation) {
+        endPointAddress = await getEndPointAddress(selectedEndLocation);
+      }
       // Verify user and locations
       if (!user || !selectedStartLocation || !selectedEndLocation) {
         throw new Error('Required user and location data is missing');
@@ -1589,7 +1592,7 @@ const Map: React.FC = () => {
                   endPoint: selectedEndLocation,
                   // if routeStartName is '', then set the routeStartName to be startPointAddress
                   routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
-                  
+
                   startPointName: routeStartName,
                   startPointStreetName: routeStartStreetName,
                   routeEndStreetName: routeEndStreetName,
@@ -1857,21 +1860,91 @@ const Map: React.FC = () => {
     }
   };
 
+
   const handleUserRouteClick = async (route: any) => {
+    console.log("handleUserRouteClick called");
+    console.log("route: ", route);
+    console.log("routeName: ", route.routeName);
+
+    if (!route.routeName) {
+      console.error("No ID found for route: ", route);
+      return;
+    }
+
+    const routeName = route.routeName;
+    const routesRef = collection(db, "routes");
+    const queryRef = query(routesRef, where("routeName", "==", routeName));
+    const querySnapshot = await getDocs(queryRef);
+
+    let foundRouteId = ''; // Temporary variable to hold the found route ID
+    querySnapshot.forEach((docSnapshot) => {
+      foundRouteId = docSnapshot.id; // Assuming this gives the correct ID
+      console.log("foundRouteId: ", foundRouteId);
+    });
+
+    // Check if a route ID was found
+    if (foundRouteId) {
+      console.log("foundRouteId: ", foundRouteId);
+      setRouteId(foundRouteId); // Set the state with the found route ID
+      console.log("routeId: ", routeId);
+      console.log("route.id: ", route.id);
+    } else {
+      console.error("No document found for routeName:", routeName);
+      return;
+    }
+    console.log("handleUserRouteClick called");
+    console.log("route: ", route);
 
 
-    // Set content to whatever you want to display inside the InfoWindow
-    const content = `  
-    <div style="margin-top: 10px;">
-  </a>
-  </div>
-    `
-      ;
+    const content = `
+    <div style="margin-top: 1px;">
+      <H4>${route.routeName}</H4>
+      <div style="margin-top: 10px;">
+        <button id="viewRoute">View Route</button>
+        <button id="editRoute">Edit Route</button>
+        <button id="deleteRouteButton">Delete Route</button>
+      </div>
+      <div style="margin-top: 10px;">
+        <button id="viewRouteClip">View Route Clip</button>
+        <button id="createBikeBus">Create BikeBus</button>
+      </div>
+    `;
 
-    // Set position to the startPoint of the route (or any other point you prefer)
+    // Set position to the startPoint of the route
     const position = route.startPoint;
 
+    // Open an InfoWindow at the startPoint of the route
     setInfoWindow({ isOpen: true, content, position });
+    setTimeout(() => {
+      const deleteButton = document.getElementById('deleteRouteButton');
+      if (deleteButton) {
+        deleteButton.onclick = () => {
+          if (routeId) { // Use the state variable here
+            deleteRoute(routeId);
+          } else {
+            console.error('No ID found for route:', route);
+          }
+        };
+      }
+      const viewRouteButton = document.getElementById('viewRoute');
+      if (viewRouteButton) {
+        viewRouteButton.onclick = () => {
+          if (routeId) { // Use the state variable here
+            history.push(`/viewroute/${routeId}`);
+          } else {
+            console.error('No ID found for route:', route);
+          }
+        };
+      }
+    }, 0);
+  };
+
+  const deleteRoute = async (routeId: string) => {
+    console.log("deleteRoute called");
+    const routeRef = doc(db, 'routes', routeId);
+    await deleteDoc(routeRef);
+    alert('Route Deleted');
+    history.push('/Map/');
   };
 
   const handleOpenTripRouteClick = (trip: any) => {
@@ -2146,7 +2219,7 @@ const Map: React.FC = () => {
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${rectWidth}" height="${rectHeight}">
       <rect x="0" y="0" width="${rectWidth}" height="${rectHeight}" fill="#88C8F7"/>
-      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#88C8F7" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1">${label}</text>
+      <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#88C8F7" font-size="${fontSize}px" font-family="Arial, sans-serif" stroke="white" stroke-width="1"></text>
     </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   }
@@ -2504,7 +2577,7 @@ const Map: React.FC = () => {
                           },
                         ],
                       }}
-                      onClick={() => { handleUserRouteClick(route) }}
+                      onClick={() => handleUserRouteClick(route)}
                     />
                     <Polyline
                       key={`${keyPrefix}-main`}
@@ -2548,7 +2621,7 @@ const Map: React.FC = () => {
                           url: generateSVGUserRoutes(route.routeName),
                           scaledSize: new google.maps.Size(260, 20),
                         }}
-                        onClick={() => { handleUserRouteClick(route) }}
+                        onClick={() => handleUserRouteClick(route)}
                       />
                     )}
                     {route.endPoint && (
@@ -2560,7 +2633,7 @@ const Map: React.FC = () => {
                           url: generateSVGUserRoutes(route.routeName),
                           scaledSize: new google.maps.Size(260, 20),
                         }}
-                        onClick={() => { handleUserRouteClick(route) }}
+                        onClick={() => handleUserRouteClick(route)}
                       />
                     )}
                   </div>

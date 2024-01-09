@@ -9,7 +9,7 @@ import AnonymousAvatarMapMarker from "../AnonymousAvatarMapMarker";
 import SearchDestination from "../../components/Mapping/SearchDestination";
 import "./LoadMap.css";
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 interface LatLng {
   lat: number;

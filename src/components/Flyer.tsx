@@ -5,7 +5,7 @@ import React, { useState, forwardRef, Ref } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { DocumentReference } from "firebase/firestore";
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 interface Coordinate {
     lat: number;

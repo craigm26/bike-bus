@@ -20,7 +20,7 @@ import { getDatabase, ref, onValue } from 'firebase/database';
 import AvatarMapMarker from "../components/AvatarMapMarker";
 
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 
 interface Coordinate {

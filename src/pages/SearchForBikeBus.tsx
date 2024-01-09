@@ -43,7 +43,7 @@ import {
 } from "firebase/firestore";
 
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 const DEFAULT_ACCOUNT_MODES = ["Member"];
 
