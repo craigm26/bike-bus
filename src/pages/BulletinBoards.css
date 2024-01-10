@@ -1,10 +1,11 @@
-.ion-flex-offset-app, .ion-page, ion-content {
-    height: 100vh !important;
+.ion-flex-offset-app, ion-content {
+    height: 100%;
+    overflow-y: hidden;
 }
 
 .ion-page {
-    display: flex !important;
-    flex-grow: 1 !important;
+    display: none;
+    flex-grow: 1;
     overflow-y: hidden;
 }
 
@@ -12,13 +13,56 @@
     display: flex !important;
     flex-grow: 1 !important;
     overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
+/* class="inner-scroll scroll-y" */
+
+ion-content::-webkit-scrollbar,
+.chat-list::-webkit-scrollbar {
+    display: none;
+}
+
+ion-content,
+.chat-list {
+    scrollbar-width: none;
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.chat-list::-webkit-scrollbar {
+    display: none; /* Hides scrollbar */
+}
+
+
+.ion-content-scroll-host,
+.chat-item,
+.chat-card-item {
+    overflow-y: auto; /* Allows scrolling */
+    -ms-overflow-style: none; /* Hides scrollbar in IE/Edge */
+    scrollbar-width: none; /* Hides scrollbar in Firefox */
+}
+
+.ion-content-scroll-host::-webkit-scrollbar,
+.chat-item::-webkit-scrollbar,
+.chat-card-item::-webkit-scrollbar {
+    display: none; /* Hides scrollbar */
+}
+
+ion-content::-webkit-scrollbar {
+    display: none;
+}
+
+ion-content {
+    -ms-overflow-style: none;
+    scrollbar-width: none !important;
+}
 
 .ion-list {
     display: flex !important;
     flex-grow: 1 !important;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -64,7 +108,7 @@
 .cross-post-label {
     text-align: center;
     justify-content: center;
-    display: flex;
+    display: none;
     word-wrap: break-word;
     white-space: normal;
     align-items: center;
@@ -72,7 +116,7 @@
 
 .chat-list {
     flex-grow: 1;
-    display: flex !important;
+    display: none;
     overflow-y: auto;
     overflow-x: hidden;
     -ms-overflow-style: none;
@@ -80,11 +124,11 @@
 }
 
 .chat-list::-webkit-scrollbar {
-    display: flex !important;
+    display: none;
 }
 
 .chat-container {
-    display: flex !important;
+    display: flex;
     height: 100%;
     flex-direction: column;
     flex-grow: 1;  

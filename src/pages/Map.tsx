@@ -11,6 +11,11 @@ import {
   IonSegmentButton,
   IonText,
   IonCardTitle,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardSubtitle,
+  IonSpinner,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef } from "react";
 import useAuth from "../useAuth";
@@ -18,14 +23,15 @@ import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline, shareSocialOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
-
+import { InfoBox } from "@react-google-maps/api";
 
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer, KmlLayer } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
+import Drone3DMap from "../components/Mapping/Drone3DMap";
 import SearchBar from "../components/SearchBar";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
@@ -34,6 +40,9 @@ import {
   DocumentData,
   doc as firestoreDoc,
 } from "firebase/firestore";
+// import global.css
+import "../global.css";
+import { create } from "domain";
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -266,6 +275,14 @@ const Map: React.FC = () => {
   const [startPointName, setStartPointName] = useState("");
   const [endPointName, setEndPointName] = useState("");
   const [routeId, setRouteId] = useState('');
+  const [shouldShowInfoBoxRoute, setShouldShowInfoBoxRoute] = useState(false);
+  const [shouldShowInfoBoxBikeBus, setShouldShowInfoBoxBikeBus] = useState(false);
+  const [shouldShowInfoBoxOpenTrip, setShouldShowInfoBoxOpenTrip] = useState(false);
+  const [shouldShowInfoBoxUser, setShouldShowInfoBoxUser] = useState(false);
+  const [shouldShowInfoBoxLeader, setShouldShowInfoBoxLeader] = useState(false);
+  const [foundRouteId, setFoundRouteId] = useState('');
+  const [infoBoxContent, setInfoBoxContent] = useState(<></>);
+  const [infoBoxPosition, setInfoBoxPosition] = useState<Coordinate | null>(null);
 
 
 
@@ -1083,7 +1100,7 @@ const Map: React.FC = () => {
         clearInterval(timer);
       }
     };
-  }, [tripActive, user, openTripId, openTripEventId]);
+  }, [tripActive, user, openTripId, openTripEventId, shouldShowInfoBoxRoute]);
 
   //update map center when user location changes or selected location changes. When both have changed, set map center to show both locations on the map. Also set the zoom to fit both markers.
   useEffect(() => {
@@ -1664,7 +1681,9 @@ const Map: React.FC = () => {
         // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
         console.log("Route created with ID: ", routeDocRef.id);
         if (routeType !== "openTrip") {
-          history.push(`/viewroute/${routeDocRef.id}`);
+          // history.push(`/viewroute/${routeDocRef.id}`);
+          // show the info box for the route
+          setShouldShowInfoBoxRoute(true);
         }
         return routeDocRef;
       }
@@ -1866,6 +1885,11 @@ const Map: React.FC = () => {
     console.log("route: ", route);
     console.log("routeName: ", route.routeName);
 
+    console.log("setShouldShowInfoBoxRoute: ", shouldShowInfoBoxRoute)
+    // set shouldShowInfoBoxRoute to true
+    setShouldShowInfoBoxRoute(true);
+    console.log("setShouldShowInfoBoxRoute: ", shouldShowInfoBoxRoute)
+
     if (!route.routeName) {
       console.error("No ID found for route: ", route);
       return;
@@ -1882,61 +1906,84 @@ const Map: React.FC = () => {
       console.log("foundRouteId: ", foundRouteId);
     });
 
+    // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRouteData to a variable that we can use to get the route data
+    console.log("foundRouteId: ", foundRouteId);
+    // set routeId as foundRouteId
+    setRouteId(foundRouteId);
+    // let's get the document from the foundRouteId
+    const routeRef = doc(db, 'routes', foundRouteId);
+    const routeDoc = await getDoc(routeRef);
+    if (!routeDoc.exists()) {
+      console.error("No document found for routeName:", routeName);
+      return;
+    }
+
+    // routeDoc should be set to selectedRoute
+    setSelectedRoute(routeDoc.data() as RouteData);
+
     // Check if a route ID was found
     if (foundRouteId) {
       console.log("foundRouteId: ", foundRouteId);
       setRouteId(foundRouteId); // Set the state with the found route ID
-      console.log("routeId: ", routeId);
-      console.log("route.id: ", route.id);
+      // we need to update the selectedRoute variable with the foundRouteId
+      setShouldShowInfoBoxRoute(true);
+      setInfoBoxContent(createInfoBoxContent(route.routeName, foundRouteId));
     } else {
       console.error("No document found for routeName:", routeName);
       return;
     }
-    console.log("handleUserRouteClick called");
-    console.log("route: ", route);
+  };
 
 
-    const content = `
-    <div style="margin-top: 1px;">
-      <H4>${route.routeName}</H4>
-      <div style="margin-top: 10px;">
-        <button id="viewRoute">View Route</button>
-        <button id="editRoute">Edit Route</button>
-        <button id="deleteRouteButton">Delete Route</button>
-      </div>
-      <div style="margin-top: 10px;">
-        <button id="viewRouteClip">View Route Clip</button>
-        <button id="createBikeBus">Create BikeBus</button>
-      </div>
-    `;
+  const createInfoBoxContent = (routeName: string, routeId: string) => {
+    return (
+      <>
+        <h4>{routeName}</h4>
+        <div>
+          <IonButton
+            size="small"
+            onClick={() => {
+              history.push(`/editroute/${routeId}`);
+            }}
+          >
+            Edit Route
+          </IonButton>
+          <IonButton
+            size="small"
+            onClick={() => {
+              deleteRoute(routeId);
+            }}
+          >
+            Delete Route
+          </IonButton>
+          <IonButton
+            size="small"
+            routerLink={`/CreateBikeBusGroup/${routeId}`}
+          >
+            Create BikeBus
+          </IonButton>
+            <IonCardContent>
+              {Drone3DMap ? (
+                <Drone3DMap
+                  routeId={routeId}
+                  routeName={routeName}
+                  startPoint={selectedStartLocation}
+                  endPoint={selectedEndLocation}
+                  pathCoordinates={pathCoordinates}
+                />
+              ) : (
+                <IonSpinner name="crescent" />
+              )}
+            </IonCardContent>
+        </div>
 
-    // Set position to the startPoint of the route
-    const position = route.startPoint;
+      </>
+    );
+  };
 
-    // Open an InfoWindow at the startPoint of the route
-    setInfoWindow({ isOpen: true, content, position });
-    setTimeout(() => {
-      const deleteButton = document.getElementById('deleteRouteButton');
-      if (deleteButton) {
-        deleteButton.onclick = () => {
-          if (routeId) { // Use the state variable here
-            deleteRoute(routeId);
-          } else {
-            console.error('No ID found for route:', route);
-          }
-        };
-      }
-      const viewRouteButton = document.getElementById('viewRoute');
-      if (viewRouteButton) {
-        viewRouteButton.onclick = () => {
-          if (routeId) { // Use the state variable here
-            history.push(`/viewroute/${routeId}`);
-          } else {
-            console.error('No ID found for route:', route);
-          }
-        };
-      }
-    }, 0);
+
+  const handleCloseInfoBox = () => {
+    setShouldShowInfoBoxRoute(false);
   };
 
   const deleteRoute = async (routeId: string) => {
@@ -1946,6 +1993,11 @@ const Map: React.FC = () => {
     alert('Route Deleted');
     history.push('/Map/');
   };
+
+  const createBikeBus = async (routeId: string) => {
+    <IonButton routerLink={`/CreateBikeBusGroup/${routeId}`}>Create BikeBus Group</IonButton>
+  };
+
 
   const handleOpenTripRouteClick = (trip: any) => {
     const contentString = `
@@ -2879,6 +2931,26 @@ const Map: React.FC = () => {
                   <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
                     <IonButton color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
                   </div>
+                )}
+              </div>
+              <div>
+                {shouldShowInfoBoxRoute && selectedRoute && (
+                  <InfoBox
+                    position={new google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
+                    options={{
+                      boxClass: "route-info-box",
+                      disableAutoPan: false,
+                      pixelOffset: new google.maps.Size(-40, -40),
+                      zIndex: 1,
+                      closeBoxURL: "",
+                      enableEventPropagation: true,
+                    }}
+                  >
+                    <div style={{ padding: '5px', position: 'relative' }}>
+                      {infoBoxContent}
+                      <div className="route-info-box-close" onClick={handleCloseInfoBox}></div> {/* Add your close handler */}
+                    </div>
+                  </InfoBox>
                 )}
               </div>
               <div>
