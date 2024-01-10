@@ -55,10 +55,11 @@ const EditBikeBus: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
     const [routeId, setRouteId] = useState<DocumentReference[]>([]);
+    const [routes, setRoutes] = useState<Route[]>([]);
     const startPointRef = usePlacesAutocomplete((location, name) => { });
     const endPointRef = usePlacesAutocomplete((location, name) => { });
     const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-
+    const [loading, setLoading] = useState<boolean>(true); // New loading state
 
 
     const fetchBikeBus = useCallback(async () => {

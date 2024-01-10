@@ -1684,6 +1684,12 @@ const Map: React.FC = () => {
           // history.push(`/viewroute/${routeDocRef.id}`);
           // show the info box for the route
           setShouldShowInfoBoxRoute(true);
+          // set the get directions button to false - showGetDirectionsButton
+          setShowGetDirectionsButton(false);
+          // set the create route button to false
+          setShowCreateRouteButton(false);
+          // refresh the map page
+          window.location.reload();
         }
         return routeDocRef;
       }
@@ -1753,10 +1759,18 @@ const Map: React.FC = () => {
 
     // for each of the qualified next3Events, let's create a link to the event page for that event /event/id
 
+    // we'll have to convert this infoWindow into a infoBox and include this: 
+    /*{isUserMember && (
+      <IonButton size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+        Bulletin Board
+      </IonButton>
+    )}
+    */
 
     // Set content to whatever you want to display inside the InfoWindow
     const content = `  
     <div style="margin-top: 10px;">
+    
     <h4>Upcoming Events:</h4>
     ${next3EventsHTML}
   </div>
@@ -1962,7 +1976,14 @@ const Map: React.FC = () => {
           >
             Create BikeBus
           </IonButton>
+          <IonButton
+            size="small"
+            routerLink={`/AddRouteToBikeBus/`}
+          >
+            Add Route to BikeBus
+          </IonButton>
             <IonCardContent>
+              {/* if the route is a bikebus, then show the bikebus map 
               {Drone3DMap ? (
                 <Drone3DMap
                   routeId={routeId}
@@ -1974,6 +1995,7 @@ const Map: React.FC = () => {
               ) : (
                 <IonSpinner name="crescent" />
               )}
+              */}
             </IonCardContent>
         </div>
 
@@ -2948,7 +2970,7 @@ const Map: React.FC = () => {
                   >
                     <div style={{ padding: '5px', position: 'relative' }}>
                       {infoBoxContent}
-                      <div className="route-info-box-close" onClick={handleCloseInfoBox}></div> {/* Add your close handler */}
+                      <div className="route-info-box-close" onClick={handleCloseInfoBox}></div>
                     </div>
                   </InfoBox>
                 )}
