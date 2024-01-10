@@ -17,23 +17,38 @@ import {
   IonSelect,
   IonSelectOption,
   IonTitle,
+  IonCardSubtitle,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
-import { collection, doc, getDocs, getDoc, addDoc, Timestamp, arrayUnion, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, addDoc, Timestamp, arrayUnion, updateDoc, query, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { useHistory, useParams } from 'react-router-dom';
+import { Route, useHistory, useParams } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
+import './AddSchedule.css';
 
 type Event = {
   start: Date,
   end: Date,
   title: string
 };
+
+interface BusRoute {
+  RouteName: string;
+  RouteDescription: any;
+  RouteType: any;
+  RouteCreator: any;
+  RouteBikeBus: any;
+  RouteStartPoint: any;
+  RouteEndPoint: any;
+  RoutePathCoordinates: any;
+  id: string;
+}
+
 
 const AddSchedule: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -65,6 +80,8 @@ const AddSchedule: React.FC = () => {
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
   const [endTime, setEndTime] = useState<string>('07:00');
+
+
   // user the default value of today's date and 7:00 AM time in the user's location
 
   const [selectedDays, setSelectedDays] = useState<{ [key: string]: boolean }>({
@@ -86,6 +103,10 @@ const AddSchedule: React.FC = () => {
   const [showRoutePickerModal, setShowRoutePickerModal] = useState<boolean>(false);
   const [RouteID, setRouteID] = useState<string>('');
   const [BikeBusStopName, setBikeBusStopName] = useState<string>('');
+  const [userRoutes, setUserRoutes] = useState<BusRoute[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+
 
   // when user loads the page, the Picker for choosing a route will be shown as a dropdown menu. The routes are populated from the bikebusgroup document in the database
   // grab the id from the url and get the bikebusgroup document from the database
@@ -100,13 +121,10 @@ const AddSchedule: React.FC = () => {
   // format the startTime in am or pm (not 24 hour time)
   const formattedStartTime = startDateTime ? new Date(startDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
-  console.log('startDateTime:', startDateTime);
 
-  console.log('endTime', endTime);
 
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
-  console.log('formattedEndTime:', formattedEndTime);
 
 
 
@@ -120,42 +138,76 @@ const AddSchedule: React.FC = () => {
     console.log('showPopover state:', showPopover);
   };
 
+  const fetchUserRoutes = async () => {
+
+    console.log('fetchUserRoutes called');
+    console.log('user:', user)
+    console.log('user.uid:', user?.uid)
+    if (user) {
+      const routesCollectionRef = collection(db, 'routes');
+      const q = query(routesCollectionRef, where("routeCreator", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+      const fetchedRoutes: BusRoute[] = querySnapshot.docs.map(doc => ({
+        ...doc.data() as BusRoute,
+        id: doc.id,
+      }));
+      setUserRoutes(fetchedRoutes);
+    }
+  };
+
   useEffect(() => {
+    let isMounted = true; // Track if component is mounted to prevent state update on unmounted component
+
     const fetchBikeBusGroupAndRoutes = async () => {
-      const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
-      const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
+      try {
+        const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
+        const bikeBusGroupSnapshot = await getDoc(bikeBusGroupRef);
 
-      // if the document exists, get the document from bikebusgroups collection in firestore
-      if (bikeBusGroupSnapshot.exists()) {
-        const bikeBusGroupData = bikeBusGroupSnapshot.data();
-        setBikeBusGroup(bikeBusGroupData);
+        // if the document exists, get the document from bikebusgroups collection in firestore
+        if (bikeBusGroupSnapshot.exists()) {
+          const bikeBusGroupData = bikeBusGroupSnapshot.data();
+          setBikeBusGroup(bikeBusGroupData);
+        }
+
+        // get the name of the bikebusgroup from the bikebusgroup document in the database
+        const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
+        setBikeBusName(BikeBusName);
+        console.log('user.uid:', user?.uid);
+        if (user) {
+          setIsLoading(true); // Start the loader
+          console.log('user.uid:', user.uid);
+          // Fetch the user's routes
+          const routesCollectionRef = collection(db, 'routes');
+          const q = query(routesCollectionRef, where("routeCreator", "==", `/users/${user.uid}`));
+          console.log('q:', q);
+          const querySnapshot = await getDocs(q);
+          console.log('querySnapshot:', querySnapshot);
+
+          if (isMounted) { // Only update state if component is mounted
+            const fetchedRoutes: BusRoute[] = querySnapshot.docs.map(doc => ({
+              ...doc.data() as BusRoute,
+              id: doc.id,
+            }));
+            console.log('fetchedRoutes:', fetchedRoutes);
+            setUserRoutes(fetchedRoutes);
+            setIsLoading(false); // Stop the loader
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching routes:', error);
+        if (isMounted) setIsLoading(false); // Stop the loader even on error
       }
-
-      // get the name of the bikebusgroup from the bikebusgroup document in the database
-      const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
-      setBikeBusName(BikeBusName);
-
-      // get the route from the bikebusgroup document in the database
-      const selectedRoutes = bikeBusGroupSnapshot.data()?.BikeBusRoutes;
-      setSelectedRoutes(selectedRoutes);
-      // get the name of the routes from the route document in the database
-      const routesData = await Promise.all(selectedRoutes.map((routeRef: any) => getDoc(routeRef)));
-      const routes = routesData.map((route: any) => route.data());
-      setRoutes(routes);
-      // get the id of the routes from the route document in the database
-      const routeIds = routesData.map((route: any) => route.id);
-      console.log('routeIds:', routeIds);
-      // get the id of the route from the route document in the database
-      const RouteID = bikeBusGroupSnapshot.data()?.BikeBusRoutes[0].id;
-      setRouteID(RouteID);
-
     };
 
     fetchBikeBusGroupAndRoutes();
-  }, [id]);
+
+    return () => {
+      isMounted = false; // Cleanup function to toggle the mounted state
+    }
+  }, [user]);
+
 
   useEffect(() => {
-    console.log(startDateTime, isRecurring)
     if (startDateTime && isRecurring) {
       const date = new Date(startDateTime);
       if (isRecurring === 'yes') {
@@ -232,32 +284,21 @@ const AddSchedule: React.FC = () => {
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
     // look at default date and time values to see if they are correct
-    console.log('startDateTime:', startDateTime);
-    console.log('endTime:', endTime);
-    console.log('expectedDuration:', expectedDuration);
-    console.log('endDate:', endDate);
-    console.log('formattedStartDate:', formattedStartTime);
-    console.log('formattedEndDate:', formattedEndTime);
-    console.log('RouteID:', RouteID);
+
 
     // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
     const startDate = startDateTime.split('T')[0];
-    console.log('startDate:', startDate);
 
     // Convert the startDateTime and endTime to Firestore timestamps
     const startTimestamp = Timestamp.fromDate(new Date(startDateTime));
-    console.log('startTimestamp:', startTimestamp);
 
     // set the startTime to match the hh:mm value of the startTimestamp
     const startTime = startTimestamp.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-    console.log('startTime:', startTime);
 
     // set the start value of the schedule to be the startTimestamp
     const start = startTimestamp;
-    console.log('start:', start);
 
     const endTimestamp = Timestamp.fromDate(new Date(endTime));
-    console.log('endTimestamp:', endTimestamp);
 
 
     const scheduleData = {
@@ -276,13 +317,11 @@ const AddSchedule: React.FC = () => {
 
     const scheduleNewRef = await addDoc(collection(db, 'schedules'), scheduleData);
     const scheduleNewId = scheduleNewRef.id;
-    console.log('scheduleNewId:', scheduleNewId);
 
     const bikeBusData = {
       BikeBusSchedules: [doc(db, 'schedules', scheduleNewId)],
     };
 
-    console.log('bikeBusData:', bikeBusData);
 
 
     // update the existing bikebusgroup document in firestore with the new schedule
@@ -453,33 +492,27 @@ const AddSchedule: React.FC = () => {
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Route</IonLabel>
-          <IonSelect
-            value={selectedRoute}
-            placeholder={routes[0]?.routeName}
-            onIonChange={async e => {
-              console.log('selectedRoute:', e.detail.value);
-              setSelectedRoute(e.detail.value);
-              setRoute(e.detail.value);
-              // make the selectedRoute value a set"" when the page initially loads
-              if (e.detail.value === '') {
-                setSelectedRoute(routes[0]?.routeName);
-                setRoute(routes[0]?.routeName);
-                setRouteID(routes[0]?.id);
-              }
-              // make the duration value of the route selected in the dropdown menu the expectedDuration. Most bikebusgroups will only have 1 route, so this will be the default value
-              if (e.detail.value === routes[0]?.routeName) {
-                const duration = routes[0]?.duration;
-                console.log('duration:', duration);
-                setExpectedDuration(duration);
-              }
-            }}
-          >
-            {Array.isArray(routes) && routes.filter(route => route?.id).map((route: any) => (
-              <IonSelectOption key={route?.id} value={route?.id}>
-                {route?.routeName}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
+          {isLoading ? (
+            <IonLabel>Loading...</IonLabel>
+          ) : (
+            <IonSelect
+              value={selectedRoute}
+              placeholder="Select a Route"
+              onIonChange={e => {
+                const selectedRouteId = e.detail.value;
+                const selectedRoute = userRoutes.find(route => route.id === selectedRouteId);
+                setSelectedRoute(selectedRouteId);
+                setRoute(selectedRoute);
+              }}
+            >
+              {userRoutes.map(route => (
+                <IonSelectOption key={route.id} value={route.id}>
+                  {route.RouteName}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+          )}
+
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Start DateTime</IonLabel>
@@ -498,18 +531,14 @@ const AddSchedule: React.FC = () => {
                   setEndTime(startDateTime.toISOString());
                   // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
                   const duration = routes[0]?.duration;
-                  console.log('duration:', duration);
                   setExpectedDuration(duration);
 
                   // Define addDuration here
                   const addDuration = (duration: number) => {
-                    console.log('startDateTime:', startDateTime);
                     const endTimeDate = new Date(startDateTime);
-                    console.log('endTimeDate:', endTimeDate);
                     duration = Math.ceil(duration);
                     endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
                     const endTime = endTimeDate.toString();
-                    console.log('endTime:', endTime);
                     setEndTime(endTime);
                   };
 

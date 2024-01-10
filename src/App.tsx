@@ -375,6 +375,11 @@ const App: React.FC = () => {
                             <BulletinBoards />
                           </CurrentLocationProvider>
                         </Route>
+                        <Route exact path="/BulletinBoards/:bborOrgId">
+                          <CurrentLocationProvider>
+                            <BulletinBoards />
+                          </CurrentLocationProvider>
+                        </Route>
                         <Route exact path="/CreateOrganization">
                           <CreateOrganization />
                         </Route>

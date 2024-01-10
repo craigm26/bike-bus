@@ -1,0 +1,5 @@
+  /* Text overflow handling */
+  .long-text {
+    overflow-wrap: break-word;
+  }
+  

@@ -63,18 +63,15 @@ const Drone3DMap: React.FC<Drone3DMapProps> = ({ routeId, routeName, startPoint,
       const videoIdResult = await renderVideoFunction({ payload });
       const videoId: string = videoIdResult.data.videoId;
       
-      // Poll for video status
       let videoStatusResult;
       do {
         videoStatusResult = await checkVideoStatusFunction({ videoId });
       } while (videoStatusResult.data.videoStatus !== 'ACTIVE');
       
-      // Video is now active, fetch URI
       const videoUriResult = await fetchVideoUriFunction({ videoId });
       const videoUri = videoUriResult.data.videoUri;
       setVideoUrl(videoUri);
 
-      // Save the video ID to Firestore
       await saveVideoIdToFirestoreFunction({ videoId, routeId });
     } catch (error) {
       console.error('Error generating new video:', error);
@@ -91,33 +88,39 @@ const Drone3DMap: React.FC<Drone3DMapProps> = ({ routeId, routeName, startPoint,
   });
 
   const saveVideoIdToFirestore = async (videoId: string) => {
-    const videosRef = collection(db, "videos");
-    const q = query(videosRef, where("routeId", "==", routeId));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.size > 0) {
-      console.log("Video ID already exists in Firestore");
-      return;
-    } else {
+    try {
+      const videosRef = collection(db, "videos");
+      const q = query(videosRef, where("routeId", "==", routeId));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.size > 0) {
+        console.log("Video ID already exists in Firestore");
+        return;
+      }
       await addDoc(collection(db, "videos"), {
         routeId,
         videoId,
         createdAt: new Date(),
       });
       console.log("Video ID saved to Firestore");
+    } catch (error) {
+      console.error('Error saving video ID to Firestore:', error);
     }
-
   };
 
+
   const fetchExistingVideo = useCallback(async () => {
-    const videosRef = collection(db, "videos");
-    const q = query(videosRef, where("routeId", "==", routeId));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      // Assuming that videoId is the field where the ID is stored in Firestore
-      const videoDoc = querySnapshot.docs[0].data();
-      setVideoUrl(videoDoc.videoId);
-      setVideoExists(true);
-      console.log("Video ID already exists in Firestore");
+    try {
+      const videosRef = collection(db, "videos");
+      const q = query(videosRef, where("routeId", "==", routeId));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const videoDoc = querySnapshot.docs[0].data();
+        setVideoUrl(videoDoc.videoId);
+        setVideoExists(true);
+        console.log("Video ID already exists in Firestore");
+      }
+    } catch (error) {
+      console.error('Error fetching existing video:', error);
     }
   }, [routeId]);
 
@@ -148,17 +151,26 @@ const Drone3DMap: React.FC<Drone3DMapProps> = ({ routeId, routeName, startPoint,
   
 
   const renderVideo = async (payload: RenderPayload): Promise<string> => {
-    const response = await fetch('https://aerialview.googleapis.com/v1:renderVideo', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}` // Use your env variable here
-      },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await fetch('https://aerialview.googleapis.com/v1:renderVideo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const data = await response.json();
-    return data.videoId;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.videoId;
+    } catch (error) {
+      console.error('Error rendering video:', error);
+      throw error; // Propagate the error for upstream handling
+    }
   };
 
   const pollVideoState = async (videoId: string): Promise<VideoMetadata> => {
@@ -226,20 +238,35 @@ const Drone3DMap: React.FC<Drone3DMapProps> = ({ routeId, routeName, startPoint,
   }, [videoExists, checkAndRenderVideo]);
 
   const fetchVideoUri = async (videoId: string): Promise<string | null> => {
-    const response = await fetch(`https://aerialview.googleapis.com/v1:lookupVideo?videoId=${videoId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+    try {
+      const response = await fetch(`https://aerialview.googleapis.com/v1:lookupVideo?videoId=${videoId}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+        }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
-    if (!response.ok) {
-      return null; // or handle the error appropriately
+  
+      const videoData = await response.json();
+      return videoData.videoUri;
+    } catch (error) {
+      console.error('Error fetching video URI:', error);
+      return null;
     }
-    const videoData = await response.json();
-    return videoData.videoUri; // Make sure to return the URI
   };
+  
 
   useEffect(() => {
-    fetchExistingVideo(); // Check if a video exists when the component loads
+    const initFetchVideo = async () => {
+      try {
+        await fetchExistingVideo();
+      } catch (error) {
+        console.error('Error fetching existing video:', error);
+      }
+    };
+    initFetchVideo();
   }, [fetchExistingVideo]);
 
   useEffect(() => {
@@ -289,12 +316,12 @@ const Drone3DMap: React.FC<Drone3DMapProps> = ({ routeId, routeName, startPoint,
       {loading ? (
         <p>Loading Aerial 3D view...</p>
       ) : videoUrl ? (
-        <>
-          <video width="200" height="100" src={videoUrl} controls />
-          <IonButton size="small" onClick={handleGenerateNewVideo}>Generate New Video</IonButton>
-        </>
+        <video width="200" height="100" src={videoUrl} controls />
       ) : (
         <p>Aerial 3D map not available.</p>
+      )}
+      {videoUrl && (
+        <IonButton size="small" onClick={handleGenerateNewVideo}>Generate New Video</IonButton>
       )}
     </div>
   );

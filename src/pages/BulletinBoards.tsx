@@ -34,6 +34,7 @@ import { useAvatar } from '../components/useAvatar';
 import { DocumentReference, addDoc, arrayUnion, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, FieldValue, setDoc, deleteDoc, arrayRemove, onSnapshot } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import Avatar from '../components/Avatar';
+import { useHistory, useParams } from "react-router-dom";
 import './BulletinBoards.css';
 import * as geofire from 'geofire-common';
 import { add, closeCircleOutline, closeOutline, imageOutline, locationOutline, paperPlane, personCircleOutline, trashOutline, videocamOutline } from 'ionicons/icons';
@@ -122,15 +123,21 @@ interface Message {
     id: string;
 }
 
+interface Params {
+    bborOrgId: string;
+}
+
 
 const BulletinBoards: React.FC = () => {
     const { user } = useAuth();
+    const { bborOrgId } = useParams<Params>();
+    const history = useHistory();
     const { avatarUrl } = useAvatar(user?.uid);
     const [accountType, setAccountType] = useState<string>('');
     const [groupType, setGroupType] = useState<string>('');
     const [bulletinboardType, setBulletinboardType] = useState<string>('');
     const [combinedList, setCombinedList] = useState<SelectOption[]>([]);
-    const [selectedBBOROrgValue, setselectedBBOROrgValue] = useState<string>('OZrruuBJptp9wkAAVUt7');
+    const [selectedBBOROrgValue, setselectedBBOROrgValue] = useState<string>('');
     const [groupId, setGroupId] = useState<string | undefined>('');
     const [groupData, setGroupData] = useState<any | undefined>(undefined);
     const [username, setUsername] = useState<string | undefined>('');
@@ -159,6 +166,7 @@ const BulletinBoards: React.FC = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadError, setUploadError] = useState('');
     const [showContentTypeAlert, setShowContentTypeAlert] = useState(false);
+    
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,6 +176,24 @@ const BulletinBoards: React.FC = () => {
             organizations: arrayUnion('Global')  // Assume organizations is an array field
         });
     };
+
+    useEffect(() => {
+        if (selectedBBOROrgValue) {
+            history.push(`/BulletinBoards/${selectedBBOROrgValue}`);
+        }
+    }, [selectedBBOROrgValue, history]);
+    
+
+    useEffect(() => {
+        interface Params {
+            bborOrgId?: string;
+        }
+        if (bborOrgId) {
+            setselectedBBOROrgValue(bborOrgId);
+        } else {
+            setselectedBBOROrgValue('OZrruuBJptp9wkAAVUt7');
+        }
+    }, [bborOrgId]);
 
     useEffect(() => {
         setIsLoading(true);

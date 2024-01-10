@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -10,6 +10,7 @@ import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
 import QRCode from 'qrcode.react';
+import './BikeBusGroupPage.css';
 
 
 interface Coordinate {
@@ -89,6 +90,14 @@ const BikeBusGroupPage: React.FC = () => {
   const [leaderAvatar, setLeaderAvatar] = useState<string>('');
   const [showMembersModal, setShowMembersModal] = useState(false);
   const label = user?.username ? user.username : "anonymous";
+  // selectedBBOROrgValue is the same value of groupId. It's used to filter the bulletin boards by the groupId.
+  const [selectedBBOROrgValue, setSelectedBBOROrgValue] = useState<string>('');
+
+  // now set the selectedBBOROrgValue to the groupId
+  useEffect(() => {
+    setSelectedBBOROrgValue(groupId || '');
+  }, [groupId]);
+
 
   const [showFullPage, setShowFullPage] = useState(false); // State to toggle full-page layout
 
@@ -490,157 +499,172 @@ const BikeBusGroupPage: React.FC = () => {
       <IonContent fullscreen>
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>{groupData?.BikeBusName}
-            <IonCol>
-            <QRCode size={50} value={window.location.href} />
-            </IonCol>
-            </IonCardTitle>
+            <IonGrid>
+              <IonRow>
+                <IonCol size="12">
+                  <IonCardTitle>{groupData?.BikeBusName}</IonCardTitle>
+                </IonCol>
+              </IonRow>
+              <IonRow>
+                <IonCol size="12">
+                  <QRCode size={50} value={window.location.href} />
+                </IonCol>
+              </IonRow>
+            </IonGrid>
           </IonCardHeader>
           <IonCardContent>
             <div>
-              {!isUserMember &&
-                <IonButton size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
-              }
-              {isUserMember &&
-                <IonButton size="small"  onClick={leaveBikeBus}>Leave BikeBus</IonButton>
-              }
-              <IonButton size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
-              <IonModal isOpen={showInviteModal}>
-                <IonHeader>
-                  <IonToolbar>
-                    <IonTitle>Invite a User</IonTitle>
-                  </IonToolbar>
-                </IonHeader>
-                <IonContent>
-                  <IonList>
-                    <IonItem>
-                      <IonLabel>
-                        BikeBus Name:
-                        <IonRouterLink href={`https://bikebus.app/bikebusgrouppage/${groupId}`}>
-                          {groupData?.BikeBusName}
-                        </IonRouterLink>
-                      </IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Routes</IonLabel>
-                      {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
-                        <IonRouterLink key={index}>
-                          <Link to={`/ViewRoute/${route?.id}`}>
-                            <IonLabel>{route?.routeName}</IonLabel>
-                          </Link>
-                        </IonRouterLink>
-                      ))}
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Email</IonLabel>
-                    </IonItem>
-                    <IonItem>
-                      <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
-                    </IonItem>
-                  </IonList>
-                  <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
-                  <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
-                  <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
-                  <IonButton onClick={copyUrl}>Copy URL</IonButton>
-                </IonContent>
-              </IonModal>
-              {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
-                <IonButton size='small' routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
-              }
-              {isUserLeader && Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
-                <IonItem key={index}>
-                  <IonButton routerLink={`/CreateBikeBusStops/${route?.id}`}>Create BikeBusStops</IonButton>
-                </IonItem>
-              ))}
-              <IonList>
-                <IonItem>
-                  <IonLabel>Leader</IonLabel>
-                  <IonChip>
-                    <div style={{ marginRight: '8px' }}>
-                      <Avatar uid={groupData?.BikeBusLeader?.id} size="extrasmall" />
+              <IonGrid>
+                <IonRow>
+                  <IonCol size="12">
+                    {!isUserMember ? (
+                      <IonButton size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
+                    ) : (
+                      <IonButton size="small" onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+                    )}
+                    {isUserMember && (
+                      <IonButton size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+                        Bulletin Board
+                      </IonButton>
+                    )}
+                    {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+                      <IonButton size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                    }
+                    <IonButton size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
+                  </IonCol>
+                  <IonModal isOpen={showInviteModal}>
+                    <IonHeader>
+                      <IonToolbar>
+                        <IonTitle>Invite a User</IonTitle>
+                      </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                      <IonList>
+                        <IonItem>
+                          <IonLabel>
+                            BikeBus Name:
+                            <IonRouterLink href={`https://bikebus.app/bikebusgrouppage/${groupId}`}>
+                              {groupData?.BikeBusName}
+                            </IonRouterLink>
+                          </IonLabel>
+                        </IonItem>
+                        <IonItem>
+                          <IonLabel>Routes</IonLabel>
+                          {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
+                            <IonRouterLink key={index}>
+                              <Link to={`/ViewRoute/${route?.id}`}>
+                                <IonLabel>{route?.routeName}</IonLabel>
+                              </Link>
+                            </IonRouterLink>
+                          ))}
+                        </IonItem>
+                        <IonItem>
+                          <IonLabel>Email</IonLabel>
+                        </IonItem>
+                        <IonItem>
+                          <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                        </IonItem>
+                      </IonList>
+                      <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
+                      <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+                      <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
+                      <IonButton onClick={copyUrl}>Copy URL</IonButton>
+                    </IonContent>
+                  </IonModal>
+                </IonRow>
+                <IonRow>
+                  <IonCol size="4">
+                    <IonLabel>Leader</IonLabel>
+                    <IonAvatar>
+                      <Avatar uid={groupData?.BikeBusLeader?.id} size="small" />
+                    </IonAvatar>
+                  </IonCol>
+                  <IonCol size="4">
+                    <IonLabel>Members</IonLabel>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                        <IonChip>
+                          {membersData.map((user, index) => (
+                            <div style={{ marginRight: '8px' }} key={index}>
+                              <Avatar uid={user.id} size="extrasmall" />
+                            </div>
+                          ))}
+                          {membersData.length > 5 && (
+                            <IonChip>
+                              <IonLabel>{membersData.length}</IonLabel>
+                            </IonChip>
+                          )}
+                        </IonChip>
+                      </IonButton>
                     </div>
-                  </IonChip>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Members</IonLabel>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                      <IonChip>
-                        {membersData.map((user, index) => (
-                          <div style={{ marginRight: '8px' }} key={index}>
-                            <Avatar uid={user.id} size="extrasmall" />
-                          </div>
-                        ))}
-                        {membersData.length > 5 && (
-                          <IonChip>
-                            <IonLabel>{membersData.length}</IonLabel>
-                          </IonChip>
-                        )}
-                      </IonChip>
-                    </IonButton>
-                  </div>
-
-                </IonItem>
-                <IonModal isOpen={showMembersModal}>
-                  <IonHeader>
-                    <IonToolbar>
-                      <IonTitle>Members</IonTitle>
-                    </IonToolbar>
-                  </IonHeader>
-                  <IonContent>
-                    <IonList>
-                      {membersData.map((user, index) => (
-                        <IonItem key={index}>
-                          <Avatar uid={user.id} />
-                          <IonLabel> {user?.username}</IonLabel>
-                        </IonItem>
-                      ))}
-                    </IonList>
-                    <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
-                  </IonContent>
-                </IonModal>
-                <IonItem>
-                  <IonLabel>Description</IonLabel>
-                  <IonLabel>{groupData?.BikeBusDescription}</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Additional Information</IonLabel>
-                  <IonLabel>{groupData?.AdditionalInformation}</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Type</IonLabel>
-                  <IonLabel>{groupData?.BikeBusType}</IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>Route</IonLabel>
-                  {groupId && (
-                    <IonList>
-                      {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
-                        <IonItem key={index}>
-                          <Link to={`/ViewRoute/${route?.id}`}>
-                            <IonButton>{route?.routeName}</IonButton>
-                          </Link>
-                        </IonItem>
-                      ))}
-                    </IonList>
-                  )}
-                </IonItem>
-                <IonItem>
+                    <IonModal isOpen={showMembersModal}>
+                      <IonHeader>
+                        <IonToolbar>
+                          <IonTitle>Members</IonTitle>
+                        </IonToolbar>
+                      </IonHeader>
+                      <IonContent>
+                        <IonList>
+                          {membersData.map((user, index) => (
+                            <IonItem key={index}>
+                              <Avatar uid={user.id} />
+                              <IonLabel> {user?.username}</IonLabel>
+                            </IonItem>
+                          ))}
+                        </IonList>
+                        <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                      </IonContent>
+                    </IonModal>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol size="3">
+                    <IonLabel>Description:</IonLabel>
+                  </IonCol>
+                  <IonCol size="7">
+                    <IonText> {groupData?.BikeBusDescription}</IonText>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol size="3">
+                    <IonLabel>Additional Information:</IonLabel>
+                  </IonCol>
+                  <IonCol size="7">
+                    <IonLabel> {groupData?.AdditionalInformation}</IonLabel>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol size="3">
+                    <IonLabel>Type:</IonLabel>
+                  </IonCol>
+                  <IonCol size="7">
+                    <IonLabel> {groupData?.BikeBusType}</IonLabel>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
                   {nextEvent ?
-                    <><IonLabel>Next Event:</IonLabel><Link to={`/Event/${nextEventId}`}>
-                      <IonButton>{nextEventTime}</IonButton>
-                    </Link></>
+                    <>
+                      <IonCol size="3">
+                        <IonLabel>Next Event:</IonLabel>
+                      </IonCol>
+                      <IonCol size="7">
+                        <Link to={`/Event/${nextEventId}`}>
+                          <IonButton>{nextEventTime}</IonButton>
+                        </Link>
+                      </IonCol>
+                    </>
                     :
                     <><IonLabel>Next Event has not been scheduled yet!</IonLabel></>
                   }
-                </IonItem>
-                <IonItem>
-                  <IonLabel>All Events</IonLabel>
-                  <Link to={`/ViewSchedule/${groupId}`}>
-                    <IonButton>View Schedule</IonButton>
-                  </Link>
-                </IonItem>
-              </IonList>
+                </IonRow>
+                <IonRow>
+                  <IonCol size="12">
+                    <Link to={`/ViewSchedule/${groupId}`}>
+                      <IonButton size="small">View Schedule</IonButton>
+                    </Link>
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
             </div>
           </IonCardContent>
         </IonCard>
