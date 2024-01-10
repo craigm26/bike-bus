@@ -548,6 +548,53 @@
   position: relative;
 }
 
+/* Base styles for route-info-box */
+.route-info-box {
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border-radius: 4px;
+  max-width: 300px; /* Maximum width, but it can shrink */
+  width: auto; /* By default, it takes as much space as needed */
+}
+
+/* Smaller screens (phones) */
+@media (max-width: 600px) {
+  .route-info-box {
+    padding: 5px;
+    font-size: 14px; /* Smaller font size on small screens */
+  }
+}
+
+/* Medium screens (tablets) */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .route-info-box {
+    padding: 8px;
+    font-size: 16px; /* Slightly larger font size on medium screens */
+  }
+}
+
+/* Larger screens (desktops) */
+@media (min-width: 1025px) {
+  .route-info-box {
+    padding: 10px;
+    font-size: 18px; /* Larger font size on large screens */
+  }
+}
+
+
+.route-info-box-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  height: 16px; /* Adjust size accordingly */
+  width: 16px; /* Adjust size accordingly */
+  cursor: pointer;
+}
+
+
+
 /* Style to overlay the event details on the map */
 .event-overlay {
   position: absolute;
@@ -624,6 +671,7 @@
   background-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 0 0 0 10px;
+  overflow-y: auto;
 
   /* Add scrolling if content is too long */
 }

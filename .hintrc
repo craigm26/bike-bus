@@ -10,7 +10,9 @@
           "contain",
           "-webkit-tap-highlight-color",
           "overscroll-behavior-y",
-          "text-size-adjust"
+          "text-size-adjust",
+          "scrollbar-width",
+          "scrollbar-width"
         ]
       }
     ],

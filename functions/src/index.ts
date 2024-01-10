@@ -194,3 +194,122 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every monday 09:45").time
     console.error("Error sending weekly summary:", error);
   }
 });
+
+const GOOGLE_API_KEY = functions.config().aerialview.api_key;
+
+exports.renderVideoProxy = functions.https.onRequest((request, response) => {
+  cors(request, response, async () => {
+    if (request.method !== "POST") {
+      // Make sure to return a response here
+      return response.status(405).send("Method Not Allowed");
+    }
+
+    const payload = request.body;
+
+    try {
+      const aerialResponse = await axios.post("https://aerialview.googleapis.com/v1:renderVideo", payload, {
+        headers: {
+          "Authorization": `Bearer ${functions.config().aerialview.api_key}`,
+          "Content-Type": "application/json",
+        },
+      });
+      // Make sure to return a response here
+      return response.send(aerialResponse.data);
+    } catch (error) {
+      console.error("Error calling Aerial API:", error);
+      // Make sure to return a response here
+      return response.status(500).send("Internal Server Error");
+    }
+  });
+});
+
+
+// Function to render a new video
+exports.renderVideo = functions.https.onCall(async (data, context) => {
+  const payload = data.payload; // The payload should be passed from the client
+
+  try {
+    const response = await axios.post("https://aerialview.googleapis.com/v1:renderVideo", payload, {
+      headers: {
+        "Authorization": `Bearer ${GOOGLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const videoId = response.data.videoId;
+    // You can now return this videoId to the client or proceed to check its status
+    return { videoId };
+  } catch (error) {
+    // Handle errors appropriately
+    console.error("Error rendering video:", error);
+    throw new functions.https.HttpsError("internal", "Failed to render video");
+  }
+});
+
+// Function to check the status of the video
+exports.checkVideoStatus = functions.https.onCall(async (data, context) => {
+  const videoId = data.videoId; // The videoId should be passed from the client
+
+  try {
+    const response = await axios.get(`https://aerialview.googleapis.com/v1:lookupVideoMetadata?videoId=${videoId}`, {
+      headers: {
+        "Authorization": `Bearer ${GOOGLE_API_KEY}`,
+      },
+    });
+
+    const videoStatus = response.data.state;
+    // Return the status to the client, or perform additional logic based on the status
+    return { videoStatus };
+  } catch (error) {
+    // Handle errors appropriately
+    console.error("Error checking video status:", error);
+    throw new functions.https.HttpsError("internal", "Failed to check video status");
+  }
+});
+
+// Function to save the video ID to Firestore
+exports.saveVideoIdToFirestore = functions.https.onCall(async (data, context) => {
+  const { videoId, routeId } = data; // Destructuring to extract variables from data
+
+  // Perform a check to see if the videoId already exists and handle accordingly
+  const videosRef = admin.firestore().collection("videos");
+  const docRef = videosRef.doc(videoId); // Assuming videoId is unique and used as the document ID
+  const docSnapshot = await docRef.get();
+
+  if (!docSnapshot.exists) {
+    // Video ID does not exist, save it to Firestore
+    await docRef.set({
+      routeId: routeId,
+      videoId: videoId,
+      // Add any other relevant data here
+    });
+    // Return some result to the client, if necessary
+    return { success: true };
+  } else {
+    // Video ID already exists, handle accordingly
+    // Return some result to the client, if necessary
+    return { success: false, message: "Video ID already exists." };
+  }
+});
+
+
+// Function to fetch the video URI once the video is active
+exports.fetchVideoUri = functions.https.onCall(async (data, context) => {
+  const videoId = data.videoId;
+
+  try {
+    const response = await axios.get(`https://aerialview.googleapis.com/v1:lookupVideo?videoId=${videoId}`, {
+      headers: {
+        "Authorization": `Bearer ${GOOGLE_API_KEY}`,
+      },
+    });
+
+    const videoUri = response.data.videoUri;
+    // Return the URI to the client
+    return { videoUri };
+  } catch (error) {
+    // Handle errors appropriately
+    console.error("Error fetching video URI:", error);
+    throw new functions.https.HttpsError("internal", "Failed to fetch video URI");
+  }
+});
