@@ -497,7 +497,6 @@ const BikeBusGroupPage: React.FC = () => {
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
-        <IonCard>
           <IonCardHeader>
             <IonGrid>
               <IonRow>
@@ -654,7 +653,16 @@ const BikeBusGroupPage: React.FC = () => {
                       </IonCol>
                     </>
                     :
-                    <><IonLabel>Next Event has not been scheduled yet!</IonLabel></>
+                    <>
+                      <IonCol size="3">
+                        <IonLabel>Next event has not been scheduled yet!</IonLabel>
+                      </IonCol>
+                      <IonCol size="7">
+                        <Link to={`/addschedule/${groupId}`}>
+                          <IonButton size="small">Add Event</IonButton>
+                        </Link>
+                      </IonCol>
+                    </>
                   }
                 </IonRow>
                 <IonRow>
@@ -667,7 +675,6 @@ const BikeBusGroupPage: React.FC = () => {
               </IonGrid>
             </div>
           </IonCardContent>
-        </IonCard>
       </IonContent >
     </IonPage >
   );
