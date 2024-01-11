@@ -276,8 +276,12 @@ const ViewSchedule: React.FC = () => {
                         />
                     </div>
                 </IonCard>
-                <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
-                <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                {id !== "OZrruuBJptp9wkAAVUt7" && (
+                    <>
+                        <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
+                        <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                    </>
+                )}
                 <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
                     <IonContent>
                         <IonCardHeader>

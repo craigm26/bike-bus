@@ -1976,12 +1976,6 @@ const Map: React.FC = () => {
           >
             Create BikeBus
           </IonButton>
-          <IonButton
-            size="small"
-            routerLink={`/AddRouteToBikeBus/`}
-          >
-            Add Route to BikeBus
-          </IonButton>
             <IonCardContent>
               {/* if the route is a bikebus, then show the bikebus map 
               {Drone3DMap ? (
