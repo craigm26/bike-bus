@@ -16,6 +16,7 @@ import {
   IonCardHeader,
   IonCardSubtitle,
   IonSpinner,
+  IonActionSheet,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef } from "react";
 import useAuth from "../useAuth";
@@ -23,7 +24,7 @@ import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, locateOutline, locationOutline, shareSocialOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, closeOutline, ellipsisVerticalOutline, locateOutline, locationOutline, shareOutline, shareSocialOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
 import { InfoBox } from "@react-google-maps/api";
 
@@ -43,6 +44,9 @@ import {
 // import global.css
 import "../global.css";
 import { create } from "domain";
+import { is } from "date-fns/locale";
+import { Share } from "@capacitor/share";
+
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -283,7 +287,7 @@ const Map: React.FC = () => {
   const [foundRouteId, setFoundRouteId] = useState('');
   const [infoBoxContent, setInfoBoxContent] = useState(<></>);
   const [infoBoxPosition, setInfoBoxPosition] = useState<Coordinate | null>(null);
-
+  const [isRouteCreatedByUser, setIsRouteCreatedByUser] = useState(false);
 
 
   const toggleKmlChicagoLayer = async () => {
@@ -1941,19 +1945,57 @@ const Map: React.FC = () => {
       setRouteId(foundRouteId); // Set the state with the found route ID
       // we need to update the selectedRoute variable with the foundRouteId
       setShouldShowInfoBoxRoute(true);
-      setInfoBoxContent(createInfoBoxContent(route.routeName, foundRouteId));
+      setInfoBoxContent(await createInfoBoxContent(route.routeName, foundRouteId));
     } else {
       console.error("No document found for routeName:", routeName);
       return;
     }
   };
 
+  // do we have route data for the selectedRoute?
+  // if so let's get the routeId data from firebase document collection "routes", we need the routeCreator uid
+  // if the routeCreator uid is the same as the user.uid, then show the edit route button
+  // if the routeCreator uid is not the same as the user.uid, then don't show the edit route button
+  // if the routeCreator uid is the same as the user.uid, then show the delete route button
+  // if the routeCreator uid is not the same as the user.uid, then don't show the delete route button
+  // if the routeCreator uid is the same as the user.uid, then show the create bikebus button
 
-  const createInfoBoxContent = (routeName: string, routeId: string) => {
+
+
+
+  const createInfoBoxContent = async (routeName: string, routeId: string) => {
+
     return (
       <>
         <h4>{routeName}</h4>
         <div>
+          <IonActionSheet
+            isOpen={showActionSheet}
+            onDidDismiss={() => setShowActionSheet(false)}
+            buttons={[
+              {
+                text: 'Share',
+                icon: shareOutline,
+                handler: () => {
+                  Share.share({
+                    title: 'Check out my BikeBus link!',
+                    text: 'I found this link on the BikeBus app',
+                    url: window.location.href,
+                  });
+                }
+              },
+              {
+                text: 'Cancel',
+                role: 'cancel',
+                handler: () => {
+                  console.log('Cancel clicked');
+                }
+              },
+            ]}
+          />
+          <IonButton onClick={() => setShowActionSheet(true)}>
+            <IonIcon size="small" icon={shareOutline} />
+          </IonButton>
           <IonButton
             size="small"
             onClick={() => {
@@ -1976,8 +2018,8 @@ const Map: React.FC = () => {
           >
             Create BikeBus
           </IonButton>
-            <IonCardContent>
-              {/* if the route is a bikebus, then show the bikebus map 
+          <IonCardContent>
+            {/* if the route is a bikebus, then show the bikebus map 
               {Drone3DMap ? (
                 <Drone3DMap
                   routeId={routeId}
@@ -1990,7 +2032,7 @@ const Map: React.FC = () => {
                 <IonSpinner name="crescent" />
               )}
               */}
-            </IonCardContent>
+          </IonCardContent>
         </div>
 
       </>
@@ -2956,7 +2998,7 @@ const Map: React.FC = () => {
                     options={{
                       boxClass: "route-info-box",
                       disableAutoPan: false,
-                      pixelOffset: new google.maps.Size(-40, -40),
+                      pixelOffset: new google.maps.Size(0, -40),
                       zIndex: 1,
                       closeBoxURL: "",
                       enableEventPropagation: true,
@@ -2964,7 +3006,11 @@ const Map: React.FC = () => {
                   >
                     <div style={{ padding: '5px', position: 'relative' }}>
                       {infoBoxContent}
-                      <div className="route-info-box-close" onClick={handleCloseInfoBox}></div>
+                      <IonIcon
+                        icon={closeOutline}
+                        className="route-info-box-close"
+                        onClick={handleCloseInfoBox}
+                      />
                     </div>
                   </InfoBox>
                 )}

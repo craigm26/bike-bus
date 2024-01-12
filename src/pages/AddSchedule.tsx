@@ -38,14 +38,16 @@ type Event = {
 };
 
 interface BusRoute {
-  RouteName: string;
-  RouteDescription: any;
-  RouteType: any;
-  RouteCreator: any;
+  routeName: string;
+  description: any;
+  distance: any;
+  duration: any;
+  routeType: any;
+  routeCreator: any;
   RouteBikeBus: any;
-  RouteStartPoint: any;
-  RouteEndPoint: any;
-  RoutePathCoordinates: any;
+  startPoint: any;
+  endPoint: any;
+  pathCoordinates: any;
   id: string;
 }
 
@@ -76,10 +78,12 @@ const AddSchedule: React.FC = () => {
   const [isBikeBus, setIsBikeBus] = useState<boolean>(false);
   const [bulletinBoardData, setBulletinBoardData] = useState<any>(null);
   const [expectedDuration, setExpectedDuration] = useState<any>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const [duration, setDuration] = useState<any>(0);
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
   const [endTime, setEndTime] = useState<string>('07:00');
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(''); // <-- Add this state if it doesn't exist
+
 
 
   // user the default value of today's date and 7:00 AM time in the user's location
@@ -126,37 +130,14 @@ const AddSchedule: React.FC = () => {
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
-
-
   const history = useHistory();
 
-  const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
-    setPopoverEvent(e.nativeEvent);
-    setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
-  };
 
-  const fetchUserRoutes = async () => {
 
-    console.log('fetchUserRoutes called');
-    console.log('user:', user)
-    console.log('user.uid:', user?.uid)
-    if (user) {
-      const routesCollectionRef = collection(db, 'routes');
-      const q = query(routesCollectionRef, where("routeCreator", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-      const fetchedRoutes: BusRoute[] = querySnapshot.docs.map(doc => ({
-        ...doc.data() as BusRoute,
-        id: doc.id,
-      }));
-      setUserRoutes(fetchedRoutes);
-    }
-  };
+
 
   useEffect(() => {
-    let isMounted = true; // Track if component is mounted to prevent state update on unmounted component
+    let isMounted = true;
 
     const fetchBikeBusGroupAndRoutes = async () => {
       try {
@@ -172,10 +153,9 @@ const AddSchedule: React.FC = () => {
         // get the name of the bikebusgroup from the bikebusgroup document in the database
         const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
         setBikeBusName(BikeBusName);
-        console.log('user.uid:', user?.uid);
+
         if (user) {
           setIsLoading(true); // Start the loader
-          console.log('user.uid:', user.uid);
           // Fetch the user's routes
           const routesCollectionRef = collection(db, 'routes');
           const q = query(routesCollectionRef, where("routeCreator", "==", `/users/${user.uid}`));
@@ -190,6 +170,7 @@ const AddSchedule: React.FC = () => {
             }));
             console.log('fetchedRoutes:', fetchedRoutes);
             setUserRoutes(fetchedRoutes);
+            console.log('userRoutes:', userRoutes);
             setIsLoading(false); // Stop the loader
           }
         }
@@ -202,7 +183,7 @@ const AddSchedule: React.FC = () => {
     fetchBikeBusGroupAndRoutes();
 
     return () => {
-      isMounted = false; // Cleanup function to toggle the mounted state
+      isMounted = false;
     }
   }, [user]);
 
@@ -230,12 +211,15 @@ const AddSchedule: React.FC = () => {
         }
       }
     };
-
     updateUserAccountType();
   }, [user]);
 
-  // write a function that gets the route document from the user's selection of route from the dropdown menu
-
+  useEffect(() => {
+    const selectedRoute = userRoutes.find(route => route.id === selectedRouteId);
+    if (selectedRoute) {
+      setDuration(selectedRoute.duration);
+    }
+  }, [selectedRouteId, userRoutes]);
 
 
   const label = user?.username ? user.username : "anonymous";
@@ -307,7 +291,7 @@ const AddSchedule: React.FC = () => {
       startDateTime: startDateTime,
       startDate: startDate,
       endDate: endDate,
-      expectedDuration: expectedDuration,
+      expectedDuration: duration,
       endTime: endTime,  // This should be a string, not a Firestore timestamp
       endTimeStamp: endTimestamp,  // Add this line to store the endTime as a Firestore timestamp
       isRecurring: isRecurring,
@@ -349,7 +333,7 @@ const AddSchedule: React.FC = () => {
       route: doc(db, 'routes', RouteID),
       startTimeStamp: startTimestamp,
       endTime: endTimestamp,
-      duration: expectedDuration,
+      duration: duration,
       eventDays: getRecurringDates(new Date(startDateTime), new Date(endDate), selectedDays),
       recurring: isRecurring,
       groupId: bikeBusGroupRef,
@@ -391,7 +375,7 @@ const AddSchedule: React.FC = () => {
         captains: [],
         sheepdogs: [],
         caboose: [],
-        duration: expectedDuration,
+        duration: duration,
         route: doc(db, 'routes', RouteID),
         startTime: startTimestamp,
         startTimestamp: startTimestamp,
@@ -425,7 +409,7 @@ const AddSchedule: React.FC = () => {
           captains: [],
           sheepdogs: [],
           caboose: [],
-          duration: expectedDuration,
+          duration: duration,
           groupId: bikeBusGroupRef,
           route: doc(db, 'routes', RouteID),
           startTime: startTime,
@@ -496,23 +480,32 @@ const AddSchedule: React.FC = () => {
             <IonLabel>Loading...</IonLabel>
           ) : (
             <IonSelect
-              value={selectedRoute}
+              value={selectedRouteId}
               placeholder="Select a Route"
               onIonChange={e => {
-                const selectedRouteId = e.detail.value;
-                const selectedRoute = userRoutes.find(route => route.id === selectedRouteId);
-                setSelectedRoute(selectedRouteId);
-                setRoute(selectedRoute);
-              }}
+                const newSelectedRouteId = e.detail.value;
+                setRouteID(newSelectedRouteId); 
+                setSelectedRouteId(newSelectedRouteId); 
+                const selectedRoute = userRoutes.find(route => route.id === newSelectedRouteId);
+                if (selectedRoute) {
+                  setDuration(selectedRoute.duration);
+
+                }
+              }
+              }
             >
               {userRoutes.map(route => (
                 <IonSelectOption key={route.id} value={route.id}>
-                  {route.RouteName}
+                  {route.routeName}
                 </IonSelectOption>
               ))}
             </IonSelect>
           )}
 
+        </IonItem>
+        <IonItem>
+          <IonLabel>Route Duration</IonLabel>
+          <IonLabel>{duration} Minutes</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>BikeBus Start DateTime</IonLabel>
@@ -529,9 +522,7 @@ const AddSchedule: React.FC = () => {
                   console.log('Start DateTime selected', startDateTime);
                   setStartDateTime(startDateTime.toISOString());
                   setEndTime(startDateTime.toISOString());
-                  // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
-                  const duration = routes[0]?.duration;
-                  setExpectedDuration(duration);
+                  console.log('duration:', duration)
 
                   // Define addDuration here
                   const addDuration = (duration: number) => {
@@ -553,6 +544,10 @@ const AddSchedule: React.FC = () => {
         <IonItem>
           <IonLabel>BikeBus End Time</IonLabel>
           <IonLabel>{formattedEndTime}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel>BikeBus End Date</IonLabel>
+          <IonLabel>{formattedEndDate}</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Is Recurring?</IonLabel>
@@ -600,10 +595,7 @@ const AddSchedule: React.FC = () => {
             <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
-        <IonItem>
-          <IonLabel>BikeBus End Date</IonLabel>
-          <IonLabel>{formattedEndDate}</IonLabel>
-        </IonItem>
+
         <IonItem>
           <IonButton onClick={updateSchedule}>Save</IonButton>
           <IonButton routerLink={`/viewschedule/${id}`}>View Schedule</IonButton>

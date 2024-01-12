@@ -617,36 +617,36 @@ const BikeBusGroupPage: React.FC = () => {
                   </IonCol>
                 </IonRow>
                 <IonRow>
-                  <IonCol size="3">
+                  <IonCol size="6">
                     <IonLabel>Description:</IonLabel>
                   </IonCol>
-                  <IonCol size="7">
+                  <IonCol size="6">
                     <IonText> {groupData?.BikeBusDescription}</IonText>
                   </IonCol>
                 </IonRow>
                 <IonRow>
-                  <IonCol size="3">
+                  <IonCol size="6">
                     <IonLabel>Additional Information:</IonLabel>
                   </IonCol>
-                  <IonCol size="7">
+                  <IonCol size="6">
                     <IonLabel> {groupData?.AdditionalInformation}</IonLabel>
                   </IonCol>
                 </IonRow>
                 <IonRow>
-                  <IonCol size="3">
+                  <IonCol size="6">
                     <IonLabel>Type:</IonLabel>
                   </IonCol>
-                  <IonCol size="7">
+                  <IonCol size="6">
                     <IonLabel> {groupData?.BikeBusType}</IonLabel>
                   </IonCol>
                 </IonRow>
                 <IonRow>
                   {nextEvent ?
                     <>
-                      <IonCol size="3">
+                      <IonCol size="6">
                         <IonLabel>Next Event:</IonLabel>
                       </IonCol>
-                      <IonCol size="7">
+                      <IonCol size="6">
                         <Link to={`/Event/${nextEventId}`}>
                           <IonButton>{nextEventTime}</IonButton>
                         </Link>
@@ -654,10 +654,10 @@ const BikeBusGroupPage: React.FC = () => {
                     </>
                     :
                     <>
-                      <IonCol size="3">
+                      <IonCol size="6">
                         <IonLabel>Next event has not been scheduled yet!</IonLabel>
                       </IonCol>
-                      <IonCol size="7">
+                      <IonCol size="6">
                         <Link to={`/addschedule/${groupId}`}>
                           <IonButton size="small">Add Event</IonButton>
                         </Link>
@@ -666,9 +666,12 @@ const BikeBusGroupPage: React.FC = () => {
                   }
                 </IonRow>
                 <IonRow>
-                  <IonCol size="12">
+                  <IonCol size="6">
+                    <IonLabel>View Schedule for BikeBus: </IonLabel>
+                  </IonCol>
+                  <IonCol size="6">
                     <Link to={`/ViewSchedule/${groupId}`}>
-                      <IonButton size="small">View Schedule</IonButton>
+                      <IonButton size="small">Schedule</IonButton>
                     </Link>
                   </IonCol>
                 </IonRow>

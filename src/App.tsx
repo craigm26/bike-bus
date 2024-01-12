@@ -31,7 +31,7 @@ import CreateBikeBusStops from './pages/CreateBikeBusStops';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { logoInstagram, logoTwitter, mailOutline, phonePortraitOutline } from 'ionicons/icons';
+import { logoInstagram, logoTwitter, mailOutline, phonePortraitOutline, shareOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -300,41 +300,8 @@ const App: React.FC = () => {
                           onDidDismiss={() => setShowActionSheet(false)}
                           buttons={[
                             {
-                              text: 'Share via Text Message',
-                              icon: phonePortraitOutline,
-                              handler: () => {
-                                Share.share({
-                                  title: 'Check out my BikeBus link!',
-                                  text: 'I found this link on the BikeBus app',
-                                  url: window.location.href,
-                                });
-                              }
-                            },
-                            {
-                              text: 'Share on Twitter',
-                              icon: logoTwitter,
-                              handler: () => {
-                                Share.share({
-                                  title: 'Check out my BikeBus link!',
-                                  text: 'I found this link on the BikeBus app',
-                                  url: window.location.href,
-                                });
-                              }
-                            },
-                            {
-                              text: 'Share on Instagram',
-                              icon: logoInstagram,
-                              handler: () => {
-                                Share.share({
-                                  title: 'Check out my BikeBus link!',
-                                  text: 'I found this link on the BikeBus app',
-                                  url: window.location.href,
-                                });
-                              }
-                            },
-                            {
-                              text: 'Share via Email',
-                              icon: mailOutline,
+                              text: 'Share',
+                              icon: shareOutline,
                               handler: () => {
                                 Share.share({
                                   title: 'Check out my BikeBus link!',

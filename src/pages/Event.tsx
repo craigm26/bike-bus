@@ -390,11 +390,14 @@ const Event: React.FC = () => {
 
   useEffect(() => {
     const fetchAllStops = async () => {
-      const fetchedStops = await Promise.all(
-        bikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
-      );
-      setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStops[]);
+      if (Array.isArray(bikeBusStopIds) && bikeBusStopIds.length > 0) {
+        const fetchedStops = await Promise.all(
+          bikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
+        );
+        setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStops[]);
+      }
     };
+    
 
     fetchAllStops();
   }, [bikeBusStopIds]);
