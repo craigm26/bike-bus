@@ -161,7 +161,7 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every monday 09:45").time
 
       const msg = {
         to: subscriber.email,
-        from: "newsletter@bikebus.app",
+        from: "craigm26@gmail.com",
         subject: "Weekly News Summary",
         html: `
             <style>    
