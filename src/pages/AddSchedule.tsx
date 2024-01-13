@@ -284,6 +284,8 @@ const AddSchedule: React.FC = () => {
 
     const endTimestamp = Timestamp.fromDate(new Date(endTime));
 
+    const end = endTimestamp;
+
 
     const scheduleData = {
       startTime: startTime,
@@ -291,6 +293,7 @@ const AddSchedule: React.FC = () => {
       startDateTime: startDateTime,
       startDate: startDate,
       endDate: endDate,
+      end: endTimestamp,
       expectedDuration: duration,
       endTime: endTime,  // This should be a string, not a Firestore timestamp
       endTimeStamp: endTimestamp,  // Add this line to store the endTime as a Firestore timestamp
@@ -379,6 +382,7 @@ const AddSchedule: React.FC = () => {
         route: doc(db, 'routes', RouteID),
         startTime: startTimestamp,
         startTimestamp: startTimestamp,
+        end: endTimestamp,
         endTime: endTimestamp,
         endTimestamp: endTimestamp,
         groupId: bikeBusGroupRef,

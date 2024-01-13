@@ -134,7 +134,7 @@ exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => 
   });
 });
 
-exports.sendWeeklySummary = functions.pubsub.schedule("every monday 09:45").timeZone("America/Los_Angeles").onRun(async context => {
+exports.sendWeeklySummary = functions.pubsub.schedule("every friday 16:45").timeZone("America/Los_Angeles").onRun(async context => {
   try {
     // Fetch articles from the last week
     const oneWeekAgo = new Date();
@@ -161,7 +161,7 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every monday 09:45").time
 
       const msg = {
         to: subscriber.email,
-        from: "craigm26@gmail.com",
+        from: "info@bikebus.app",
         subject: "Weekly News Summary",
         html: `
             <style>    
