@@ -325,6 +325,14 @@ const AddSchedule: React.FC = () => {
       scheduleName: BikeBusName,
     });
 
+    // update the route document in firestore by switching the isBikeBus boolean to true
+    const routeRef = doc(db, 'routes', RouteID);
+    await updateDoc(routeRef, {
+      isBikeBus: true,
+      BikeBusGroupId: bikeBusGroupRef,
+      BikeBusName: BikeBusName,
+    });
+
 
     // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
