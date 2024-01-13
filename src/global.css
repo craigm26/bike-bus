@@ -376,7 +376,7 @@
 
 .search-container {
   position: absolute;
-  width: max-content;
+  width: 380px;
   z-index: 1000;
   background-color: white;
   border: 1px solid transparent;

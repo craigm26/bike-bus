@@ -19,6 +19,7 @@ import {
     IonRow,
     IonSelect,
     IonSelectOption,
+    IonTitle,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -102,6 +103,7 @@ const ViewSchedule: React.FC = () => {
     const [combinedList, setCombinedList] = useState<{ value: string, label: string }[]>([]);
     const [eventRouteName, setEventRouteName] = useState<string>('');
     const [routeEventId, setRouteEventId] = useState<string>('');
+    const [eventRouteString, setEventRouteString] = useState<string>('');
 
 
     const parseDate = (dateString: string) => {
@@ -259,6 +261,10 @@ const ViewSchedule: React.FC = () => {
                         const routeSnapshot = await getDoc(eventData.route);
                         const routeData = routeSnapshot.data();
 
+                        // get the route id (document id) from the route snapshot
+                        const routeId = routeSnapshot.id;
+                        setRouteEventId(routeId);
+
                         return {
                             ...eventData,
                             start: startTimestamp,
@@ -309,6 +315,8 @@ const ViewSchedule: React.FC = () => {
     const handleSelectEvent = async (event: Event) => {
         const eventLink = `/event/${event.id}`;
         setSelectedEvent(event);
+        console.log('selectedRoute', event.route);
+        console.log('routeEventId', routeEventId);
         setEvents(events);
         setEventId(event.id);
         setShowEventModal(true);
@@ -337,7 +345,6 @@ const ViewSchedule: React.FC = () => {
             console.error('Invalid event data:', event);
         }
     };
-
 
     const handleEditEvent = () => {
         setShowEventModal(false); // Close the modal
@@ -420,14 +427,43 @@ const ViewSchedule: React.FC = () => {
                     )}
                     <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
                         <IonContent>
-                            <IonCardHeader>
-                                <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
-                            </IonCardHeader>
-                            <IonCardContent>
-                                <IonItem lines="none">
-                                    <IonLabel>{startTime} to {endTime}</IonLabel>
-                                </IonItem>
-                            </IonCardContent>
+                            <IonTitle>{selectedEvent?.BikeBusName}</IonTitle>
+                            <IonItem lines="none">
+                                <IonLabel>{startTime} to {endTime}</IonLabel>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Route</IonLabel>
+                                <IonButton routerLink={`/ViewRoute/${routeEventId}`}>View {selectedEvent?.route?.routeName} Route</IonButton>
+                            </IonItem>
+                            <IonTitle>RSVPs</IonTitle>
+                            <IonItem lines="none">
+                                <IonLabel>Leader:</IonLabel>
+                                <IonText>{selectedEvent?.leader}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Captains:</IonLabel>
+                                <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Sheepdogs:</IonLabel>
+                                <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Sprinters:</IonLabel>
+                                <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Caboose:</IonLabel>
+                                <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Kids:</IonLabel>
+                                <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem lines="none">
+                                <IonLabel>Members:</IonLabel>
+                                <IonText>{selectedEvent?.members?.join(', ')}</IonText>
+                            </IonItem>
                             {(isEventDone) ?
                                 <>
                                     <IonItem lines="none">
