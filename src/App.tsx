@@ -251,7 +251,7 @@ const App: React.FC = () => {
                         <IonLabel>{t('BikeBusses')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/ViewSchedule/OZrruuBJptp9wkAAVUt7' routerDirection="none">
-                        <IonLabel>{t('View Schedules')}</IonLabel>
+                        <IonLabel>{t('Schedules')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
                         <IonLabel>{t('Organizations')}</IonLabel>

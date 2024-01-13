@@ -285,7 +285,10 @@ const Map: React.FC = () => {
   const [shouldShowInfoBoxUser, setShouldShowInfoBoxUser] = useState(false);
   const [shouldShowInfoBoxLeader, setShouldShowInfoBoxLeader] = useState(false);
   const [foundRouteId, setFoundRouteId] = useState('');
+  const [foundBikeBusId, setFoundBikeBusId] = useState('');
   const [infoBoxContent, setInfoBoxContent] = useState(<></>);
+  const [infoBoxContentBikeBus, setInfoBoxContentBikeBus] = useState(<></>);
+
   const [infoBoxPosition, setInfoBoxPosition] = useState<Coordinate | null>(null);
   const [isRouteCreatedByUser, setIsRouteCreatedByUser] = useState(false);
 
@@ -1787,6 +1790,58 @@ const Map: React.FC = () => {
     const position = route.startPoint;
 
     setInfoWindow({ isOpen: true, content, position });
+    
+
+
+  };
+
+  const createInfoBoxContentBikeBus = async (routeName: string, routeId: string) => {
+
+    return (
+      <>
+        <h4>{routeName}</h4>
+        <div>
+          <IonButton
+            size="small"
+            onClick={() => {
+              history.push(`/editroute/${routeId}`);
+            }}
+          >
+            Edit Route
+          </IonButton>
+          <IonButton
+            size="small"
+            onClick={() => {
+              deleteRoute(routeId);
+            }}
+          >
+            Delete Route
+          </IonButton>
+          <IonButton
+            size="small"
+            routerLink={`/CreateBikeBusGroup/${routeId}`}
+          >
+            Create BikeBus
+          </IonButton>
+          <IonCardContent>
+            {/* if the route is a bikebus, then show the bikebus map 
+              {Drone3DMap ? (
+                <Drone3DMap
+                  routeId={routeId}
+                  routeName={routeName}
+                  startPoint={selectedStartLocation}
+                  endPoint={selectedEndLocation}
+                  pathCoordinates={pathCoordinates}
+                />
+              ) : (
+                <IonSpinner name="crescent" />
+              )}
+              */}
+          </IonCardContent>
+        </div>
+
+      </>
+    );
   };
 
   const handleBikeBusRouteClusterClick = async (route: any) => {
@@ -1945,7 +2000,7 @@ const Map: React.FC = () => {
       setRouteId(foundRouteId); // Set the state with the found route ID
       // we need to update the selectedRoute variable with the foundRouteId
       setShouldShowInfoBoxRoute(true);
-      setInfoBoxContent(await createInfoBoxContent(route.routeName, foundRouteId));
+      setInfoBoxContent(await createInfoBoxContentRoute(route.routeName, foundRouteId));
     } else {
       console.error("No document found for routeName:", routeName);
       return;
@@ -1963,39 +2018,12 @@ const Map: React.FC = () => {
 
 
 
-  const createInfoBoxContent = async (routeName: string, routeId: string) => {
+  const createInfoBoxContentRoute = async (routeName: string, routeId: string) => {
 
     return (
       <>
         <h4>{routeName}</h4>
         <div>
-          <IonActionSheet
-            isOpen={showActionSheet}
-            onDidDismiss={() => setShowActionSheet(false)}
-            buttons={[
-              {
-                text: 'Share',
-                icon: shareOutline,
-                handler: () => {
-                  Share.share({
-                    title: 'Check out my BikeBus link!',
-                    text: 'I found this link on the BikeBus app',
-                    url: window.location.href,
-                  });
-                }
-              },
-              {
-                text: 'Cancel',
-                role: 'cancel',
-                handler: () => {
-                  console.log('Cancel clicked');
-                }
-              },
-            ]}
-          />
-          <IonButton onClick={() => setShowActionSheet(true)}>
-            <IonIcon size="small" icon={shareOutline} />
-          </IonButton>
           <IonButton
             size="small"
             onClick={() => {

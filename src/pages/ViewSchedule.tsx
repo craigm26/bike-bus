@@ -14,12 +14,17 @@ import {
     IonText,
     IonInput,
     IonCol,
+    IonCardSubtitle,
+    IonGrid,
+    IonRow,
+    IonSelect,
+    IonSelectOption,
 } from '@ionic/react';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { FieldValue, Timestamp, collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
+import { DocumentData, DocumentReference, FieldValue, Timestamp, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { Link, useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -32,6 +37,9 @@ import getDay from 'date-fns/getDay'
 import enUS from 'date-fns/locale/en-US'
 import { utcToZonedTime } from 'date-fns-tz';
 import { set } from 'date-fns';
+import { Organization, BikeBus } from '../components/BulletinBoards/MessageTypes';
+import { use } from 'i18next';
+import { group } from 'console';
 
 const locales = {
     'en-US': enUS,
@@ -47,16 +55,17 @@ const localizer = dateFnsLocalizer({
 
 type Event = {
     id: string,
-    start: Date,
-    end: Date,
+    start: Timestamp,
+    end: Timestamp,
     title: string,
-    route: string,
-    schedule: string,
+    route: any,
+    groupId: any,
+    schedule: any,
     startTime: string,
     startTimestamp: Timestamp,
     endTime: Timestamp,
     BikeBusGroup: string,
-    BikeBusName: string,
+    BikeBusName: any,
     BikeBusStopTimes: [],
     BikeBusStops: [],
     StaticMap: string,
@@ -78,6 +87,7 @@ const ViewSchedule: React.FC = () => {
     const { avatarUrl } = useAvatar(user?.uid);
     const headerContext = useContext(HeaderContext);
     const { id } = useParams<{ id: string }>();
+    const [selectedBBOROrgValue, setSelectedBBOROrgValue] = useState<string>('');
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [eventLink, setEventLink] = useState<string>('');
@@ -89,6 +99,9 @@ const ViewSchedule: React.FC = () => {
     const [isEventDone, setIsEventDone] = useState<boolean>(false);
     const [modifiedHandCount, setModifiedHandCount] = useState<number>(0);
     const [username, setusername] = useState<string>('');
+    const [combinedList, setCombinedList] = useState<{ value: string, label: string }[]>([]);
+    const [eventRouteName, setEventRouteName] = useState<string>('');
+    const [routeEventId, setRouteEventId] = useState<string>('');
 
 
     const parseDate = (dateString: string) => {
@@ -99,6 +112,63 @@ const ViewSchedule: React.FC = () => {
     }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const fetchOrganizations = useCallback(async () => {
+        let formattedData: { value: string, label: string }[] = [];
+        try {
+            const uid = user?.uid;
+
+            if (!uid) {
+                return formattedData;
+            }
+
+            const userRef = doc(db, 'users', uid);
+            const OrganizationCollection = collection(db, 'organizations');
+            const q = query(OrganizationCollection, where('OrganizationMembers', 'array-contains', userRef));
+            const querySnapshot = await getDocs(q);
+
+            const OrganizationData: Organization[] = querySnapshot.docs.map(doc => ({
+                ...doc.data() as Organization,
+                id: doc.id,
+            }));
+
+            formattedData = OrganizationData.map(org => ({
+                value: org.id,
+                label: org.NameOfOrg
+            }));
+
+        } catch (error) {
+            console.log("Error fetching organizations:", error);
+        }
+
+        return formattedData;
+
+    }, [user]);
+
+
+    const fetchBikeBus = useCallback(async () => {
+        let formattedData: { value: string, label: string }[] = [];
+        const uid = user?.uid;
+        if (!uid) {
+            return formattedData;
+        }
+
+        const BikeBusCollection = collection(db, 'bikebusgroups');
+        const q = query(BikeBusCollection, where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
+        const querySnapshot = await getDocs(q);
+
+        const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
+            ...doc.data() as BikeBus,
+            id: doc.id,
+        }));
+
+        formattedData = BikeBusData.map(bus => ({
+            value: bus.id,
+            label: bus.BikeBusName
+        }));
+
+        return formattedData;
+    }, [user]);
 
     useEffect(() => {
         if (user) {
@@ -112,84 +182,131 @@ const ViewSchedule: React.FC = () => {
                 }
             });
         }
-    }, [user]);
+        setSelectedBBOROrgValue(id);
+        const fetchData = async () => {
+            try {
+                const organizationsData = await fetchOrganizations();
+                const bikeBusData = await fetchBikeBus();
+                const combinedData = [...organizationsData, ...bikeBusData];
 
-    useEffect(() => {
-        const fetchDetailedEvents = async () => {
-            const eventsSnapshot = await getDocs(collection(db, "event")); // get all event documents
-            const eventDocs: Event[] = [];
-            // Inside fetchDetailedEvents function
-            console.log('fetchDetailedEvents');
-            console.log(eventsSnapshot);
-            console.log(id);
-            console.log(eventDocs)
-            eventsSnapshot.forEach((docSnapshot) => {
-                const eventData = docSnapshot.data();
-                if (eventData?.groupId && typeof eventData.groupId === 'object') { // only process events related to the current group
-                    console.log('Processing event with groupId:', eventData.groupId.id);
-                    console.log('eventData:', eventData);
-                    const startTimestamp = new Date(eventData.start.seconds * 1000); // Convert seconds to milliseconds
-                    const endTimestamp = new Date(eventData.endTime.seconds * 1000); // Convert seconds to milliseconds
+                setCombinedList(combinedData);
 
-                    console.log('startTimestamp:', startTimestamp);
-                    console.log('endTimestamp:', endTimestamp);
+                const initialValue = id || localStorage.getItem('selectedBBOROrgValue') || (combinedData.length > 0 ? combinedData[0].value : '');
+                setSelectedBBOROrgValue(initialValue);
 
-                    const startTimeHours = startTimestamp.getHours();
-                    const startTimeMinutes = startTimestamp.getMinutes();
-
-                    const startDate = eventData.start.toDate();
-                    const startEventDate = new Date(startDate.setHours(startTimeHours, startTimeMinutes));
-
-                    // Create the end date using the same date as start, but with time from endTime
-                    const endDate = eventData.endTime.toDate();
-                    const endEventDate = new Date(startEventDate);
-                    endEventDate.setHours(endDate.getHours(), endDate.getMinutes());
-
-                    const event: Event = {
-                        start: startEventDate,
-                        end: endEventDate,
-                        title: eventData.title,
-                        route: eventData.route,
-                        schedule: eventData.schedule,
-                        startTime: eventData.startTime,
-                        endTime: eventData.endTime,
-                        BikeBusGroup: eventData.BikeBusGroup,
-                        BikeBusName: eventData.BikeBusName,
-                        BikeBusStopTimes: eventData.BikeBusStopTimes,
-                        BikeBusStops: eventData.BikeBusStops,
-                        StaticMap: eventData.StaticMap,
-                        caboose: eventData.caboose,
-                        captains: eventData.captains,
-                        kids: eventData.kids,
-                        leader: eventData.leader,
-                        members: eventData.members,
-                        sheepdogs: eventData.sheepdogs,
-                        sprinters: eventData.sprinters,
-                        id: docSnapshot.id,
-                        status: eventData.status,
-                        startTimestamp: eventData.startTimestamp,
-                        handCountEvent: eventData.handCountEvent,
-                    };
-                    eventDocs.push(event);
+                if (initialValue) {
+                    localStorage.setItem('selectedBBOROrgValue', initialValue);
                 }
-            });
-
-
-            setEvents(eventDocs);
-            console.log(eventDocs);
-            // check the start and end times for the event
-            const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const startTime = eventDocs?.[0]?.startTimestamp ? new Date(eventDocs?.[0]?.startTimestamp.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-            const endTime = eventDocs?.[0]?.endTime ? new Date(eventDocs?.[0]?.endTime.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
-            setStartTime(startTime);
-            console.log(startTime);
-            setEndTime(endTime);
-            console.log(endTime);
+                console.log('initial value', initialValue);
+                await fetchDetailedEvents(initialValue);
+            } catch (error) {
+                console.error("Error in fetching data:", error);
+            }
         };
-        fetchDetailedEvents();
-    }, [id, timeZone, setModifiedHandCount]);
+        fetchData();
 
-    const handleSelectEvent = (event: Event) => {
+        const fetchAndCombineData = async () => {
+            try {
+                // Fetch organizations and bike bus data
+                const organizationsData = await fetchOrganizations();
+                const bikeBusData = await fetchBikeBus();
+                const combinedData = [...organizationsData, ...bikeBusData];
+
+                // Update the combinedList state
+                setCombinedList(combinedData);
+
+                // Determine the initial value for selectedBBOROrgValue
+                const initialValue = id || localStorage.getItem('selectedBBOROrgValue') || '';
+                setSelectedBBOROrgValue(initialValue);
+
+                // Fetch detailed events based on the selectedBBOROrgValue
+                await fetchDetailedEvents(initialValue);
+            } catch (error) {
+                console.error("Error in fetching data:", error);
+            }
+        }
+
+        const fetchDetailedEvents = async (id: string) => {
+            try {
+                let eventsSnapshot;
+                if (id === "OZrruuBJptp9wkAAVUt7") {
+                    eventsSnapshot = await getDocs(collection(db, "event"));
+                } else {
+                    const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
+                    eventsSnapshot = await getDocs(query(collection(db, "event"), where("BikeBusGroup", "==", bikeBusGroupRef)));
+                }
+                console.log(eventsSnapshot);
+
+                // we'll need to eventually fill the events array with the events from the database (eventsSnapshot)
+                console.log('events', events);
+
+
+                // Helper function to convert a Firestore snapshot to an Event object
+                const convertEventSnapshotToEvent = async (eventData: DocumentData, eventId: string) => {
+
+                    // Convert Timestamps to Dates and return the event object
+                    const startTimestamp = eventData.start.toDate();
+                    // if the eventData.end value does not exist, set it to the endTime
+                    const endTimestamp = eventData.end ? eventData.end.toDate() : endTime;
+
+
+                    // if the DocumentReference for the field is there, Fetch the route, schedule, BikeBusGroup, and groupId data
+                    try {
+                        const scheduleData = await getDoc(eventData?.schedule);
+                        const BikeBusGroupData = await getDoc(eventData?.BikeBusGroup);
+                        const groupIdData = await getDoc(eventData?.groupId);
+
+                        const routeSnapshot = await getDoc(eventData.route);
+                        const routeData = routeSnapshot.data();
+
+                        return {
+                            ...eventData,
+                            start: startTimestamp,
+                            end: endTimestamp,
+                            route: routeData,
+                            schedule: scheduleData.data(),
+                            BikeBusGroup: BikeBusGroupData.data(),
+                            groupId: groupIdData.data(),
+                            id: eventId,
+                        };
+                    } catch (error) {
+                        // skip the document reference fetches but continue to return the event object
+
+                        console.error("Error in fetching data:", error);
+                        return {
+                            ...eventData,
+                            start: startTimestamp,
+                            end: endTimestamp,
+                            id: eventId,
+                        };
+                    }
+                }
+
+                // Convert the events snapshot to an array of events
+                const eventDocs = await Promise.all(eventsSnapshot.docs.map(async (docSnapshot) => {
+                    const eventData = docSnapshot.data();
+                    return await convertEventSnapshotToEvent(eventData, docSnapshot.id);
+                }
+                ));
+
+                const filteredEventDocs = eventDocs.filter((event): event is Event => event !== null);
+                setEvents(filteredEventDocs);
+                console.log('filteredEventDocs', filteredEventDocs);
+                console.log('events', events);
+            }
+            catch (error) {
+                console.error("Error in fetching data:", error);
+            }
+        }
+
+        fetchAndCombineData();
+        console.log('id', id);
+        fetchDetailedEvents(id);
+        console.log('events', events);
+
+    }, [id, timeZone, setModifiedHandCount, user, user?.uid]);
+
+    const handleSelectEvent = async (event: Event) => {
         const eventLink = `/event/${event.id}`;
         setSelectedEvent(event);
         setEvents(events);
@@ -202,19 +319,24 @@ const ViewSchedule: React.FC = () => {
         console.log(eventSummaryLink);
         setEventSummaryLink(eventSummaryLink);
 
-        // check the status of the event
-        const isEventDone = event.status === 'ended' || event.start.getTime() < Date.now() ? true : false;
-        setIsEventDone(isEventDone);
+        if (event.start && event.end) {
+            // Check if event.start is a Firestore Timestamp and convert it
+            const startDateTime = event.start instanceof Timestamp ? event.start.toDate() : event.start;
+            const endDateTime = event.end instanceof Timestamp ? event.end.toDate() : event.end;
 
+            // check the status of the event
+            const isEventDone = event.status === 'ended' || startDateTime.getTime() < Date.now();
+            setIsEventDone(isEventDone);
 
-
-        const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        const startTime = event.start ? event.start.toLocaleString(undefined, dateOptions) : 'Loading...';
-        const endTime = event.end ? event.end.toLocaleString(undefined, dateOptions) : 'Loading...';
-        setStartTime(startTime);
-        setEndTime(endTime);
+            const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const startTime = startDateTime.toLocaleString('en-US', dateOptions);
+            const endTime = endDateTime.toLocaleString('en-US', dateOptions);
+            setStartTime(startTime);
+            setEndTime(endTime);
+        } else {
+            console.error('Invalid event data:', event);
+        }
     };
-
 
 
     const handleEditEvent = () => {
@@ -222,7 +344,6 @@ const ViewSchedule: React.FC = () => {
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
 
-    console.log("username: ", username)
     const isEventLeader = selectedEvent?.leader.includes(username);
 
     const handleHandCountModification = () => {
@@ -247,105 +368,86 @@ const ViewSchedule: React.FC = () => {
         setShowEventModal(false);
     };
 
-
-    console.log("Events: ", events.map(event => ({
-        start: event.start.toString(),
-        end: event.end.toString(),
-        title: event.title,
-    })));
-
-
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
-                <IonCard>
-                    <div style={{ height: 500 }}>
-                        <Calendar
-                            localizer={localizer}
-                            events={events}
-                            startAccessor="start"
-                            endAccessor="end"
-                            defaultView="agenda"
-                            onSelectEvent={handleSelectEvent}
-                            onSelectSlot={(slotInfo) =>
-                                alert(
-                                    `selected slot: \nstart ${slotInfo.start.toLocaleString()} ` +
-                                    `\nend: ${slotInfo.end.toLocaleString()}`
-                                )
-                            }
-                        />
-                    </div>
-                </IonCard>
-                {id !== "OZrruuBJptp9wkAAVUt7" && (
-                    <>
-                        <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
-                        <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
-                    </>
-                )}
-                <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
-                    <IonContent>
-                        <IonCardHeader>
-                            <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
-                        </IonCardHeader>
-                        <IonCardContent>
-                            <IonItem lines="none">
-                                <IonLabel>{startTime} to {endTime}</IonLabel>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Route</IonLabel>
-                                <Link to={`/ViewRoute/${selectedEvent?.route?.id}`}>
-                                    <IonButton>View Route</IonButton>
-                                </Link>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Leader:</IonLabel>
-                                <IonText>{selectedEvent?.leader}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Captains:</IonLabel>
-                                <IonText>{selectedEvent?.captains?.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Sheepdogs:</IonLabel>
-                                <IonText>{selectedEvent?.sheepdogs?.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Sprinters:</IonLabel>
-                                <IonText>{selectedEvent?.sprinters?.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Caboose:</IonLabel>
-                                <IonText>{selectedEvent?.caboose?.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Kids:</IonLabel>
-                                <IonText>{selectedEvent?.kids?.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem lines="none">
-                                <IonLabel>Members:</IonLabel>
-                                <IonText>{selectedEvent?.members?.join(', ')}</IonText>
-                            </IonItem>
-                        </IonCardContent>
-                        {(isEventDone) ?
-                            <>
-                                <IonItem lines="none">
-                                    <IonCol>
-                                        <IonLabel>Hand Count Event:</IonLabel>
-                                        <IonText>{selectedEvent?.handCountEvent}</IonText>
-                                    </IonCol>
-                                    <IonCol>
-                                        <IonLabel>Modify Hand Count:</IonLabel>
-                                        <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
-                                    </IonCol>
-                                </IonItem>
-                                <IonButton onClick={handleHandCountModification}>Modify</IonButton>
-                            </> : null}
-                        {(!isEventDone) ? <IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
-                        {(isEventDone) ? <IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
-                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
-                    </IonContent>
-                </IonModal>
+                <IonGrid>
+                    <IonRow>
+                        <IonCol size="12" className="bulletin-board-selection-title">
+                            <IonCardSubtitle className="bulletin-board-selection-title">
+                                <IonSelect
+                                    value={selectedBBOROrgValue}
+                                    onIonChange={e => {
+                                        const id = e.detail.value;
+                                        setSelectedBBOROrgValue(id);
+                                        history.push(`/ViewSchedule/${id}`);
+                                    }}
+                                >
+                                    {combinedList.map((item, index) => (
+                                        <IonSelectOption key={index} value={item.value}>
+                                            {item.label}
+                                        </IonSelectOption>
+                                    ))}
+                                </IonSelect>
 
+                            </IonCardSubtitle>
+
+                        </IonCol>
+                    </IonRow>
+                    <IonCard>
+                        <div style={{ height: 500 }}>
+                            <Calendar
+                                localizer={localizer}
+                                events={events}
+                                startAccessor="start"
+                                endAccessor="end"
+                                defaultView="agenda"
+                                onSelectEvent={handleSelectEvent}
+                                onSelectSlot={(slotInfo) =>
+                                    alert(
+                                        `selected slot: \nstart ${slotInfo.start.toLocaleString()} ` +
+                                        `\nend: ${slotInfo.end.toLocaleString()}`
+                                    )
+                                }
+                            />
+                        </div>
+                    </IonCard>
+                    {id !== "OZrruuBJptp9wkAAVUt7" && (
+                        <>
+                            <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
+                            <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                        </>
+                    )}
+                    <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
+                        <IonContent>
+                            <IonCardHeader>
+                                <IonCardTitle>{selectedEvent?.BikeBusName}</IonCardTitle>
+                            </IonCardHeader>
+                            <IonCardContent>
+                                <IonItem lines="none">
+                                    <IonLabel>{startTime} to {endTime}</IonLabel>
+                                </IonItem>
+                            </IonCardContent>
+                            {(isEventDone) ?
+                                <>
+                                    <IonItem lines="none">
+                                        <IonCol>
+                                            <IonLabel>Hand Count Event:</IonLabel>
+                                            <IonText>{selectedEvent?.handCountEvent}</IonText>
+                                        </IonCol>
+                                        <IonCol>
+                                            <IonLabel>Modify Hand Count:</IonLabel>
+                                            <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
+                                        </IonCol>
+                                    </IonItem>
+                                    <IonButton onClick={handleHandCountModification}>Modify</IonButton>
+                                </> : null}
+                            {(!isEventDone) ? <IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
+                            {(isEventDone) ? <IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
+                            <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                        </IonContent>
+                    </IonModal>
+                </IonGrid>
             </IonContent >
         </IonPage >
     );
