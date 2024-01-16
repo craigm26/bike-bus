@@ -10,6 +10,8 @@ import { db } from '../../firebaseConfig';
 import * as geofire from 'geofire-common';
 import { useCurrentLocation } from '../CurrentLocationContext';
 import { type } from 'os';
+import Linkify from 'react-linkify';
+
 
 type ChatListScrollProps = {
     avatarElement: JSX.Element;
@@ -185,7 +187,11 @@ const ChatListScroll: React.FC<ChatListScrollProps> = ({
                                     return <div>Video could not be loaded.</div>;
                                 }
                             } else {
-                                return <span>{messageContent}</span>;
+                                return (
+                                    <Linkify>
+                                        <span>{messageContent}</span>
+                                    </Linkify>
+                                );
                             }
                         };
                         

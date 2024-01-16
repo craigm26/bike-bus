@@ -134,7 +134,7 @@ exports.fetchWebpageMetadata = functions.https.onRequest((request, response) => 
   });
 });
 
-exports.sendWeeklySummary = functions.pubsub.schedule("every friday 16:45").timeZone("America/Los_Angeles").onRun(async context => {
+exports.sendWeeklySummary = functions.pubsub.schedule("every sunday 09:00").timeZone("America/Los_Angeles").onRun(async context => {
   try {
     // Fetch articles from the last week
     const oneWeekAgo = new Date();
