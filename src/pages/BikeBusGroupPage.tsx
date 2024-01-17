@@ -116,7 +116,6 @@ const BikeBusGroupPage: React.FC = () => {
 
 
 
-
   const avatarElement = user ? (
     avatarUrl ? (
       <IonAvatar>
@@ -167,7 +166,29 @@ const BikeBusGroupPage: React.FC = () => {
       setUsername(userData?.username || '');
 
 
-      const groupRef = doc(db, 'bikebusgroups', groupId || '');
+
+      const BikeBusCollection = collection(db, 'bikebusgroups');
+      const q = query(BikeBusCollection, where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
+      const querySnapshot = await getDocs(q);
+      const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
+        ...doc.data() as BikeBus,
+        id: doc.id,
+        BikeBusName: doc.data().BikeBusName,
+        BikeBusType: doc.data().BikeBusType,
+        BikeBusDescription: doc.data().BikeBusDescription,
+        BikeBusRoutes: doc.data().BikeBusRoutes,
+        BikeBusMembers: doc.data().BikeBusMembers,
+        BikeBusSchedules: doc.data().BikeBusSchedules,
+        BikeBusLeader: doc.data().BikeBusLeader,
+        BikeBusCreator: doc.data().BikeBusCreator,
+        events: doc.data().events,
+        event: doc.data().event,
+      }));
+      setBikeBus(BikeBusData);
+
+      console.log(BikeBusData);
+
+      const groupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue || '');
       const groupSnapshot = await getDoc(groupRef);
       if (!groupSnapshot.exists()) return;
       const groupData = groupSnapshot.data();
@@ -225,37 +246,37 @@ const BikeBusGroupPage: React.FC = () => {
 
       setIsUserLeader(groupData?.BikeBusLeader.id === uid);
       setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
-  
+
       if (groupData && groupData.events) {
         const eventData = await Promise.all(groupData.events.map(async (eventRef: DocumentReference<unknown, DocumentData>) => {
           const docSnapshot = await getDoc(eventRef);
-          return docSnapshot.exists() ? {...docSnapshot.data() as object, id: docSnapshot.id} : null;
+          return docSnapshot.exists() ? { ...docSnapshot.data() as object, id: docSnapshot.id } : null;
         }));
         setEventsData(eventData.filter(e => e));
       }
 
       // 
     };
-  
+
     fetchData();
-  }, [groupId]);
-  
+  }, [user, selectedBBOROrgValue]);
+
   useEffect(() => {
     // Log to check the structure of eventsData
-  
+
     const validEvents = eventsData.filter(event => event && event.start);
-  
+
     const sortedEvents = validEvents.sort((a, b) => {
       const aStart = typeof a.start === 'string' ? new Date(a.start).getTime() : (a.start?.seconds ?? 0) * 1000;
       const bStart = typeof b.start === 'string' ? new Date(b.start).getTime() : (b.start?.seconds ?? 0) * 1000;
       return aStart - bStart;
     });
-  
+
     const nextEvent = sortedEvents.find(event => {
       const eventStart = typeof event.start === 'string' ? new Date(event.start).getTime() : (event.start?.seconds ?? 0) * 1000;
       return eventStart > new Date().getTime();
     });
-  
+
     if (nextEvent) {
       setNextEventId(nextEvent.id);
       const nextEventTime = typeof nextEvent.start === 'string'
