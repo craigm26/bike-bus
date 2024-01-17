@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText } from '@ionic/react';
-import { getDoc, doc, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, Timestamp, DocumentData, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
@@ -11,6 +11,7 @@ import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
 import QRCode from 'qrcode.react';
 import './BikeBusGroupPage.css';
+import { use } from 'i18next';
 
 
 interface Coordinate {
@@ -36,6 +37,12 @@ interface FirestoreRef {
   path: string;
 }
 
+interface Member {
+  id: string;
+  username?: string;
+  accountType: string;
+  avatarUrl: string;
+}
 
 
 interface BikeBus {
@@ -62,7 +69,6 @@ const BikeBusGroupPage: React.FC = () => {
   const [groupData, setGroupData] = useState<any>(null);
   const [routesData, setRoutesData] = useState<any[]>([]);
   const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
-  const [membersData, setMembersData] = useState<any[]>([]);
   const [leaderData, setLeaderData] = useState<any>('');
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
@@ -92,6 +98,13 @@ const BikeBusGroupPage: React.FC = () => {
   const label = user?.username ? user.username : "anonymous";
   // selectedBBOROrgValue is the same value of groupId. It's used to filter the bulletin boards by the groupId.
   const [selectedBBOROrgValue, setSelectedBBOROrgValue] = useState<string>('');
+  const [nextEventId, setNextEventId] = useState<string>('');
+  const [nextEvent, setNextEvent] = useState<Event | null>(null); // [0] is the next event
+  const [nextTime, setNextTime] = useState<string>('');
+  const [nextEventTime, setNextEventTime] = useState<string>('');
+  const [membersData, setMembersData] = useState<Member[]>([]);
+
+
 
   // now set the selectedBBOROrgValue to the groupId
   useEffect(() => {
@@ -122,112 +135,6 @@ const BikeBusGroupPage: React.FC = () => {
   };
 
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user?.uid) return;
-      const userRef = doc(db, 'users', user.uid);
-      const docSnapshot = await getDoc(userRef);
-      if (!docSnapshot.exists()) return;
-      const userData = docSnapshot.data();
-      setAccountType(userData?.accountType || '');
-      setUsername(userData?.username || '');
-    };
-
-    const fetchGroupData = async (id: string) => {
-      const groupRef = doc(db, 'bikebusgroups', id);
-      const docSnapshot = await getDoc(groupRef);
-      if (!docSnapshot.exists()) return;
-      const groupData = docSnapshot.data();
-      setGroupData(groupData);
-      const uid = user?.uid;
-
-      setIsUserLeader(groupData?.BikeBusLeader.id === uid);
-      setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
-    };
-
-    const handleGroupBasedOnName = async () => {
-      const BikeBusCollection = collection(db, 'bikebusgroups');
-      const q = query(BikeBusCollection, where('BikeBusName', '==', BikeBusName));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        await fetchGroupData(doc.id);
-        history.replace(`/bikebusgrouppage/${doc.id}`);
-      } else {
-      }
-    };
-
-    const validRoutes = ['/bikebusgrouppage/:groupId', '/BikeBusName'];
-    const route = window.location.pathname;
-
-
-    if (BikeBusName) {
-      handleGroupBasedOnName();
-    } else if (groupId) {
-      fetchGroupData(groupId);
-    } else {
-      history.replace('/BikeBusName');
-    }
-
-    fetchUserData();
-
-  }
-
-    , [BikeBusName, groupId, history, user]);
-
-  const fetchBikeBus = useCallback(async () => {
-    const uid = user?.uid;
-    if (!uid) {
-      return;
-    }
-
-    const BikeBusCollection = collection(db, 'bikebusgroups');
-    const q = query(BikeBusCollection, where('BikeBusMembers', 'array-contains', doc(db, 'users', `${user?.uid}`)));
-    const querySnapshot = await getDocs(q);
-    const BikeBusData: BikeBus[] = querySnapshot.docs.map(doc => ({
-      ...doc.data() as BikeBus,
-      id: doc.id,
-      BikeBusName: doc.data().BikeBusName,
-      BikeBusType: doc.data().BikeBusType,
-      BikeBusDescription: doc.data().BikeBusDescription,
-      BikeBusRoutes: doc.data().BikeBusRoutes,
-      BikeBusMembers: doc.data().BikeBusMembers,
-      BikeBusSchedules: doc.data().BikeBusSchedules,
-      BikeBusLeader: doc.data().BikeBusLeader,
-      BikeBusCreator: doc.data().BikeBusCreator,
-      events: doc.data().events,
-      event: doc.data().event,
-    }));
-    setBikeBus(BikeBusData);
-  }, [user]);
-
-  useEffect(() => {
-    fetchBikeBus();
-  }, [fetchBikeBus, user]);
-
-  // take the groupData and get the routes from the references generated from the groupData. 
-  const fetchRoutes = useCallback(async () => {
-    if (groupData?.BikeBusRoutes && Array.isArray(groupData.BikeBusRoutes)) {
-      const routes = groupData.BikeBusRoutes.map((route: any) => {
-        return getDoc(route).then((docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const routeData = docSnapshot.data();
-            // Check if routeData exists before spreading
-            return routeData ? {
-              ...routeData,
-              id: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          } else {
-          }
-        })
-          .catch((error) => {
-          });
-      });
-      const routesData = await Promise.all(routes);
-      setRoutesData(routesData);
-    }
-  }, [groupData]);
-
   const inviteUserByEmail = async () => {
     if (!inviteEmail || !groupId) {
       return;
@@ -246,104 +153,118 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Invite sent!');
   };
 
-
-  const fetchMembers = useCallback(async () => {
-    if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
-      const members = groupData.BikeBusMembers.map((member: any) => {
-        return getDoc(member)
-          .then((docSnapshot) => {
-            if (docSnapshot.exists()) {
-              const memberData = docSnapshot.data();
-              return memberData ? {
-                ...memberData,
-                id: docSnapshot.id,
-              } : { id: docSnapshot.id };
-            } else {
-              // Return a placeholder object if the member document doesn't exist
-              return { id: member.id };
-            }
-          })
-          .catch((error) => {
-            // Handle the error if necessary
-          });
-      });
-      const membersData = await Promise.all(members);
-      setMembersData(membersData);
-      // Fetch usernames and avatars for members
-      const usernamesArray = await Promise.all(
-        membersData.map(async (member) => {
-          if (member && member.username) {
-            const userRefId = member.username.split('/').pop();
-            const userRef = doc(db, 'users', userRefId);
-            const userSnapshot = await getDoc(userRef);
-            if (userSnapshot.exists()) {
-              const userData = userSnapshot.data();
-              return userData?.username;
-            }
-          }
-          return null;
-        })
-      );
-      setMemberUsernames(usernamesArray);
-    }
-  }, [groupData]);
-
-  const fetchLeader = useCallback(async () => {
-    if (groupData?.BikeBusLeader) {
-      const leaderRef = groupData.BikeBusLeader;
-      const leaderSnapshot = await getDoc(leaderRef);
-      if (leaderSnapshot.exists()) {
-        const leaderData = leaderSnapshot.data();
-        setLeaderData(leaderData);
-      }
-    }
-  }
-    , [groupData]);
-
-  const fetchLeaderUsername = useCallback(async () => {
-    if (leaderData?.username) {
-      const leaderUsername = leaderData.username;
-      setLeaderUsername(leaderUsername);
-    }
-  }
-    , [leaderData]);
-
-  const fetchEvent = useCallback(async () => {
-    console.log('groupData', groupData);
-    console.log('groupData?.events', groupData?.events);
-    if (groupData && groupData.events) {
-      const eventIds = groupData.events.map((event: any) => {
-        return getDoc(event)
-          .then((docSnapshot) => {
-            if (docSnapshot.exists()) {
-              const eventData = docSnapshot.data();
-              return eventData ? {
-                ...eventData,
-                id: docSnapshot.id,
-              } : { id: docSnapshot.id };
-            } else {
-              // Return a placeholder object if the event document doesn't exist
-              return { id: event.id };
-            }
-          })
-          .catch((error) => {
-            // Handle the error if necessary
-          });
-      });
-      // Filter out undefined values from the array
-      const filteredEvents = eventIds.filter((event: undefined) => event !== undefined);
-      setEventData(filteredEvents);
-    }
-  }, [groupData]);
-
-
   useEffect(() => {
-    fetchRoutes();
-    fetchLeader();
-    fetchMembers();
-    fetchEvent();
-  }
-    , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvent]);
+
+
+    const fetchData = async () => {
+
+      if (!user?.uid) return;
+      const userRef = doc(db, 'users', user.uid);
+      const docSnapshot = await getDoc(userRef);
+      if (!docSnapshot.exists()) return;
+      const userData = docSnapshot.data();
+      setAccountType(userData?.accountType || '');
+      setUsername(userData?.username || '');
+
+
+      const groupRef = doc(db, 'bikebusgroups', groupId || '');
+      const groupSnapshot = await getDoc(groupRef);
+      if (!groupSnapshot.exists()) return;
+      const groupData = groupSnapshot.data();
+      setGroupData(groupData);
+
+      const uid = user?.uid;
+
+      if (groupData?.BikeBusLeader) {
+        const leaderRef = groupData.BikeBusLeader;
+        const leaderSnapshot = await getDoc(leaderRef);
+        if (leaderSnapshot.exists()) {
+          const leaderData = leaderSnapshot.data();
+          setLeaderData(leaderData);
+        }
+      }
+
+      if (groupData?.BikeBusMembers && Array.isArray(groupData.BikeBusMembers)) {
+        const members = groupData.BikeBusMembers.map((member: any) => {
+          return getDoc(member)
+            .then((docSnapshot) => {
+              if (docSnapshot.exists()) {
+                const memberData = docSnapshot.data();
+                return memberData ? {
+                  ...memberData,
+                  id: docSnapshot.id,
+                } : { id: docSnapshot.id };
+              } else {
+                // Return a placeholder object if the member document doesn't exist
+                return { id: member.id };
+              }
+            })
+            .catch((error) => {
+              // Handle the error if necessary
+            });
+        });
+        const membersData = await Promise.all(members);
+        setMembersData(membersData.filter((member) => member !== void 0) as Member[]);
+        // Fetch usernames and avatars for members
+        const usernamesArray = await Promise.all(
+          membersData.map(async (member) => {
+            if (member && 'username' in member) {
+              const userRefId = typeof member === 'object' && member.username ? (member.username as string).split('/').pop() : null;
+              const userRef = doc(db, 'users', userRefId ?? '');
+              const userSnapshot = await getDoc(userRef);
+              if (userSnapshot.exists()) {
+                const userData = userSnapshot.data();
+                return userData?.username;
+              }
+            }
+            return null;
+          })
+        );
+        setMemberUsernames(usernamesArray);
+      }
+
+      setIsUserLeader(groupData?.BikeBusLeader.id === uid);
+      setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
+  
+      if (groupData && groupData.events) {
+        const eventData = await Promise.all(groupData.events.map(async (eventRef: DocumentReference<unknown, DocumentData>) => {
+          const docSnapshot = await getDoc(eventRef);
+          return docSnapshot.exists() ? {...docSnapshot.data() as object, id: docSnapshot.id} : null;
+        }));
+        setEventsData(eventData.filter(e => e));
+      }
+
+      // 
+    };
+  
+    fetchData();
+  }, [groupId]);
+  
+  useEffect(() => {
+    // Log to check the structure of eventsData
+  
+    const validEvents = eventsData.filter(event => event && event.start);
+  
+    const sortedEvents = validEvents.sort((a, b) => {
+      const aStart = typeof a.start === 'string' ? new Date(a.start).getTime() : (a.start?.seconds ?? 0) * 1000;
+      const bStart = typeof b.start === 'string' ? new Date(b.start).getTime() : (b.start?.seconds ?? 0) * 1000;
+      return aStart - bStart;
+    });
+  
+    const nextEvent = sortedEvents.find(event => {
+      const eventStart = typeof event.start === 'string' ? new Date(event.start).getTime() : (event.start?.seconds ?? 0) * 1000;
+      return eventStart > new Date().getTime();
+    });
+  
+    if (nextEvent) {
+      setNextEventId(nextEvent.id);
+      const nextEventTime = typeof nextEvent.start === 'string'
+        ? new Date(nextEvent.start).toLocaleString()
+        : new Date((nextEvent.start?.seconds ?? 0) * 1000).toLocaleString();
+      setNextEventTime(nextEventTime);
+      setNextEvent(nextEvent);
+    }
+  }, [eventsData]);
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -384,70 +305,6 @@ const BikeBusGroupPage: React.FC = () => {
     await navigator.clipboard.writeText(window.location.href);
     alert('Copied URL to clipboard!');
   };
-
-    // groupData?.events is an array of document references that we need to resolve to get the actual data - it needs to be set to eventData
-  useEffect(() => {
-    if (groupData?.events) {
-      const eventData = groupData.events.map(async (event: any) => {
-        const docSnapshot = await getDoc(event);
-        if (docSnapshot.exists()) {
-          const docData = docSnapshot.data();
-          return docData;
-        }
-      });
-      Promise.all(eventData).then((data) => {
-        setEventData(data);
-      });
-    }
-  }
-    , [groupData]);
-
-
-
-
-  const validEvents = (eventData || []).filter((event: Event) =>
-    event && event.start
-  );
-
-  const convertStartToMilliseconds = (
-    start: string | { seconds: number; nanoseconds: number } | undefined
-  ) => {
-    if (typeof start === 'string') {
-      return new Date(start).getTime();
-    } else if (start) {
-      return start.seconds * 1000;
-    }
-    return 0; // Default value when start is undefined
-  };
-
-  const sortedEvents = validEvents.sort((a: Event, b: Event) => {
-    const aDateMilliseconds = convertStartToMilliseconds(a.start);
-    const bDateMilliseconds = convertStartToMilliseconds(b.start);
-    return aDateMilliseconds - bDateMilliseconds;
-  });
-
-  const nextEvent = sortedEvents.find((event: Event) => {
-    const eventDateMilliseconds = convertStartToMilliseconds(event.start);
-    return eventDateMilliseconds > new Date().getTime();
-  });
-
-  const nextEventId = nextEvent?.id;
-
-  // Options to format the time
-  const dateTimeOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  };
-
-  // make the nextEvent a start time that's nicely formatted for use in the ui 
-  const nextEventTime = nextEvent?.start && (typeof nextEvent.start === 'string'
-    ? new Date(nextEvent.start).toLocaleString(undefined, dateTimeOptions)
-    : new Date(nextEvent.start.seconds * 1000).toLocaleString(undefined, dateTimeOptions));
-
-
 
   return (
     <IonPage className="ion-flex-offset-app">

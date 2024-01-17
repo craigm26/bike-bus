@@ -25,7 +25,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentData, DocumentReference, FieldValue, Timestamp, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentData, DocumentReference, FieldValue, Timestamp, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { Link, useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -248,8 +248,9 @@ const ViewSchedule: React.FC = () => {
 
                     // Convert Timestamps to Dates and return the event object
                     const startTimestamp = eventData.start.toDate();
-                    // if the eventData.end value does not exist, set it to the endTime
-                    const endTimestamp = eventData.end ? eventData.end.toDate() : endTime;
+                    console.log('eventData.end', eventData.end)
+                    // convert the Timestamp to a Date
+                    const endTimestamp = eventData.endTimestamp?.toDate();
 
 
                     // if the DocumentReference for the field is there, Fetch the route, schedule, BikeBusGroup, and groupId data
@@ -352,6 +353,21 @@ const ViewSchedule: React.FC = () => {
     };
 
     const isEventLeader = selectedEvent?.leader.includes(username);
+
+    const deleteEvent = async () => {
+        // first check that the user is the leader of the event
+        if (!isEventLeader) {
+            alert('You are not the leader of this event');
+            return;
+        }
+
+        // Create DocumentReference and Delete from Firestore using v9 syntax
+        const docRef = doc(db, 'event', eventId);
+        await deleteDoc(docRef);
+        setShowEventModal(false);
+        // refresh page
+        window.location.reload();
+    };
 
     const handleHandCountModification = () => {
         // first check that the user is the leader of the event
@@ -478,7 +494,9 @@ const ViewSchedule: React.FC = () => {
                                     </IonItem>
                                     <IonButton onClick={handleHandCountModification}>Modify</IonButton>
                                 </> : null}
+                            {(!isEventDone) ? <IonButton onClick={deleteEvent}>Delete Event</IonButton> : null}
                             {(!isEventDone) ? <IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
+                            {(!isEventDone) ? <IonButton routerLink={`/bikebusgrouppage/${selectedBBOROrgValue}`}>Back to BikeBusGroup</IonButton> : null}
                             {(isEventDone) ? <IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
                             <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
                         </IonContent>

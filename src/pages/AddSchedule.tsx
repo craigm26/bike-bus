@@ -378,6 +378,7 @@ const AddSchedule: React.FC = () => {
         title: BikeBusName,
         BikeBusName: BikeBusName,
         start: start,
+        end: endDate.split('T')[0],
         leader: '',
         members: [],
         kids: [],
@@ -621,9 +622,10 @@ const AddSchedule: React.FC = () => {
               </IonRadioGroup>
             </IonList>
             <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
+            
           </IonModal>
           <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
-            <IonTitle>Recurring Days</IonTitle>
+            <IonTitle>Recurring Day of Week</IonTitle>
             <IonLabel>The default number of occurring events that are created are constrained to 30 days from the selected start date. After the BikeBus is created, additional schedules can be added.</IonLabel>
             <IonItemGroup>
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
