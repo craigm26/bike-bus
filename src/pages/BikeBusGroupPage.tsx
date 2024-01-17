@@ -308,77 +308,30 @@ const BikeBusGroupPage: React.FC = () => {
   }
     , [leaderData]);
 
-
-  // featchSchedules is an array. It should use groupData.BikeBusSchedules to get the schedule document and then make the properties of the schedule document available to the BikeBusGroupPage.tsx
-  const fetchSchedules = useCallback(async () => {
-    if (groupData?.BikeBusSchedules && Array.isArray(groupData.BikeBusSchedules)) {
-      const schedules = groupData.BikeBusSchedules.map((schedule: any) => {
-        return getDoc(schedule).then((docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const schedulesData = docSnapshot.data();
-            // Check if scheduleData exists before spreading
-            return schedulesData ? {
-              ...schedulesData,
-              id: docSnapshot.id,
-              groupId: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          } else {
-          }
-        })
-          .catch((error) => {
-          });
-      }
-      );
-      const schedulesData = await Promise.all(schedules);
-      setSchedulesData(schedulesData);
-    }
-  }
-    , [groupData]);
-
-  // event is a firestore collection with event documents. We should use the bikebusgorupid to lookup the event documents that belong to the bikebusgroup.
-  const fetchEvents = useCallback(async () => {
-    if (groupData && groupData.events) {
-      const events = await Promise.all(
-        groupData.events.map(async (eventRef: any) => {
-          const docSnapshot = await getDoc(eventRef);
-          if (docSnapshot.exists()) {
-            const eventData = docSnapshot.data();
-            return eventData ? {
-              ...eventData,
-              id: docSnapshot.id,
-              groupId: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          }
-          // Return undefined if the doc doesn't exist, so it can be filtered out later
-          return undefined;
-        })
-      );
-      // Filter out undefined values from the array
-      const filteredEvents = events.filter(event => event !== undefined);
-      setEventsData(filteredEvents);
-    }
-  }, [groupData]);
-
-
   const fetchEvent = useCallback(async () => {
-    if (groupData && groupData.event) {
-      const events = await Promise.all(
-        groupData.event.map(async (eventRef: any) => {
-          const docSnapshot = await getDoc(eventRef);
-          if (docSnapshot.exists()) {
-            const eventData = docSnapshot.data();
-            return eventData ? {
-              ...eventData,
-              id: docSnapshot.id,
-              groupId: docSnapshot.id,
-            } : { id: docSnapshot.id };
-          }
-          // Return undefined if the doc doesn't exist, so it can be filtered out later
-          return undefined;
-        })
-      );
+    console.log('groupData', groupData);
+    console.log('groupData?.events', groupData?.events);
+    if (groupData && groupData.events) {
+      const eventIds = groupData.events.map((event: any) => {
+        return getDoc(event)
+          .then((docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const eventData = docSnapshot.data();
+              return eventData ? {
+                ...eventData,
+                id: docSnapshot.id,
+              } : { id: docSnapshot.id };
+            } else {
+              // Return a placeholder object if the event document doesn't exist
+              return { id: event.id };
+            }
+          })
+          .catch((error) => {
+            // Handle the error if necessary
+          });
+      });
       // Filter out undefined values from the array
-      const filteredEvents = events.filter(event => event !== undefined);
+      const filteredEvents = eventIds.filter((event: undefined) => event !== undefined);
       setEventData(filteredEvents);
     }
   }, [groupData]);
@@ -388,12 +341,9 @@ const BikeBusGroupPage: React.FC = () => {
     fetchRoutes();
     fetchLeader();
     fetchMembers();
-    fetchEvents();
     fetchEvent();
-    fetchSchedules();
-
   }
-    , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvents, fetchEvent, fetchSchedules,]);
+    , [fetchRoutes, fetchLeader, fetchMembers, groupData, fetchEvent]);
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -435,18 +385,23 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
-
-  // we need to ensure we have the eventData before we can use it. If it's just one event, that's acceptable too.
+    // groupData?.events is an array of document references that we need to resolve to get the actual data - it needs to be set to eventData
   useEffect(() => {
-    if (eventIds.length > 0) {
-      const eventDocs = eventIds
-        .map((eventId: string) => doc(db, 'events', eventId))
-        .filter(doc => doc !== undefined);
-
-      setEventDocs(eventDocs);
+    if (groupData?.events) {
+      const eventData = groupData.events.map(async (event: any) => {
+        const docSnapshot = await getDoc(event);
+        if (docSnapshot.exists()) {
+          const docData = docSnapshot.data();
+          return docData;
+        }
+      });
+      Promise.all(eventData).then((data) => {
+        setEventData(data);
+      });
     }
   }
-    , [eventIds]);
+    , [groupData]);
+
 
 
 

@@ -254,11 +254,12 @@ const ViewSchedule: React.FC = () => {
 
                     // if the DocumentReference for the field is there, Fetch the route, schedule, BikeBusGroup, and groupId data
                     try {
-                        const scheduleData = await getDoc(eventData?.schedule);
                         const BikeBusGroupData = await getDoc(eventData?.BikeBusGroup);
                         const groupIdData = await getDoc(eventData?.groupId);
 
                         const routeSnapshot = await getDoc(eventData.route);
+                        console.log('routeSnapshot', routeSnapshot);
+                        console.log('eventData.route', eventData.route);
                         const routeData = routeSnapshot.data();
 
                         // get the route id (document id) from the route snapshot
@@ -270,7 +271,6 @@ const ViewSchedule: React.FC = () => {
                             start: startTimestamp,
                             end: endTimestamp,
                             route: routeData,
-                            schedule: scheduleData.data(),
                             BikeBusGroup: BikeBusGroupData.data(),
                             groupId: groupIdData.data(),
                             id: eventId,

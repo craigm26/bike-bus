@@ -125,7 +125,9 @@ const AddSchedule: React.FC = () => {
   // format the startTime in am or pm (not 24 hour time)
   const formattedStartTime = startDateTime ? new Date(startDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
 
-
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
 
   // format the endTime in am or pm (not 24 hour time)
   const formattedEndTime = endTime ? new Date(endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) : '';
@@ -264,11 +266,40 @@ const AddSchedule: React.FC = () => {
     return dates;
   }
 
+  // Helper function to add minutes to a date
+  const addMinutes = (date: Date, minutes: number) => {
+    return new Date(date.getTime() + minutes * 60000);
+  };
+
+  // Convert selected days object to array of day indices
+  const getSelectedDayIndices = (selectedDays: { [key: string]: boolean }) => {
+    console.log('selectedDays:', selectedDays);
+    if (!selectedDays) return [];
+    return Object.entries(selectedDays)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([day]) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day));
+  };
+
+  // Calculate the end time based on the start time and duration
+  const calculateEndTime = (startDateTime: string, duration: number) => {
+    const startDate = new Date(startDateTime);
+    return addMinutes(startDate, duration).toISOString();
+  };
+
 
   // 1. create the schedule with a unique document id in a collection in firestore called "schedules"
   const updateSchedule = async () => {
     // look at default date and time values to see if they are correct
+    console.log('startDateTime:', startDateTime);
+    console.log('endTime:', endTime);
+    console.log('duration:', duration);
+    console.log('selectedDays:', selectedDays);
+    console.log('selectedRouteId:', selectedRouteId);
+    console.log('RouteID:', RouteID);
+    console.log('BikeBusName:', BikeBusName);
 
+    // also get the timezone to save it for the event(s)
+    console.log('timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
     // extract the startDateTime to get the date separated from the time. use that date to set it to the startDate
     const startDate = startDateTime.split('T')[0];
@@ -280,50 +311,24 @@ const AddSchedule: React.FC = () => {
     const startTime = startTimestamp.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
 
     // set the start value of the schedule to be the startTimestamp
-    const start = startTimestamp;
+    //const start = startTimestamp;
 
     const endTimestamp = Timestamp.fromDate(new Date(endTime));
 
-    const end = endTimestamp;
+    //const end = endTimestamp;
 
+    const start = new Date(startDateTime);
+    const end = new Date(endDate);
+    const selectedDayIndices = getSelectedDayIndices(selectedDays);
+    const isRecurring = selectedDayIndices.length > 0;
 
-    const scheduleData = {
-      startTime: startTime,
-      startTimeStamp: startTimestamp,
-      startDateTime: startDateTime,
-      startDate: startDate,
-      endDate: endDate,
-      end: endTimestamp,
-      expectedDuration: duration,
-      endTime: endTime,  // This should be a string, not a Firestore timestamp
-      endTimeStamp: endTimestamp,  // Add this line to store the endTime as a Firestore timestamp
-      isRecurring: isRecurring,
-      selectedDays: selectedDays,
-      scheduleCreator: doc(db, 'users', user.uid),
-    };
+    console.log('start:', start);
+    console.log('end:', end);
+    console.log('selectedDayIndices:', selectedDayIndices);
+    console.log('isRecurring:', isRecurring);
 
-    const scheduleNewRef = await addDoc(collection(db, 'schedules'), scheduleData);
-    const scheduleNewId = scheduleNewRef.id;
-
-    const bikeBusData = {
-      BikeBusSchedules: [doc(db, 'schedules', scheduleNewId)],
-    };
-
-
-
-    // update the existing bikebusgroup document in firestore with the new schedule
     const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
-    await updateDoc(bikeBusGroupRef, {
-      BikeBusSchedules: arrayUnion(doc(db, 'schedules', scheduleNewId)),
-    });
 
-    // add the bikebusgroup document id to the schedule document in firestore
-    const scheduleNewRef2 = doc(db, 'schedules', scheduleNewId);
-    await updateDoc(scheduleNewRef2, {
-      BikeBusGroup: bikeBusGroupRef,
-      // update the schedule name in firestore to match the bikebus name
-      scheduleName: BikeBusName,
-    });
 
     // update the route document in firestore by switching the isBikeBus boolean to true
     const routeRef = doc(db, 'routes', RouteID);
@@ -333,8 +338,6 @@ const AddSchedule: React.FC = () => {
       BikeBusName: BikeBusName,
     });
 
-
-    // create a new events document in the firestore collection "events" for the schedule. This will be used to populate the calendar
     const eventsData = {
       title: BikeBusName,
       BikeBusName: BikeBusName,
@@ -349,7 +352,6 @@ const AddSchedule: React.FC = () => {
       recurring: isRecurring,
       groupId: bikeBusGroupRef,
       selectedDays: selectedDays,
-      schedule: doc(db, 'schedules', scheduleNewId),
       BikeBusGroup: bikeBusGroupRef,
       status: '',
       eventType: 'BikeBus',
@@ -359,26 +361,23 @@ const AddSchedule: React.FC = () => {
       }, []),
     };
 
-    const eventsRef = await addDoc(collection(db, 'events'), eventsData);
-    const eventId = eventsRef.id;
-    console.log('eventId:', eventId);
-
-
-    // add the events document id (as a reference) to the schedule document in firestore
-    const scheduleRef3 = doc(db, 'schedules', scheduleNewId);
-    await updateDoc(scheduleRef3, {
-      events: arrayUnion(doc(db, 'events', eventId)),
-    });
-
     // Create event documents based on eventDays
     const eventDays = getRecurringDates(new Date(startDateTime), new Date(endDate), selectedDays);
     console.log('eventDays:', eventDays);
 
-    for (const day of eventDays) {
-      const eventData = {
+    // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
+    if (!isRecurring) {
+      console.log('isRecurring:', isRecurring);
+      // make a new document the event collection in firestore with the eventsData for the single event
+      const eventsRef = await addDoc(collection(db, 'event'), eventsData);
+      const eventId = eventsRef.id;
+      console.log('eventId:', eventId);
+      // update the event document in firestore with the eventData
+      const eventRef = doc(db, 'event', eventId);
+      await updateDoc(eventRef, {
         title: BikeBusName,
         BikeBusName: BikeBusName,
-        start: day,
+        start: start,
         leader: '',
         members: [],
         kids: [],
@@ -387,117 +386,102 @@ const AddSchedule: React.FC = () => {
         sheepdogs: [],
         caboose: [],
         duration: duration,
+        groupId: bikeBusGroupRef,
         route: doc(db, 'routes', RouteID),
-        startTime: startTimestamp,
+        startTime: startTime,
         startTimestamp: startTimestamp,
-        end: endTimestamp,
+        timezone: selectedTimezone,
         endTime: endTimestamp,
         endTimestamp: endTimestamp,
-        groupId: bikeBusGroupRef,
         BikeBusGroup: bikeBusGroupRef,
         BikeBusStops: [],
         BikeBusStopTimes: [],
-        schedule: doc(db, 'schedules', scheduleNewId),
         status: '',
         eventType: 'BikeBus',
-      };
+      });
 
-      // if the eventsData isRecurring is set to "no", then create a single event document in firestore in the event collection
-      if (!isRecurring) {
-        // make a new document the event collection in firestore with the eventsData for the single event
-        const eventsRef = await addDoc(collection(db, 'event'), eventData);
-        const eventId = eventsRef.id;
-        console.log('eventId:', eventId);
-        // update the event document in firestore with the eventData
-        const eventRef = doc(db, 'event', eventId);
-        await updateDoc(eventRef, {
-          title: BikeBusName,
-          BikeBusName: BikeBusName,
-          start: start,
-          leader: '',
-          members: [],
-          kids: [],
-          sprinters: [],
-          captains: [],
-          sheepdogs: [],
-          caboose: [],
-          duration: duration,
-          groupId: bikeBusGroupRef,
-          route: doc(db, 'routes', RouteID),
-          startTime: startTime,
-          startTimestamp: startTimestamp,
-          endTime: endTimestamp,
-          BikeBusGroup: bikeBusGroupRef,
-          BikeBusStops: [],
-          BikeBusStopTimes: [],
-          schedule: doc(db, 'schedules', scheduleNewId),
-          status: '',
-          eventType: 'BikeBus',
-        });
-        // save the event document id to the bikebusgroup document in firestore as an array of references called event
-        const bikeBusGroupRef2 = bikeBusGroupRef;
-        await updateDoc(bikeBusGroupRef2, {
-          event: arrayUnion(doc(db, 'event', eventId)),
-        });
-      } else {
-        // add each event document id that was just created to the bikebusgroup document in firestore as an array of references called eventIds
-        const eventRef = await getDocs(collection(db, 'event'));
-        const eventIds = eventRef.docs.map((doc) => doc.id);
-        console.log('eventIds:', eventIds);
-      }
+      // add the eventId to the bikebusgroup document in firestore
+      await updateDoc(bikeBusGroupRef, {
+        events: arrayUnion(eventRef),
+      });
+    } else {
+      console.log('isRecurring:', isRecurring);
+      for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+        if (selectedDayIndices.includes(dt.getDay())) {
+          const eventStart = new Date(dt);
+          const eventEnd = addMinutes(eventStart, duration);
+          console.log('eventStart:', eventStart);
+          console.log('eventEnd:', eventEnd);
 
+          // Create an event object
+          const event = {
+            start: Timestamp.fromDate(eventStart),
+            end: Timestamp.fromDate(eventEnd),
+            title: BikeBusName,
+            BikeBusName: BikeBusName,
+            leader: '',
+            members: [],
+            kids: [],
+            sprinters: [],
+            captains: [],
+            sheepdogs: [],
+            caboose: [],
+            duration: duration,
+            groupId: bikeBusGroupRef,
+            route: doc(db, 'routes', RouteID),
+            startTime: Timestamp.fromDate(eventStart),
+            startTimestamp: Timestamp.fromDate(eventStart),
+            endTime: Timestamp.fromDate(eventEnd),
+            endTimestamp: Timestamp.fromDate(eventEnd),
+            timezone: selectedTimezone,
+            BikeBusGroup: bikeBusGroupRef,
+            BikeBusStops: [],
+            BikeBusStopTimes: [],
+            status: '',
+            eventType: 'BikeBus',
+          };
 
-      // Add new event to Firestore and store the returned id
-      const eventDocRef = await addDoc(collection(db, 'event'), eventData);
-      const eventId = eventDocRef.id;
-      eventIds.push(eventId); // Add the new id to the array
+          // Add the event to Firestore
+          const eventRef = await addDoc(collection(db, 'event'), event);
+          const eventId = eventRef.id;
+          console.log('eventId:', eventId);
+          console.log('event:', event);
 
-      if (!isRecurring) {
-        // Add the new event id to the bikebusgroup document
-        const bikeBusGroupRef3 = bikeBusGroupRef
-        await updateDoc(bikeBusGroupRef3, {
-          event: arrayUnion(doc(db, 'event', eventId)),
-        });
-      } else {
-        for (const eventId of eventIds) {
-          const bikeBusGroupRef3 = bikeBusGroupRef;
-          await updateDoc(bikeBusGroupRef3, {
-            event: arrayUnion(doc(db, 'event', eventId)),
+          // add the eventId to the bikebusgroup document in firestore
+          await updateDoc(bikeBusGroupRef, {
+            events: arrayUnion(eventRef),
           });
+
         }
+
       }
     }
 
-    // add the references to the event documents to the bikebusgroup document in firestore
-    const bikeBusGroupRef2 = bikeBusGroupRef
-    await updateDoc(bikeBusGroupRef2, {
-      events: arrayUnion(doc(db, 'events', eventId)),
-    });
 
+    history.push(`/bikebusgrouppage/${id}`);
+  }
 
-
-    history.push(`/bikebusgrouppage/${bikeBusGroupRef.id}`);
-  };
 
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
         <IonItem>
-          <IonLabel>BikeBus Name</IonLabel>
-          <IonLabel>{BikeBusName}</IonLabel>
+          <IonLabel aria-label="Label">BikeBus Name</IonLabel>
+          <IonLabel aria-label="Label">{BikeBusName}</IonLabel>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus Route</IonLabel>
+          <IonLabel aria-label="Label">BikeBus Route</IonLabel>
           {isLoading ? (
-            <IonLabel>Loading...</IonLabel>
+            <IonLabel aria-label="Label">Loading...</IonLabel>
           ) : (
             <IonSelect
+              aria-label="Label"
               value={selectedRouteId}
               placeholder="Select a Route"
               onIonChange={e => {
                 const newSelectedRouteId = e.detail.value;
-                setRouteID(newSelectedRouteId); 
-                setSelectedRouteId(newSelectedRouteId); 
+                setRouteID(newSelectedRouteId);
+                setSelectedRouteId(newSelectedRouteId);
                 const selectedRoute = userRoutes.find(route => route.id === newSelectedRouteId);
                 if (selectedRoute) {
                   setDuration(selectedRoute.duration);
@@ -516,11 +500,11 @@ const AddSchedule: React.FC = () => {
 
         </IonItem>
         <IonItem>
-          <IonLabel>Route Duration</IonLabel>
-          <IonLabel>{duration} Minutes</IonLabel>
+          <IonLabel aria-label="Label">Route Duration</IonLabel>
+          <IonLabel aria-label="Label">{duration} Minutes</IonLabel>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus Start DateTime</IonLabel>
+          <IonLabel aria-label="Label">BikeBus Start DateTime</IonLabel>
           <IonLabel>
             <IonText>{formattedStartDateTime}</IonText>
           </IonLabel>
@@ -550,16 +534,64 @@ const AddSchedule: React.FC = () => {
               }}
 
             ></IonDatetime>
+            <IonLabel aria-label="Label">TimeZone:</IonLabel>
+            <IonSelect
+              value={selectedTimezone}
+              onIonChange={e => setSelectedTimezone(e.detail.value)}
+              placeholder="Select Timezone"
+            >
+              {/* North America */}
+              <IonSelectOption value="America/St_Johns">Newfoundland Time</IonSelectOption>
+              <IonSelectOption value="America/Halifax">Atlantic Time</IonSelectOption>
+              <IonSelectOption value="America/New_York">Eastern Time</IonSelectOption>
+              <IonSelectOption value="America/Chicago">Central Time</IonSelectOption>
+              <IonSelectOption value="America/Denver">Mountain Time</IonSelectOption>
+              <IonSelectOption value="America/Phoenix">Mountain Time (no DST)</IonSelectOption>
+              <IonSelectOption value="America/Los_Angeles">Pacific Time</IonSelectOption>
+              <IonSelectOption value="America/Anchorage">Alaska Time</IonSelectOption>
+              <IonSelectOption value="Pacific/Honolulu">Hawaii Time</IonSelectOption>
+              <IonSelectOption value="America/Adak">Hawaii Time (no DST)</IonSelectOption>
+
+              {/* South America */}
+              <IonSelectOption value="America/Caracas">Venezuela Time</IonSelectOption>
+              <IonSelectOption value="America/Bogota">Colombia Time</IonSelectOption>
+              <IonSelectOption value="America/Sao_Paulo">Brazil Time</IonSelectOption>
+              <IonSelectOption value="America/Argentina/Buenos_Aires">Argentina Time</IonSelectOption>
+
+              {/* Europe */}
+              <IonSelectOption value="Europe/London">Greenwich Mean Time</IonSelectOption>
+              <IonSelectOption value="Europe/Paris">Central European Time</IonSelectOption>
+              <IonSelectOption value="Europe/Istanbul">Eastern European Time</IonSelectOption>
+              <IonSelectOption value="Europe/Moscow">Moscow Time</IonSelectOption>
+
+              {/* Africa */}
+              <IonSelectOption value="Africa/Cairo">Eastern Africa Time</IonSelectOption>
+              <IonSelectOption value="Africa/Johannesburg">South Africa Standard Time</IonSelectOption>
+
+              {/* Asia */}
+              <IonSelectOption value="Asia/Beirut">Arabia Standard Time</IonSelectOption>
+              <IonSelectOption value="Asia/Tokyo">Japan Standard Time</IonSelectOption>
+              <IonSelectOption value="Asia/Kolkata">India Standard Time</IonSelectOption>
+              <IonSelectOption value="Asia/Shanghai">China Standard Time</IonSelectOption>
+
+              {/* Australia/Oceania */}
+              <IonSelectOption value="Australia/Sydney">Australian Eastern Time</IonSelectOption>
+              <IonSelectOption value="Pacific/Auckland">New Zealand Time</IonSelectOption>
+
+              {/* Etcetera */}
+              <IonSelectOption value="UTC">Coordinated Universal Time</IonSelectOption>
+            </IonSelect>
+
             <IonButton onClick={() => setShowStartDateTimeModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus End Time</IonLabel>
-          <IonLabel>{formattedEndTime}</IonLabel>
+          <IonLabel aria-label="Label">BikeBus End Time</IonLabel>
+          <IonLabel aria-label="Label">{formattedEndTime}</IonLabel>
         </IonItem>
         <IonItem>
-          <IonLabel>BikeBus End Date</IonLabel>
-          <IonLabel>{formattedEndDate}</IonLabel>
+          <IonLabel aria-label="Label">BikeBus End Date</IonLabel>
+          <IonLabel aria-label="Label">{formattedEndDate}</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Is Recurring?</IonLabel>
@@ -579,8 +611,8 @@ const AddSchedule: React.FC = () => {
                 }}
               >
                 <IonItem>
-                  <IonLabel>Yes</IonLabel>
-                  <IonRadio value='yes' />
+                  <IonLabel aria-label="Label">Yes</IonLabel>
+                  <IonRadio aria-label="Label" value='yes' />
                 </IonItem>
                 <IonItem>
                   <IonLabel>No</IonLabel>
@@ -596,8 +628,9 @@ const AddSchedule: React.FC = () => {
             <IonItemGroup>
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                 <IonItem key={day}>
-                  <IonLabel>{day}</IonLabel>
+                  <IonLabel aria-label="Label">{day}</IonLabel>
                   <IonCheckbox
+                    aria-label="Label"
                     checked={selectedDays[day]}
                     onIonChange={e => setSelectedDays(prevState => ({ ...prevState, [day]: e.detail.checked }))}
                   />
