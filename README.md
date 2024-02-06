@@ -5,9 +5,7 @@ The [BikeBus app](https://bikebus.app) is software meant to be an one-stop shop 
 ![image](bikebus.app_Map.png)
 ![image](bikebus.app_BulletinBoard.png)
 ![image](bikebus.app_event.png)
-![image](bikebus.app_BikeBus.png)
-
-
+![image](bikebus.app_bikebus.png)
 
 ## Table of Contents
 
