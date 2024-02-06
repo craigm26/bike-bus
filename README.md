@@ -3,7 +3,7 @@
 The [BikeBus app](https://bikebus.app) is software meant to be an one-stop shop for all things related to bicycling in a group. This app should be able to create BikeBus routes, events, and groups. It should also be able to send push notifications to users and allow users to send messages to each other. The app should also be able to show a map of the route and allow users to see the route and the BikeBus group in real time.
 
 ![image](bikebus.app_Map.png)
-![image](bikebus.app_BulletinBoard.png)
+![image](bikebus.app_bulletinboard.png)
 ![image](bikebus.app_event.png)
 ![image](bikebus.app_bikebus.png)
 
