@@ -45,14 +45,19 @@ The BikeBus Database (Firebase) is closed and we are not accepting contributions
 
 Other project documentation that is not in this ReadMe are:
 
+- [GitHub Discussions](https://github.com/craigm26/bike-bus/discussions)
+- [GitHub Project Roadmap](https://github.com/craigm26/bike-bus/projects?query=is%3Aopen)
+- [GitHub Issues](https://github.com/craigm26/bike-bus/issues)
+- [GitHub Pull Requests](https://github.com/craigm26/bike-bus/pulls)
+- [GitHub Wiki](https://github.com/craigm26/bike-bus/wiki)
+- [Google Drive Folder](https://drive.google.com/drive/folders/1-6pKiaPo7Tr8LhZi4tGfG6lsVqIEAzTB?usp=drive_link)
+  - [Charter](https://docs.google.com/document/d/1-tZgPCku1pflzEpZY6bn0FC-ty0YGXyIfHJHWLIdnp4/edit?usp=drive_link)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security](SECURITY.md)
 - [License](LICENSE)
 - [Privacy Policy](PRIVACY_POLICY.md)
 - [Terms of Service](TERMS_OF_SERVICE.md)
-- [Roadmap](ROADMAP.md)
-- [Google Drive Folder](https://drive.google.com/drive/folders/1-6pKiaPo7Tr8LhZi4tGfG6lsVqIEAzTB?usp=drive_link)
-
+  
 ## How
 
 We are using the Ionic Framework to build the app. We are using Firebase for the backend. We are using Google Maps for the mapping and directions. We are using Firebase Hosting for the web app and Firebase Cloud Messaging for the push notifications.
