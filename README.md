@@ -82,8 +82,8 @@ We think technology could help make this a smoother, more fun experience while p
 How you can help:
 
   1. Test the [Production app](https://www.bikebus.app) and [report bugs](https://github.com/craigm26/bike-bus/issues)
-  2. Suggestions for new features should be added to the [Issues](https://github.com/craigm26/bike-bus/issues) list
-  3. Feedback on the [UI/UX](https://github.com/craigm26/bike-bus/issues) is always welcome
+  2. Suggestions for new features should be added to the [Discussions Page](https://github.com/craigm26/bike-bus/discussions) page
+  3. Feedback on the [UI/UX](https://github.com/craigm26/bike-bus/discussions) is always welcome
 
 We are looking for help with the following:
 
