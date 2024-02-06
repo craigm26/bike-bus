@@ -18,7 +18,7 @@ interface NewsArticle {
 admin.initializeApp();
 
 // Set your SendGrid API key
-sgMail.setApiKey("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");
+sgMail.setApiKey("");
 
 exports.sendInviteEmail = functions.firestore
   .document("bikebusgroups/{groupId}")
