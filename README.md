@@ -1,27 +1,15 @@
 # BikeBus
 
-## Safety in Numbers
-
-## MVP goals
-
-   -Set up a school page w/ custom URL (e.g. bikebus.app/<school-name>) and QR code
-   -Design your route map, set the days/dates
-   -Create a “WhatsApp” Group for your Bike Bus
-   -Be able to submit a form with the count of kids
-
 ## What
 
 BikeBus is a term to describe a group of cyclists that is usually guided by a leader. In the US, this has become a growing activity to help children get to school. This app will help BikeBus leaders create a route, invite new members and allow parents to monitor the BikeBus as it makes it way to school.
 
-No ads or selling of user data with PII. Anonymous users and anonymized data wherever possible.  
-
-Chicago Bike Routes: https://data.cityofchicago.org/Transportation/Bike-Routes/3w5d-sru8 
+No ads or selling of user data with PII. Anonymous users and anonymized data wherever possible might be made available to future API. 
 
 ## Why
 
 We think technology could help make this a smoother, more fun experience while promoting cycling and safer streets with data for policy makers on street design.
 
-## Domain bikebus.app
 
 ### Features
 
@@ -35,7 +23,6 @@ We think technology could help make this a smoother, more fun experience while p
 - We're using Ionic Framework to build the app:
 - Ionic Serve to see it locally
 - Then push to Firebase Hosting for production builds by doing "firebase deploy"
-- There's also a TON of potential warnings for iOS/Android builds with me ignoring some linting rules. Should be src\eslint.rc.js to see what's being ignored.
 
 ## To develop
 
@@ -45,7 +32,7 @@ We think technology could help make this a smoother, more fun experience while p
 -npm install
 -ionic develop
 
-## To push to Firebase Hosting (for now this is production)
+## To push to Firebase Hosting (this is Web production)
 
 -firebase deploy
 
@@ -76,7 +63,7 @@ We think technology could help make this a smoother, more fun experience while p
 ```
 
 - commit to github
-- find the commit on appflow and build it while selecting the prod environment destination
+
 # future build commands that will be needed for a cleaner dev / prod build process
 
 ### will have to figure out how to deploy preview builds to ios and android
@@ -97,21 +84,6 @@ We think technology could help make this a smoother, more fun experience while p
 -npx sync android
 -firebase deploy --only hosting:production
 
-
-## How does this app make money?
-
-Freemium model. Free features to help establish a base of users to help grow the app and then premium features to keep it running
-
-Free features:
-
-- BikeBus Leaders can create a route, schedule it and invite users.
-- BikeBus Members and Parents can search for a scheduled route.
-- BikeBus Members and Parents can become a leader by creating a new route.
-
-Premium features (ideas) (Monthly, cost TBD):
-
-- Advanced route planning and customization for BikeBus leaders
-- Real-time ETA predictions and notifications for BikeBus parents
 - Enhanced safety features and alerts for car drivers when a BikeBus is nearby
 - In-app messaging between BikeBus members and leaders (when a parent allows it)
 - Deeper Integration with third-party services such as Google Maps for advanced navigation features
