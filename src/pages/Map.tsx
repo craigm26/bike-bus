@@ -9,14 +9,7 @@ import {
   IonCol,
   IonSegment,
   IonSegmentButton,
-  IonText,
-  IonCardTitle,
-  IonCard,
   IonCardContent,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonSpinner,
-  IonActionSheet,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef } from "react";
 import useAuth from "../useAuth";
@@ -24,16 +17,14 @@ import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, closeOutline, ellipsisVerticalOutline, locateOutline, locationOutline, shareOutline, shareSocialOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, closeOutline, locateOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
 import { InfoBox } from "@react-google-maps/api";
 
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer, KmlLayer } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, KmlLayer, MarkerClusterer } from "@react-google-maps/api";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
-import Drone3DMap from "../components/Mapping/Drone3DMap";
-import SearchBar from "../components/SearchBar";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
@@ -43,9 +34,6 @@ import {
 } from "firebase/firestore";
 // import global.css
 import "../global.css";
-import { create } from "domain";
-import { is } from "date-fns/locale";
-import { Share } from "@capacitor/share";
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -137,6 +125,21 @@ interface BikeBusEvent {
     nanoseconds: number;
   };
 }
+
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+
+  return function(...args: Parameters<T>) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 
 const Map: React.FC = () => {
   const { user, isAnonymous } = useAuth();
@@ -291,6 +294,10 @@ const Map: React.FC = () => {
 
   const [infoBoxPosition, setInfoBoxPosition] = useState<Coordinate | null>(null);
   const [isRouteCreatedByUser, setIsRouteCreatedByUser] = useState(false);
+  const debouncedSetMapZoom = useCallback(debounce((zoom: number) => setMapZoom(zoom), 200), []);
+  const debouncedSetMapCenter = useCallback(debounce((center: { lat: number, lng: number }) => setMapCenter(center), 200), []);
+  
+
 
 
   const toggleKmlChicagoLayer = async () => {
@@ -385,6 +392,8 @@ const Map: React.FC = () => {
           renderMap(userLocation);
           // set mapCenter to userLocation
           setMapCenter(userLocation);
+          // set the map zoom level to 15
+          setMapZoom(15);
         },
         (error) => {
           alert("An error occurred while fetching your location. Please enable location services in your browser settings.");
@@ -400,6 +409,34 @@ const Map: React.FC = () => {
       console.error("Geolocation is not supported by this browser.");
       // return the user to the home page "/"
       history.push("/");
+    }
+  };
+
+  const handleStartMap = () => {
+    console.log("handleStartMap called");
+    console.log("placeName", PlaceName);
+    console.log("PlaceAddress", formattedAddress);
+    onPlaceChangedDestination();
+    if (PlaceName) {
+      setDestinationValue(formattedAddress);
+      setEndPoint({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      setEndPointAdress(formattedAddress);
+      setMapCenter({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      // update the end location to the selected location of PlaceLatitude and PlaceLongitude
+      setSelectedEndLocation({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      // we need to show the getDirections row by setting the state to true
+      setGetLocationClicked(true);
+      renderMap({ lat: PlaceLatitude!, lng: PlaceLongitude! });
+      setShowCreateRouteButton(true);
+      setShowGetDirectionsButton(true);
+      // show the infoWindow of the place
+      setSearchInfoWindow({
+        isOpen: true,
+        content: { PlaceName, PlaceAddress, PlaceLatitude: PlaceLatitude!, PlaceLongitude: PlaceLongitude! },
+        position: { lat: PlaceLatitude!, lng: PlaceLongitude! },
+      });
+    } else {
+      requestLocationPermission();
     }
   };
 
@@ -426,6 +463,8 @@ const Map: React.FC = () => {
       const q = query(bikeBusGroupsRef);
       const querySnapshot = await getDocs(q);
 
+      const BikeBusRoutesData: RouteData[] = [];
+
       let endPointCoordinates: any[] = [];
       let BikeBusNames: string[] = [];
 
@@ -435,21 +474,26 @@ const Map: React.FC = () => {
         BikeBusGroupClusterId.push(doc.id);
       });
 
+      // usually, there's one route for each bikebusgroup, so we can get the BikeBusRoutes from the bikebusgroup document. now, we can set any route - which means any route that has a valid endPoint can be set to a marker
 
-      let BikeBusRoutesRef = querySnapshot.docs.map(doc => doc.data().BikeBusRoutes);
-      BikeBusRoutesRef = BikeBusRoutesRef.flat();
+      // so how do we solve this problem? - I think the best way to solve this problem is to get the BikeBusRoutes from the bikebusgroup document and then get the endPoint from the BikeBusRoutes document
 
-      const BikeBusRoutesData: RouteData[] = [];
+      let BikeBusRoutesRef = querySnapshot.docs.flatMap(doc => doc.data().BikeBusRoutes || []);
+
       for (const routeRef of BikeBusRoutesRef) {
         if (routeRef instanceof DocumentReference) {
           const routeDoc = await getDoc(routeRef);
           const routeData = routeDoc.data() as RouteData;
-          BikeBusRoutesData.push(routeData);
-
-          if (routeData && routeData.endPoint) {
-            endPointCoordinates.push(routeData.endPoint);
+          if (routeData) {
+            BikeBusRoutesData.push(routeData);
+            if (routeData.endPoint) {
+              endPointCoordinates.push(routeData.endPoint);
+              BikeBusNames.push(routeData.routeName || 'Unnamed'); // Assume routeName exists
+            } else {
+              console.error('Missing endPoint for route:', routeData);
+            }
           } else {
-            console.error('routeData.endPoint is undefined');
+            console.error('No data for routeRef:', routeRef);
           }
         }
       }
@@ -1063,7 +1107,11 @@ const Map: React.FC = () => {
     }
   }, [user]);
 
-
+  useEffect(() => {
+    if (id) {
+      handleStartMap();
+    }
+  }, [id]);
   useEffect(() => {
     let timer: string | number | NodeJS.Timeout | undefined;
     if (tripActive && user && openTripId && openTripEventId) {  // Check openTripId and openTripEventId are not undefined
@@ -1790,7 +1838,7 @@ const Map: React.FC = () => {
     const position = route.startPoint;
 
     setInfoWindow({ isOpen: true, content, position });
-    
+
 
 
   };
@@ -2463,11 +2511,62 @@ const Map: React.FC = () => {
                   mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
                 },
                 disableDoubleClickZoom: true,
-                minZoom: 8,
+                minZoom: 3,
                 maxZoom: 18,
                 mapId: 'b75f9f8b8cf9c287',
               }}
+              onUnmount={() => {
+                mapRef.current = null;
+              }}
+              onZoomChanged={() => {
+                if (mapRef.current) {
+                  const newZoom = mapRef.current.getZoom();
+                  debouncedSetMapZoom(newZoom ?? 15);
+                }
+              }}
+              onCenterChanged={() => {
+                if (mapRef.current) {
+                  const newCenter = mapRef.current.getCenter();
+                  if (newCenter) { // Check if newCenter is not undefined
+                    debouncedSetMapCenter({ lat: newCenter.lat(), lng: newCenter.lng() });
+                  }
+                }
+              }}
+              
             >
+              <MarkerClusterer
+                averageCenter
+                enableRetinaIcons
+                gridSize={60}
+                onClick={handleClusterClick}
+              >
+                {(clusterer) => (
+                  <>
+                    {markerData.map((marker, index) => (
+                      <Marker
+                        key={index}
+                        clusterer={clusterer}
+                        position={marker.position}
+                        label={marker.label}
+                        zIndex={9999}
+                        icon={{
+                          url: generateSVGBikeBus(marker.label),
+                          scaledSize: new google.maps.Size(260, 20),
+                        }}
+                        onClick={() => { handleBikeBusRouteClusterClick(marker.BikeBusGroupClusterId) }}
+                      />
+                    ))}
+                  </>
+                )}
+              </MarkerClusterer>
+              {infoWindowClusterBikeBus.isOpen && infoWindowClusterBikeBus.position && (
+                <InfoWindow
+                  position={infoWindowClusterBikeBus.position}
+                  onCloseClick={() => setInfoWindowClusterBikeBus({ isOpen: false, position: null, content: '' })}
+                >
+                  <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                </InfoWindow>
+              )}
               {!id && (
                 <IonGrid className="search-container">
                   <IonRow>
@@ -3064,9 +3163,6 @@ const Map: React.FC = () => {
               </div>
               <Sidebar
                 mapRef={mapRef}
-                toggleKmlChicagoLayer={toggleKmlChicagoLayer}
-                handleChicagoLayerToggle={() => handleChicagoLayerToggle}
-                showKmlChicagoLayer={showKmlChicagoLayer}
                 getLocation={getLocation}
                 bikeBusEnabled={bikeBusEnabled}
                 userRoutesEnabled={userRoutesEnabled}
@@ -3090,16 +3186,6 @@ const Map: React.FC = () => {
                   draggable: false,
                 }}
               />
-              {showKmlChicagoLayer && (
-                <KmlLayer
-                  url={kmlUrl}
-                  options={{
-                    preserveViewport: true,
-                    suppressInfoWindows: false,
-                    clickable: true,
-                  }}
-                />
-              )}
             </GoogleMap>
           </IonRow>
         )

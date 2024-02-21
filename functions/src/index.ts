@@ -6,6 +6,8 @@ import axios from "axios";
 const cors = require("cors")({ origin: true });
 import { format } from "date-fns";
 
+// import the sendgrid api key from the .env.local or production file
+
 
 
 
@@ -17,8 +19,8 @@ interface NewsArticle {
 
 admin.initializeApp();
 
-// Set your SendGrid API key
-sgMail.setApiKey("");
+// Set your SendGrid API key to the value in the .env files
+sgMail.setApiKey("SENDGRID_API_KEY");
 
 exports.sendInviteEmail = functions.firestore
   .document("bikebusgroups/{groupId}")

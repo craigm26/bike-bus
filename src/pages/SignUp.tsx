@@ -1,58 +1,58 @@
 import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonCol, IonContent, IonGrid, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
+import { IonButton, IonCol, IonContent, IonGrid, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { User } from '@firebase/auth';
 import { AuthContext } from '../AuthContext';
+import { personAdd } from 'ionicons/icons';
+import { set } from 'date-fns';
+import { error } from 'console';
 
 
 const Signup: React.FC = () => {
     const { signUpWithEmailAndPassword, signInWithGoogle, checkAndUpdateAccountModes } = useContext(AuthContext);
     const history = useHistory();
     const [email, setEmail] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [isUsernameTaken, setIsUsernameTaken] = useState(false);
-    const [redirectToMap, setRedirectToMap] = useState(false);
+    const [isEmailTaken, setisEmailTaken] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const checkUsername = async (username: string) => {
+    const checkEmail = async (email: string) => {
         const usersCollectionRef = collection(db, 'users');
-        const q = query(usersCollectionRef, where('username', '==', username));
+        const q = query(usersCollectionRef, where('email', '==', email));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            setIsUsernameTaken(false);
+            setisEmailTaken(false);
         } else {
-            setIsUsernameTaken(true);
+            setisEmailTaken(true);
         }
     };
 
-    const handleSignup = async (email: string, password: string, username: string, firstName: string, lastName: string) => {
+
+    const handleSignup = async (email: string, password: string) => {
+        if (isSubmitting) return; // Prevent multiple submissions
+        setIsSubmitting(true);
+        setErrorMessage('');
         try {
-            // Create the user in Firebase Authentication
-            console.log('starting signUpWithEmailAndPassword');
-            console.log('email', email);
-            console.log('password', password);
-            const userCredential = await signUpWithEmailAndPassword(email, password, username, firstName, lastName);
-            const user = userCredential.user;
-            const userRef = doc(db, 'users', user.uid);
-            await setDoc(userRef, {
-                username: username,
-                accountType: 'Member',
-                enabledAccountModes: ['Member'],
-                firstName: firstName,
-                lastName: lastName,
-                email: user.email,
-            });
-            // Redirect the user to the home page
-            history.push('/Map');
+            const userCredential = await signUpWithEmailAndPassword(email, password);
+            if (userCredential?.user) {
+                history.push('/Account');
+            } else {
+                console.error('Error signing up:', userCredential);
+                setErrorMessage('Error signing up. Please try again.');
+            }
         } catch (error) {
             console.error('Error signing up:', error);
+            if ((error as any).code === 'auth/email-already-in-use') {
+                setErrorMessage('Email already in use. Please login or reset your password.');
+            } else {
+                setErrorMessage('An error occurred during sign up. Please try again.');
+            }
         }
     };
 
@@ -63,30 +63,23 @@ const Signup: React.FC = () => {
                 await processUser(userCredential.user);
             }
         } catch (error) {
-    
+
         } finally {
-    
+
         }
-      };
-    
-      const processUser = async (user: User | undefined) => {
+    };
+
+    const processUser = async (user: User | undefined) => {
         if (user) {
-          await checkAndUpdateAccountModes(user.uid);
-          const username = user.displayName;
-          if (username) {
-            history.push('/Map');
-          } else {
-            history.push('/SetUsername');
-          }
+            await checkAndUpdateAccountModes(user.uid);
+            const username = user.displayName;
+            if (username) {
+                history.push('/Account');
+            } else {
+                history.push('/SetUsername');
+            }
         }
-      };
-
-    useEffect(() => {
-        if (redirectToMap) {
-            history.push('/Map');
-        }
-    }, [redirectToMap, history]);
-
+    };
 
     return (
 
@@ -100,63 +93,43 @@ const Signup: React.FC = () => {
                             </IonText>
                         </IonCol>
                     </IonRow>
+                    {errorMessage && (
+                        <IonText color="danger">
+                            <p>{errorMessage}</p>
+                        </IonText>
+                    )}
                     <form onSubmit={e => {
                         e.preventDefault();
-                        handleSignup(email, password, username, firstName, lastName);
+                        handleSignup(email, password);
                     }}>
                         <IonItem>
-                            <IonLabel>Email</IonLabel>
                             <IonInput
+                                aria-label="email"
                                 type="email"
                                 value={email}
+                                required={true}
+                                placeholder="Email Address"
                                 onIonChange={(event) => setEmail(event.detail.value!)}
                             />
                         </IonItem>
 
                         <IonItem>
-                            <IonLabel position="floating">Password</IonLabel>
                             <IonInput
+                                aria-label="password"
                                 type="password"
                                 value={password}
+                                required={true}
+                                placeholder="Password"
                                 onIonChange={(event) => setPassword(event.detail.value!)}
                             />
                         </IonItem>
 
-                        <IonItem>
-                            <IonLabel position="floating">First Name</IonLabel>
-                            <IonInput
-                                type="text"
-                                value={firstName}
-                                onIonChange={(event) => setFirstName(event.detail.value!)}
-                            />
-                        </IonItem>
-
-                        <IonItem>
-                            <IonLabel position="floating">Last Name</IonLabel>
-                            <IonInput
-                                type="text"
-                                value={lastName}
-                                onIonChange={(event) => setLastName(event.detail.value!)}
-                            />
-                        </IonItem>
-
-                        <IonItem>
-                            <IonLabel position="floating">@Username</IonLabel>
-                            <IonInput
-                                type="text"
-                                value={username}
-                                onIonChange={async (event) => {
-                                    setUsername(event.detail.value!)
-                                    await checkUsername(event.detail.value!);
-                                }}
-                            />
-                        </IonItem>
-
-                        <IonButton type="submit" disabled={isUsernameTaken}>
+                        <IonButton type="submit" expand="block" onClick={() => handleSignup(email, password)} disabled={isEmailTaken || isSubmitting}>
+                            <IonIcon slot="start" icon={personAdd} />
                             Sign Up with Email
                         </IonButton>
 
-                        {isUsernameTaken && (
+                        {isEmailTaken && (
                             <IonText color="danger">
                                 <p>Username is already taken.</p>
                             </IonText>
@@ -175,7 +148,7 @@ const Signup: React.FC = () => {
                                         <IonButton
                                             onClick={handleGoogleSubmit}
                                         >
-                                            Create Account with Google
+                                            Sign Up with Google
                                         </IonButton>
                                     </p>
                                 </IonText>

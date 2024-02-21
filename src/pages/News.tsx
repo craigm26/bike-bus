@@ -320,7 +320,7 @@ const News: React.FC = () => {
                         <IonRow className="sticky-row">
                             <IonCol>
                                 <IonLabel>
-                                    <h2 className="article-title">Please log in to submit articles or to subscribe to the weekly newsletter</h2>
+                                    <h2 className="article-title">Please log in to submit articles</h2>
                                 </IonLabel>
                             </IonCol>
                         </IonRow>
@@ -339,11 +339,6 @@ const News: React.FC = () => {
                             <IonCol>
                                 <IonButton onClick={showAlertForNewArticle}>
                                     Add Article
-                                </IonButton>
-                            </IonCol>
-                            <IonCol>
-                                <IonButton onClick={toggleSubscription}>
-                                    {isSubscribed ? 'Unsubscribe from Newsletter' : 'Subscribe to Newsletter'}
                                 </IonButton>
                             </IonCol>
                         </IonRow>

@@ -4,9 +4,6 @@ import { useState } from 'react';
 
 type SidebarProps = {
     mapRef: React.RefObject<google.maps.Map | null>;
-    showKmlChicagoLayer: boolean;
-    toggleKmlChicagoLayer: (enabled: boolean) => void;
-    handleChicagoLayerToggle: (enabled: boolean) => void;
     getLocation: () => void;
     bikeBusEnabled: boolean;
     userRoutesEnabled: boolean;
@@ -21,9 +18,6 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({
     mapRef,
-    showKmlChicagoLayer,
-    toggleKmlChicagoLayer,
-    handleChicagoLayerToggle,
     getLocation,
     bikeBusEnabled,
     setBikeBusEnabled,

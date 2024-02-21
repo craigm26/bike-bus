@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   IonPage,
   IonContent,
@@ -9,12 +9,10 @@ import {
   IonCol,
 } from '@ionic/react';
 import './Welcome.css';
-import { HeaderContext } from '../components/HeaderContext';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
-import { getRedirectResult, User } from '@firebase/auth';
+import { User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
-import SearchBar from "../components/SearchBar";
 import useAuth from '../useAuth';
 
 const Welcome: React.FC = () => {
@@ -54,7 +52,8 @@ const Welcome: React.FC = () => {
         setIsLoggedIn(true);
         setUsername(username);
       } else {
-        history.push('/SetUsername');
+        setIsLoggedIn(true);
+        setUsername('Anonymous Username');
       }
     }
   };

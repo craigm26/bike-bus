@@ -2,6 +2,10 @@ import { createContext, useState, useEffect } from 'react';
 import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from './firebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 
 
 export const AuthContext = createContext();
@@ -32,6 +36,42 @@ export const AuthProvider = ({ children }) => {
       console.error('Error during email/password login:', error.message);
     }
   };
+
+  const signUpWithEmailAndPassword = async (email, password) => {
+    try {
+      let userCredential;
+      if (Capacitor.isNativePlatform()) {
+        // Assuming FirebaseAuthentication plugin handles user creation
+        const result = await FirebaseAuthentication.signUpWithEmailAndPassword({ email, password });
+        userCredential = { user: result.user };
+        // set additional details in Firestore
+        const user = result.user;
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          email: user.email,
+          enabledAccountModes: ['Member'],
+        });
+        setUser(user);
+        return userCredential;
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          email: user.email,
+          enabledAccountModes: ['Member'],
+        });
+        // ensure that the user.uid is the same as the document id
+        setUser(user);
+        return userCredential;
+      }
+    } catch (error) {
+      console.error('Error during email/password sign up:', error.message);
+      throw error; // Ensure errors are propagated for proper handling
+    }
+  };
+  
+
 
   const signInWithGoogle = async () => {
     try {
@@ -74,7 +114,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loadingAuthState, signInWithEmailAndPassword, signInWithGoogle, signInWithApple, signInAnonymously, logout }}>
+    <AuthContext.Provider value={{ user, loadingAuthState, signInWithEmailAndPassword, signInWithGoogle, signInWithApple, signInAnonymously, logout, signUpWithEmailAndPassword }}>
       {children}
     </AuthContext.Provider>
   );

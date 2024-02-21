@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
+import { Route, Redirect, Switch } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
@@ -24,14 +24,14 @@ import Welcome from './pages/Welcome';
 import BikeBusGroupPage from './pages/BikeBusGroupPage';
 import Settings from './pages/Settings';
 import ViewRoute from './pages/ViewRoute';
-import SetUsername from './components/SetUsername';
+import SetUserDetails from './components/SetUserDetails';
 import CreateOrganization from './pages/CreateOrganization';
 import CreateBikeBusGroup from './pages/CreateBikeBusGroup';
 import CreateBikeBusStops from './pages/CreateBikeBusStops';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { logoInstagram, logoTwitter, mailOutline, phonePortraitOutline, shareOutline } from 'ionicons/icons';
+import { shareOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -54,7 +54,6 @@ import News from './pages/News';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
-import { ReactComponent as HouseIcon } from './assets/fontawesome/svgs/regular/house.svg';
 import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/arrow-up-from-bracket.svg';
 import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
 import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
@@ -399,8 +398,8 @@ const App: React.FC = () => {
                         <Route exact path="/News">
                           <News />
                         </Route>
-                        <Route exact path="/SetUsername">
-                          <SetUsername />
+                        <Route exact path="/SetUserDetails">
+                          <SetUserDetails />
                         </Route>
                         <Route exact path="/Map">
                           <MapProvider

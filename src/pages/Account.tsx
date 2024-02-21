@@ -179,8 +179,8 @@ const Account: React.FC = () => {
                         Settings
                         <IonIcon slot="end" icon={cogOutline}></IonIcon>
                     </IonButton>
-                    <IonButton routerLink='/SetUsername'>
-                        Set Username
+                    <IonButton routerLink='/SetUserDetails'>
+                        Update User Details
                     </IonButton>
                     <IonButton routerLink='/DeleteAccount'>
                         Delete Account
