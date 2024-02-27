@@ -19,8 +19,8 @@ interface NewsArticle {
 
 admin.initializeApp();
 
-// Set your SendGrid API key to the value in the .env files
-sgMail.setApiKey("SENDGRID_API_KEY");
+const SENDGRID_API_KEY = functions.config().sendgrid.key;
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 exports.sendInviteEmail = functions.firestore
   .document("bikebusgroups/{groupId}")

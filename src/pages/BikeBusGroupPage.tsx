@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText, IonCardSubtitle } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, Timestamp, DocumentData, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
@@ -12,6 +12,9 @@ import Avatar from '../components/Avatar';
 import QRCode from 'qrcode.react';
 import './BikeBusGroupPage.css';
 import { use } from 'i18next';
+import { star, navigateOutline } from 'ionicons/icons';
+import moment from 'moment-timezone';
+import BulletinBoards from './BulletinBoards';
 
 
 interface Coordinate {
@@ -31,6 +34,7 @@ interface Event {
   startTime: string;
   eventName: string;
   BikeBusGroup: FirestoreRef;
+  timezone: string;
 }
 
 interface FirestoreRef {
@@ -63,7 +67,6 @@ interface BikeBus {
 const BikeBusGroupPage: React.FC = () => {
   const { user } = useAuth();
   const history = useHistory();
-  const { BikeBusName, groupId } = useParams<{ BikeBusName?: string; groupId?: string }>();
   const { avatarUrl } = useAvatar(user?.uid);
   const [accountType, setAccountType] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
@@ -77,7 +80,6 @@ const BikeBusGroupPage: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [eventsData, setEventsData] = useState<Event[]>([]);
   const [messagesData, setMessagesData] = useState<any[]>([]);
-  const [bulletinBoard, setBulletinBoard] = useState<BulletinBoard>({ Messages: [] });
   const [eventIds, setEventIds] = useState<string[]>([]);
   const [eventId, setEventId] = useState<string[]>([]);
   const [eventData, setEventData] = useState<any[]>([]);
@@ -103,6 +105,9 @@ const BikeBusGroupPage: React.FC = () => {
   const [nextTime, setNextTime] = useState<string>('');
   const [nextEventTime, setNextEventTime] = useState<string>('');
   const [membersData, setMembersData] = useState<Member[]>([]);
+  const { groupId } = useParams<{ groupId?: string }>();
+  const [primaryRoute, setPrimaryRoute] = useState<any>(null);
+  const [timezone, setTimezone] = useState<string>('');
 
 
 
@@ -183,10 +188,9 @@ const BikeBusGroupPage: React.FC = () => {
         BikeBusCreator: doc.data().BikeBusCreator,
         events: doc.data().events,
         event: doc.data().event,
+        routes: doc.data().BikeBusRoutes,
       }));
       setBikeBus(BikeBusData);
-
-      console.log(BikeBusData);
 
       const groupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue || '');
       const groupSnapshot = await getDoc(groupRef);
@@ -244,6 +248,22 @@ const BikeBusGroupPage: React.FC = () => {
         setMemberUsernames(usernamesArray);
       }
 
+      if (groupData && groupData.primaryRoute) {
+        const primaryRouteRef = groupData.primaryRoute;
+        const primaryRouteSnap = await getDoc(primaryRouteRef);
+        if (primaryRouteSnap.exists()) {
+          setPrimaryRoute({ id: primaryRouteSnap.id, ...(primaryRouteSnap.data() as object) });
+        }
+      }
+
+      // let's return all of the routes for the bikebus
+      const routes = groupData?.BikeBusRoutes;
+      const routesArray = await Promise.all(routes.map(async (routeRef: DocumentReference<unknown, DocumentData>) => {
+        const docSnapshot = await getDoc(routeRef);
+        return docSnapshot.exists() ? { ...docSnapshot.data() as object, id: docSnapshot.id } : null;
+      }));
+      setRoutesData(routesArray.filter(e => e));
+
       setIsUserLeader(groupData?.BikeBusLeader.id === uid);
       setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
 
@@ -257,6 +277,8 @@ const BikeBusGroupPage: React.FC = () => {
 
       // 
     };
+
+    
 
     fetchData();
   }, [user, selectedBBOROrgValue]);
@@ -283,7 +305,11 @@ const BikeBusGroupPage: React.FC = () => {
         ? new Date(nextEvent.start).toLocaleString()
         : new Date((nextEvent.start?.seconds ?? 0) * 1000).toLocaleString();
       setNextEventTime(nextEventTime);
+      // get the timzone from the user browser
+      setTimezone(moment.tz.guess());
       setNextEvent(nextEvent);
+
+
     }
   }, [eventsData]);
 
@@ -327,6 +353,11 @@ const BikeBusGroupPage: React.FC = () => {
     alert('Copied URL to clipboard!');
   };
 
+  const viewRouteDetails = (routeId: string) => {
+    // Navigate to the route details page
+    history.push(`/ViewRoute/${routeId}`);
+  };
+
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
@@ -356,6 +387,9 @@ const BikeBusGroupPage: React.FC = () => {
                   )}
                   {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
                     <IonButton size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                  }
+                  {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+                    <IonButton size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
                   }
                   <IonButton size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
                 </IonCol>
@@ -453,6 +487,22 @@ const BikeBusGroupPage: React.FC = () => {
               </IonRow>
               <IonRow>
                 <IonCol size="6">
+                  <IonLabel>Primary Route:</IonLabel>
+                </IonCol>
+                <IonCol size="6">
+                {primaryRoute ? (
+                  <>
+                    <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton size="small">View {primaryRoute.routeName}</IonButton></Link>
+                  </>
+                ) : (
+                  <IonText>No primary route set</IonText>
+                )}
+              </IonCol>
+                <IonCol size="6">
+                </IonCol>
+              </IonRow>
+              <IonRow>
+                <IonCol size="6">
                   <IonLabel>Additional Information:</IonLabel>
                 </IonCol>
                 <IonCol size="6">
@@ -475,7 +525,7 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonCol>
                     <IonCol size="6">
                       <Link to={`/Event/${nextEventId}`}>
-                        <IonButton size="small">{nextEventTime}</IonButton>
+                        <IonButton size="small">{nextEventTime} {timezone}</IonButton>
                       </Link>
                     </IonCol>
                   </>
@@ -510,6 +560,24 @@ const BikeBusGroupPage: React.FC = () => {
             </IonGrid>
           </div>
         </IonCardContent>
+          <IonCardHeader>
+            <IonCardSubtitle>Routes</IonCardSubtitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonList>
+              {routesData.map((route, index) => (
+                <IonItem key={index} button onClick={() => viewRouteDetails(route.id)}>
+                  <IonIcon icon={navigateOutline} slot="start" />
+                  <IonLabel>
+                    {route.routeName}
+                    {primaryRoute && primaryRoute.id === route.id && (
+                      <IonIcon icon={star} style={{ marginLeft: '8px', color: 'gold' }} />
+                    )}
+                  </IonLabel>
+                </IonItem>
+              ))}
+            </IonList>
+          </IonCardContent>
       </IonContent >
     </IonPage >
   );

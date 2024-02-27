@@ -23,6 +23,7 @@ import { ref, uploadBytesResumable } from '@firebase/storage';
 import { cogOutline } from 'ionicons/icons';
 import { AuthContext } from '../AuthContext';
 import { useHistory } from 'react-router-dom';
+import moment from 'moment-timezone';
 
 
 interface Group {
@@ -57,7 +58,10 @@ const Account: React.FC = () => {
     const [firstName, setFirstName] = useState<string>('');
     const [lastName, setLastName] = useState<string>('');
     const [username, setUsername] = useState<string>('');
+    const [selectedTimezone, setSelectedTimezone] = useState<string>('');
+    const [selectedLanguage, setSelectedLanguage] = useState<string>('');
     const [accountType, setaccountType] = useState<string>('');
+    const [timezone, setTimezone] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
     const [savedDestinations, setSavedDestinations] = useState<Group[]>([]);
@@ -86,13 +90,18 @@ const Account: React.FC = () => {
                     setEnabledAccountModes(userData.enabledAccountModes || DEFAULT_ACCOUNT_MODES);
                     setBikeBusGroups(userData.BikeBusGroups);
                     setSavedDestinations(userData.savedDestinations);
+                    setSelectedTimezone(userData.timezone || '');
+                    setSelectedLanguage(userData.preferredLanguage || '');
                 }
             }
         };
         fetchUser();
 
-      }, [user, loadingAuthState]);
-        
+    }, [user, loadingAuthState]);
+
+    const currentTimeInTimezone = selectedTimezone ? moment.tz(selectedTimezone).format('YYYY-MM-DD HH:mm:ss z') : '';
+
+
 
     const fetchRoutes = useCallback(async () => {
         // Assuming that your uid is stored in the user.uid
@@ -206,9 +215,18 @@ const Account: React.FC = () => {
                                 <IonLabel position="stacked">Email</IonLabel>
                                 <IonText>{user?.email}</IonText>
                             </IonItem>
+
                             <IonItem>
                                 <IonLabel position="stacked">Account Modes</IonLabel>
                                 <IonText>{enabledAccountModes.join(', ')}</IonText>
+                            </IonItem>
+                            <IonItem>
+                                <IonLabel position="stacked">Time Zone</IonLabel>
+                                <IonText>{selectedTimezone}</IonText>
+                            </IonItem>
+                            <IonItem>
+                                <IonLabel position="stacked">Language</IonLabel>
+                                <IonText>{selectedLanguage}</IonText>
                             </IonItem>
                         </IonList>
                     </IonCardContent>

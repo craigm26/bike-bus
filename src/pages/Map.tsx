@@ -11,7 +11,7 @@ import {
   IonSegmentButton,
   IonCardContent,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useRef } from "react";
+import { useEffect, useCallback, useState, useRef, ReactElement } from "react";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
@@ -21,10 +21,13 @@ import { bicycleOutline, busOutline, carOutline, closeOutline, locateOutline, wa
 import { useTranslation } from 'react-i18next';
 import { InfoBox } from "@react-google-maps/api";
 
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, KmlLayer, MarkerClusterer } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer } from "@react-google-maps/api";
+//import { Wrapper, Status } from "@googlemaps/react-wrapper";
+//import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
+import MapComponent from "../components/Mapping/MapComponent";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
@@ -129,7 +132,7 @@ interface BikeBusEvent {
 function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
 
-  return function(...args: Parameters<T>) {
+  return function (...args: Parameters<T>) {
     const later = () => {
       clearTimeout(timeout);
       func(...args);
@@ -148,7 +151,6 @@ const Map: React.FC = () => {
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
-  const [showMap, setShowMap] = useState(true);
   const [isActiveEvent, setIsActiveEvent] = useState(false);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
   const [username, setUsername] = useState<string>("");
@@ -197,9 +199,7 @@ const Map: React.FC = () => {
     lat: number;
     lng: number;
   };
-  const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [endPoint, setEndPoint] = useState<Point | null>(null);
-  const [currentLocation, setCurrentLocation] = useState({ lat: null, lng: null });
   const [currentLocationRow, setCurrentLocationRow] = useState(true);
   const [destinationRow, setDestinationRow] = useState(false);
   const [directionsRow, setDirectionsRow] = useState(false);
@@ -207,34 +207,26 @@ const Map: React.FC = () => {
   const [travelModeRow, setTravelModeRow] = useState(false);
   const [createRouteRow, setCreateRouteRow] = useState(false);
   const [directionsFetched, setDirectionsFetched] = useState(false);
-  const [showCreateRouteModal, setCreateRouteShowModal] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [description, setDescription] = useState('');
   const [isBikeBus, setIsBikeBus] = useState(false);
   const [bikeBusEnabled, setBikeBusEnabled] = useState(true);
-  const [userRoutesEnabled, setUserRoutesEnabled] = useState(true);
+  const [userRoutesEnabled, setUserRoutesEnabled] = useState(false);
 
 
-  const [routesEnabled, setRoutesEnabled] = useState(false);
-  const [organizationsEnabled, setOrganizationsEnabled] = useState(false);
+
   const [openTripsEnabled, setOpenTripsEnabled] = useState(true);
-  const [eventsEnabled, setEventsEnabled] = useState(false);
   const [bikeBusRoutes, setBikeBusRoutes] = useState<any[]>([]);
   const [openTrips, setOpenTrips] = useState<any[]>([]);
-  const [openTripMarkers, setOpenTripMarkers] = useState<any[]>([]);
-  const [openTripLeaderLocationMarker, setOpenTripLeaderLocationMarker] = useState<any[]>([]);
-  const [endOpenTripButton, setEndOpenTripButton] = useState(false);
+
   const [showEndOpenTripButton, setShowEndOpenTripButton] = useState(false);
   const [openTripId, setOpenTripId] = useState('');
   const [openTripEventId, setOpenTripEventId] = useState('');
   const [tripActive, setTripActive] = useState(false);
   const [openTripRouteId, setOpenTripRouteId] = useState('');
   const [openTripLeaderLocation, setOpenTripLeaderLocation] = useState<{ lat: number, lng: number } | null>(null);
-  const [openTripLeaderAvatarUrl, setOpenTripLeaderAvatarUrl] = useState('');
-  const [pathCoordinatesTrip, setPathCoordinatesTrip] = useState<{ latitude: number; longitude: number; }[]>([]);
-  const [isStartLocationSelected, setIsStartLocationSelected] = useState(false);
+
   const [isEndLocationSelected, setIsEndLocationSelected] = useState(false);
-  const [openTripLeaderUsername, setOpenTripLeaderUsername] = useState('');
   const [joinTripId, setJoinTripId] = useState('');
   const [focusTripId, setFocusTripId] = useState('');
   const [map, setMap] = useState(null);
@@ -242,10 +234,7 @@ const Map: React.FC = () => {
   const [leaderLocation, setLeaderLocation] = useState<Coordinate>({ lat: startGeo.lat, lng: startGeo.lng });
   // the leaderUID is the user.uid of the leader which is stored in the selectedRoute.routeLeader
   const [leaderUID, setLeaderUID] = useState<string>('');
-  const [bikeBusEvents, setBikeBusEvents] = useState<BikeBusEvent[]>([]);
   const isEventLeader = user?.uid === leaderUID;
-  const [isBikeBusEventLeader, setIsBikeBusEventLeader] = useState(false);
-  const [isEventLeaderActive, setIsEventLeaderActive] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
@@ -253,9 +242,6 @@ const Map: React.FC = () => {
   const [leaderAvatarUrl, setLeaderAvatarUrl] = useState<string>('');
   const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
   const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
-  const [permissions, setPermissions] = useState(false);
-  const [myrouteslayer, setMyRoutesLayer] = useState(false);
-  const [myroutes, setMyRoutes] = useState<any[]>([]);
   const [userRoutes, setUserRoutes] = useState<any[]>([]);
   const [BikeBusStopIds, setBikeBusStopIds] = useState<DocumentReference[]>([]);
   const [bikeBusStopData, setBikeBusStopData] = useState<BikeBusStop[]>([]);
@@ -263,12 +249,9 @@ const Map: React.FC = () => {
   const [PlaceName, setPlaceName] = useState('');
   const [formattedAddress, setFormattedAddress] = useState('');
   const [schoolName, setSchoolName] = useState<string | null>(null);
-  const [fetchedSchools, setFetchedSchools] = useState<School[]>([]);
   const [PlaceAddress, setPlaceAddress] = useState('');
-  const [PlaceFormattedAddress, setPlaceFormattedAddress] = useState('');
   const [PlaceLatitude, setPlaceLatitude] = useState<number | null>(null);
   const [PlaceLongitude, setPlaceLongitude] = useState<number | null>(null);
-  const [searchMarkerRef, setSearchMarkerRef] = useState<google.maps.Marker | null>(null);
   const [searchInfoWindow, setSearchInfoWindow] = useState<{ isOpen: boolean, content: { PlaceName: any, PlaceAddress: any, PlaceLatitude: number, PlaceLongitude: number } | null, position: { lat: number, lng: number } | null }>({ isOpen: false, content: null, position: null });
   const [destinationValue, setDestinationValue] = useState('');
   const [destinationInput, setDestinationInput] = useState(PlaceName);
@@ -276,40 +259,11 @@ const Map: React.FC = () => {
   const [BikeBusGroupClusterId, setBikeBusGroupClusterId] = useState<string[]>([]);
   const [position, setPosition] = useState<Coordinate>({ lat: 41.8827, lng: -87.6227 });
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
-  const [showKmlChicagoLayer, setShowKmlChicagoLayer] = useState(false);
-  const [handleChicagoLayerToggle, setHandleChicagoLayerToggle] = useState(false);
-  const [endPointAddress, setEndPointAddress] = useState("");
   const [startPointName, setStartPointName] = useState("");
   const [endPointName, setEndPointName] = useState("");
   const [routeId, setRouteId] = useState('');
   const [shouldShowInfoBoxRoute, setShouldShowInfoBoxRoute] = useState(false);
-  const [shouldShowInfoBoxBikeBus, setShouldShowInfoBoxBikeBus] = useState(false);
-  const [shouldShowInfoBoxOpenTrip, setShouldShowInfoBoxOpenTrip] = useState(false);
-  const [shouldShowInfoBoxUser, setShouldShowInfoBoxUser] = useState(false);
-  const [shouldShowInfoBoxLeader, setShouldShowInfoBoxLeader] = useState(false);
-  const [foundRouteId, setFoundRouteId] = useState('');
-  const [foundBikeBusId, setFoundBikeBusId] = useState('');
   const [infoBoxContent, setInfoBoxContent] = useState(<></>);
-  const [infoBoxContentBikeBus, setInfoBoxContentBikeBus] = useState(<></>);
-
-  const [infoBoxPosition, setInfoBoxPosition] = useState<Coordinate | null>(null);
-  const [isRouteCreatedByUser, setIsRouteCreatedByUser] = useState(false);
-  const debouncedSetMapZoom = useCallback(debounce((zoom: number) => setMapZoom(zoom), 200), []);
-  const debouncedSetMapCenter = useCallback(debounce((center: { lat: number, lng: number }) => setMapCenter(center), 200), []);
-  
-
-
-
-  const toggleKmlChicagoLayer = async () => {
-    console.log('toggleKmlChicagoLayer');
-    setShowKmlChicagoLayer(!showKmlChicagoLayer);
-    console.log('showKmlChicagoLayer', showKmlChicagoLayer);
-  };
-
-  const kmlFileName = 'Chicago Bike Network.kml';
-  const kmlUrl = `${window.location.origin}/${encodeURIComponent(kmlFileName)}`;
-
-
 
 
   interface Trip {
@@ -350,7 +304,6 @@ const Map: React.FC = () => {
 
   const renderMap = (location: React.SetStateAction<{ lat: number; lng: number; }>) => {
     setGetLocationClicked(true);
-    setShowMap(true);
     //setMapCenter(location);
     watchLocation();
     onPlaceChangedStart();
@@ -370,7 +323,6 @@ const Map: React.FC = () => {
       // set a new boolean to true to indicate that the user has given permission
       getLocation();
     } else {
-      console.log("User denied location permission.");
       setUserLocation(userLocationDefault);
       setMapCenter(userLocationDefault);
       renderMap(userLocationDefault);
@@ -379,7 +331,6 @@ const Map: React.FC = () => {
 
 
   const getLocation = () => {
-    console.log("Getting location...");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -387,7 +338,6 @@ const Map: React.FC = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          console.log("userLocation", userLocation);
           setUserLocation(userLocation);
           renderMap(userLocation);
           // set mapCenter to userLocation
@@ -413,9 +363,6 @@ const Map: React.FC = () => {
   };
 
   const handleStartMap = () => {
-    console.log("handleStartMap called");
-    console.log("placeName", PlaceName);
-    console.log("PlaceAddress", formattedAddress);
     onPlaceChangedDestination();
     if (PlaceName) {
       setDestinationValue(formattedAddress);
@@ -544,9 +491,6 @@ const Map: React.FC = () => {
                 setStartGeo(routeData.startPoint);
                 setEndGeo(routeData.endPoint);
                 setBikeBusStopIds(routeData.BikeBusStopIds);
-                console.log('routeData', routeData);
-                console.log('BikeBusStops', bikeBusStops);
-                // since we have an array of BikeBusStopIds, let's iterate through them and get the BikeBusStop data from the bikebusstop document collection
 
               }
             } else {
@@ -576,21 +520,16 @@ const Map: React.FC = () => {
   const endTripAndCheckOutAll = async () => {
     // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
     const tripDataIdDoc = doc(db, 'event', id);
-    console.log('tripDataIdDoc', tripDataIdDoc)
     // get the serverTimeStamp() and set it as eventEndTimeStamp
     const serverTimestamp = () => {
       return new Date();
     };
     await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', eventEndeventEndTimeStamp: serverTimestamp() }, { merge: true });
     const tripSnapshot = await getDoc(tripDataIdDoc);
-    console.log('tripSnapshot', tripSnapshot)
     const tripData = tripSnapshot.data();
-    console.log('tripData', tripData)
     const eventDataId = tripData?.eventId;
-    console.log('eventDataId', eventDataId)
 
     const eventDataIdDoc = doc(db, 'event', eventDataId);
-    console.log('eventDataIdDoc', eventDataIdDoc)
     await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
     await setDoc(tripDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
@@ -637,11 +576,7 @@ const Map: React.FC = () => {
         eventEndEventMembers: arrayUnion(username),
       }, { merge: true });
     }
-    console.log('tripDataIdDoc', tripDataIdDoc)
-    console.log('tripData?.eventEndEventMembers', tripData?.eventEndEventMembers)
-    console.log('tripData?.members', tripData?.members)
-    console.log('username', username)
-    console.log('eventEndeventEndTimeStamp', tripData?.eventEndeventEndTimeStamp)
+
 
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
@@ -651,9 +586,7 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    console.log('handCountEventDoc', handCountEventDoc)
     await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
-    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -703,9 +636,6 @@ const Map: React.FC = () => {
       await setDoc(tripDataIdDoc, {
         eventEndEventMembers: arrayUnion(username),
       }, { merge: true });
-      console.log('members', tripData?.members)
-      console.log('username', username)
-      console.log('eventEndEventMembers', tripData?.eventEndEventMembers)
     }
 
     const eventDataURL = tripDataIdDoc.id;
@@ -715,9 +645,7 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    console.log('handCountEventDoc', handCountEventDoc)
     await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
-    console.log('handCountEvent', handCountEvent)
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
     history.push(eventSummaryUrl);
@@ -726,34 +654,26 @@ const Map: React.FC = () => {
 
   const endBikeBusAndCheckOutAll = async () => {
     const tripDataIdDoc = doc(db, 'event', id);
-    console.log('tripDataIdDoc', tripDataIdDoc)
     // get the serverTimeStamp() and set it as eventEndTimeStamp
     const serverTimestamp = () => {
       return new Date();
     };
     await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', eventEndeventEndTimeStamp: serverTimestamp() }, { merge: true });
     const tripSnapshot = await getDoc(tripDataIdDoc);
-    console.log('tripSnapshot', tripSnapshot)
     const tripData = tripSnapshot.data();
-    console.log('tripData', tripData)
     const eventDataId = tripDataIdDoc;
-    console.log('eventDataId', eventDataId)
 
     const eventDataIdDoc = doc(db, 'event', id);
-    console.log('eventDataIdDoc', eventDataIdDoc)
     await setDoc(eventDataIdDoc, { status: 'ended' }, { merge: true });
     const eventSnapshot = await getDoc(eventDataIdDoc);
-    console.log('eventSnapshot', eventSnapshot)
     await setDoc(tripDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
     }, { merge: true });
-    console.log('tripDataIdDoc', tripDataIdDoc)
 
     // and then check out all the users (by role) in the trip by setting their timestamp to serverTimestamp
     await setDoc(tripDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
     }, { merge: true });
-    console.log('tripDataIdDoc', tripDataIdDoc)
     // find any other of user's ids in the event add them to the appropriate role arrays
     // if the user is a parent in the eventData field parents, add them to the parents array
     if (tripData?.parents) {
@@ -791,11 +711,7 @@ const Map: React.FC = () => {
         eventEndEventMembers: arrayUnion(username),
       }, { merge: true });
     }
-    console.log('tripDataIdDoc', tripDataIdDoc)
-    console.log('tripData?.eventEndEventMembers', tripData?.eventEndEventMembers)
-    console.log('tripData?.members', tripData?.members)
-    console.log('username', username)
-    console.log('eventEndeventEndTimeStamp', tripData?.eventEndeventEndTimeStamp)
+
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
     // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
@@ -804,9 +720,7 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    console.log('handCountEventDoc', handCountEventDoc)
     await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
-    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -821,7 +735,6 @@ const Map: React.FC = () => {
     await setDoc(tripDataIdDoc, {
       JoinedMembersCheckOut: arrayUnion(username)
     }, { merge: true });
-    console.log('tripData', tripData)
 
     if (tripData?.eventCheckInParents.includes(username)) {
       await setDoc(tripDataIdDoc, {
@@ -857,9 +770,6 @@ const Map: React.FC = () => {
       await setDoc(tripDataIdDoc, {
         eventEndEventMembers: arrayUnion(username),
       }, { merge: true });
-      console.log('members', tripData?.members)
-      console.log('username', username)
-      console.log('eventEndEventMembers', tripData?.eventEndEventMembers)
     }
 
     const eventDataURL = tripDataIdDoc.id;
@@ -872,9 +782,7 @@ const Map: React.FC = () => {
     const handCountEvent = parseInt(handCountEventBox!);
     // save the handCountEvent to the database
     const handCountEventDoc = doc(db, 'event', id);
-    console.log('handCountEventDoc', handCountEventDoc)
     await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
-    console.log('handCountEvent', handCountEvent)
     history.push(eventSummaryUrl);
 
   };
@@ -1073,7 +981,6 @@ const Map: React.FC = () => {
           if (openTripLeaderCheck && openTripLeaderCheck.tripLeader === user.uid) {
             // set the value of the openTripId to the id of the open trip
             setOpenTripId(openTripLeaderCheck.id);
-            console.log("openTripId: ", openTripLeaderCheck.id);
             setShowEndOpenTripButton(true);
             setIsActiveEvent(true);
             setTripActive(true);
@@ -1118,7 +1025,6 @@ const Map: React.FC = () => {
       const uid = user.uid;
       const userLocationRef = ref(rtdb, `userLocations/${uid}`);
 
-      console.log(`openTripId: ${openTripId}, openTripEventId: ${openTripEventId}`);  // Log the IDs
 
       timer = setInterval(() => {
         get(userLocationRef).then((snapshot) => {
@@ -1409,10 +1315,7 @@ const Map: React.FC = () => {
           setDestinationValue(newDestinationValue);
           setRouteEndFormattedAddress(newDestinationValue);
           setRouteEndName(`${place.name}` ?? '');
-          console.log(place.formatted_address)
-          console.log(PlaceAddress)
           setRouteEndFormattedAddress(`${place.formatted_address}` ?? { PlaceAddress });
-          console.log('routeEndFormattedAddress', routeEndFormattedAddress);
           setShowCreateRouteButton(true);
           setShowGetDirectionsButton(true);
 
@@ -1468,9 +1371,7 @@ const Map: React.FC = () => {
     window.alert("The blue line on the map allows you to drag the route to change it. After the route is saved by clicking 'Create Route', you can modify the route");
     return new Promise(async (resolve, reject) => {
       if (selectedStartLocation && selectedEndLocation) {
-        console.log("getDirections called");
-        console.log("selectedStartLocation: ", selectedStartLocation);
-        console.log("selectedEndLocation: ", selectedEndLocation);
+
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
         directionsRenderer.setMap(mapRef.current);
@@ -1532,7 +1433,6 @@ const Map: React.FC = () => {
             if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
               const distance = response?.rows[0]?.elements[0]?.distance?.value;
               const duration = response?.rows[0]?.elements[0]?.duration?.value;
-              console.log("Distance Matrix Response: ", response);
 
               setDistance(
                 (Math.round((distance * 0.000621371192) * 100) / 100).toString()
@@ -1611,8 +1511,7 @@ const Map: React.FC = () => {
 
   const createRoute = async () => {
     try {
-      console.log("createRoute called");
-      console.log("selectedEndLocation: ", selectedEndLocation);
+
       const startPointAddress = await getStartPointAddress(selectedStartLocation);
 
       // Check if selectedEndLocation is not null before calling getEndPointAddress
@@ -1631,7 +1530,6 @@ const Map: React.FC = () => {
           lat: coord.latitude,
           lng: coord.longitude,
         }));
-        console.log("convertedPathCoordinates: ", convertedPathCoordinates);
         if (selectedStartLocation && selectedEndLocation) {
           const directionsService = new google.maps.DirectionsService();
           const directionsRenderer = new google.maps.DirectionsRenderer();
@@ -1676,8 +1574,7 @@ const Map: React.FC = () => {
                   pathCoordinates: convertedPathCoordinates,
                   isBikeBus: false,
                 };
-                console.log("Route Data: ", routeData);
-                console.log("routeName: ", routeStartName + " to " + routeEndName);
+
                 handleCreateRouteSubmit("", startPointAddress, endPointAddress);
               } else {
                 console.error("Directions request failed due to " + status);
@@ -1688,8 +1585,6 @@ const Map: React.FC = () => {
       }
     } catch (error) {
       console.log("Error: ", error);
-      console.log("createRoute called");
-      console.log("selectedStartLocation: ", selectedStartLocation);
     }
   };
 
@@ -1703,9 +1598,6 @@ const Map: React.FC = () => {
           lat: coord.latitude,
           lng: coord.longitude,
         }));
-        console.log("convertedPathCoordinates: ", convertedPathCoordinates);
-        console.log("routeType: ", routeType);
-        console.log("user.uid: ", user?.uid);
 
         const routeDocRef = await addDoc(collection(db, 'routes'), {
           routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
@@ -1728,13 +1620,9 @@ const Map: React.FC = () => {
           distance: distance,
         });
 
-
-        console.log("routeName: ", routeStartName + " to " + routeEndName);
-        console.log("routeDocRef: ", routeDocRef);
         // if this is not part of the open trip feature, then redirect to the view route page
         // if route is not "Open Trip", then redirect to the view route page
         // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
-        console.log("Route created with ID: ", routeDocRef.id);
         if (routeType !== "openTrip") {
           // history.push(`/viewroute/${routeDocRef.id}`);
           // show the info box for the route
@@ -1758,7 +1646,6 @@ const Map: React.FC = () => {
 
     // let's get the events for this bikebus group
     const bikeBusGroupId = route.BikeBusGroupId.id;
-    console.log("bikeBusGroupId: ", bikeBusGroupId);
     const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
 
     // get the events for this bikebus group
@@ -1788,7 +1675,6 @@ const Map: React.FC = () => {
         events.push(eventData);
       }
     });
-    console.log("events: ", events);
     // sort the events by start time
     events.sort((a, b) => (a.start.seconds - b.start.seconds));
     // get the next 3 events
@@ -1893,12 +1779,9 @@ const Map: React.FC = () => {
   };
 
   const handleBikeBusRouteClusterClick = async (route: any) => {
-    console.log("Function handleBikeBusRouteClusterClick triggered");
     // let's get the events for this bikebus group
     const bikeBusGroupId = route;
-    console.log("bikeBusGroupId: ", bikeBusGroupId);
     try {
-      console.log("bikebusgroups document id ", route);
 
       const bikeBusGroupId = route;
       const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
@@ -1919,7 +1802,6 @@ const Map: React.FC = () => {
       }
 
       const bikeBusGroupData = bikeBusGroupDoc.data();
-      console.log("bikeBusGroupData: ", bikeBusGroupData);
 
       const events: BikeBusEvent[] = [];
       const currentTime = new Date().getTime();
@@ -1938,7 +1820,6 @@ const Map: React.FC = () => {
         }
       }
       );
-      console.log("events: ", events);
       events.sort((a, b) => (a.start.seconds - b.start.seconds));
       const next3Events = events.slice(0, 3);
 
@@ -1975,25 +1856,19 @@ const Map: React.FC = () => {
       await getDoc(bikeBusGroupData?.BikeBusRoutes[0]).then((doc) => {
         if (doc.exists()) {
           const routeData = doc.data() as RouteData;
-          console.log("routeData: ", routeData);
           // set routeData to the routeData from the document reference
           setEndPoint(routeData?.endPoint);
           setPosition(routeData?.endPoint);
           setMapCenter(routeData?.endPoint);
-          console.log("routeData?.endPoint: ", routeData?.endPoint);
         }
       });
 
       // ensure the position is set before we set the infoWindow
-      console.log("position: ", position);
-      console.log("content: ", content);
+
 
       setInfoWindow({ isOpen: true, content, position });
-      console.log("InfoWindow state: ", infoWindow);
 
-      console.log("Before update: ", infoWindow);
       setInfoWindowClusterBikeBus({ isOpen: true, content, position });
-      console.log("After update: ", infoWindow);
 
     } catch (error) {
       console.log("Error: ", error);
@@ -2002,14 +1877,10 @@ const Map: React.FC = () => {
 
 
   const handleUserRouteClick = async (route: any) => {
-    console.log("handleUserRouteClick called");
-    console.log("route: ", route);
-    console.log("routeName: ", route.routeName);
 
-    console.log("setShouldShowInfoBoxRoute: ", shouldShowInfoBoxRoute)
+
     // set shouldShowInfoBoxRoute to true
     setShouldShowInfoBoxRoute(true);
-    console.log("setShouldShowInfoBoxRoute: ", shouldShowInfoBoxRoute)
 
     if (!route.routeName) {
       console.error("No ID found for route: ", route);
@@ -2024,11 +1895,9 @@ const Map: React.FC = () => {
     let foundRouteId = ''; // Temporary variable to hold the found route ID
     querySnapshot.forEach((docSnapshot) => {
       foundRouteId = docSnapshot.id; // Assuming this gives the correct ID
-      console.log("foundRouteId: ", foundRouteId);
     });
 
     // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRouteData to a variable that we can use to get the route data
-    console.log("foundRouteId: ", foundRouteId);
     // set routeId as foundRouteId
     setRouteId(foundRouteId);
     // let's get the document from the foundRouteId
@@ -2054,17 +1923,6 @@ const Map: React.FC = () => {
       return;
     }
   };
-
-  // do we have route data for the selectedRoute?
-  // if so let's get the routeId data from firebase document collection "routes", we need the routeCreator uid
-  // if the routeCreator uid is the same as the user.uid, then show the edit route button
-  // if the routeCreator uid is not the same as the user.uid, then don't show the edit route button
-  // if the routeCreator uid is the same as the user.uid, then show the delete route button
-  // if the routeCreator uid is not the same as the user.uid, then don't show the delete route button
-  // if the routeCreator uid is the same as the user.uid, then show the create bikebus button
-
-
-
 
   const createInfoBoxContentRoute = async (routeName: string, routeId: string) => {
 
@@ -2121,7 +1979,6 @@ const Map: React.FC = () => {
   };
 
   const deleteRoute = async (routeId: string) => {
-    console.log("deleteRoute called");
     const routeRef = doc(db, 'routes', routeId);
     await deleteDoc(routeRef);
     alert('Route Deleted');
@@ -2155,7 +2012,6 @@ const Map: React.FC = () => {
   // create a function to handle the click "Focus on Leader" - this will center the map on the leader's location
 
   const handleClusterClick = (cluster: any) => {
-    console.log("handleClusterClick called");
     // when the cluster is clicked, we want to zoom in on the cluster
     // get the cluster's center
     const clusterCenter = cluster.center;
@@ -2163,17 +2019,14 @@ const Map: React.FC = () => {
     setMapCenter(clusterCenter);
     // set the mapZoom to 13
     setMapZoom(13);
-    console.log("clusterCenter: ", clusterCenter);
   };
 
 
   const handleCloseOpenTripClick = () => {
-    console.log("handleCloseOpenTripClick called");
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
   };
 
   const handleCloseClick = () => {
-    console.log("handleCloseClick called");
     setInfoWindow({ isOpen: false, content: '', position: null });
   };
 
@@ -2212,11 +2065,9 @@ const Map: React.FC = () => {
         pathCoordinatesTrip: [''],
       })
         .then((docRefPromise) => {
-          console.log("Trip Document written with ID: ", docRefPromise.id);
           // set docRef.id to a new const so that we can use it throughout the rest of the code
           const openTripId = docRefPromise.id;
           setOpenTripId(openTripId);
-          console.log("openTripId: ", openTripId);
           // let's get the new document id and set it to the user's trips array of firestore reference documents in the firestore document collection "users"
           const userRef = doc(db, "users", user.uid);
           updateDoc(userRef, {
@@ -2237,7 +2088,6 @@ const Map: React.FC = () => {
         lat: coord.latitude,
         lng: coord.longitude,
       }));
-      console.log("routeType: ", routeType);
       const routesRef = collection(db, "routes");
       const docRouteRef = await addDoc(routesRef, {
         routeName: "Open Trip to " + routeEndName,
@@ -2265,13 +2115,10 @@ const Map: React.FC = () => {
         pathCoordinatesTrip: [''],
       })
         .then((docRouteRef) => {
-          console.log("Document written with ID: ", docRouteRef.id);
           // set the docRef.id to a new const so that we can use it throughout the rest of the code
           const openTripRouteId = docRouteRef.id;
           setOpenTripRouteId(openTripRouteId);
-          console.log("openTripRouteId: ", openTripRouteId);
-          console.log("docRouteRef: ", docRouteRef);
-          console.log("openTripId: ", openTripId)
+
           // now let's update the trip document with the routeId in the route field of the trip document
           const eventDocRef = doc(db, "event", openTripRouteId);
           updateDoc(eventDocRef, {
@@ -2281,7 +2128,6 @@ const Map: React.FC = () => {
         .catch((error) => {
           console.error("Error adding document: ", error);
         });
-      console.log("docRef: ", docRouteRef)
       return docRouteRef;
     }
   };
@@ -2304,13 +2150,10 @@ const Map: React.FC = () => {
 
         // use the createTripDocument function to create a new trip document in the trip document collection "trips"
         const docTripRef = await createTripDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-        console.log("docTripRef: ", docTripRef);
 
       } catch (error) {
-        console.log("Error: ", error);
       }
       const routesRef = await createRouteDocument(user, selectedStartLocation, selectedEndLocation, pathCoordinates);
-      console.log("routesRef: ", routesRef);
       setTripActive(true);
       setShowEndOpenTripButton(true);
 
@@ -2319,13 +2162,9 @@ const Map: React.FC = () => {
 
   async function endOpenTrip() {
     try {
-      console.log(`user: ${user}, openTripId: ${openTripId}`);
       if (user && openTripId) {
         const eventDocRef = doc(db, "event", openTripId); // Change this line to use openTripId
-        console.log(`Updating document with reference: ${eventDocRef.path}`);
 
-        console.log("openTripLeaderLocation: ", openTripLeaderLocation);
-        console.log("openTripId: ", openTripId); // Log openTripId
 
         if (userLocation) {
           const updateData = {
@@ -2333,16 +2172,13 @@ const Map: React.FC = () => {
             endLocation: userLocation,
             endTime: new Date(),
           };
-          console.log("Update data: ", updateData);
 
           const eventUpdateResult = await updateDoc(eventDocRef, updateData); // Update the document in the event collection
-          console.log("Event Update Result: ", eventUpdateResult);
         }
       }
       setIsActiveEvent(false);
       setTripActive(false);
       setShowEndOpenTripButton(false);
-      console.log("openTripId: ", openTripId)
       // take the user to the eventsummary page - use the event doc id to get the event doc and then pass the event doc to the eventsummary page
       history.push({
         pathname: `/EventSummary/${openTripId}`,
@@ -2426,24 +2262,6 @@ const Map: React.FC = () => {
     }
   };
 
-
-  const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
-    const schoolName = place.name;
-    setSchoolName(schoolName || null);
-  };
-
-  const handlePhotos = (photos: string) => {
-    return (
-      <IonGrid>
-        <IonRow>
-          <IonCol>
-            <img src={photos} alt="school photo" />
-          </IonCol>
-        </IonRow>
-      </IonGrid>
-    );
-  }
-
   // if the setPlaceLocation has changed, run onPlaceChangedDestination function
   useEffect(() => {
     if (PlaceLocation) {
@@ -2478,14 +2296,12 @@ const Map: React.FC = () => {
     }
   }, [isLoaded, loadError]);
 
-
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-        {showMap && (
           <IonRow className="map-base">
             <GoogleMap
               onLoad={(map) => {
@@ -2518,47 +2334,7 @@ const Map: React.FC = () => {
               onUnmount={() => {
                 mapRef.current = null;
               }}
-              onZoomChanged={() => {
-                if (mapRef.current) {
-                  const newZoom = mapRef.current.getZoom();
-                  debouncedSetMapZoom(newZoom ?? 15);
-                }
-              }}
-              onCenterChanged={() => {
-                if (mapRef.current) {
-                  const newCenter = mapRef.current.getCenter();
-                  if (newCenter) { // Check if newCenter is not undefined
-                    debouncedSetMapCenter({ lat: newCenter.lat(), lng: newCenter.lng() });
-                  }
-                }
-              }}
-              
             >
-              <MarkerClusterer
-                averageCenter
-                enableRetinaIcons
-                gridSize={60}
-                onClick={handleClusterClick}
-              >
-                {(clusterer) => (
-                  <>
-                    {markerData.map((marker, index) => (
-                      <Marker
-                        key={index}
-                        clusterer={clusterer}
-                        position={marker.position}
-                        label={marker.label}
-                        zIndex={9999}
-                        icon={{
-                          url: generateSVGBikeBus(marker.label),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => { handleBikeBusRouteClusterClick(marker.BikeBusGroupClusterId) }}
-                      />
-                    ))}
-                  </>
-                )}
-              </MarkerClusterer>
               {infoWindowClusterBikeBus.isOpen && infoWindowClusterBikeBus.position && (
                 <InfoWindow
                   position={infoWindowClusterBikeBus.position}
@@ -2747,19 +2523,6 @@ const Map: React.FC = () => {
                         <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
                       </InfoWindow>
                     )}
-
-                    {route.startPoint && (
-                      <Marker
-                        key={`${keyPrefix}-start`}
-                        label={`${route.BikeBusName}`}
-                        position={route.startPoint}
-                        icon={{
-                          url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => { handleBikeBusRouteClick(route) }}
-                      />
-                    )}
                     {route.endPoint && (
                       <Marker
                         key={`${keyPrefix}-end`}
@@ -2848,19 +2611,6 @@ const Map: React.FC = () => {
                         <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
                       </InfoWindow>
                     )}
-
-                    {route.startPoint && (
-                      <Marker
-                        key={`${keyPrefix}-start`}
-                        label={`${route.routeName}`}
-                        position={route.startPoint}
-                        icon={{
-                          url: generateSVGUserRoutes(route.routeName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => handleUserRouteClick(route)}
-                      />
-                    )}
                     {route.endPoint && (
                       <Marker
                         key={`${keyPrefix}-end`}
@@ -2943,12 +2693,7 @@ const Map: React.FC = () => {
                     {route.startPoint && (
                       <Marker
                         key={`${keyPrefix}-start`}
-                        label={`${route.BikeBusName}`}
                         position={route.startPoint}
-                        icon={{
-                          url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
                         onClick={() => { handleBikeBusRouteClick(route) }}
                       />
                     )}
@@ -3188,8 +2933,6 @@ const Map: React.FC = () => {
               />
             </GoogleMap>
           </IonRow>
-        )
-        }
       </IonContent >
     </IonPage >
   );

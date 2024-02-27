@@ -137,9 +137,6 @@ const EditBikeBus: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
-                <IonTitle>
-                    Editing BikeBus
-                </IonTitle>
                 <IonList>
                     <IonItem>
                         <IonLabel>BikeBus Name:</IonLabel>

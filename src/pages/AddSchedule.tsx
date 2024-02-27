@@ -24,12 +24,11 @@ import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { collection, doc, getDocs, getDoc, addDoc, Timestamp, arrayUnion, updateDoc, query, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { Route, useHistory, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import { momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-const localizer = momentLocalizer(moment);
 import './AddSchedule.css';
+import moment from 'moment-timezone';
 
 type Event = {
   start: Date,
@@ -82,7 +81,7 @@ const AddSchedule: React.FC = () => {
   const eventIds: string[] = [];
   const { id } = useParams<{ id: string }>();
   const [endTime, setEndTime] = useState<string>('07:00');
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(''); // <-- Add this state if it doesn't exist
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(''); 
 
 
 
@@ -505,37 +504,13 @@ const AddSchedule: React.FC = () => {
           <IonLabel aria-label="Label">{duration} Minutes</IonLabel>
         </IonItem>
         <IonItem>
-          <IonLabel aria-label="Label">BikeBus Start DateTime</IonLabel>
+          <IonLabel aria-label="Label">Start Date at my location Time</IonLabel>
           <IonLabel>
             <IonText>{formattedStartDateTime}</IonText>
           </IonLabel>
           <IonButton onClick={() => setShowStartDateTimeModal(true)}>Select Start DateTime</IonButton>
           <IonModal isOpen={showStartDateTimeModal} onDidDismiss={() => setShowStartDateTimeModal(false)}>
-            <IonDatetime
-              presentation='date-time'
-              onIonChange={e => {
-                if (typeof e.detail.value === 'string') {
-                  const startDateTime = new Date(e.detail.value);
-                  console.log('Start DateTime selected', startDateTime);
-                  setStartDateTime(startDateTime.toISOString());
-                  setEndTime(startDateTime.toISOString());
-                  console.log('duration:', duration)
-
-                  // Define addDuration here
-                  const addDuration = (duration: number) => {
-                    const endTimeDate = new Date(startDateTime);
-                    duration = Math.ceil(duration);
-                    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
-                    const endTime = endTimeDate.toString();
-                    setEndTime(endTime);
-                  };
-
-                  addDuration(duration);
-                }
-              }}
-
-            ></IonDatetime>
-            <IonLabel aria-label="Label">TimeZone:</IonLabel>
+          <IonLabel aria-label="Label">TimeZone:</IonLabel>
             <IonSelect
               value={selectedTimezone}
               onIonChange={e => setSelectedTimezone(e.detail.value)}
@@ -579,20 +554,53 @@ const AddSchedule: React.FC = () => {
               <IonSelectOption value="Australia/Sydney">Australian Eastern Time</IonSelectOption>
               <IonSelectOption value="Pacific/Auckland">New Zealand Time</IonSelectOption>
 
-              {/* Etcetera */}
-              <IonSelectOption value="UTC">Coordinated Universal Time</IonSelectOption>
+              {/* Add an option for users to manually insert the UTC + n hour */}
+              <IonSelectOption value="UTC">Coordinated Universal Time </IonSelectOption>
+
             </IonSelect>
+            <IonDatetime
+              presentation='date-time'
+              onIonChange={e => {
+                if (typeof e.detail.value === 'string') {
+                  let localTime = moment.tz(e.detail.value, selectedTimezone);
+                  let utcTime = localTime.utc().format();
+                  console.log('Local Time:', localTime.format());
+                  console.log('UTC Time:', utcTime);
+                  setStartDateTime(utcTime); 
+                  console.log('Start DateTime selected', startDateTime);
+                  setEndTime(startDateTime.toString());
+                  console.log('duration:', duration)
+
+                  // Define addDuration here
+                  const addDuration = (duration: number) => {
+                    const endTimeDate = new Date(localTime.format() as string);
+                    duration = Math.ceil(duration);
+                    endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
+                    const endTime = endTimeDate.toString();
+                    setEndTime(endTime);
+                  };
+
+                  addDuration(duration);
+                }
+              }}
+
+            ></IonDatetime>
+            <IonText>{startDateTime} {selectedTimezone}</IonText>
 
             <IonButton onClick={() => setShowStartDateTimeModal(false)}>Done</IonButton>
           </IonModal>
         </IonItem>
         <IonItem>
-          <IonLabel aria-label="Label">BikeBus End Time</IonLabel>
+          <IonLabel aria-label="Label">End Time</IonLabel>
           <IonLabel aria-label="Label">{formattedEndTime}</IonLabel>
         </IonItem>
         <IonItem>
-          <IonLabel aria-label="Label">BikeBus End Date</IonLabel>
+          <IonLabel aria-label="Label">End Date</IonLabel>
           <IonLabel aria-label="Label">{formattedEndDate}</IonLabel>
+        </IonItem>
+        <IonItem>
+          <IonLabel aria-label="Label">Time Zone</IonLabel>
+          <IonLabel aria-label="Label">{selectedTimezone}</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Is Recurring?</IonLabel>
@@ -645,7 +653,7 @@ const AddSchedule: React.FC = () => {
 
         <IonItem>
           <IonButton onClick={updateSchedule}>Save</IonButton>
-          <IonButton routerLink={`/viewschedule/${id}`}>View Schedule</IonButton>
+          <IonButton routerLink={`/viewschedule/${id}`}>View Schedules</IonButton>
           <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
         </IonItem>
       </IonContent>

@@ -33,6 +33,7 @@ import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import QRCode from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
+import { time } from 'console';
 
 
 
@@ -507,8 +508,8 @@ const Event: React.FC = () => {
             eventParents: eventData?.parents || [],
             eventSheepdogs: eventData?.sheepdogs || [],
             eventSprinters: eventData?.sprinters || [],
-            eventStartTimestamp: eventData?.startTimestamp || '',
-            eventEndTimestamp: eventData?.endTime || null,
+            eventstartTimeStamp: eventData?.startTimeStamp || '',
+            eventEndTimeStamp: eventData?.endTime || null,
             eventStatus: eventData?.status || 'active',
             eventBikeBusName: eventData?.BikeBusName || '',
             eventRoute: eventData?.route || '',
@@ -530,8 +531,8 @@ const Event: React.FC = () => {
             eventCheckInSheepdogsTimeStamp: '',
             eventCheckInSprinters: '',
             eventCheckInSprintersTimeStamp: '',
-            // for the eventCheckInStartTimestamp, we're going to use the time when the leader clicked on the "Start event" button
-            eventCheckInStartTimestamp: serverTimestamp(),
+            // for the eventCheckInstartTimeStamp, we're going to use the time when the leader clicked on the "Start event" button
+            eventCheckInstartTimeStamp: serverTimestamp(),
             // for the eventCheckInEndTimestamp, we're going to use the time when the leader clicked on the "End event" button
             eventCheckInEndTimestamp: '',
             eventCheckInStatus: '',
@@ -573,28 +574,8 @@ const Event: React.FC = () => {
         // doc.data() will be undefined in this case
       }
     }
-  }, [id, eventData?.leader, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimestamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, user?.uid, history]);
+  }, [id, eventData?.leader, eventData?.members, eventData?.caboose, eventData?.captains, eventData?.kids, eventData?.parents, eventData?.sheepdogs, eventData?.sprinters, eventData?.startTimeStamp, eventData?.endTime, eventData?.status, eventData?.BikeBusName, eventData?.route, eventData?.groupId, user?.uid, history]);
 
-
-
-  const togglePopover = (e: any) => {
-    setPopoverEvent(e.nativeEvent);
-    setShowPopover((prevState) => !prevState);
-  };
-
-  const avatarElement = user ? (
-    avatarUrl ? (
-      <IonAvatar>
-        <Avatar uid={user.uid} size="extrasmall" />
-      </IonAvatar>
-    ) : (
-      <IonIcon icon={personCircleOutline} />
-    )
-  ) : (
-    <IonIcon icon={personCircleOutline} />
-  );
-
-  const label = user?.username ? user.username : "anonymous";
 
   const handleRoleChange = (value: string) => {
     if (role.includes(value)) {
@@ -657,13 +638,14 @@ const Event: React.FC = () => {
     ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions)
     : new Date(eventData?.endTime).toLocaleTimeString(undefined, timeOptions); // Fallback to JavaScript Date
 
-
+  // timezone in the format of the user's locale
+  const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // Check to see if the user is the event leader (a single string) in the eventData?.leader array
   const isEventLeader = username && eventData?.leader.includes(username);
 
-  // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimestamp
-  //const isEventOpenActive = eventData?.startTimestamp && eventData?.startTimestamp.toDate() < new Date(Date.now() + 15 * 60000);
+  // Check to see if the event is active which means the event occurs within 15 minutes of the eventData?.startTimeStamp
+  //const isEventOpenActive = eventData?.startTimeStamp && eventData?.startTimeStamp.toDate() < new Date(Date.now() + 15 * 60000);
 
   // Check to see if the event field of the eventData document is set to 'active'
   const isEventActive = eventData?.status === 'active';
@@ -698,7 +680,7 @@ const Event: React.FC = () => {
     toggleEventStatus('active'),
     // update the event document field "leader" with the user.uid value
     setEventData((prevEventData: any) => ({ ...prevEventData, leader: user?.uid })),
-    // update the event document field "startTimestamp" with the current time
+    // update the event document field "startTimeStamp" with the current time
     console.log('toggleStartEvent is active!')
   ), [toggleEventStatus]);
 
@@ -778,10 +760,9 @@ const Event: React.FC = () => {
     const startDateTimeTimestamp = new Date(Date.parse(startDateTime));
     const docRef = doc(db, 'event', id);
     await updateDoc(docRef, {
-      startTimestamp: startDateTimeTimestamp,
+      startTimeStamp: startDateTimeTimestamp,
       start: startDateTimeTimestamp,
       startTime: startDateTimeTimestamp,
-      startTimeStamp: startDateTimeTimestamp,
       endTime: eventEndTime,
       endTimestamp: eventEndTime
     });
@@ -1163,7 +1144,7 @@ const Event: React.FC = () => {
                 <IonGrid className="bikebus-event-time">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>{startTime} to {endTime}
+                      <IonLabel>{startTime} to {endTime} {timeZone}
                       </IonLabel>
                     </IonCol>
                   </IonRow>

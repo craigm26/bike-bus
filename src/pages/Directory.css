@@ -1,0 +1,46 @@
+/* Directory.css */
+
+.ion-accordion-group {
+    border-top: 1px solid #ccc;
+  }
+  
+  .ion-accordion-group .ion-item-divider {
+    background-color: #f8f8f8;
+    color: #333;
+    font-weight: bold;
+    padding-left: 20px;
+  }
+  
+  .ion-accordion-group .ion-item {
+    --padding-start: 20px;
+    --inner-padding-end: 20px;
+  }
+  
+  .ion-accordion-group .ion-label {
+    --text-color: #000;
+    --font-size: 1rem;
+  }
+  
+  .ion-accordion-group .ion-item[slot="header"] {
+    background-color: #e0e0e0; /* Light grey background for headers */
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .ion-accordion-group .ion-item[slot="content"] .ion-item {
+    background-color: #fff; /* White background for items */
+  }
+  
+  .ion-accordion-group .ion-item[slot="content"] .ion-item h2 {
+    font-size: 0.9rem;
+    font-weight: normal;
+  }
+  
+  .ion-accordion-group .ion-item[slot="content"] .ion-item p {
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .ion-accordion-group .ion-item[slot="content"]:last-child {
+    margin-bottom: 10px;
+  }
+  

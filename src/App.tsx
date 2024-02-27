@@ -51,6 +51,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import DeleteAccount from './components/DeleteAccount';
 import SetLanguage from './components/SetLanguage';
 import News from './pages/News';
+import ManageRoutes from './components/BikeBusGroup/ManageRoutes';
+import Directory from './pages/Directory';
 
 
 import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regular/clipboard-list.svg';
@@ -237,6 +239,12 @@ const App: React.FC = () => {
                       <IonItem button routerLink="/News" routerDirection="none">
                         <IonLabel>{t('News')}</IonLabel>
                       </IonItem>
+                      <IonItem button routerLink='/ViewSchedule/OZrruuBJptp9wkAAVUt7' routerDirection="none">
+                        <IonLabel>{t('Events')}</IonLabel>
+                      </IonItem>
+                      <IonItem button routerLink="/Directory" routerDirection="none">
+                        <IonLabel>{t('Directory')}</IonLabel>
+                      </IonItem>
                       <IonItem button routerLink="/BulletinBoards" routerDirection="none">
                         <IonLabel>{t('Bulletin Boards')}</IonLabel>
                       </IonItem>
@@ -248,9 +256,6 @@ const App: React.FC = () => {
                       </IonItem>
                       <IonItem button routerLink='/ViewBikeBusList' routerDirection="none">
                         <IonLabel>{t('BikeBusses')}</IonLabel>
-                      </IonItem>
-                      <IonItem button routerLink='/ViewSchedule/OZrruuBJptp9wkAAVUt7' routerDirection="none">
-                        <IonLabel>{t('Schedules')}</IonLabel>
                       </IonItem>
                       <IonItem button routerLink='/ViewOrganizationList' routerDirection="none">
                         <IonLabel>{t('Organizations')}</IonLabel>
@@ -361,7 +366,7 @@ const App: React.FC = () => {
                         <Route path="/viewroute/:id" exact>
                           <ViewRoute />
                         </Route>
-                        <Route path="/editroute/:id" exact>
+                        <Route path="/EditRoute/:id" exact>
                           <EditRoute />
                         </Route>
                         <Route path="/updateroutemanually/:id" exact>
@@ -369,6 +374,9 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/viewroutelist">
                           <ViewRouteList />
+                        </Route>
+                        <Route exact path="/Directory">
+                          <Directory />
                         </Route>
                         <Route exact path="/viewschedule/:id">
                           <ViewSchedule />
@@ -385,7 +393,6 @@ const App: React.FC = () => {
                         <Route path="/editbikebus/:id" exact>
                           <EditBikeBus />
                         </Route>
-
                         <Route path="/event/:id">
                           <Event />
                         </Route>
@@ -409,6 +416,9 @@ const App: React.FC = () => {
                         </Route>
                         <Route exact path="/ViewBikeBusGroup">
                           <BikeBusGroupPage />
+                        </Route>
+                        <Route exact path="/ManageRoutes/:id">
+                          <ManageRoutes />
                         </Route>
                         <Route exact path="/ViewRoute">
                           <ViewRoute />
