@@ -57,12 +57,25 @@ const Directory: React.FC = () => {
             console.error('Address is undefined.');
             return 'Unknown Location';
         }
-        const parts = address.split(',');
-        const city = parts.slice(-3, -2)[0]?.trim();
-        const stateZip = parts.slice(-2, -1)[0]?.trim();
-        const state = stateZip?.split(' ')[0];
-        return (city && state) ? `${city}, ${state}` : 'Unknown Location';
+        const parts = address.split(',').map(part => part.trim());
+        const country = parts[parts.length - 1];
+        let city, state;
+    
+        if (country === "USA") {
+            city = parts[parts.length - 3];
+            state = parts[parts.length - 2].split(' ')[0];
+        } else if (country === "UK") {
+            city = parts[parts.length - 2];
+            state = "UK"; // Since UK addresses don't have a state, you might use UK or some other logic
+        } else {
+            // Handle other countries or default case
+            city = parts[parts.length - 2];
+            state = parts[parts.length - 1];
+        }
+    
+        return city && state ? `${city}, ${state}` : 'Unknown Location';
     };
+    
 
     const fetchBikeBusAndRoutes = useCallback(async () => {
         if (!user?.uid) return;

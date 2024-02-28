@@ -10,8 +10,9 @@ import {
   IonSegment,
   IonSegmentButton,
   IonCardContent,
+  IonSpinner,
 } from "@ionic/react";
-import { useEffect, useCallback, useState, useRef, ReactElement } from "react";
+import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
@@ -21,13 +22,12 @@ import { bicycleOutline, busOutline, carOutline, closeOutline, locateOutline, wa
 import { useTranslation } from 'react-i18next';
 import { InfoBox } from "@react-google-maps/api";
 
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox, MarkerClusterer } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 //import { Wrapper, Status } from "@googlemaps/react-wrapper";
 //import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
-import MapComponent from "../components/Mapping/MapComponent";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
@@ -37,6 +37,7 @@ import {
 } from "firebase/firestore";
 // import global.css
 import "../global.css";
+import { AuthContext } from "../AuthContext";
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -145,7 +146,7 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (.
 
 
 const Map: React.FC = () => {
-  const { user, isAnonymous } = useAuth();
+  const { user, isAnonymous, loadingAuthState } = useContext(AuthContext);
   const history = useHistory();
   const { id } = useParams<{ id: string }>();
   const [showActionSheet, setShowActionSheet] = useState(false);
@@ -1946,12 +1947,14 @@ const Map: React.FC = () => {
           >
             Delete Route
           </IonButton>
-          <IonButton
-            size="small"
-            routerLink={`/CreateBikeBusGroup/${routeId}`}
-          >
-            Create BikeBus
-          </IonButton>
+          {selectedRoute?.accountType !== 'Anonymous' && (
+            <IonButton
+              size="small"
+              routerLink={`/CreateBikeBusGroup/${routeId}`}
+            >
+              Create BikeBus
+            </IonButton>
+          )}
           <IonCardContent>
             {/* if the route is a bikebus, then show the bikebus map 
               {Drone3DMap ? (
@@ -2299,6 +2302,12 @@ const Map: React.FC = () => {
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
+
+  if (loadingAuthState) {
+    // Show a loading spinner while auth state is loading
+    return <IonSpinner />;
+  }
+
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>

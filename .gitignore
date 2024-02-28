@@ -21,6 +21,8 @@
 /.vscode/*
 !/.vscode/extensions.json
 .idea
+# android app google services.json
+/android/app/google-services.json
 
 npm-debug.log*
 yarn-debug.log*

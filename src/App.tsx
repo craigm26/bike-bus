@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Redirect, Switch } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc, DocumentReference } from 'firebase/firestore';
@@ -59,7 +59,7 @@ import { ReactComponent as ClipboardIcon } from './assets/fontawesome/svgs/regul
 import { ReactComponent as ShareIcon } from './assets/fontawesome/svgs/regular/arrow-up-from-bracket.svg';
 import { ReactComponent as HelpIcon } from './assets/fontawesome/svgs/regular/square-question.svg';
 import { ReactComponent as UserIcon } from './assets/fontawesome/svgs/regular/user.svg';
-import { ReactComponent as Language} from './assets/fontawesome/svgs/regular/language.svg';
+import { ReactComponent as Language } from './assets/fontawesome/svgs/regular/language.svg';
 import { ReactComponent as MapIcon } from './assets/fontawesome/svgs/regular/map.svg';
 
 
@@ -76,6 +76,10 @@ import '@ionic/react/css/display.css';
 
 import './theme/variables.css';
 import { CurrentLocationProvider } from './components/CurrentLocationContext';
+import EditOrganization from './pages/EditOrganization';
+import { AuthContext } from './AuthContext';
+import { useContext } from 'react';
+
 
 
 setupIonicReact();
@@ -116,7 +120,9 @@ const App: React.FC = () => {
   const [accountType, setAccountType] = useState<string>('');
   const [groupData, setGroupData] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
+  const { loadingAuthState } = useContext(AuthContext);
+
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -135,7 +141,7 @@ const App: React.FC = () => {
           if (userData && userData.accountType) {
             setAccountType(userData.accountType);
           }
-  
+
           // Assuming the user's preferred language is stored as 'preferredLanguage' in userData
           if (userData && userData.preferredLanguage) {
             i18n.changeLanguage(userData.preferredLanguage);  // Set the language in i18next
@@ -145,7 +151,7 @@ const App: React.FC = () => {
         }
       });
     }
-  
+
   }, [user]);
 
 
@@ -218,6 +224,10 @@ const App: React.FC = () => {
     return <p>Loading...</p>;
   }
 
+  if (loadingAuthState) {
+    return <IonSpinner />;
+  }
+
   return (
     <IonApp>
       <HeaderContext.Provider value={{ showHeader, setShowHeader }}>
@@ -276,200 +286,206 @@ const App: React.FC = () => {
               <IonPage id="main-content" >
                 <IonContent fullscreen>
                   <div className="ion-flex-offset-app-header">
-                  <IonHeader>
-                    <IonToolbar color="primary" >
-                      <IonButtons color="secondary" slot="start">
-                        <IonMenuButton></IonMenuButton>
-                      </IonButtons>
-                      <IonText slot="start" color="secondary" class="BikeBusFont">
-                        <h1>BikeBus</h1>
-                      </IonText>
-                      <IonButton fill="clear" slot="end" onClick={togglePopover}>
-                        <IonChip>
-                          {avatarElement}
-                          <IonLabel>{label}</IonLabel>
-                        </IonChip>
-                      </IonButton>
-                      <IonPopover
-                        isOpen={showPopover}
-                        event={popoverEvent}
-                        onDidDismiss={() => setShowPopover(false)}
-                        className="my-popover"
-                      >
-                        <Profile />
-                      </IonPopover>
-                      <IonButtons slot="primary">
-                        <IonActionSheet
-                          isOpen={showActionSheet}
-                          onDidDismiss={() => setShowActionSheet(false)}
-                          buttons={[
-                            {
-                              text: 'Share',
-                              icon: shareOutline,
-                              handler: () => {
-                                Share.share({
-                                  title: 'Check out my BikeBus link!',
-                                  text: 'I found this link on the BikeBus app',
-                                  url: window.location.href,
-                                });
-                              }
-                            },
-                            {
-                              text: 'Cancel',
-                              role: 'cancel',
-                              handler: () => {
-                                console.log('Cancel clicked');
-                              }
-                            },
-                          ]}
-                        />
-                        <IonButton onClick={() => setShowActionSheet(true)}>
-                          <ShareIcon style={{ width: '18px', height: '18px' }} />
+                    <IonHeader>
+                      <IonToolbar color="primary" >
+                        <IonButtons color="secondary" slot="start">
+                          <IonMenuButton></IonMenuButton>
+                        </IonButtons>
+                        <IonText slot="start" color="secondary" class="BikeBusFont">
+                          <h1>BikeBus</h1>
+                        </IonText>
+                        <IonButton fill="clear" slot="end" onClick={togglePopover}>
+                          <IonChip>
+                            {avatarElement}
+                            <IonLabel>{label}</IonLabel>
+                          </IonChip>
                         </IonButton>
-                        <IonButton routerLink='/help'>
-                          <HelpIcon style={{ width: '18px', height: '18px' }} />
-                        </IonButton>
-                        <IonButton routerLink='/SetLanguage'>
-                          <Language style={{ width: '18px', height: '18px' }} />
-                        </IonButton>
-                      </IonButtons>
-                    </IonToolbar>
-                  </IonHeader>
+                        <IonPopover
+                          isOpen={showPopover}
+                          event={popoverEvent}
+                          onDidDismiss={() => setShowPopover(false)}
+                          className="my-popover"
+                        >
+                          <Profile onClose={() => setShowPopover(false)} />
+                        </IonPopover>
+
+                        <IonButtons slot="primary">
+                          <IonActionSheet
+                            isOpen={showActionSheet}
+                            onDidDismiss={() => setShowActionSheet(false)}
+                            buttons={[
+                              {
+                                text: 'Share',
+                                icon: shareOutline,
+                                handler: () => {
+                                  Share.share({
+                                    title: 'Check out my BikeBus link!',
+                                    text: 'I found this link on the BikeBus app',
+                                    url: window.location.href,
+                                  });
+                                }
+                              },
+                              {
+                                text: 'Cancel',
+                                role: 'cancel',
+                                handler: () => {
+                                  console.log('Cancel clicked');
+                                }
+                              },
+                            ]}
+                          />
+                          <IonButton onClick={() => setShowActionSheet(true)}>
+                            <ShareIcon style={{ width: '18px', height: '18px' }} />
+                          </IonButton>
+                          <IonButton routerLink='/help'>
+                            <HelpIcon style={{ width: '18px', height: '18px' }} />
+                          </IonButton>
+                          <IonButton routerLink='/SetLanguage'>
+                            <Language style={{ width: '18px', height: '18px' }} />
+                          </IonButton>
+                        </IonButtons>
+                      </IonToolbar>
+                    </IonHeader>
                   </div>
-                    <IonRouterOutlet>
-                      <React.Fragment>
-                        <Route exact path="/Welcome">
-                          <Welcome />
+                  <IonRouterOutlet>
+                    <React.Fragment>
+                      <Route exact path="/Welcome">
+                        <Welcome />
+                      </Route>
+                      <Route exact path="/PrivacyPolicy">
+                        <PrivacyPolicy />
+                      </Route>
+                      <Route exact path="/BulletinBoards">
+                        <CurrentLocationProvider>
+                          <BulletinBoards />
+                        </CurrentLocationProvider>
+                      </Route>
+                      <Route exact path="/BulletinBoards/:bborOrgId">
+                        <CurrentLocationProvider>
+                          <BulletinBoards />
+                        </CurrentLocationProvider>
+                      </Route>
+                      <Route exact path="/CreateOrganization">
+                        <CreateOrganization />
+                      </Route>
+                      <Route exact path="/ViewOrganization/:id">
+                        <ViewOrganization />
+                      </Route>
+                      <Route exact path="/EditOrganization/:id">
+                        <EditOrganization />
+                      </Route>
+                      <Route exact path="/ViewOrganizationList">
+                        <ViewOrganizationList />
+                      </Route>
+                      <Route path="/viewroute/:id" exact>
+                        <ViewRoute />
+                      </Route>
+                      <Route path="/EditRoute/:id" exact>
+                        <EditRoute />
+                      </Route>
+                      <Route path="/updateroutemanually/:id" exact>
+                        <UpdateRouteManually />
+                      </Route>
+                      <Route exact path="/viewroutelist">
+                        <ViewRouteList />
+                      </Route>
+                      <Route exact path="/Directory">
+                        <Directory />
+                      </Route>
+                      <Route exact path="/viewschedule/:id">
+                        <ViewSchedule />
+                      </Route>
+                      <Route exact path="/addschedule/:id">
+                        <AddSchedule />
+                      </Route>
+                      <Route exact path="/editschedule/:id">
+                        <EditSchedule />
+                      </Route>
+                      <Route exact path="/viewbikebuslist">
+                        <ViewBikeBusList />
+                      </Route>
+                      <Route path="/editbikebus/:id" exact>
+                        <EditBikeBus />
+                      </Route>
+                      <Route path="/event/:id">
+                        <Event />
+                      </Route>
+                      <Route exact path="/Profile">
+                        <Profile onClose={function (): void {
+                          throw new Error('Function not implemented.');
+                        } } />
+                      </Route>
+                      <Route exact path="/Account">
+                        <Account />
+                      </Route>
+                      <Route exact path="/News">
+                        <News />
+                      </Route>
+                      <Route exact path="/SetUserDetails">
+                        <SetUserDetails />
+                      </Route>
+                      <Route exact path="/Map">
+                        <MapProvider
+                        >
+                          <Map />
+                        </MapProvider>
+                      </Route>
+                      <Route exact path="/ViewBikeBusGroup">
+                        <BikeBusGroupPage />
+                      </Route>
+                      <Route exact path="/ManageRoutes/:id">
+                        <ManageRoutes />
+                      </Route>
+                      <Route exact path="/ViewRoute">
+                        <ViewRoute />
+                      </Route>
+                      <Route exact path="/CreateRoute">
+                        <CreateRoute />
+                      </Route>
+                      <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
+                      <Route path="/CreateBikeBusStops/:id">
+                        <CreateBikeBusStops />
+                      </Route>
+                      <Route exact path="/Login">
+                        <Login />
+                      </Route>
+                      <Route exact path="/SignUp">
+                        <SignUp />
+                      </Route>
+                      <Route exact path="/Logout">
+                        <Logout />
+                      </Route>
+                      <Route exact path="/help">
+                        <Help />
+                      </Route>
+                      <Route exact path="/about">
+                        <About />
+                      </Route>
+                      <Route exact path="/SetLanguage">
+                        <SetLanguage />
+                      </Route>
+                      <Route exact path="/DeleteAccount">
+                        <DeleteAccount />
+                      </Route>
+                      <Route exact path="/EventSummary/:id">
+                        <EventSummary />
+                      </Route>
+                      <Route exact path="/settings">
+                        <Settings />
+                      </Route>
+                      <Switch>
+                        <Route exact path="/Map/:id?" component={Map} />
+                        <Route exact path="/">
+                          <Redirect to="/Welcome/" />
                         </Route>
-                        <Route exact path="/PrivacyPolicy">
-                          <PrivacyPolicy />
-                        </Route>
-                        <Route exact path="/BulletinBoards">
-                          <CurrentLocationProvider>
-                            <BulletinBoards />
-                          </CurrentLocationProvider>
-                        </Route>
-                        <Route exact path="/BulletinBoards/:bborOrgId">
-                          <CurrentLocationProvider>
-                            <BulletinBoards />
-                          </CurrentLocationProvider>
-                        </Route>
-                        <Route exact path="/CreateOrganization">
-                          <CreateOrganization />
-                        </Route>
-                        <Route exact path="/ViewOrganization/:id">
-                          <ViewOrganization />
-                        </Route>
-                        <Route exact path="/ViewOrganizationList">
-                          <ViewOrganizationList />
-                        </Route>
-                        <Route path="/viewroute/:id" exact>
-                          <ViewRoute />
-                        </Route>
-                        <Route path="/EditRoute/:id" exact>
-                          <EditRoute />
-                        </Route>
-                        <Route path="/updateroutemanually/:id" exact>
-                          <UpdateRouteManually />
-                        </Route>
-                        <Route exact path="/viewroutelist">
-                          <ViewRouteList />
-                        </Route>
-                        <Route exact path="/Directory">
-                          <Directory />
-                        </Route>
-                        <Route exact path="/viewschedule/:id">
-                          <ViewSchedule />
-                        </Route>
-                        <Route exact path="/addschedule/:id">
-                          <AddSchedule />
-                        </Route>
-                        <Route exact path="/editschedule/:id">
-                          <EditSchedule />
-                        </Route>
-                        <Route exact path="/viewbikebuslist">
-                          <ViewBikeBusList />
-                        </Route>
-                        <Route path="/editbikebus/:id" exact>
-                          <EditBikeBus />
-                        </Route>
-                        <Route path="/event/:id">
-                          <Event />
-                        </Route>
-                        <Route exact path="/Profile">
-                          <Profile />
-                        </Route>
-                        <Route exact path="/Account">
-                          <Account />
-                        </Route>
-                        <Route exact path="/News">
-                          <News />
-                        </Route>
-                        <Route exact path="/SetUserDetails">
-                          <SetUserDetails />
-                        </Route>
-                        <Route exact path="/Map">
-                          <MapProvider
-                          >
-                            <Map />
-                          </MapProvider>
-                        </Route>
-                        <Route exact path="/ViewBikeBusGroup">
+                      </Switch>
+                      <Switch>
+                        <Route exact path="/bikebusgrouppage/:groupId">
                           <BikeBusGroupPage />
                         </Route>
-                        <Route exact path="/ManageRoutes/:id">
-                          <ManageRoutes />
-                        </Route>
-                        <Route exact path="/ViewRoute">
-                          <ViewRoute />
-                        </Route>
-                        <Route exact path="/CreateRoute">
-                          <CreateRoute />
-                        </Route>
-                        <Route path="/CreateBikeBusGroup/:RouteID" component={CreateBikeBusGroup} />
-                        <Route path="/CreateBikeBusStops/:id">
-                          <CreateBikeBusStops />
-                        </Route>
-                        <Route exact path="/Login">
-                          <Login />
-                        </Route>
-                        <Route exact path="/SignUp">
-                          <SignUp />
-                        </Route>
-                        <Route exact path="/Logout">
-                          <Logout />
-                        </Route>
-                        <Route exact path="/help">
-                          <Help />
-                        </Route>
-                        <Route exact path="/about">
-                          <About />
-                        </Route>
-                        <Route exact path="/SetLanguage">
-                          <SetLanguage />
-                        </Route>
-                        <Route exact path="/DeleteAccount">
-                          <DeleteAccount />
-                        </Route>
-                        <Route exact path="/EventSummary/:id">
-                          <EventSummary />
-                        </Route>
-                        <Route exact path="/settings">
-                          <Settings />
-                        </Route>
-                        <Switch>
-                          <Route exact path="/Map/:id?" component={Map} />
-                          <Route exact path="/">
-                            <Redirect to="/Welcome/" />
-                          </Route>
-                        </Switch>
-                        <Switch>
-                          <Route exact path="/bikebusgrouppage/:groupId">
-                            <BikeBusGroupPage />
-                          </Route>
-                        </Switch>
-                      </React.Fragment>
-                    </IonRouterOutlet>
+                      </Switch>
+                    </React.Fragment>
+                  </IonRouterOutlet>
                 </IonContent>
               </IonPage>
               {user && (

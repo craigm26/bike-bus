@@ -22,15 +22,12 @@ import {
     IonRadioGroup,
     IonItemDivider,
 } from '@ionic/react';
-import { SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { SetStateAction, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { collection, getDoc, getDocs, updateDoc, query, doc, where, DocumentReference, Timestamp, arrayUnion, setDoc, addDoc } from 'firebase/firestore';
 // State variables remain the same
-
-import useAuth from "../useAuth";
-import { useParams } from 'react-router-dom';
-import { useHistory } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import usePlacesAutocomplete from '../hooks/usePlacesAutocomplete';
 import { set } from 'date-fns';
 import { checkmark, peopleOutline, schoolOutline } from 'ionicons/icons';
@@ -38,6 +35,7 @@ import './EditOrganization.css';
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSearchBox } from "@react-google-maps/api";
 import LocationInput from '../components/LocationInput';
 import { get } from 'http';
+import { AuthContext } from '../AuthContext';
 
 type School = {
     id: string;
@@ -81,7 +79,7 @@ type BikeBusGroup = {
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
 const EditOrganization: React.FC = () => {
-    const { user } = useAuth();
+    const { user, loadingAuthState } = useContext(AuthContext);
     const { avatarUrl } = useAvatar(user?.uid);
     const [accountType, setaccountType] = useState<string>('');
     const [selectedOrganization, setselectedOrganization] = useState<Organization | null>(null);
@@ -163,10 +161,6 @@ const EditOrganization: React.FC = () => {
         // Logic to send an invitation to inviteEmail
     };
 
-
-
-
-
     const toggleSelectedBikeBusGroup = (group: BikeBusGroup) => {
         if (selectedBikeBusGroups.some(selectedGroup => selectedGroup.id === group.id)) {
             // Remove the group if it's already selected
@@ -183,30 +177,20 @@ const EditOrganization: React.FC = () => {
         libraries,
     });
 
-
-
     useEffect(() => {
-        if (selectedOrganization) {
-            setOrgType(selectedOrganization.OrganizationType);
-        }
-    }, [selectedOrganization]);
 
-    useEffect(() => {
-        fetchBikeBusGroups();
-    }, []);
-
-    useEffect(() => {
-        const fetchPlaceLocation = async () => {
-            const locationFromFirestore = await getPlaceLocation();
-            setPlaceLocation(locationFromFirestore);
+        const fetchUser = async () => {
+            if (user?.uid) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                const userData = userDoc.data();
+                if (userData) {
+                    setaccountType(userData.accountType);
+                    setBikeBusGroups(userData.BikeBusGroups);
+                }
+            }
         };
+        fetchUser();
 
-        fetchPlaceLocation();
-    }, []);
-
-
-
-    useEffect(() => {
         if (user) {
             const userRef = doc(db, 'users', user.uid);
             getDoc(userRef).then((docSnapshot) => {
@@ -219,90 +203,102 @@ const EditOrganization: React.FC = () => {
             });
         }
 
-        fetchSchools();
-    }, [user]);
+        const fetchSingleOrganization = async (id: string) => {
+            setIsLoading(true);
+            const docRef = doc(db, 'organizations', id);
+            const docSnap = await getDoc(docRef);
+    
+            if (docSnap.exists()) {
+                const OrganizationData = {
+                    ...docSnap.data() as Organization,
+                    id: docSnap.id,
+                };
+                setselectedOrganization(OrganizationData);
+    
+                // Extract the uid from the OrganizationCreator reference
+                const OrganizationCreatorUid = OrganizationData.OrganizationCreator.id;
+    
+                // Determine if the user is the OrganizationCreator
+                setIsCreator(OrganizationCreatorUid === user?.uid);
+    
+            }
+            setIsLoading(false);
+        };
 
-    const getPlaceLocation = async () => {
-        const OrganizationRef = doc(db, 'organizations', id);
-        const orgSnapshot = await getDoc(OrganizationRef);
-        const orgData = orgSnapshot.data() as Organization;
-        return orgData.Location;
-    };
+        if (id) fetchSingleOrganization(id);
+
+        if (selectedOrganization) {
+            setOrgType(selectedOrganization.OrganizationType);
+        }
+
+        const getPlaceLocation = async () => {
+            const OrganizationRef = doc(db, 'organizations', id);
+            const orgSnapshot = await getDoc(OrganizationRef);
+            const orgData = orgSnapshot.data() as Organization;
+            return orgData.Location;
+        };
+
+        const fetchPlaceLocation = async () => {
+            const locationFromFirestore = await getPlaceLocation();
+            setPlaceLocation(locationFromFirestore);
+        };
+
+        const fetchBikeBusGroups = async () => {
+            const OrganizationRef = doc(db, 'organizations', id);
+            // The goal is to fetch the bike bus groups that are associated with the organization and set it to a state setBikeBusGroups
+            const q = query(collection(db, 'bikebusgroups'), where('Organization', '==', OrganizationRef));
+            const querySnapshot = await getDocs(q);
+            const bikeBusGroups = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BikeBusGroup[];
+            setFetchedBikeBusGroups(bikeBusGroups);
+            
+
+
+        };
+
+        const fetchBikeBusGroupsLeader = async () => {
+
+            try {
+                if (!user || !user.uid) {
+                    console.error("User or user's UID is undefined");
+                    return; // Exit the function if user or user's UID is undefined
+                }
+    
+                // userRef should be a document reference to the user's document
+                const userRef = doc(db, 'users', user.uid);
+                // somehow this returning as the set list - we want organizations
+                const q = query(collection(db, 'bikebusgroups'), where('BikeBusLeader', '==', userRef));
+                const querySnapshot = await getDocs(q);
+                    
+                setBikeBusGroupsLeader(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+            } catch (error) {
+                console.error(error);
+            }
+
+        };
+
+
+    
+        const fetchSchools = async () => {
+            const OrganizationRef = doc(db, 'organizations', id);
+            const q = query(collection(db, 'schools'), where('Organization', '==', OrganizationRef));
+            const querySnapshot = await getDocs(q);
+            const schools = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as School[];
+            setFetchedSchools(schools);
+        };
+    
+
+        fetchPlaceLocation();
+        fetchBikeBusGroupsLeader();
+        fetchBikeBusGroups();
+        fetchSchools();
+    }, [id, user]);
+
 
     const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
         const schoolName = place.name;
         setSchoolName(schoolName || null);
     };
-
-    const fetchBikeBusGroups = async () => {
-        const OrganizationRef = doc(db, 'organizations', id);
-        const orgSnapshot = await getDoc(OrganizationRef);
-
-        // Get the BikeBusGroups array and handle possible undefined data
-        const orgData = orgSnapshot.data() as Organization;
-        const bikeBusGroupRefs = orgData?.BikeBusGroups || [];
-
-        // Fetch each bike bus group document
-        const groupPromises = bikeBusGroupRefs.map(ref => getDoc(ref));
-        const groupSnapshots = await Promise.all(groupPromises);
-
-        // Transform snapshots to bike bus groups
-        const groups = groupSnapshots.map(snapshot => ({
-            id: snapshot.id,
-            ...snapshot.data()
-        })) as BikeBusGroup[];
-
-        setFetchedBikeBusGroups(groups);
-    };
-
-    const fetchSchools = async () => {
-        const OrganizationRef = doc(db, 'organizations', id);
-        const orgSnapshot = await getDoc(OrganizationRef);
-
-        // Get the Schools array and handle possible undefined data
-        const orgData = orgSnapshot.data() as Organization;
-        const schoolRefs = orgData?.Schools || [];
-
-        // Fetch each school document
-        const schoolPromises = schoolRefs.map(ref => getDoc(ref));
-        const schoolSnapshots = await Promise.all(schoolPromises);
-
-        // Transform snapshots to schools
-        const schools = schoolSnapshots.map(snapshot => ({
-            id: snapshot.id,
-            ...snapshot.data()
-        })) as School[];
-
-        setFetchedSchools(schools);
-    };
-
-
-
-    const fetchSingleOrganization = async (id: string) => {
-        setIsLoading(true);
-        const docRef = doc(db, 'organizations', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const OrganizationData = {
-                ...docSnap.data() as Organization,
-                id: docSnap.id,
-            };
-            setselectedOrganization(OrganizationData);
-
-            // Extract the uid from the OrganizationCreator reference
-            const OrganizationCreatorUid = OrganizationData.OrganizationCreator.id;
-
-            // Determine if the user is the OrganizationCreator
-            setIsCreator(OrganizationCreatorUid === user?.uid);
-
-        }
-        setIsLoading(false);
-    };
-
-    useEffect(() => {
-        if (id) fetchSingleOrganization(id);
-    }, [id, user, setIsCreator]);
 
     const handleAddBikeBusGroup = async () => {
         console.log("Organization ID: ", id);
@@ -404,38 +400,7 @@ const EditOrganization: React.FC = () => {
         history.push(`/EditOrganization/${id}`);
 
         setShowSchoolModal(false);
-    }
-
-    const fetchBikeBusGroupsLeader = useCallback(async () => {
-        try {
-            if (!user || !user.uid) {
-                console.error("User or user's UID is undefined");
-                return; // Exit the function if user or user's UID is undefined
-            }
-            console.log(user.uid);
-
-            // userRef should be a document reference to the user's document
-            const userRef = doc(db, 'users', user.uid);
-            console.log(userRef);
-            // somehow this returning as the set list - we want organizations
-            const q = query(collection(db, 'bikebusgroups'), where('BikeBusLeader', '==', userRef));
-            console.log(q);
-            const querySnapshot = await getDocs(q);
-            querySnapshot.docs.forEach(doc => {
-                console.log(`Document ID: ${doc.id}`);
-            });
-
-            setBikeBusGroupsLeader(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            console.log(bikeBusGroups);
-        } catch (error) {
-            console.error(error);
-        }
-    }, [user]);
-
-
-    useEffect(() => {
-        fetchBikeBusGroupsLeader();
-    }, [fetchBikeBusGroupsLeader]);
+    };
 
 
     const removeBikeBusGroup = async (group: BikeBusGroup) => {
@@ -520,8 +485,16 @@ const EditOrganization: React.FC = () => {
         history.push(`/ViewOrganization/${selectedOrganization.id}`)
     };
 
+    if (loadingAuthState) {
+        // Show a loading spinner while auth state is loading
+        return <IonSpinner />;
+      }
+
     return (
         <IonPage className="ion-flex-offset-app">
+            <IonHeader>
+                <IonTitle>Edit Organization</IonTitle>
+            </IonHeader>
             <IonContent>
                 {
                     isLoading ?
@@ -529,13 +502,7 @@ const EditOrganization: React.FC = () => {
                         <IonGrid>
                             <IonRow>
                                 <IonCol>
-                                    <IonTitle>
-                                        Editing Organization
-                                    </IonTitle>
-                                </IonCol>
-                            </IonRow>
-                            <IonRow>
-                                <IonCol>
+                                    <IonButton routerLink={`/ViewOrganization/${id}`}>Back</IonButton>
                                     <IonButton onClick={() => setShowStaffModal(true)}>Add Staff</IonButton>
                                     <IonModal isOpen={showStaffModal} onDidDismiss={() => setShowStaffModal(false)}>
                                         <IonHeader>

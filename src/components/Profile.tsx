@@ -19,11 +19,26 @@ import Logout from './Logout';
 import AccountModeSelector from '../components/AccountModeSelector';
 import { doc, getDoc } from 'firebase/firestore';
 
-const Profile: React.FC = () => {
+const Profile: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { user, logout } = useContext(AuthContext);
   const { avatarUrl, refresh } = useAvatar(user?.uid) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [accountType, setaccountType] = useState<string>('');
+  const [accountType, setAccountType] = useState<string>('');
+
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.accountType) {
+            setAccountType(userData.accountType);
+          }
+        }
+      });
+    }
+  }, [user]);
+
 
   const enabledAccountModes = [
     'Member',
@@ -66,7 +81,7 @@ const Profile: React.FC = () => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
           if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
+            setAccountType(userData.accountType);
           }
         }
       });
@@ -77,49 +92,65 @@ const Profile: React.FC = () => {
     setAccountMode(mode);
   };
 
+  const renderButtonsBasedOnUserState = () => {
+    if (!user) {
+      // User not logged in
+      return (
+        <>
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">
+            Login
+          </IonButton>
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp">
+            Sign Up
+          </IonButton>
+        </>
+      );
+    } else if (accountType === 'Anonymous') {
+      // User logged in but is anonymous
+      return (
+        <>
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
+            Sign Up to Add Avatar
+          </IonButton>
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
+            Login to Account
+          </IonButton>
+          <Logout />
+        </>
+      );
+    } else {
+      // User logged in and not anonymous
+      return (
+        <>
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/account" onClick={onClose}>
+            Account
+          </IonButton>
+          <Logout />
+          {avatarUrl && (
+            <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
+              Change Avatar
+            </IonButton>
+          )}
+          {!avatarUrl && (
+            <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
+              Upload Avatar
+            </IonButton>
+          )}
+          <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} onClick={onClose} />
+        </>
+      );
+    }
+  };
+
   return (
     <IonPage>
-      <IonHeader>
-      </IonHeader>
+      <IonHeader></IonHeader>
       <IonContent className="ion-content-profile" fullscreen>
         <div className="avatar-container-profile">
-          <IonAvatar className='img-center-profile'>
+          <IonAvatar className="img-center-profile">
             <Avatar uid={user?.uid} size="medium" />
           </IonAvatar>
-          {user?.accountType === 'Anonymous' ? (
-            <div></div>
-          ) : (
-            <><><IonButton className="ion-button-profile" fill="solid" routerLink="/account">
-              Account
-            </IonButton>
-            <Logout />
-            <IonButton className="ion-button-profile" fill="solid" routerLink="/Login"> 
-                Login to Account
-              </IonButton>
-            </></>
-            
-          )}
-          {user?.accountType === 'Anonymous' ? (
-            <>
-              <IonText className="ion-text-profile"></IonText>
-              <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp">
-                SignUp to Add Avatar
-              </IonButton>
-              <IonButton className="ion-button-profile" fill="solid" routerLink="/Login"> 
-                Login to Account
-              </IonButton>
-              <Logout />
-
-            </>
-          ) : (
-            <div>
-              {!avatarUrl && (
-                <>
-                </>
-              )}
-              <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleFileChange} />
-            </div>
-          )}
+          {renderButtonsBasedOnUserState()}
         </div>
       </IonContent>
     </IonPage>

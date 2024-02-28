@@ -2,7 +2,7 @@ import { createContext, useState, useEffect } from 'react';
 import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -15,27 +15,58 @@ export const AuthProvider = ({ children }) => {
   const [loadingAuthState, setLoadingAuthState] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
+    const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
+      if (authUser) {
+        // User is signed in, fetch additional details from Firestore
+        const userDocRef = doc(db, 'users', authUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          // Merge auth user object with Firestore document data
+          const fullUserDetails = {
+            ...authUser, // contains UID, email, etc.
+            ...userDocSnap.data() // contains accountType, and other custom fields
+          };
+          setUser(fullUserDetails);
+        } else {
+          console.log("No such document!");
+          setUser(authUser); // Fallback to just auth user details
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+      }
       setLoadingAuthState(false);
     });
 
     return () => unsubscribe();
   }, []);
 
+
   const signInWithEmailAndPassword = async (email, password) => {
     try {
+      let userCredential;
       if (Capacitor.isNativePlatform()) {
         const result = await FirebaseAuthentication.signInWithEmailAndPassword({ email, password });
-        setUser(result.user);
+        userCredential = result;
       } else {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        userCredential = await auth.signInWithEmailAndPassword(email, password);
+      }
+      // Fetch additional user details from Firestore and set in context
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUser({
+          ...userCredential.user,
+          ...userDocSnap.data()
+        });
+      } else {
         setUser(userCredential.user);
       }
     } catch (error) {
       console.error('Error during email/password login:', error.message);
     }
   };
+
 
   const signUpWithEmailAndPassword = async (email, password) => {
     try {
@@ -70,22 +101,44 @@ export const AuthProvider = ({ children }) => {
       throw error; // Ensure errors are propagated for proper handling
     }
   };
-  
+
 
 
   const signInWithGoogle = async () => {
+    let userCredential;
     try {
       const result = await FirebaseAuthentication.signInWithGoogle();
-      setUser(result.user);
+      userCredential = result;
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUser({
+          ...userCredential.user,
+          ...userDocSnap.data() 
+        });
+      } else {
+        setUser(userCredential.user);
+      }
     } catch (error) {
       console.error('Error during Google login:', error.message);
     }
   };
 
   const signInWithApple = async () => {
+    let userCredential;
     try {
       const result = await FirebaseAuthentication.signInWithApple();
-      setUser(result.user);
+      userCredential = result;
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUser({
+          ...userCredential.user,
+          ...userDocSnap.data() 
+        });
+      } else {
+        setUser(userCredential.user);
+      }
     } catch (error) {
       console.error('Error during Apple login:', error.message);
     }

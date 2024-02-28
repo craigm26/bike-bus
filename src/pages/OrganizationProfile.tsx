@@ -2,7 +2,6 @@ import {
     IonContent,
     IonHeader,
     IonPage,
-    IonButton,
     IonIcon,
     IonRow,
     IonGrid,
@@ -10,31 +9,21 @@ import {
     IonToolbar,
     IonAvatar,
     IonLabel,
-    IonInput,
     IonItem,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useContext } from "react";
 import useAuth from "../useAuth";
 import { ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
 import {
-    locateOutline,
     personCircleOutline,
-    school,
 } from "ionicons/icons";
 import {
-    GoogleMap,
-    Marker,
     useJsApiLoader,
-    Polyline,
-    InfoWindow,
 } from "@react-google-maps/api";
-import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
-import AvatarMapMarker from "../components/AvatarMapMarker";
 import { HeaderContext } from "../components/HeaderContext";
-import { StandaloneSearchBox } from "@react-google-maps/api";
 import React from "react";
 import Avatar from "../components/Avatar";
 import { useAvatar } from "../components/useAvatar";
@@ -42,7 +31,6 @@ import {
     DocumentData,
     doc as firestoreDoc,
 } from "firebase/firestore";
-import { get } from "http";
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 

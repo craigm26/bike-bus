@@ -131,96 +131,46 @@ const ViewOrganization: React.FC = () => {
     // get the document data
     const [organization, setOrganization] = useState<Organization | null>(null);
 
+    const getBikeBusGroupsData = async (groups: DocumentReference[]) => {
+        if (!groups) return; // Exit if groups are undefined
+
+        const BikeBusGroupsData = await Promise.all(
+            groups
+              .filter((ref): ref is DocumentReference => ref instanceof DocumentReference)
+              .map((ref: DocumentReference) => getDoc(ref))
+          );
+
+        const validBikeBusGroups = BikeBusGroupsData
+            .filter((docSnapshot) => docSnapshot.exists())
+            .map((docSnapshot) => ({
+                id: docSnapshot.id,
+                ...docSnapshot.data(),
+            }) as BikeBusGroups);
+
+        setBikeBusGroups(validBikeBusGroups);
+    };
+
+    const fetchOrganizationData = async () => {
+        const organizationRef = firestoreDoc(db, "organizations", id);
+        const docSnapshot = await getDoc(organizationRef);
+        if (docSnapshot.exists()) {
+          const organizationData = docSnapshot.data() as Organization;
+          setOrganization(organizationData);
+          
+          // Call getBikeBusGroupsData with the BikeBusGroups array if it exists
+          if (organizationData.BikeBusGroups) {
+            await getBikeBusGroupsData(organizationData.BikeBusGroups);
+          }
+        }
+      };
+
     useEffect(() => {
         if (user) {
-            // use the user data to determine what account modes are enabled and org modes are enabled
-            const userRef = firestoreDoc(db, "users", user.uid);
-
-            // use the organization data to determine what bikebusgroups are in their control as well as the event(s), schedule(s), and route(s) that they are in control of
-
-            const organizationRef = firestoreDoc(db, "organizations", id);
-            getDoc(organizationRef).then((docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const organizationData = docSnapshot.data();
-                    if (organizationData) {
-                        setOrganization(organizationData as Organization);
-                        setOrgType(organizationData.OrganizationType);
-                        setOrgLocation(organizationData.Location);
-                        setSchoolDistrict(organizationData.SchoolDistrictName);
-                        setSchools(organizationData.SchoolNames);
-                        setBikeBusGroups(organizationData.BikeBusGroups);
-                        getDoc(userRef).then((docSnapshot) => {
-                            if (docSnapshot.exists()) {
-                                const userData = docSnapshot.data();
-                            }
-                        });
-
-                        // get the document id of the bikebusgroups from the organization data
-                        getDoc(organizationRef).then((docSnapshot) => {
-                            if (docSnapshot.exists()) {
-                                const organizationData = docSnapshot.data();
-                                if (organizationData) {
-                                    setOrganization(organizationData as Organization);
-                                    const BikeBusGroups = organizationData.BikeBusGroups;
-                                    // let's get the document id of each BikeBusGroup
-                                    const BikeBusGroupIds = BikeBusGroups.map((BikeBusGroup: DocumentReference) => BikeBusGroup.id);
-                                    console.log("BikeBusGroupIds", BikeBusGroupIds);
-                                    setBikeBusGroupIds(BikeBusGroupIds);
-                                }
-                            }
-                        });
-
-                        const organizationId = docSnapshot.id;
-                        setOrganizationId(organizationId);
-                        // Define an async function to handle the await inside
-                        const getBikeBusGroupsData = async () => {
-                            const BikeBusGroupsData = await Promise.all(
-                                organizationData.BikeBusGroups.map((ref: DocumentReference) => getDoc(ref).then(doc => doc.data()))
-                            );
-
-                            setBikeBusGroups(BikeBusGroupsData as BikeBusGroups[]);
-                            // let's get the document id of each BikeBusGroup
-                        };
-
-                        // Call the async function
-                        getBikeBusGroupsData();
-
-                    }
-                }
-            });
+            fetchOrganizationData();
         }
-    }, [id, user]);
 
-    useEffect(() => {
-        const fetchBikeBusGroups = async (organization: Organization) => {
-            if (organization.BikeBusGroups) {
-                const bikeBusGroupsData = await Promise.all(
-                    organization.BikeBusGroups.map((ref: DocumentReference) => getDoc(ref))
-                );
-                const bikeBusGroups = bikeBusGroupsData.map((doc: DocumentSnapshot) => ({
-                    id: doc.id,
-                    ...doc.data()
-                }) as BikeBusGroups);
-                setBikeBusGroups(bikeBusGroups);
-            }
-        };
         
-          
-
-          if (organization) {
-            fetchBikeBusGroups(organization);
-          }
-          
-        }, [organization]);
-
-    // lets get the document id of the bikebusgroups from the organization data
-    console.log("BikeBusGroupIds", BikeBusGroupIds);
-    console.log("BikeBusGroups", BikeBusGroups);
-    BikeBusGroups.forEach(group => console.log("BikeBusGroup.id", group.id)); // Use forEach to loop over the array
-
-    const setShowBikeBusGroupAddModal = (show: boolean) => {
-        setShowBikeBusGroupAddModal(show);
-    };
+    }, [id, user]);
 
     return (
         <IonPage className="ion-flex-offset-app">
@@ -228,9 +178,9 @@ const ViewOrganization: React.FC = () => {
                 <IonCardTitle>{organization?.NameOfOrg}</IonCardTitle>
                 <IonGrid>
                     <IonRow>
-                        <IonButton routerLink={`/EditOrganization/${organizationId}`}>Edit Organization</IonButton>
+                        <IonButton routerLink={`/EditOrganization/${id}`}>Edit Organization</IonButton>
                         <IonButton>Send Invite</IonButton>
-                        <IonButton routerLink={`/OrganizationMap/${organizationId}`}>Map</IonButton>
+                        <IonButton routerLink={`/OrganizationMap/${id}`}>Map</IonButton>
                         <IonButton>Schedules</IonButton>
                         <IonButton>Timesheets</IonButton>
                         <IonButton>Reports</IonButton>
