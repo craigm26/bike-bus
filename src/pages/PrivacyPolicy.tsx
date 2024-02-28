@@ -7,18 +7,22 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonLabel,
-    IonItem
+    IonItem,
+    IonHeader,
+    IonTitle,
+    IonToolbar
 } from '@ionic/react';
 import React from 'react';
 
 const PrivacyPolicy: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
-            <IonContent fullscreen>
-                <IonCard className="ion-justify-content-center">
-                    <IonCardHeader>
-                        <IonCardTitle>Privacy Policy</IonCardTitle>
-                    </IonCardHeader>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Privacy Policy</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent fullscreen>
                     <IonCardContent>
                         <IonList>
                             <IonItem>
@@ -58,7 +62,6 @@ const PrivacyPolicy: React.FC = () => {
                             </IonItem>
                         </IonList>
                     </IonCardContent>
-                </IonCard>
             </IonContent>
         </IonPage>
     );

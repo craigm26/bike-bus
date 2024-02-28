@@ -13,6 +13,9 @@ import {
   IonItemGroup,
   IonInput,
   IonLabel,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
@@ -102,9 +105,13 @@ const Help: React.FC = () => {
   }
 
   return (
-    <IonPage className="ion-flex-offset-app message-page">
-      <IonContent className="message-page-content ion-padding">
-        <IonCard className="message-card">
+    <IonPage className="ion-flex-offset-app">
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Help</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
           <IonCardContent>
             <div>
               <IonItem lines="none" className="message-email-item">
@@ -129,8 +136,6 @@ const Help: React.FC = () => {
               <IonButton expand="block" className="message-send-button" onClick={writeMessageToFirebase}>Send Feedback or Ask for Help</IonButton>
             </div>
           </IonCardContent>
-        </IonCard>
-        <IonCard className="message-card">
           <IonList>
             <IonItemGroup>
               <IonButton expand="full" onClick={() => toggleSection('section1')}>How do I create a BikeBus?</IonButton>
@@ -230,7 +235,6 @@ const Help: React.FC = () => {
               }
             </IonItemGroup>
           </IonList>
-        </IonCard>
       </IonContent>
     </IonPage>
   );

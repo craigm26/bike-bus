@@ -13,7 +13,7 @@
   
   .ion-accordion-group .ion-item {
     --padding-start: 20px;
-    --inner-padding-end: 20px;
+    --inner-padding-end: 20px; 
   }
   
   .ion-accordion-group .ion-label {
@@ -27,7 +27,7 @@
   }
   
   .ion-accordion-group .ion-item[slot="content"] .ion-item {
-    background-color: #fff; /* White background for items */
+    background-color: #e2e2e2
   }
   
   .ion-accordion-group .ion-item[slot="content"] .ion-item h2 {
@@ -44,3 +44,8 @@
     margin-bottom: 10px;
   }
   
+  .ion-list[slot="content"] .ion-item {
+    --padding-start: 20px;
+    --inner-padding-end: 20px; 
+    background-color: #e2e2e2;
+  }

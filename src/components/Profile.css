@@ -40,7 +40,16 @@
 
 .ion-button-profile {
   margin-top: 20px;
+  --background: #ffd800;  /* Use the same theme color for consistency */
+  --background-hover: #e0c000;  /* Darker shade for hover effect */
+  --color: #333333;  /* White text color for contrast */
+  --border-radius: 4px;  /* Optional: Add rounded corners */
+  width: auto;  /* Adjust width as needed, or remove for full-width buttons */
+  justify-content: center;  /* Center the button text */
+  margin-left: auto;  /* Center the button if not full width */
+  margin-right: auto;  /* Center the button if not full width */
 }
+
 
 .ion-label-profile h2 {
   color: #212121;

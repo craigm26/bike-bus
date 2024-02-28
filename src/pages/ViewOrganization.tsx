@@ -9,6 +9,9 @@ import {
     IonItem,
     IonCardTitle,
     IonRouterLink,
+    IonHeader,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 import "./ViewOrganization.css";
@@ -174,16 +177,23 @@ const ViewOrganization: React.FC = () => {
 
     return (
         <IonPage className="ion-flex-offset-app">
-            <IonContent fullscreen className="ion-flex">
-                <IonCardTitle>{organization?.NameOfOrg}</IonCardTitle>
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>{organization?.NameOfOrg}</IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent fullscreen>
                 <IonGrid>
                     <IonRow>
                         <IonButton routerLink={`/EditOrganization/${id}`}>Edit Organization</IonButton>
                         <IonButton>Send Invite</IonButton>
                         <IonButton routerLink={`/OrganizationMap/${id}`}>Map</IonButton>
-                        <IonButton>Schedules</IonButton>
+                        <IonButton routerLink={`/ViewSchedule`}>Events</IonButton>
+                        <IonButton routerLink={`/BulletinBoards/${id}`}>Bulletin Board</IonButton>
+                        {/*if user is an admin or manager
                         <IonButton>Timesheets</IonButton>
                         <IonButton>Reports</IonButton>
+                        */}
                     </IonRow>
                     <IonRow>
                         <IonCol>

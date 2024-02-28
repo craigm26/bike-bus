@@ -21,6 +21,7 @@ import {
     IonRadio,
     IonRadioGroup,
     IonItemDivider,
+    IonToolbar,
 } from '@ionic/react';
 import { SetStateAction, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -493,9 +494,11 @@ const EditOrganization: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonHeader>
-                <IonTitle>Edit Organization</IonTitle>
+                <IonToolbar>
+                    <IonTitle>Editing {selectedOrganization?.NameOfOrg} </IonTitle>
+                </IonToolbar>
             </IonHeader>
-            <IonContent>
+            <IonContent fullscreen>
                 {
                     isLoading ?
                         <IonSpinner /> :

@@ -12,6 +12,9 @@ import {
     IonCardTitle,
     IonTitle,
     IonIcon,
+    IonGrid,
+    IonRow,
+    IonCol,
 } from '@ionic/react';
 import './Account.css';
 import { useAvatar } from '../components/useAvatar';
@@ -164,73 +167,78 @@ const Account: React.FC = () => {
     return (
         <IonPage className="ion-flex-offset-app">
             <IonContent fullscreen>
-                <IonCard className="ion-justify-content-center">
-                    <IonCardHeader>
-                        <IonTitle>{user?.username}</IonTitle>
-                        <IonCardTitle>Account</IonCardTitle>
-                    </IonCardHeader>
-                    <Avatar uid={user?.uid} size="large" />
-                    <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
-                        Update Avatar
-                    </IonButton>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={handleFileInputChange}
-                    />
-                    <IonItem>
-                        <IonLabel>Account Type</IonLabel>
-                        <IonText>{accountType}</IonText>
-                    </IonItem>
-                    <IonButton className="ion-button-profile" routerLink='/settings'>
-                        Settings
-                        <IonIcon slot="end" icon={cogOutline}></IonIcon>
-                    </IonButton>
-                    <IonButton routerLink='/SetUserDetails'>
-                        Update User Details
-                    </IonButton>
-                    <IonButton routerLink='/DeleteAccount'>
-                        Delete Account
-                    </IonButton>
-                    <IonButton routerLink='/SetLanguage'>
-                        Set Language
-                    </IonButton>
-                    <IonCardContent>
-                        <IonList>
-                            <IonItem>
-                                <IonLabel position="stacked">First Name</IonLabel>
-                                <IonText>{firstName}</IonText>
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Last Name</IonLabel>
-                                <IonText>{lastName}</IonText>
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">User Name</IonLabel>
-                                <IonText>{username}</IonText>
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Email</IonLabel>
-                                <IonText>{user?.email}</IonText>
-                            </IonItem>
-
-                            <IonItem>
-                                <IonLabel position="stacked">Account Modes</IonLabel>
-                                <IonText>{enabledAccountModes.join(', ')}</IonText>
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Time Zone</IonLabel>
-                                <IonText>{selectedTimezone}</IonText>
-                            </IonItem>
-                            <IonItem>
-                                <IonLabel position="stacked">Language</IonLabel>
-                                <IonText>{selectedLanguage}</IonText>
-                            </IonItem>
-                        </IonList>
-                    </IonCardContent>
-                </IonCard>
+                <IonGrid>
+                    <IonRow className="ion-justify-content-center">
+                        <IonCol size="3">
+                            <IonCardTitle>Account</IonCardTitle>
+                        </IonCol>
+                        <IonCol size="3">
+                            <IonTitle>{user?.username}</IonTitle>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+                <IonGrid>
+                    <IonRow className="ion-justify-content-center">
+                        <IonCol size="1">
+                            <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                                <Avatar uid={user?.uid} size="large" />
+                            </IonButton>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={handleFileInputChange}
+                            />
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+                <IonButton className="ion-button-profile" routerLink='/settings'>
+                    Settings
+                    <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                </IonButton>
+                <IonButton className="ion-button-profile" routerLink='/SetUserDetails'>
+                    Update User Details
+                </IonButton>
+                <IonButton className="ion-button-profile" routerLink='/DeleteAccount'>
+                    Delete Account
+                </IonButton>
+                <IonCardContent>
+                    <IonList>
+                        <IonItem>
+                            <IonLabel position="stacked">First Name</IonLabel>
+                            <IonText>{firstName}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Last Name</IonLabel>
+                            <IonText>{lastName}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">User Name</IonLabel>
+                            <IonText>{username}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Email</IonLabel>
+                            <IonText>{user?.email}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Account Type</IonLabel>
+                            <IonText>{accountType}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Account Modes</IonLabel>
+                            <IonText>{enabledAccountModes.join(', ')}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Time Zone</IonLabel>
+                            <IonText>{selectedTimezone}</IonText>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel position="stacked">Language</IonLabel>
+                            <IonText>{selectedLanguage}</IonText>
+                        </IonItem>
+                    </IonList>
+                </IonCardContent>
             </IonContent>
         </IonPage>
     );

@@ -8,6 +8,7 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  OAuthProvider,
   createUserWithEmailAndPassword,
   User,
   UserCredential,
@@ -17,6 +18,7 @@ import {
   indexedDBLocalPersistence,
   initializeAuth,
   signInWithPopup,
+  signInWithRedirect,
 } from 'firebase/auth';
 import { getDoc, doc, updateDoc, collection, setDoc, getDocFromServer } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
@@ -203,6 +205,35 @@ const useAuth = () => {
     }
   };
 
+  /*
+  const signInWithApple = async (): Promise<UserCredential | null> => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Native sign-in with Apple using Capacitor plugin
+        const result = await FirebaseAuthentication.signInWithApple();
+        if (!result.identityToken) {
+          throw new Error("No identity token received from Apple sign-in.");
+        }
+        const credential = OAuthProvider.credential({
+          idToken: result.identityToken,
+          rawNonce: result.nonce, // Ensure you're handling nonces correctly for security
+        });
+        return await signInWithCredential(firebaseAuth, credential);
+      } else {
+        // Web sign-in with Apple
+        const provider = new OAuthProvider('apple.com');
+        return await signInWithRedirect(firebaseAuth, provider);
+      }
+    } catch (error) {
+      console.error('Error signing in with Apple:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred. Please try again later.');
+      return null;
+    }
+  };
+  */
+  
+
+
 
     const signInAnonymously = async (): Promise<UserCredential> => {
       const isIOS = navigator.userAgent.match(/iPhone|iPad|iPod/i);
@@ -325,6 +356,7 @@ const useAuth = () => {
       signInWithEmailAndPassword,
       sendResetEmail,
       signInWithGoogle,
+      //signInWithApple,
       signInAnonymously,
       signOut,
       mapFirebaseUserToUserData,

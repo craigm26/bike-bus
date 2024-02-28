@@ -1,13 +1,19 @@
-.logout-button {
-    display: flex;
-    align-items: center;
+.ion-button-profile {
+    margin-top: 20px;
+    --background: #ffd800;
+    /* Use the same theme color for consistency */
+    --background-hover: #e0c000;
+    /* Darker shade for hover effect */
+    --color: #333333;
+    /* White text color for contrast */
+    --border-radius: 4px;
+    /* Optional: Add rounded corners */
+    width: auto;
+    /* Adjust width as needed, or remove for full-width buttons */
     justify-content: center;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    /* Center the button text */
+    margin-left: auto;
+    /* Center the button if not full width */
+    margin-right: auto;
+    /* Center the button if not full width */
 }

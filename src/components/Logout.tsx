@@ -21,7 +21,7 @@ const Logout: React.FC = () => {
     }
   };
 
-  return <IonButton className="logout-button" onClick={handleLogout}>Logout</IonButton>;
+  return <IonButton className="ion-button-profile" onClick={handleLogout}>Logout</IonButton>;
 };
 
 export default Logout;

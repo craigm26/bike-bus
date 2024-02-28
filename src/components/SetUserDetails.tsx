@@ -5,12 +5,15 @@ import { db } from '../firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import useAuth from '../useAuth';
 import moment from 'moment-timezone';
+import { set } from 'date-fns';
 
 const SetUserDetails: React.FC = () => {
   const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState<string>('');
+
   const [selectedTimezone, setSelectedTimezone] = useState('');
   const history = useHistory();
 
@@ -25,6 +28,7 @@ const SetUserDetails: React.FC = () => {
           setFirstName(userData.firstName || '');
           setLastName(userData.lastName || '');
           setSelectedTimezone(userData.timezone || ''); 
+          setPreferredLanguage(userData.preferredLanguage || '');
           // Set other fields as needed
         } else {
           console.log("No such document!");
@@ -43,6 +47,7 @@ const SetUserDetails: React.FC = () => {
         firstName: firstName,
         lastName: lastName,
         timezone: selectedTimezone,
+        preferredLanguage: preferredLanguage,
         // Include other fields as needed
       });
       // Provide feedback and/or navigate
@@ -79,6 +84,13 @@ const SetUserDetails: React.FC = () => {
                 value={username}
                 onIonChange={(e) => setUsername(e.detail.value!)}
               />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Preferred Language:</IonLabel>
+              <IonSelect value={preferredLanguage} onIonChange={e => setPreferredLanguage(e.detail.value)} placeholder="Select Language">
+                <IonSelectOption value="en">English</IonSelectOption>
+                <IonSelectOption value="de">Deutsch (German)</IonSelectOption>
+              </IonSelect>
             </IonItem>
             <IonItem>
               <IonLabel>Time Zone:</IonLabel>

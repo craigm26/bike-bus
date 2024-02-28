@@ -97,10 +97,10 @@ const Profile: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       // User not logged in
       return (
         <>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
             Login
           </IonButton>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp">
+          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
             Sign Up
           </IonButton>
         </>

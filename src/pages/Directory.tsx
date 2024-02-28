@@ -1,4 +1,4 @@
-import { IonPage, IonContent, IonCardHeader, IonTitle, IonCard, IonCardContent, IonCardTitle, IonItem, IonItemDivider, IonItemGroup, IonLabel, IonList, IonAccordionGroup, IonAccordion } from "@ionic/react";
+import { IonPage, IonContent, IonCardHeader, IonTitle, IonCard, IonCardContent, IonCardTitle, IonItem, IonItemDivider, IonItemGroup, IonLabel, IonList, IonAccordionGroup, IonAccordion, IonHeader, IonToolbar } from "@ionic/react";
 import React, { useCallback, useEffect, useState } from "react";
 import useAuth from "../useAuth";
 import { db } from '../firebaseConfig';
@@ -60,7 +60,7 @@ const Directory: React.FC = () => {
         const parts = address.split(',').map(part => part.trim());
         const country = parts[parts.length - 1];
         let city, state;
-    
+
         if (country === "USA") {
             city = parts[parts.length - 3];
             state = parts[parts.length - 2].split(' ')[0];
@@ -72,24 +72,24 @@ const Directory: React.FC = () => {
             city = parts[parts.length - 2];
             state = parts[parts.length - 1];
         }
-    
+
         return city && state ? `${city}, ${state}` : 'Unknown Location';
     };
-    
+
 
     const fetchBikeBusAndRoutes = useCallback(async () => {
         if (!user?.uid) return;
-    
+
         const BikeBusCollection = collection(db, 'bikebusgroups');
         const BikeBusSnapshot = await getDocs(BikeBusCollection);
         const BikeBusData = BikeBusSnapshot.docs.map(doc => ({ ...(doc.data() as BikeBus), id: doc.id }));
-    
+
         const newGroupedRoutes: GroupedRoutes = {};
         let cityStateSet = new Set<string>();
-    
+
         for (const bikeBus of BikeBusData) {
             let route: Route | undefined;
-            
+
             // If primaryRoute is set, use it, otherwise, take the first route from BikeBusRoutes array
             if (bikeBus.primaryRoute) {
                 const primaryRouteDoc = await getDoc(bikeBus.primaryRoute);
@@ -98,16 +98,16 @@ const Directory: React.FC = () => {
                 const routeDoc = await getDoc(bikeBus.BikeBusRoutes[0]);
                 route = routeDoc.exists() ? (routeDoc.data() as Route) : undefined;
             }
-    
+
             // If a route is found, process it
             if (route) {
                 const cityState = getCityState(route.endPointAddress);
                 cityStateSet.add(cityState);
-    
+
                 if (!newGroupedRoutes[cityState]) {
                     newGroupedRoutes[cityState] = [];
                 }
-    
+
                 newGroupedRoutes[cityState].push({
                     ...bikeBus,
                     RouteName: route.RouteName,
@@ -117,19 +117,19 @@ const Directory: React.FC = () => {
                 // Handle BikeBus without routes
                 const noRouteKey = 'BikeBus without Routes';
                 cityStateSet.add(noRouteKey);
-    
+
                 if (!newGroupedRoutes[noRouteKey]) {
                     newGroupedRoutes[noRouteKey] = [];
                 }
-    
+
                 newGroupedRoutes[noRouteKey].push(bikeBus);
             }
         }
-    
+
         setCityStateKeys(Array.from(cityStateSet));
         setGroupedRoutes(newGroupedRoutes);
-    
-    }, [user?.uid]);    
+
+    }, [user?.uid]);
 
 
     useEffect(() => {
@@ -150,17 +150,19 @@ const Directory: React.FC = () => {
             });
         }
     }, [user]);
-   
-      
+
+
 
     return (
         <IonPage className="ion-flex-offset-app">
-            <IonContent fullscreen>
-                <IonCardHeader>
+            <IonHeader>
+                <IonToolbar>
                     <IonTitle>Directory</IonTitle>
-                </IonCardHeader>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent fullscreen>
                 <IonList>
-                <IonAccordionGroup>
+                    <IonAccordionGroup>
                         {cityStateKeys.map(cityState => (
                             <IonAccordion key={cityState}>
                                 <IonItem slot="header">

@@ -12,6 +12,7 @@ import {
 import { useHistory } from 'react-router-dom';
 import './Login.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
+import AppleLogo from '../assets/Apple_logo_black.svg';
 import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
 import { getRedirectResult, User } from '@firebase/auth';
@@ -22,6 +23,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const {
     signInWithEmailAndPassword,
+    //signInWithApple,
     signInWithGoogle,
     signInAnonymously,
     checkAndUpdateAccountModes,
@@ -55,10 +57,10 @@ const Login: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
-        const userCredential = await signInWithGoogle();
-        if (userCredential?.user) {
-          await processUser(userCredential.user);
-        }
+      const userCredential = await signInWithGoogle();
+      if (userCredential?.user) {
+        await processUser(userCredential.user);
+      }
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
@@ -89,7 +91,8 @@ const Login: React.FC = () => {
           await processUser(result.user);
         }
       } catch (error) {
-        console.log(error);       }
+        console.log(error);
+      }
     })();
 
     if (headerContext) {
@@ -146,6 +149,29 @@ const Login: React.FC = () => {
             </IonButton>
           </p>
         </IonText>
+        {/* Apple Sign In Button }
+        <IonText className="use-apple">
+          <p>
+            <IonButton color="clear" onClick={async () => {
+              try {
+                const userCredential = await signInWithApple();
+                if (userCredential?.user) {
+                  await processUser(userCredential.user);
+                }
+              } catch (error) {
+                if (error instanceof Error) {
+                  setErrorMessage("Error logging in with Apple: " + error.message);
+                } else {
+                  setErrorMessage("Error logging in with Apple.");
+                }
+              }
+            }}>
+              <img src={AppleLogo} alt="Apple logo" style={{ marginRight: '0px' }} />
+            </IonButton>
+          </p>
+        </IonText>
+        */}
+
 
         <IonText className="use-anonymously">
           <p>

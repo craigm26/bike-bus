@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonCol, IonContent, IonGrid, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText } from '@ionic/react';
+import { IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText, IonTitle, IonToolbar } from '@ionic/react';
 import './Signup.css';
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
@@ -82,17 +82,14 @@ const Signup: React.FC = () => {
     };
 
     return (
-
         <IonPage className="ion-flex-offset-app">
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Sign Up</IonTitle>
+                </IonToolbar>
+            </IonHeader>
             <IonContent fullscreen>
                 <IonGrid>
-                    <IonRow>
-                        <IonCol>
-                            <IonText>
-                                <h1>Sign Up</h1>
-                            </IonText>
-                        </IonCol>
-                    </IonRow>
                     {errorMessage && (
                         <IonText color="danger">
                             <p>{errorMessage}</p>

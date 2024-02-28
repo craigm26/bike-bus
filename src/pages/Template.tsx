@@ -1,7 +1,10 @@
 import {
   IonContent,
+  IonHeader,
   IonPage,
   IonSpinner,
+  IonTitle,
+  IonToolbar,
 } from '@ionic/react';
 import { useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
@@ -21,7 +24,13 @@ const Template: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent fullscreen>
+    <IonHeader>
+        <IonToolbar>
+            <IonTitle></IonTitle>
+        </IonToolbar>
+    </IonHeader>
+    <IonContent fullscreen>
+      {/* Add content here */}
       </IonContent>
     </IonPage>
   );
