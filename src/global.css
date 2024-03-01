@@ -48,6 +48,9 @@
   }
 }
 
+.ion-button {
+--border-radius: 20px; 
+}
 
 .location-app-intro-container {
   display: flex;

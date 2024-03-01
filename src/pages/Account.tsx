@@ -15,6 +15,8 @@ import {
     IonGrid,
     IonRow,
     IonCol,
+    IonHeader,
+    IonToolbar,
 } from '@ionic/react';
 import './Account.css';
 import { useAvatar } from '../components/useAvatar';
@@ -165,44 +167,42 @@ const Account: React.FC = () => {
     };
 
     return (
+
         <IonPage className="ion-flex-offset-app">
-            <IonContent fullscreen>
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Account</IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent fullscreen>                
+            <IonCardTitle>{user?.username}</IonCardTitle>
                 <IonGrid>
                     <IonRow className="ion-justify-content-center">
-                        <IonCol size="3">
-                            <IonCardTitle>Account</IonCardTitle>
-                        </IonCol>
-                        <IonCol size="3">
-                            <IonTitle>{user?.username}</IonTitle>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-                <IonGrid>
-                    <IonRow className="ion-justify-content-center">
-                        <IonCol size="1">
+                        <IonCol size="auto">
                             <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
                                 <Avatar uid={user?.uid} size="large" />
                             </IonButton>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={handleFileInputChange}
-                            />
                         </IonCol>
                     </IonRow>
                 </IonGrid>
-                <IonButton className="ion-button-profile" routerLink='/settings'>
-                    Settings
-                    <IonIcon slot="end" icon={cogOutline}></IonIcon>
-                </IonButton>
-                <IonButton className="ion-button-profile" routerLink='/SetUserDetails'>
-                    Update User Details
-                </IonButton>
-                <IonButton className="ion-button-profile" routerLink='/DeleteAccount'>
-                    Delete Account
-                </IonButton>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleFileInputChange}
+                />
+                <IonGrid>
+                    <IonRow className="ion-justify-content-center">
+                        <IonButton className="ion-button-profile" routerLink='/settings'>
+                            Settings
+                            <IonIcon slot="end" icon={cogOutline}></IonIcon>
+                        </IonButton>
+                        <IonButton className="ion-button-profile" routerLink='/SetUserDetails'>
+                            Update User Details
+                        </IonButton>
+                    </IonRow>
+                </IonGrid>
                 <IonCardContent>
                     <IonList>
                         <IonItem>
@@ -238,6 +238,9 @@ const Account: React.FC = () => {
                             <IonText>{selectedLanguage}</IonText>
                         </IonItem>
                     </IonList>
+                    <IonButton color="danger" className="ion-button-profile" routerLink='/DeleteAccount'>
+                        Delete Account
+                    </IonButton>
                 </IonCardContent>
             </IonContent>
         </IonPage>

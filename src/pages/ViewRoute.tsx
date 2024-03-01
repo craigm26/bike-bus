@@ -6,8 +6,11 @@ import {
   IonCol,
   IonGrid,
   IonRow,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
 } from '@ionic/react';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
@@ -16,6 +19,7 @@ import useAuth from "../useAuth";
 import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
+import { AuthContext } from '../AuthContext';
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -69,6 +73,9 @@ interface Route {
   travelMode: string;
   pathCoordinates: Coordinate[];
   isBikeBus: boolean;
+  duration: string;
+  distance: string;
+  bicyclingSpeed: string;
 }
 
 interface Coordinate {
@@ -77,9 +84,11 @@ interface Coordinate {
 }
 
 const ViewRoute: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loadingAuthState } = useContext(AuthContext);
   const history = useHistory();
-
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
   const { avatarUrl } = useAvatar(user?.uid);
   const headerContext = useContext(HeaderContext);
   const [accountType, setaccountType] = useState<string>('');
@@ -87,12 +96,6 @@ const ViewRoute: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const { id } = useParams<{ id: string }>();
   const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
-  const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-    libraries: libraries,
-  });
   const [loading, setLoading] = useState(true);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -115,22 +118,23 @@ const ViewRoute: React.FC = () => {
     height: '100%',
   };
 
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries: libraries,
+  });
+
   useEffect(() => {
-    if (id) fetchSingleRoute(id);
-
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
-          }
-        }
-      });
+    if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
+      // Calculate the center point between start and end points of the route
+      const newCenter = {
+        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+      };
+      setMapCenter(newCenter);
     }
+  }, [selectedRoute, startGeo, endGeo]);
 
-  }, [id, user]);
 
   const fetchSingleRoute = async (id: string) => {
     const docRef = doc(db, 'routes', id);
@@ -143,6 +147,9 @@ const ViewRoute: React.FC = () => {
         isBikeBus: docSnap.data().isBikeBus,
         startPoint: docSnap.data().startPoint,
         endPoint: docSnap.data().endPoint,
+        duration: docSnap.data().duration,
+        distance: docSnap.data().distance,
+        bicyclingSpeed: docSnap.data().bicyclingSpeed,
         BikeBusGroupId: docSnap.data().BikeBusGroupId,
         // convert BikeBusGroupId (document reference in firebase) to a string
         pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
@@ -230,11 +237,33 @@ const ViewRoute: React.FC = () => {
     }
   };
 
-
-
-
   const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
+  useEffect(() => {
+
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      getDoc(userRef).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData && userData.accountType) {
+            setaccountType(userData.accountType);
+            // get the start and end points of the route and set to state
+            if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
+              setMapCenter({
+                lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+                lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+              });
+            }
+          }
+        }
+      }
+      );
+    }
+
+    if (id) fetchSingleRoute(id);
+
+  }, [id, user]);
 
   const deleteRoute = async () => {
     if (selectedRoute) {
@@ -246,13 +275,27 @@ const ViewRoute: React.FC = () => {
     }
   };
 
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent style={{ height: '100%' }}>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Viewing Route</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
             <IonCol>
               <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol>
+              <IonLabel>Speed: {selectedRoute?.bicyclingSpeed}</IonLabel>
             </IonCol>
           </IonRow>
           <IonRow>
@@ -273,6 +316,13 @@ const ViewRoute: React.FC = () => {
             <IonCol>
               <IonLabel>
                 Ending Point: {selectedRoute?.endPointAddress}
+              </IonLabel>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol>
+              <IonLabel>
+                Duration: {selectedRoute?.duration} Minutes
               </IonLabel>
             </IonCol>
           </IonRow>
@@ -307,158 +357,138 @@ const ViewRoute: React.FC = () => {
           )}
           <IonRow style={{ flex: '1' }}>
             <IonCol>
-              {isLoaded && selectedRoute ? (
-                <GoogleMap
-                  mapContainerStyle={containerMapStyle}
-                  center={mapCenter}
-                  zoom={13}
-                  options={{
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: true,
-                    disableDoubleClickZoom: true,
-                    disableDefaultUI: true,
-                    mapId: 'b75f9f8b8cf9c287',
-                  }}
-                >
-                  <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#000000",
-                        strokeOpacity: 1,
-                        strokeWeight: 5,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
-                      }}
-                    />
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#ffd800",
-                        strokeOpacity: 1,
-                        strokeWeight: 3,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
-                      }}
-                    />
-                  </React.Fragment>
-                  <Marker
-                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                    title="Start"
-                    label={"Start"}
-                    onClick={() => setSelectedMarker(startGeo)}
+              <GoogleMap
+                onLoad={(map) => {
+                  mapRef.current = map;
+                  bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+                }}
+                mapContainerStyle={containerMapStyle}
+                center={mapCenter}
+                zoom={16}
+                options={{
+                  zoomControl: true,
+                  zoomControlOptions: {
+                    position: window.google.maps.ControlPosition.LEFT_CENTER
+                  },
+                  mapTypeControl: false,
+                  mapTypeControlOptions: {
+                    position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                    mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                  },
+                  streetViewControl: false,
+                  fullscreenControl: true,
+                  disableDoubleClickZoom: true,
+                  disableDefaultUI: true,
+                  mapId: 'b75f9f8b8cf9c287',
+                }}
+                onUnmount={() => {
+                  mapRef.current = null;
+                }}
+              >
+                <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
+                  <Polyline
+                    path={selectedRoute?.pathCoordinates}
+                    options={{
+                      strokeColor: "#000000",
+                      strokeOpacity: 1,
+                      strokeWeight: 5,
+                      geodesic: true,
+                      draggable: false,
+                      editable: false,
+                      visible: true,
+                    }}
                   />
-                  <Marker
-                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                    title="End"
-                    label={"End"}
-                    onClick={() => setSelectedMarker(endGeo)}
+                  <Polyline
+                    path={selectedRoute?.pathCoordinates}
+                    options={{
+                      strokeColor: "#ffd800",
+                      strokeOpacity: 1,
+                      strokeWeight: 3,
+                      geodesic: true,
+                      draggable: false,
+                      editable: false,
+                      visible: true,
+                    }}
                   />
-                  {bikeBusStops?.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={{ lat: stop.location.lat, lng: stop.location.lng }}
-                      title={stop.BikeBusStopName}
-                      label={stop.BikeBusStopName}
-                      onClick={() => {
-                        setSelectedBikeBusStop(stop.location);
-                        setSelectedStopIndex(index);
-                      }}
-                    />
-                  ))}
-                  {selectedMarker && (
-                    <InfoWindow
-                      position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                      onCloseClick={() => setSelectedMarker(null)}
-                    >
-                      <div>
-                        <h4>Marker Data</h4>
-                        <p>Latitude: {selectedMarker.lat}</p>
-                        <p>Longitude: {selectedMarker.lng}</p>
-                      </div>
-                    </InfoWindow>
-                  )}
-
-                </GoogleMap>
-              ) : (
-                <>
-                  {isLoaded && selectedRoute && (
-                    <>
-                      <GoogleMap
-                        mapContainerStyle={containerMapStyle}
-                        center={mapCenter}
-                        zoom={13}
-                        options={{
-                          mapTypeControl: false,
-                          streetViewControl: false,
-                          fullscreenControl: true,
-                          disableDoubleClickZoom: true,
-                          disableDefaultUI: true,
-                        }}
-                      >
-                        <Marker
-                          position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                          title="Start"
-                          onClick={() => setSelectedMarker(startGeo)}
-                        />
-                        <Marker
-                          position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                          title="End"
-                          onClick={() => setSelectedMarker(endGeo)}
-                        />
-                        {selectedMarker && (
-                          <InfoWindow
-                            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                            onCloseClick={() => setSelectedMarker(null)}
-                          >
-                            <div>
-                              <h4>Marker Data</h4>
-                              <p>Latitude: {selectedMarker.lat}</p>
-                              <p>Longitude: {selectedMarker.lng}</p>
-                            </div>
-                          </InfoWindow>
-                        )}
-                        {bikeBusStops?.map((stop, index) => (
-                          <Marker
-                            key={index}
-                            position={{ lat: stop.location.lat, lng: stop.location.lng }}
-                            title={stop.BikeBusStopName}
-                            label={stop.BikeBusStopName}
-                            onClick={() => {
-                              setSelectedBikeBusStop(stop.location);
-                              setSelectedStopIndex(index);
-                            }}
-                          />
-                        ))}
-                      </GoogleMap>
-                      <Polyline
-                        path={selectedRoute.pathCoordinates}
-                        options={{
-                          strokeColor: "#ffd800",
-                          strokeOpacity: 1.0,
-                          strokeWeight: 2,
-                          geodesic: true,
-                          draggable: false,
-                          editable: false,
-                          visible: true,
-                        }}
-                      />
-                    </>
-                  )}
-                </>
-              )}
-
+                </React.Fragment>
+                {bikeBusStops?.map((stop, index) => (
+                  <Marker
+                    key={index}
+                    position={{ lat: stop.location.lat, lng: stop.location.lng }}
+                    title={stop.BikeBusStopName}
+                    label={stop.BikeBusStopName}
+                    onClick={() => {
+                      setSelectedBikeBusStop(stop.location);
+                      setSelectedStopIndex(index);
+                    }}
+                  />
+                ))}
+                {selectedMarker && (
+                  <InfoWindow
+                    position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                    onCloseClick={() => setSelectedMarker(null)}
+                  >
+                    <div>
+                      <h4>Marker Data</h4>
+                      <p>Latitude: {selectedMarker.lat}</p>
+                      <p>Longitude: {selectedMarker.lng}</p>
+                    </div>
+                  </InfoWindow>
+                )}
+                <Marker
+                  position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                  title="Start"
+                  label={"Start"}
+                  onClick={() => setSelectedMarker(startGeo)}
+                />
+                <Marker
+                  position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                  title="End"
+                  label={"End"}
+                  onClick={() => setSelectedMarker(endGeo)}
+                />
+                {selectedMarker && (
+                  <InfoWindow
+                    position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                    onCloseClick={() => setSelectedMarker(null)}
+                  >
+                    <div>
+                      <h4>Marker Data</h4>
+                      <p>Latitude: {selectedMarker.lat}</p>
+                      <p>Longitude: {selectedMarker.lng}</p>
+                    </div>
+                  </InfoWindow>
+                )}
+                {bikeBusStops?.map((stop, index) => (
+                  <Marker
+                    key={index}
+                    position={{ lat: stop.location.lat, lng: stop.location.lng }}
+                    title={stop.BikeBusStopName}
+                    label={stop.BikeBusStopName}
+                    onClick={() => {
+                      setSelectedBikeBusStop(stop.location);
+                      setSelectedStopIndex(index);
+                    }}
+                  />
+                ))}
+              </GoogleMap>
+              <Polyline
+                path={selectedRoute?.pathCoordinates}
+                options={{
+                  strokeColor: "#ffd800",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 2,
+                  geodesic: true,
+                  draggable: false,
+                  editable: false,
+                  visible: true,
+                }}
+              />
             </IonCol>
           </IonRow>
         </IonGrid>
       </IonContent>
     </IonPage>
-
   );
 
 };
