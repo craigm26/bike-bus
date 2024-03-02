@@ -124,118 +124,8 @@ const ViewRoute: React.FC = () => {
     libraries: libraries,
   });
 
-  useEffect(() => {
-    if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
-      // Calculate the center point between start and end points of the route
-      const newCenter = {
-        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
-      };
-      setMapCenter(newCenter);
-    }
-  }, [selectedRoute, startGeo, endGeo]);
 
 
-  const fetchSingleRoute = async (id: string) => {
-    const docRef = doc(db, 'routes', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const routeData = {
-        ...docSnap.data() as Route,
-        id: docSnap.id,
-        isBikeBus: docSnap.data().isBikeBus,
-        startPoint: docSnap.data().startPoint,
-        endPoint: docSnap.data().endPoint,
-        duration: docSnap.data().duration,
-        distance: docSnap.data().distance,
-        bicyclingSpeed: docSnap.data().bicyclingSpeed,
-        BikeBusGroupId: docSnap.data().BikeBusGroupId,
-        // convert BikeBusGroupId (document reference in firebase) to a string
-        pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-          lat: coord.lat,  // use 'lat' instead of 'latitude'
-          lng: coord.lng,  // use 'lng' instead of 'longitude'
-        })),
-      };
-      setSelectedRoute(routeData);
-      setBikeBusGroupId(routeData.BikeBusGroupId);
-      setPath(routeData.pathCoordinates);
-      setBikeBusStopIds(routeData.BikeBusStopIds);
-      setStartGeo(routeData.startPoint);
-      setEndGeo(routeData.endPoint);
-      // test if the route is a bikebus
-      if (routeData.isBikeBus) {
-        console.log("This is a bike bus route");
-        console.log(routeData.BikeBusGroupId);
-        // fetch the bikebus group data
-        const docRef = doc(db, 'bikebusgroups', routeData.BikeBusGroupId?.id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const bikeBusGroupData = {
-            ...docSnap.data() as BikeBusGroup,
-            id: docSnap.id,
-          };
-          setBikeBusGroup(bikeBusGroupData);
-          console.log(bikeBusGroupData);
-        } else {
-          // doc.data() will be undefined in this case
-          console.log("No such document!");
-        }
-      }
-      setMapCenter({
-        lat: ((selectedRoute?.startPoint?.lat ?? 0) + (selectedRoute?.endPoint?.lat ?? 0)) / 2,
-        lng: ((selectedRoute?.startPoint?.lng ?? 0) + (selectedRoute?.endPoint?.lng ?? 0)) / 2,
-      });
-
-      if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
-        setStartGeo(selectedRoute?.startPoint);
-        console.log(selectedRoute?.startPoint);
-        setEndGeo(selectedRoute.endPoint);
-        console.log(selectedRoute.endPoint);
-      }
-
-      if (selectedRoute && selectedRoute.BikeBusStopIds) {
-        const bikeBusStopData = async () => {
-          // fetch the bikebus stop data by looping through the bikebus stop ids array
-          const bikeBusStopDataArray: BikeBusStop[] = [];
-          for (const bikeBusStopId of selectedRoute.BikeBusStopIds) {
-            const docRef = doc(db, 'bikebusstops', bikeBusStopId.id);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-              const bikeBusStopData = {
-                ...docSnap.data() as BikeBusStop,
-                id: docSnap.id,
-                location: {
-                  lat: docSnap.data()?.lat,
-                  lng: docSnap.data()?.lng,
-                },
-                // also get the formatted address and place name along with the BikeBusStopName field and values
-                formattedAddress: docSnap.data()?.formattedAddress,
-                placeName: docSnap.data()?.placeName,
-                BikeBusStopName: docSnap.data()?.BikeBusStopName,
-              };
-              bikeBusStopDataArray.push(bikeBusStopData);
-              setBikeBusStops(bikeBusStopDataArray);
-              console.log(bikeBusStopData);
-              console.log(bikeBusStops);
-              console.log(bikeBusStopDataArray);
-            } else {
-              // doc.data() will be undefined in this case
-              console.log("No such document!");
-            }
-          }
-          console.log(bikeBusStopDataArray);
-          setBikeBusStops(bikeBusStopDataArray);
-          console.log(bikeBusStopDataArray);
-          console.log(bikeBusStops);
-        };
-
-        //call bikebus stop data
-        bikeBusStopData();
-      }
-      setLoading(false);
-    }
-  };
 
   const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
@@ -261,9 +151,113 @@ const ViewRoute: React.FC = () => {
       );
     }
 
+    const fetchSingleRoute = async (id: string) => {
+      const docRef = doc(db, 'routes', id);
+      const docSnap = await getDoc(docRef);
+  
+      if (docSnap.exists()) {
+        const routeData = {
+          ...docSnap.data() as Route,
+          id: docSnap.id,
+          isBikeBus: docSnap.data().isBikeBus,
+          startPoint: docSnap.data().startPoint,
+          endPoint: docSnap.data().endPoint,
+          duration: docSnap.data().duration,
+          distance: docSnap.data().distance,
+          bicyclingSpeed: docSnap.data().bicyclingSpeed,
+          BikeBusGroupId: docSnap.data().BikeBusGroupId,
+          // convert BikeBusGroupId (document reference in firebase) to a string
+          pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
+            lat: coord.lat,  // use 'lat' instead of 'latitude'
+            lng: coord.lng,  // use 'lng' instead of 'longitude'
+          })),
+        };
+        setSelectedRoute(routeData);
+        setBikeBusGroupId(routeData.BikeBusGroupId);
+        setPath(routeData.pathCoordinates);
+        setBikeBusStopIds(routeData.BikeBusStopIds);
+        setStartGeo(routeData.startPoint);
+        setEndGeo(routeData.endPoint);
+        // test if the route is a bikebus
+        if (routeData.isBikeBus) {
+          console.log("This is a bike bus route");
+          console.log(routeData.BikeBusGroupId);
+          // fetch the bikebus group data
+          const docRef = doc(db, 'bikebusgroups', routeData.BikeBusGroupId?.id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const bikeBusGroupData = {
+              ...docSnap.data() as BikeBusGroup,
+              id: docSnap.id,
+            };
+            setBikeBusGroup(bikeBusGroupData);
+            console.log(bikeBusGroupData);
+          } else {
+            // doc.data() will be undefined in this case
+            console.log("No such document!");
+          }
+        }
+
+  
+        if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
+          setStartGeo(selectedRoute?.startPoint);
+          console.log(selectedRoute?.startPoint);
+          setEndGeo(selectedRoute.endPoint);
+          console.log(selectedRoute.endPoint);
+        }
+
+        const newCenter = {
+          lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+          lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+        };
+        setMapCenter(newCenter);
+  
+        if (selectedRoute && selectedRoute.BikeBusStopIds) {
+          const bikeBusStopData = async () => {
+            // fetch the bikebus stop data by looping through the bikebus stop ids array
+            const bikeBusStopDataArray: BikeBusStop[] = [];
+            for (const bikeBusStopId of selectedRoute.BikeBusStopIds) {
+              const docRef = doc(db, 'bikebusstops', bikeBusStopId.id);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                const bikeBusStopData = {
+                  ...docSnap.data() as BikeBusStop,
+                  id: docSnap.id,
+                  location: {
+                    lat: docSnap.data()?.lat,
+                    lng: docSnap.data()?.lng,
+                  },
+                  // also get the formatted address and place name along with the BikeBusStopName field and values
+                  formattedAddress: docSnap.data()?.formattedAddress,
+                  placeName: docSnap.data()?.placeName,
+                  BikeBusStopName: docSnap.data()?.BikeBusStopName,
+                };
+                bikeBusStopDataArray.push(bikeBusStopData);
+                setBikeBusStops(bikeBusStopDataArray);
+                console.log(bikeBusStopData);
+                console.log(bikeBusStops);
+                console.log(bikeBusStopDataArray);
+              } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+              }
+            }
+            console.log(bikeBusStopDataArray);
+            setBikeBusStops(bikeBusStopDataArray);
+            console.log(bikeBusStopDataArray);
+            console.log(bikeBusStops);
+          };
+  
+          //call bikebus stop data
+          bikeBusStopData();
+        }
+        setLoading(false);
+      }
+    };
+
     if (id) fetchSingleRoute(id);
 
-  }, [id, user]);
+  }, [id]);
 
   const deleteRoute = async () => {
     if (selectedRoute) {
@@ -364,7 +358,7 @@ const ViewRoute: React.FC = () => {
                 }}
                 mapContainerStyle={containerMapStyle}
                 center={mapCenter}
-                zoom={16}
+                zoom={13}
                 options={{
                   zoomControl: true,
                   zoomControlOptions: {
