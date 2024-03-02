@@ -17,9 +17,8 @@ The [BikeBus app](https://bikebus.app) is software meant to be an one-stop shop 
   - [Why](#why)
   - [Features](#features)
   - [Contributing](#contributing)
-  - [Getting Started](#getting-started)
   - [Pre-requisites](#pre-requisites)
-  - [Installing](#installing)
+  - [Getting Started](#getting-started)
   - [Development Builds](#development-builds)
     - [To deploy to iOS TestFlight](#to-deploy-to-ios-testflight)
     - [To deploy development builds and distribute to Google Play Store](#to-deploy-development-builds-and-distribute-to-google-play-store)
@@ -97,21 +96,42 @@ We are looking for help with the following:
   8. Security
   9. Performance
 
-## Getting Started
-
-- [We're using Ionic Framework with React to build the app](https://ionicframework.com/docs/react)
-- Ionic Serve to preview the build locally
-- Then push to Firebase Hosting for production builds
-
 ## Pre-requisites
 
 - npm 18.20.0
 
-## Installing
+## Getting Started
+[We're using Ionic Framework with React to build the app](https://ionicframework.com/docs/react) so be sure to check out their documentation.
 
-- Open a terminal in VSCode
-- Clone the repository
-- Run the following command: npm install
+To get started, open a terminal and navigate to the directory where you want to store the project and run the following commands:
+
+```bash
+git clone git@github.com:craigm26/bike-bus.git
+cd bike-bus
+npm install
+```
+
+This will clone the project, navigate to its directory and install all dependencies.
+
+Next, you will need to [create a Firebase project + register an app](https://firebase.google.com/docs/web/setup?continue=https%3A%2F%2Ffirebase.google.com%2Flearn%2Fpathways%2Ffirebase-web%23article-https%3A%2F%2Ffirebase.google.com%2Fdocs%2Fweb%2Fsetup) and add the configuration to an env file. This is just to satisfy the Firebase SDK requirements; feel free to decline analytics, A/B testing, etc.
+
+For your convenience, a .env.example file has been provided with the necessary keys and empty values. The following command will create a .env file for you:
+
+```bash
+cp .env.example .env
+```
+
+From there, use the values from your Firebase project to populate the .env file as they belong in the firebaseConfig object in src/firebaseConfig.js.
+
+Then, open the .env file and add your Firebase configuration. You can find this in the Firebase Console under Project Settings > General > Your apps > SDK setup and configuration > Config. 
+
+With your environment configured, you should be able to run the following commands:
+
+```bash
+npx ionic serve
+```
+npx is not necessary if you have Ionic installed globally but generally that is not recommended. This will start a local development server and open the app in your default web browser. You should now be able to see the app running locally! A Google Maps key will be required to see the map. You can get one from the [Google Cloud Console](https://console.cloud.google.com/) but this is probably out of scope for "Getting Started".
+
 
 ## Development Builds
 
