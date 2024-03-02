@@ -15,6 +15,7 @@ import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { setDoc, updateDoc, doc, getDoc, arrayUnion, addDoc, collection, DocumentReference } from 'firebase/firestore';
+import firebase from 'firebase/compat/app';
 import useAuth from "../useAuth";
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
@@ -206,32 +207,15 @@ const CreateBikeBusStop: React.FC = () => {
     }
   };
 
-  const addNewStop = async (newStop: Coordinate): Promise<string | null> => {
-    try {
-      const docRef = await addDoc(collection(db, 'bikebusstops'), newStop);
-      return docRef.id;
-      // set docRef.id as the new stop's id
-    } catch (e) {
-      console.error("Error adding document: ", e);
-    }
-    return null;
-  };
-
-  const updateBikeBusStops = async (newStopId: string) => {
-    const bikeBusStopRef = doc(db, 'bikebusstops', newStopId);
-
-    // Get the bikebusgroup's id from the selected route
-    const bikeBusGroupId = selectedRoute?.BikeBusGroupId || '';
-
-    // Get the route id from the URL parameter and set it as a document reference to the routes document collection
-    const routeId = doc(db, 'routes', id);
-
-    await updateDoc(bikeBusStopRef, {
-      BikeBusGroupId: bikeBusGroupId,
-      BikeBusRouteId: routeId,
-      BikeBusStopName: BikeBusStopName
+  const addNewStop = async (newStop: Coordinate, bikeBusStopDetails: Omit<BikeBusStop, 'id'>): Promise<void> => {
+    if (!id) return; // Ensure we have a route ID
+  
+    await addDoc(collection(db, 'routes', id, 'BikeBusStops'), {
+      ...bikeBusStopDetails,
+      location: new firebase.firestore.GeoPoint(newStop.lat, newStop.lng)
     });
   };
+
 
   const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
     console.log('place', place);
@@ -277,32 +261,26 @@ const CreateBikeBusStop: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+
   const onSaveStopButtonClick = async () => {
-
-    console.log('BikeBusStopName', BikeBusStopName);
-    console.log('PlaceLocation', PlaceLocation);
-    console.log('selectedRoute', selectedRoute);
-    console.log('BikeBusStops', BikeBusStops);
-    if (selectedRoute && BikeBusStops.length > 0) {
-      const newStop = BikeBusStops[BikeBusStops.length - 1];
-      const newStopId = await addNewStop(newStop);
-
-      if (newStopId) {
-        // Create a DocumentReference for the newStopId
-        const newStopDocRef = doc(db, "bikebusstops", newStopId);
-        const routeDocRef = doc(db, "routes", id);
-        await setDoc(routeDocRef, {
-          BikeBusStopIds: arrayUnion(newStopDocRef)
-        }, { merge: true });
-
-
-
-        await updateBikeBusStops(newStopId);
-        alert('BikeBusStop added successfully!');
-        history.push(`/EditRoute/${id}`);
-      }
-    }
+    if (!selectedRoute || BikeBusStops.length === 0) return;
+  
+    const newStop = BikeBusStops[BikeBusStops.length - 1];
+    await addNewStop(newStop, {
+      BikeBusGroupId: selectedRoute.BikeBusGroupId,
+      BikeBusRouteId: selectedRoute.BikeBusRouteId,
+      BikeBusStopName: BikeBusStopName,
+      placeId: PlaceId,
+      photos: Photos,
+      formattedAddress: FormattedAddress,
+      placeName: PlaceName,
+      location: ''
+    });
+  
+    alert('BikeBusStop added successfully!');
+    history.push(`/EditRoute/${id}`);
   };
+  
 
 
 

@@ -60,7 +60,15 @@ interface BikeBusStops {
 }
 
 interface BikeBusStop {
+  id: string;
+  StopId: string;
   BikeBusStopName: string;
+  BikBusGroupId: DocumentReference;
+  BikeBusRouteId: DocumentReference;
+  lat: number;
+  lng: number;
+  BikeBusStopIds: DocumentReference[];
+  BikeBusGroupId: string;
 }
 
 interface Route {
@@ -111,7 +119,6 @@ const EditRoute: React.FC = () => {
   const [routeEndName, setRouteEndName] = useState<string>('');
   const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
   const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
-  const [bikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
   const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
   const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -173,6 +180,7 @@ const EditRoute: React.FC = () => {
       setRouteEndName(selectedRoute.endPointName);
       setBicyclingSpeed(selectedRoute.bicyclingSpeed);
       setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
+      setTravelModeSelector(selectedRoute.bicyclingSpeedSelector);
     }
   }
     , [selectedRoute]);
@@ -245,7 +253,21 @@ const EditRoute: React.FC = () => {
     };
 
     if (id) fetchSingleRoute(id);
-  }, [id]);
+
+    const fetchBikeBusStopsForRoute = async () => {
+      if (!id) return;
+
+      const bikeBusStopsSnapshot = await getDocs(collection(db, 'routes', id, 'BikeBusStops'));
+      const bikeBusStops = bikeBusStopsSnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as BikeBusStop[];
+
+      setBikeBusStops(bikeBusStops);
+    };
+
+    fetchBikeBusStopsForRoute();
+  }, [id, user]);
 
 
   useEffect(() => {
@@ -549,7 +571,7 @@ const EditRoute: React.FC = () => {
     const travelMode = travelModeSelector as google.maps.TravelMode ?? google.maps.TravelMode.BICYCLING;
 
     // the condition to check if there are any bikebusstops
-    if (selectedRoute.BikeBusStopIds ) {
+    if (selectedRoute.BikeBusStopIds) {
       // get new route without legs because there aren't any bikebusstops
 
       const routeWithOutLegs = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, [], travelMode, Number(bicyclingSpeed));
@@ -571,6 +593,10 @@ const EditRoute: React.FC = () => {
     setDuration(duration);
   }
 
+  const saveBikeBusStopName = async (stopId: string, newName: string) => {
+    const bikeBusStopRef = doc(db, 'routes', id, 'BikeBusStops', stopId);
+    await updateDoc(bikeBusStopRef, { BikeBusStopName: newName });
+  };
 
 
 
@@ -599,6 +625,12 @@ const EditRoute: React.FC = () => {
     setBikeBusStops(bikeBusStopsData);
     return bikeBusStopsData;
   };
+
+  const fetchBikeBusStopsForRoute = async (routeId: string) => {
+    const stopsSnapshot = await getDocs(collection(db, 'routes', routeId, 'BikeBusStops'));
+    return stopsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BikeBusStop[];
+  };
+
 
   const calculateDistanceAndDuration = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string) => {
 
@@ -855,77 +887,13 @@ const EditRoute: React.FC = () => {
 
 
 
-  const handleDeleteStop = async (StopId: string) => {
-    try {
-      if (selectedRoute) {
-        console.log('selectedRoute:', selectedRoute);
-        console.log('id:', id);
-        console.log('StopId:', StopId);
-        console.log('BikeBusStops:', BikeBusStops);
-
-        // Create the DocRefStopid using the id of the stop to be deleted
-        const DocRefStopid = doc(db, 'bikebusstops', StopId);
-        console.log('DocRefStopid:', DocRefStopid);
-
-        // Get the current route data
-        const routeRef = doc(db, 'routes', id);
-        const routeSnap = await getDoc(routeRef);
-        const routeData = routeSnap.data() as Route;
-
-        // Manually filtering out the DocRefStopId
-        const updatedBikeBusStopIds = routeData.BikeBusStopIds.filter((stopId: any) => {
-          return stopId.path !== DocRefStopid.path; // replace with your actual path matching logic
-        });
-
-
-        console.log('routeData:', routeData);
-        console.log('routeData.BikeBusStopIds:', routeData.BikeBusStopIds);
-
-        await updateDoc(routeRef, {
-          ...routeData,
-          BikeBusStopIds: updatedBikeBusStopIds,
-        });
-
-        // Delete the entry from the BikeBusStops array
-        await deleteDoc(doc(db, 'bikebusstops', StopId));  // Changed from 'id' to 'StopId'
-        console.log('Step executed: Deleted BikeBusStop document');
-
-        alert('Stop deleted');
-        setSelectedStopIndex(null);
-        history.push(`/ViewRoute/${id}`)
-      }
-    } catch (error) {
-      console.error("Error deleting document:", error);
-    }
+  const handleDeleteStop = async (stopId: string) => {
+    const bikeBusStopRef = doc(db, 'routes', id, 'BikeBusStops', stopId);
+    await deleteDoc(bikeBusStopRef);
+    // Refresh the list of BikeBusStops
+    fetchBikeBusStopsForRoute(id);
   };
 
-  const saveBikeBusStopName = async (StopId: string) => {
-    try {
-      if (selectedRoute) {
-        // Find the specific stop to update
-        const stopToUpdate = BikeBusStops.find(stop => stop.id === StopId);
-        if (!stopToUpdate) {
-          console.error("Stop not found");
-          return;
-        }
-
-        console.log('Stop to update:', stopToUpdate);
-
-        // Create the DocRefStopid using the id of the stop to be updated
-        const DocRefStopid = doc(db, 'bikebusstops', StopId);
-
-        // Perform the update to the document
-        await updateDoc(DocRefStopid, {
-          BikeBusStopName: stopToUpdate.BikeBusStopName,
-        });
-
-        // Close the InfoWindow
-        setSelectedStopIndex(null);
-      }
-    } catch (error) {
-      console.error("Error updating document:", error);
-    }
-  }
 
 
   const handleRouteSave = async () => {
@@ -1067,6 +1035,9 @@ const EditRoute: React.FC = () => {
               {isBikeBus && (
                 <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
               )}
+              {isBikeBus && (
+                <IonButton onClick={() => generateRouteWithLegs()}>Generate Route With Legs</IonButton>
+              )}
               {!isClicked && (
                 <IonButton onClick={generateNewRoute}>Generate New Route</IonButton>
               )}
@@ -1101,20 +1072,7 @@ const EditRoute: React.FC = () => {
                     >
                       {selectedStopIndex !== null && (
 
-                        <InfoWindow>
-                          <div>
-                            <h5>{stop.BikeBusStopName}</h5>
-                            <IonInput value={stop.BikeBusStopName} helperText="Enter new BikeBusStopName"
-                              onIonChange={e => {
-                                const updatedStop = { ...stop, BikeBusStopName: e.detail.value! };
-                                setBikeBusStops(prevStops => prevStops.map(s => s.id === stop.id ? updatedStop : s));
-                              }} />
-                            <IonRow>
-                              <IonButton onClick={() => saveBikeBusStopName(stop.id)}>Save BikeBusStop</IonButton>
-                              <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
-                            </IonRow>
-                          </div>
-                        </InfoWindow>
+                        <IonButton onClick={() => saveBikeBusStopName(stop.id, "")}>Save BikeBusStop</IonButton>
                       )}
                     </Marker>
                   ))}
@@ -1130,6 +1088,14 @@ const EditRoute: React.FC = () => {
                     label={"End"}
                   >
                   </Marker>
+                  {BikeBusStops.map((stop, index) => (
+                    <Marker
+                      key={index}
+                      position={{ lat: stop.lat, lng: stop.lng }}
+                      label={stop.BikeBusStopName}
+                      onClick={() => setSelectedStopIndex(stop.id)}
+                    />
+                  ))}
                   <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
                     <Polyline
                       path={selectedRoute?.pathCoordinates}
