@@ -88,7 +88,6 @@ const ViewRoute: React.FC = () => {
   const history = useHistory();
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
-  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
   const { avatarUrl } = useAvatar(user?.uid);
   const headerContext = useContext(HeaderContext);
   const [accountType, setaccountType] = useState<string>('');
@@ -154,7 +153,7 @@ const ViewRoute: React.FC = () => {
     const fetchSingleRoute = async (id: string) => {
       const docRef = doc(db, 'routes', id);
       const docSnap = await getDoc(docRef);
-  
+
       if (docSnap.exists()) {
         const routeData = {
           ...docSnap.data() as Route,
@@ -165,7 +164,7 @@ const ViewRoute: React.FC = () => {
           duration: docSnap.data().duration,
           distance: docSnap.data().distance,
           bicyclingSpeed: docSnap.data().bicyclingSpeed,
-          BikeBusGroupId: docSnap.data().BikeBusGroupId,
+          BikeBusGroup: docSnap.data().BikeBusGroup,
           // convert BikeBusGroupId (document reference in firebase) to a string
           pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
             lat: coord.lat,  // use 'lat' instead of 'latitude'
@@ -183,7 +182,7 @@ const ViewRoute: React.FC = () => {
           console.log("This is a bike bus route");
           console.log(routeData.BikeBusGroupId);
           // fetch the bikebus group data
-          const docRef = doc(db, 'bikebusgroups', routeData.BikeBusGroupId?.id);
+          const docRef = doc(db, 'bikebusgroups', routeData?.BikeBusGroup?.id);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const bikeBusGroupData = {
@@ -198,7 +197,7 @@ const ViewRoute: React.FC = () => {
           }
         }
 
-  
+
         if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
           setStartGeo(selectedRoute?.startPoint);
           console.log(selectedRoute?.startPoint);
@@ -211,7 +210,7 @@ const ViewRoute: React.FC = () => {
           lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
         };
         setMapCenter(newCenter);
-  
+
         if (selectedRoute && selectedRoute.BikeBusStopIds) {
           const bikeBusStopData = async () => {
             // fetch the bikebus stop data by looping through the bikebus stop ids array
@@ -247,7 +246,7 @@ const ViewRoute: React.FC = () => {
             console.log(bikeBusStopDataArray);
             console.log(bikeBusStops);
           };
-  
+
           //call bikebus stop data
           bikeBusStopData();
         }
@@ -430,12 +429,14 @@ const ViewRoute: React.FC = () => {
                   </InfoWindow>
                 )}
                 <Marker
+                  zIndex={10}
                   position={{ lat: startGeo.lat, lng: startGeo.lng }}
                   title="Start"
                   label={"Start"}
                   onClick={() => setSelectedMarker(startGeo)}
                 />
                 <Marker
+                  zIndex={10}
                   position={{ lat: endGeo.lat, lng: endGeo.lng }}
                   title="End"
                   label={"End"}

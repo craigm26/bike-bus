@@ -111,7 +111,7 @@ type GRoute = {
 
 
 const App: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loadingAuthState } = useContext(AuthContext);
   const [loading, setLoading] = useState<boolean>(true);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -121,7 +121,6 @@ const App: React.FC = () => {
   const [groupData, setGroupData] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const { t } = useTranslation();
-  const { loadingAuthState } = useContext(AuthContext);
 
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -129,11 +128,13 @@ const App: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
+
   useEffect(() => {
+
     if (user !== undefined) {
       setLoading(false);
     }
-    if (user) {
+    if (user && user.uid) {
       const userRef = doc(db, 'users', user.uid);
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
@@ -152,10 +153,6 @@ const App: React.FC = () => {
       });
     }
 
-  }, [user]);
-
-
-  useEffect(() => {
     if (user) {
       const fetchData = async () => {
         const userRef = doc(db, 'users', user.uid);
@@ -165,9 +162,7 @@ const App: React.FC = () => {
           const userData = docSnapshot.data();
           if (userData && userData.bikebusgroups) {
             const groupRefs = userData.bikebusgroups;
-            const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
-
-            const groups = groupSnapshots.map(snapshot => snapshot.data());
+            const groups = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
 
             for (const group of groups) {
               if (group && group.BikeBusRoutes) {
