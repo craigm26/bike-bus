@@ -5,8 +5,6 @@
 /.pnp
 .pnp.js
 
-!App/Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig
-
 
 # testing
 /coverage
