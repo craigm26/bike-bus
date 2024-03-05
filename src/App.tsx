@@ -142,6 +142,8 @@ const App: React.FC = () => {
   
     adjustForNotch();
   }, []);
+
+  
   
 
 
@@ -235,9 +237,11 @@ const App: React.FC = () => {
     return <p>Loading...</p>;
   }
 
+  /* removing for now for iOS testing
   if (loadingAuthState) {
     return <IonSpinner />;
   }
+  */
 
   return (
     <IonApp>
