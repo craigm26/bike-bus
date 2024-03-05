@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useMemo } from 'react';
 import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
@@ -12,7 +12,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loadingAuthState, setLoadingAuthState] = useState(true);
+  const [loadingAuthState, setLoadingAuthState] = useState(true);  
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (authUser) => {

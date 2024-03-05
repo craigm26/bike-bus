@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -7,39 +7,48 @@ import { AuthProvider } from './AuthContext';
 import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup';
 import { EventProvider } from './components/BikeBusGroup/EventContext';
 import { OrganizationProvider } from './components/Organizations/useOrganization';
-
-import './global.css'
+import { IonSpinner } from '@ionic/react'; 
+import './global.css';
 import './i18n';
+import { db } from './firebaseConfig';
 
-import * as functions from "firebase-functions";
+const FirebaseInitializer = ({ children }: { children: React.ReactNode }) => {
+  const [firebaseInitialized, setFirebaseInitialized] = useState(false);
 
-// put in a provider for OrganizationContext, EventContext and TripContext
+  useEffect(() => {
+
+    if (db) {
+      setFirebaseInitialized(true);
+    }
+  }, []);
+
+  if (!firebaseInitialized) {
+    return <IonSpinner />; 
+  }
+
+  return <>{children}</>; 
+};
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <React.StrictMode>
-      <AuthProvider>
-        <OrganizationProvider>
-          <BikeBusGroupProvider>
-            <EventProvider>
-              <App />
-            </EventProvider>
-          </BikeBusGroupProvider>
-        </OrganizationProvider>
-      </AuthProvider>
+      <FirebaseInitializer>
+        <AuthProvider>
+          <OrganizationProvider>
+            <BikeBusGroupProvider>
+              <EventProvider>
+                <App />
+              </EventProvider>
+            </BikeBusGroupProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </FirebaseInitializer>
     </React.StrictMode>
   );
 } else {
   console.error('Error: Could not find the root element to mount the app.');
 }
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://cra.link/PWA
 serviceWorkerRegistration.unregister();
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
