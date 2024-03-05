@@ -179,7 +179,7 @@ const Account: React.FC = () => {
                 <IonGrid>
                     <IonRow className="ion-justify-content-center">
                         <IonCol size="auto">
-                            <IonButton fill="clear" onClick={() => fileInputRef.current?.click()}>
+                            <IonButton shape="round" fill="clear" onClick={() => fileInputRef.current?.click()}>
                                 <Avatar uid={user?.uid} size="large" />
                             </IonButton>
                         </IonCol>
@@ -194,11 +194,11 @@ const Account: React.FC = () => {
                 />
                 <IonGrid>
                     <IonRow className="ion-justify-content-center">
-                        <IonButton className="ion-button-profile" routerLink='/settings'>
+                        <IonButton shape="round" className="ion-button-profile" routerLink='/settings'>
                             Settings
                             <IonIcon slot="end" icon={cogOutline}></IonIcon>
                         </IonButton>
-                        <IonButton className="ion-button-profile" routerLink='/SetUserDetails'>
+                        <IonButton shape="round" className="ion-button-profile" routerLink='/SetUserDetails'>
                             Update User Details
                         </IonButton>
                     </IonRow>
@@ -238,7 +238,7 @@ const Account: React.FC = () => {
                             <IonText>{selectedLanguage}</IonText>
                         </IonItem>
                     </IonList>
-                    <IonButton color="danger" className="ion-button-profile" routerLink='/DeleteAccount'>
+                    <IonButton shape="round" color="danger" className="ion-button-profile" routerLink='/DeleteAccount'>
                         Delete Account
                     </IonButton>
                 </IonCardContent>

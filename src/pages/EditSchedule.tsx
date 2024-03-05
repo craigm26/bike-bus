@@ -304,7 +304,7 @@ const EditSchedule: React.FC = () => {
                     <IonLabel>
                         <IonText>{formattedStartDate}</IonText>
                     </IonLabel>
-                    <IonButton onClick={() => setShowStartDayModal(true)}>Select Start Date</IonButton>
+                    <IonButton shape="round" onClick={() => setShowStartDayModal(true)}>Select Start Date</IonButton>
                     <IonModal isOpen={showStartDayModal} onDidDismiss={() => setShowStartDayModal(false)}>
                         <IonDatetime
                             presentation='date'
@@ -317,13 +317,13 @@ const EditSchedule: React.FC = () => {
                             }}
 
                         ></IonDatetime>
-                        <IonButton onClick={() => setShowStartDayModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowStartDayModal(false)}>Done</IonButton>
                     </IonModal>
                 </IonItem>
                 <IonItem>
                     <IonLabel>BikeBus Start Time</IonLabel>
                     <IonLabel>{formattedStartTime}</IonLabel>
-                    <IonButton onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
+                    <IonButton shape="round" onClick={() => setShowStartTimeModal(true)}>Select Start Time</IonButton>
                     <IonModal isOpen={showStartTimeModal} onDidDismiss={() => setShowStartTimeModal(false)}>
                         <IonDatetime
                             presentation='time'
@@ -332,13 +332,13 @@ const EditSchedule: React.FC = () => {
                                 setStartTime(e.detail.value as string);
                             }}
                         ></IonDatetime>
-                        <IonButton onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowStartTimeModal(false)}>Done</IonButton>
                     </IonModal>
                 </IonItem>
                 <IonItem>
                     <IonLabel>BikeBus End Time</IonLabel>
                     <IonLabel>{formattedEndTime}</IonLabel>
-                    <IonButton onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
+                    <IonButton shape="round" onClick={() => setShowEndTimeModal(true)}>Select End Time</IonButton>
                     <IonModal isOpen={showEndTimeModal} onDidDismiss={() => setShowEndTimeModal(false)}>
                         <IonDatetime
                             presentation='time'
@@ -347,13 +347,13 @@ const EditSchedule: React.FC = () => {
                                 setEndTime(e.detail.value as string);
                             }}
                         ></IonDatetime>
-                        <IonButton onClick={() => setShowEndTimeModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowEndTimeModal(false)}>Done</IonButton>
                     </IonModal>
                 </IonItem>
                 <IonItem>
                     <IonLabel>Is Recurring?</IonLabel>
                     <IonLabel>{recurring}</IonLabel>
-                    <IonButton onClick={() => setShowRecurringModal(true)}>Select Option</IonButton>
+                    <IonButton shape="round" onClick={() => setShowRecurringModal(true)}>Select Option</IonButton>
                     <IonModal isOpen={showRecurringModal} onDidDismiss={() => setShowRecurringModal(false)}>
                         <IonList>
                             <IonRadioGroup
@@ -377,7 +377,7 @@ const EditSchedule: React.FC = () => {
                                 </IonItem>
                             </IonRadioGroup>
                         </IonList>
-                        <IonButton onClick={() => setShowRecurringModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowRecurringModal(false)}>Done</IonButton>
                     </IonModal>
                     <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
                         <IonItemGroup>
@@ -391,7 +391,7 @@ const EditSchedule: React.FC = () => {
                                 </IonItem>
                             ))}
                         </IonItemGroup>
-                        <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
                     </IonModal>
                     <IonModal isOpen={showRecurrenceDaysModal} onDidDismiss={() => setShowRecurrenceDaysModal(false)}>
                         <IonItemGroup>
@@ -405,7 +405,7 @@ const EditSchedule: React.FC = () => {
                                 </IonItem>
                             ))}
                         </IonItemGroup>
-                        <IonButton onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
+                        <IonButton shape="round" onClick={() => setShowRecurrenceDaysModal(false)}>Done</IonButton>
                     </IonModal>
                 </IonItem>
                 <IonItem>
@@ -413,9 +413,9 @@ const EditSchedule: React.FC = () => {
                     <IonLabel>{formattedEndDate}</IonLabel>
                 </IonItem>
                 <IonItem>
-                    <IonButton onClick={updateSchedule}>Save</IonButton>
-                    <IonButton routerLink={`/viewschedule/${id}`}>View Schedule</IonButton>
-                    <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                    <IonButton shape="round" onClick={updateSchedule}>Save</IonButton>
+                    <IonButton shape="round" routerLink={`/viewschedule/${id}`}>View Schedule</IonButton>
+                    <IonButton shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
                 </IonItem>
             </IonContent>
 

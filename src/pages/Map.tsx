@@ -277,6 +277,7 @@ const Map: React.FC = () => {
   const [infoBoxContent, setInfoBoxContent] = useState(<></>);
   const [bicyclingSpeedSelector, setBicyclingSpeedSelector] = useState('SLOW');
   const [bicyclingSpeed, setBicyclingSpeed] = useState(10);
+  const [showSearchContainer, setShowSearchContainer] = useState(true);
 
 
   interface Trip {
@@ -1794,8 +1795,11 @@ const Map: React.FC = () => {
 
   const handleBikeBusRouteClick = async (route: any) => {
 
+    // let's not show the search container
+    setShowSearchContainer(false);
+
     // let's get the events for this bikebus group
-    const bikeBusGroupId = route.BikeBusGroupId.id;
+    const bikeBusGroupId = route.BikeBusGroup.id;
     const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
 
     // get the events for this bikebus group
@@ -1852,7 +1856,7 @@ const Map: React.FC = () => {
 
     // we'll have to convert this infoWindow into a infoBox and include this: 
     /*{isUserMember && (
-      <IonButton size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+      <IonButton shape="round" size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
         Bulletin Board
       </IonButton>
     )}
@@ -1865,7 +1869,7 @@ const Map: React.FC = () => {
     <h4>Upcoming Events:</h4>
     ${next3EventsHTML}
   </div>
-    <a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    <a href="/bikebusgrouppage/${route.BikeBusGroup.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
     View ${route.BikeBusName}
   </a>`
       ;
@@ -2137,7 +2141,7 @@ const Map: React.FC = () => {
   };
 
   const createBikeBus = async (routeId: string) => {
-    <IonButton routerLink={`/CreateBikeBusGroup/${routeId}`}>Create BikeBus Group</IonButton>
+    <IonButton shape="round" routerLink={`/CreateBikeBusGroup/${routeId}`}>Create BikeBus Group</IonButton>
   };
 
 
@@ -2175,10 +2179,12 @@ const Map: React.FC = () => {
 
   const handleCloseOpenTripClick = () => {
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
+    setShowSearchContainer(true);
   };
 
   const handleCloseClick = () => {
     setInfoWindow({ isOpen: false, content: '', position: null });
+    setShowSearchContainer(true);
   };
 
   const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
@@ -2500,7 +2506,7 @@ const Map: React.FC = () => {
                 <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
               </InfoWindow>
             )}
-            {!id && (
+            {!id && showSearchContainer && (
               <IonGrid className="search-container">
                 <IonRow>
                   <IonCol>
@@ -2519,7 +2525,7 @@ const Map: React.FC = () => {
                             height: "40px",
                           }}
                         />
-                        <IonButton onClick={getLocation}>
+                        <IonButton shape="round" onClick={getLocation}>
                           <IonIcon icon={locateOutline} />
                         </IonButton>
                       </div>
@@ -2551,7 +2557,7 @@ const Map: React.FC = () => {
                 </IonRow>
                 <IonRow>
                   {isActiveEvent && (
-                    <IonButton onClick={endOpenTrip}>End Open Trip</IonButton>
+                    <IonButton shape="round" onClick={endOpenTrip}>End Open Trip</IonButton>
                   )}
                 </IonRow>
                 {showGetDirectionsButton && !isActiveEvent && !id && (
@@ -2610,16 +2616,16 @@ const Map: React.FC = () => {
                 )}
                 <IonRow>
                   <IonCol>
-                    {showGetDirectionsButton && !isActiveEvent && <IonButton expand="block" onClick={getDirectionsAndSimplifyRoute}>Get Directions</IonButton>}
+                    {showGetDirectionsButton && !isActiveEvent && <IonButton shape="round" expand="block" onClick={getDirectionsAndSimplifyRoute}>Get Directions</IonButton>}
                   </IonCol>
                   <IonCol>
                     {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                      <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                      <IonButton shape="round" expand="block" onClick={createRoute}>Create Route</IonButton>)
                     }
                   </IonCol>
                   <IonCol>
                     {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                      <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                      <IonButton shape="round" expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
                     )}
                   </IonCol>
                 </IonRow>
@@ -3031,24 +3037,24 @@ const Map: React.FC = () => {
             <div>
               {isEventLeader && !id && !isActiveBikeBusEvent && isActiveEvent && (
                 <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                  <IonButton color="danger" onClick={endTripAndCheckOutAll}>End Trip For All</IonButton>
+                  <IonButton shape="round" color="danger" onClick={endTripAndCheckOutAll}>End Trip For All</IonButton>
                 </div>
               )}
               {!isEventLeader && !isActiveBikeBusEvent && isActiveEvent && !id && (
                 <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                  <IonButton color="danger" onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
+                  <IonButton shape="round" color="danger" onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
                 </div>
               )}
             </div>
             <div>
               {isEventLeader && id && isActiveBikeBusEvent && (
                 <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                  <IonButton color="danger" onClick={endBikeBusAndCheckOutAll}>End BikeBus Event For All</IonButton>
+                  <IonButton shape="round" color="danger" onClick={endBikeBusAndCheckOutAll}>End BikeBus Event For All</IonButton>
                 </div>
               )}
               {!isEventLeader && id && isActiveBikeBusEvent && (
                 <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                  <IonButton color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
+                  <IonButton shape="round" color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
                 </div>
               )}
             </div>
@@ -3107,18 +3113,6 @@ const Map: React.FC = () => {
               bicyclingLayerEnabled={bicyclingLayerEnabled}
               setBicyclingLayerEnabled={setBicyclingLayerEnabled}
               handleBicyclingLayerToggle={handleBicyclingLayerToggle}
-            />
-            <Polyline
-              path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-              options={{
-                strokeColor: "#FF0000",
-                strokeOpacity: 1.0,
-                strokeWeight: 2,
-                geodesic: true,
-                clickable: false,
-                editable: false,
-                draggable: false,
-              }}
             />
           </GoogleMap>
         </IonRow>

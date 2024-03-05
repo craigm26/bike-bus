@@ -326,7 +326,7 @@ const News: React.FC = () => {
                         </IonRow>
                         <IonRow className="sticky-row">
                             <IonCol>
-                                <IonButton routerLink="/login">
+                                <IonButton shape="round" routerLink="/login">
                                     Log in
                                 </IonButton>
                             </IonCol>
@@ -337,7 +337,7 @@ const News: React.FC = () => {
                     <>
                         <IonRow className="sticky-row">
                             <IonCol>
-                                <IonButton onClick={showAlertForNewArticle}>
+                                <IonButton shape="round" onClick={showAlertForNewArticle}>
                                     Add Article
                                 </IonButton>
                             </IonCol>

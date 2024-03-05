@@ -91,7 +91,7 @@ const About: React.FC = () => {
           <IonCardTitle>Privacy Policy</IonCardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <IonButton href="/privacypolicy">Privacy Policy</IonButton>
+          <IonButton shape="round" href="/privacypolicy">Privacy Policy</IonButton>
         </IonCardContent>
         
       </IonContent>

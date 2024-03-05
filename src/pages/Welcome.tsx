@@ -103,12 +103,12 @@ const Welcome: React.FC = () => {
             <>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="10">
-                  <IonButton expand="block" onClick={() => history.push('/Map')}>Continue as {username}</IonButton>
+                  <IonButton shape="round" expand="block" onClick={() => history.push('/Map')}>Continue as {username}</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" onClick={handleLogout}>Logout</IonButton>
+                  <IonButton shape="round" expand="block" onClick={handleLogout}>Logout</IonButton>
                 </IonCol>
               </IonRow>
             </>
@@ -116,12 +116,12 @@ const Welcome: React.FC = () => {
             <>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" routerLink='/Signup'>Signup</IonButton>
+                  <IonButton shape="round" expand="block" routerLink='/Signup'>Signup</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" routerLink='/Login'>Login</IonButton>
+                  <IonButton shape="round" expand="block" routerLink='/Login'>Login</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
@@ -130,7 +130,7 @@ const Welcome: React.FC = () => {
                 </IonCol>
               </IonRow>
               <IonText className="use-anonymously">
-                <IonButton onClick={async () => {
+                <IonButton shape="round" onClick={async () => {
                   try {
                     await signInAnonymously();
                     history.push('/Map');
