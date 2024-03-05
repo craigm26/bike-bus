@@ -16,6 +16,7 @@ import {
   IonSegment,
   IonSegmentButton,
   IonText,
+  IonToggle,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
@@ -143,6 +144,7 @@ const EditRoute: React.FC = () => {
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [newStop, setNewStop] = useState<Coordinate | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<BikeBusStops | null>(null);
+  const [isBicyclingLayerVisible, setIsBicyclingLayerVisible] = useState(false);
 
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
@@ -790,13 +792,12 @@ const EditRoute: React.FC = () => {
     <IonPage className="ion-flex-offset-app">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Edit Route</IonTitle>
+          <IonTitle>Editing {selectedRoute?.routeName}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
-            <IonLabel>Route Name:</IonLabel>
             <IonInput
               value={selectedRoute?.routeName}
               onIonChange={e => {
@@ -817,7 +818,6 @@ const EditRoute: React.FC = () => {
           </IonItem>
           {selectedRoute?.travelMode === "BICYCLING" && (
             <IonItem>
-              <IonLabel>Speed:</IonLabel>
               <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
                 const newSpeedSelector = e.detail.value;
                 setBicyclingSpeedSelector(newSpeedSelector);
@@ -887,17 +887,17 @@ const EditRoute: React.FC = () => {
           <IonRow>
             <IonCol>
               {isBikeBus && (
-                <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
+                <IonButton size="small" shape="round" routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
               )}
               {isBikeBus && (
-                <IonButton onClick={() => generateRouteWithLegs()}>Generate Route With Legs</IonButton>
+                <IonButton size="small" shape="round" onClick={() => generateRouteWithLegs()}>Generate Route With Legs</IonButton>
               )}
               {!isClicked && (
-                <IonButton onClick={generateNewRoute}>Generate New Route</IonButton>
+                <IonButton size="small" shape="round" onClick={generateNewRoute}>Generate New Route</IonButton>
               )}
-              <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
-              <IonButton color="success" onClick={handleRouteSave}>Save</IonButton>
-              <IonButton color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+              <IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
+              <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
+              <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
             </IonCol>
           </IonRow>
           {selectedRoute && (
@@ -934,15 +934,18 @@ const EditRoute: React.FC = () => {
                   >
 
                     {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
-                      <IonButton
-                        onClick={() => {
-                          if (bicyclingLayerRef.current) {
-                            bicyclingLayerRef.current.setMap(bicyclingLayerRef.current.getMap() ? null : mapRef.current);
-                          }
-                        }}
-                      >
-                        Toggle Bicycling Layer
-                      </IonButton>
+                      
+                      <IonToggle
+                      checked={isBicyclingLayerVisible} 
+                      onIonChange={e => {
+                        setIsBicyclingLayerVisible(e.detail.checked); 
+                        if (bicyclingLayerRef.current) {
+                          bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
+                        }
+                      }}
+                    >
+                      <IonLabel>Toggle Bicycling Layer</IonLabel>
+                    </IonToggle>
                     )}
                     <Polyline
                       path={selectedRoute?.pathCoordinates}

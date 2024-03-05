@@ -257,16 +257,11 @@ const ViewRoute: React.FC = () => {
     <IonPage className="ion-flex-offset-app">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Viewing Route</IonTitle>
+          <IonTitle>Viewing {selectedRoute?.routeName}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <IonRow>
-            <IonCol>
-              <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
-            </IonCol>
-          </IonRow>
           <IonRow>
             <IonCol>
               <IonLabel>Speed: {selectedRoute?.bicyclingSpeed}</IonLabel>
@@ -314,18 +309,18 @@ const ViewRoute: React.FC = () => {
           )}
           <IonRow>
             <IonCol>
-              <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-              <IonButton onClick={deleteRoute}>Delete Route</IonButton>
-              <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
+              <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+              <IonButton shape="round" color="danger"  size="small" onClick={deleteRoute}>Delete Route</IonButton>
+              <IonButton shape="round"  size="small" routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
               {isBikeBus && (
-                <IonButton routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
+                <IonButton shape="round"  size="small" routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
               )}
             </IonCol>
           </IonRow>
           {!isBikeBus && (
             <IonRow>
               <IonCol>
-                <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
+                <IonButton shape="round"  size="small" routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
               </IonCol>
             </IonRow>
           )}
