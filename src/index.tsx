@@ -7,10 +7,11 @@ import { AuthProvider } from './AuthContext';
 import { BikeBusGroupProvider } from './components/BikeBusGroup/useBikeBusGroup';
 import { EventProvider } from './components/BikeBusGroup/EventContext';
 import { OrganizationProvider } from './components/Organizations/useOrganization';
-import { IonSpinner } from '@ionic/react'; 
+import { IonSpinner, IonText } from '@ionic/react'; 
 import './global.css';
 import './i18n';
 import { db } from './firebaseConfig';
+import useAuth from './useAuth';
 
 const FirebaseInitializer = ({ children }: { children: React.ReactNode }) => {
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
@@ -19,10 +20,15 @@ const FirebaseInitializer = ({ children }: { children: React.ReactNode }) => {
 
     if (db) {
       setFirebaseInitialized(true);
+      console.log('Firebase initialized');
     }
+    console.log('Firebase not initialized');
   }, []);
 
   if (!firebaseInitialized) {
+    <IonText>...Loading the auth state from index</IonText>
+    const { user } = useAuth();
+
     return <IonSpinner />; 
   }
 
