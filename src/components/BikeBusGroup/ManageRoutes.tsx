@@ -49,7 +49,7 @@ const ManageRoutes: React.FC = () => {
     // Remove the BikeBusGroup field data from the route
     await updateDoc(routeRef, {
       BikeBusName: '',
-      BikeBusGroupId: '',
+      BikeBusGroup: '',
       isBikeBus: false
     });
   };
@@ -60,7 +60,7 @@ const ManageRoutes: React.FC = () => {
   useEffect(() => {
     const fetchAvailableRoutes = async () => {
       if (user?.uid) {
-        const routeCreatorPath = `/users/${user.uid}`;
+        const routeCreatorPath = `${user.uid}`;
         const q = query(collection(db, 'routes'), where('routeCreator', '==', routeCreatorPath));
 
         const querySnapshot = await getDocs(q);

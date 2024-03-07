@@ -31,7 +31,7 @@ interface Coordinate {
 
 interface Route {
   BikeBusStops: any;
-  BikeBusGroupId: string;
+  BikeBusGroup: DocumentReference;
   BikeBusRouteId: string;
   BikeBusStopIds: DocumentReference[];
   id: string;
@@ -45,7 +45,7 @@ interface Route {
 }
 
 interface BikeBusStop {
-  BikeBusGroupId: string;
+  BikeBusGroup: DocumentReference;
   BikeBusRouteId: string;
   BikeBusStopName: string;
   id: string;
@@ -99,8 +99,8 @@ const CreateBikeBusStop: React.FC = () => {
               startPoint: routeData.startPoint as Coordinate,
               endPoint: routeData.endPoint as Coordinate,
               id: routeData.id ? routeData.name as string : '',
+              BikeBusGroup: routeData.BikeBusGroup ? routeData.BikeBusGroup as DocumentReference : doc(db, 'bikebusgroups', id),
               BikeBusStops: routeData.BikeBusStops ? routeData.BikeBusStops as BikeBusStop[] : [],
-              BikeBusGroupId: routeData.BikeBusGroupId ? routeData.BikeBusGroupId as string : '',
               BikeBusRouteId: routeData.BikeBusRouteId ? routeData.BikeBusRouteId as string : '',
               BikeBusStopIds: routeData.BikeBusStopIds ? routeData.BikeBusStopIds as DocumentReference[] : [],
               pathCoordinates: [],
@@ -133,7 +133,8 @@ const CreateBikeBusStop: React.FC = () => {
                 ...bikeBusStopData,
                 // add any missing properties with the correct types
                 location: convertGeoPointToCoordinate(bikeBusStopData.location) as Coordinate,
-                BikeBusGroupId: bikeBusStopData.BikeBusGroupId ? bikeBusStopData.BikeBusGroupId as string : '',
+                // BikeBusGroup is a document reference in firestore. the id is in the url param
+                BikeBusGroup: bikeBusStopData.BikeBusGroup ? bikeBusStopData.BikeBusGroup as DocumentReference : doc(db, 'bikebusgroups', id),
                 BikeBusRouteId: bikeBusStopData.BikeBusRouteId ? bikeBusStopData.BikeBusRouteId as string : '',
                 BikeBusStopName: bikeBusStopData.BikeBusStopName ? bikeBusStopData.BikeBusStopName as string : '',
                 id: bikeBusStopData.id ? bikeBusStopData.id as string : '',
@@ -320,7 +321,7 @@ const CreateBikeBusStop: React.FC = () => {
                 photos: Photos,
                 formattedAddress: FormattedAddress,
                 placeName: PlaceName,
-                BikeBusGroupId: '',
+                BikeBusGroup: doc(db, 'bikebusgroups', id),
                 location: { lat: parseFloat(PlaceLocation.split(',')[0]), lng: parseFloat(PlaceLocation.split(',')[1]) },
               })}>Save New BikeBusStop</IonButton>
 

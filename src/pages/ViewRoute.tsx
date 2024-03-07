@@ -52,7 +52,7 @@ interface BikeBusStops {
 interface Route {
   newStop: Coordinate | null;
   BikeBusGroup: DocumentReference;
-  BikeBusStops: DocumentReference[]; 
+  BikeBusStops: DocumentReference[];
   id: string;
   endPointAddress: string;
   endPointName: string;
@@ -131,9 +131,6 @@ const ViewRoute: React.FC = () => {
     libraries: libraries,
   });
 
-
-
-
   const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
   useEffect(() => {
@@ -145,13 +142,6 @@ const ViewRoute: React.FC = () => {
           const userData = docSnapshot.data();
           if (userData && userData.accountType) {
             setaccountType(userData.accountType);
-            // get the start and end points of the route and set to state
-            if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
-              setMapCenter({
-                lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-                lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
-              });
-            }
           }
         }
       }
@@ -161,6 +151,7 @@ const ViewRoute: React.FC = () => {
     const fetchSingleRoute = async (id: string) => {
       const docRef = doc(db, 'routes', id);
       const docSnap = await getDoc(docRef);
+      console.log(docSnap);
 
       if (docSnap.exists()) {
         const routeData = {
@@ -199,6 +190,12 @@ const ViewRoute: React.FC = () => {
         setPath(routeData.pathCoordinates);
         setStartGeo(routeData.startPoint);
         setEndGeo(routeData.endPoint);
+        setStartGeo(routeData?.startPoint);
+          setEndGeo(routeData.endPoint);
+          setMapCenter({
+            lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+            lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+          });
         // test if the route is a bikebus
         if (routeData.isBikeBus) {
           console.log("This is a bike bus route");
@@ -218,26 +215,12 @@ const ViewRoute: React.FC = () => {
           }
         }
 
-
-        if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
-          setStartGeo(selectedRoute?.startPoint);
-          setEndGeo(selectedRoute.endPoint);
-        }
-
-        const newCenter = {
-          lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
-          lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
-        };
-        setMapCenter(newCenter);
-      
-        
-        setLoading(false);
       }
-    };
 
+    }
     if (id) fetchSingleRoute(id);
-
-  }, [id]);
+  }
+    , [user, id]);
 
   const deleteRoute = async () => {
     if (selectedRoute) {
@@ -246,6 +229,8 @@ const ViewRoute: React.FC = () => {
       // send message to user that the route was deleted
       alert('Route Deleted');
       history.push('/viewroutelist/');
+    } else {
+      alert('No route to delete');
     }
   };
 
@@ -310,23 +295,23 @@ const ViewRoute: React.FC = () => {
           <IonRow>
             <IonCol>
               <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-              <IonButton shape="round" color="danger"  size="small" onClick={deleteRoute}>Delete Route</IonButton>
-              <IonButton shape="round"  size="small" routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
+              <IonButton shape="round" color="danger" size="small" onClick={deleteRoute}>Delete Route</IonButton>
+              <IonButton shape="round" size="small" routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
               {isBikeBus && (
-                <IonButton shape="round"  size="small" routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
+                <IonButton shape="round" size="small" routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
               )}
             </IonCol>
           </IonRow>
           {!isBikeBus && (
             <IonRow>
               <IonCol>
-                <IonButton shape="round"  size="small" routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
+                <IonButton shape="round" size="small" routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
               </IonCol>
             </IonRow>
           )}
           <IonRow style={{ flex: '1' }}>
             <IonCol>
-              {isLoaded && (
+              {selectedRoute && isLoaded && (
                 <GoogleMap
                   onLoad={(map) => {
                     mapRef.current = map;
@@ -388,20 +373,25 @@ const ViewRoute: React.FC = () => {
                       label={stop.BikeBusStopName}
                     />
                   ))}
-                  <Marker
-                    zIndex={1}
-                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                    title="Start"
-                    label={"Start"}
-                    onClick={() => setSelectedMarker(startGeo)}
-                  />
-                  <Marker
-                    zIndex={10}
-                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                    title="End"
-                    label={"End"}
-                    onClick={() => setSelectedMarker(endGeo)}
-                  />
+                  {startGeo.lat !== 0 && startGeo.lng !== 0 && (
+                    <Marker
+                      zIndex={1}
+                      position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                      title="Start"
+                      label={"Start"}
+                      onClick={() => setSelectedMarker(startGeo)}
+                    />
+                  )}
+                  {endGeo.lat !== 0 && endGeo.lng !== 0 && (
+                    <Marker
+                      zIndex={10}
+                      position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                      title="End"
+                      label={"End"}
+                      onClick={() => setSelectedMarker(endGeo)}
+                    />
+                  )}
+
                 </GoogleMap>
               )}
             </IonCol>

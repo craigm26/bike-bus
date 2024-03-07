@@ -28,6 +28,7 @@ import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSear
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
+import useFirebaseRoutes from "../hooks/useFirebaseRoutes";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
@@ -58,7 +59,7 @@ interface BikeBusStop {
   BikeBusRouteId: string;
 }
 
-interface RouteData {
+interface Route {
   eventCheckInLeader: any;
   startPoint: { lat: number; lng: number };
   endPoint: { lat: number, lng: number };
@@ -69,8 +70,8 @@ interface RouteData {
   endPointAddress: string;
   routeName: string;
   routeType: string;
-  routeCreator: string;
-  routeLeader: string;
+  routeCreator: DocumentReference;
+  routeLeader: DocumentReference;
   description: string;
   travelMode: string;
   isBikeBus: boolean;
@@ -79,7 +80,7 @@ interface RouteData {
   BikeBusStop: Coordinate[];
   BikeBusStops: Coordinate[];
   BikeBusStationsIds: string[];
-  BikeBusGroupId: DocumentReference;
+  BikeBusGroup: DocumentReference;
   BikeBusStopIds: DocumentReference[];
   id: string;
   accountType: string;
@@ -94,20 +95,6 @@ interface MarkerType {
   position: { lat: number; lng: number; };
   label: string;
   BikeBusGroupClusterId: string;
-}
-
-
-type School = {
-  id: string;
-  SchoolName: string;
-  Location: string;
-  Organization?: DocumentReference;
-}
-
-
-interface Point {
-  lat: number;
-  lng: number;
 }
 
 interface DistanceDurationResult {
@@ -140,27 +127,12 @@ interface BikeBusEvent {
   };
 }
 
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-
-  return function (...args: Parameters<T>) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 
 const Map: React.FC = () => {
   const { user, isAnonymous, loadingAuthState } = useContext(AuthContext);
   const history = useHistory();
   const { id } = useParams<{ id: string }>();
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const [isActiveEvent, setIsActiveEvent] = useState(false);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
@@ -180,6 +152,7 @@ const Map: React.FC = () => {
     lng: startGeo.lng,
   });
   const [mapZoom, setMapZoom] = useState(13);
+  const { routes, loading } = useFirebaseRoutes(user?.uid);
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
@@ -246,7 +219,7 @@ const Map: React.FC = () => {
   // the leaderUID is the user.uid of the leader which is stored in the selectedRoute.routeLeader
   const [leaderUID, setLeaderUID] = useState<string>('');
   const isEventLeader = user?.uid === leaderUID;
-  const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [path, setPath] = useState<Coordinate[]>([]);
@@ -278,6 +251,13 @@ const Map: React.FC = () => {
   const [bicyclingSpeedSelector, setBicyclingSpeedSelector] = useState('SLOW');
   const [bicyclingSpeed, setBicyclingSpeed] = useState(10);
   const [showSearchContainer, setShowSearchContainer] = useState(true);
+
+
+  let routeInfoBoxPosition;
+  if (selectedRoute !== null) {
+    routeInfoBoxPosition = new window.google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng);
+  }
+
 
 
   interface Trip {
@@ -424,7 +404,7 @@ const Map: React.FC = () => {
       const q = query(bikeBusGroupsRef);
       const querySnapshot = await getDocs(q);
 
-      const BikeBusRoutesData: RouteData[] = [];
+      const BikeBusRoutesData: Route[] = [];
 
       let endPointCoordinates: any[] = [];
       let BikeBusNames: string[] = [];
@@ -444,14 +424,14 @@ const Map: React.FC = () => {
       for (const routeRef of BikeBusRoutesRef) {
         if (routeRef instanceof DocumentReference) {
           const routeDoc = await getDoc(routeRef);
-          const routeData = routeDoc.data() as RouteData;
-          if (routeData) {
-            BikeBusRoutesData.push(routeData);
-            if (routeData.endPoint) {
-              endPointCoordinates.push(routeData.endPoint);
-              BikeBusNames.push(routeData.routeName || 'Unnamed'); // Assume routeName exists
+          const Route = routeDoc.data() as Route;
+          if (Route) {
+            BikeBusRoutesData.push(Route);
+            if (Route.endPoint) {
+              endPointCoordinates.push(Route.endPoint);
+              BikeBusNames.push(Route.routeName || 'Unnamed'); // Assume routeName exists
             } else {
-              console.error('Missing endPoint for route:', routeData);
+              console.error('Missing endPoint for route:', Route);
             }
           } else {
             console.error('No data for routeRef:', routeRef);
@@ -496,15 +476,15 @@ const Map: React.FC = () => {
             const selectedRouteRef = eventData?.eventRoute;
             if (selectedRouteRef) {
               const routeSnapshot = await getDoc(selectedRouteRef);
-              const routeData = routeSnapshot.data() as RouteData;
+              const Route = routeSnapshot.data() as Route;
 
-              if (routeData) {
-                setSelectedRoute(routeData);
-                setBikeBusGroupId(routeData.BikeBusGroupId.id);
-                setPath(routeData.pathCoordinates);
-                setStartGeo(routeData.startPoint);
-                setEndGeo(routeData.endPoint);
-                setBikeBusStopIds(routeData.BikeBusStopIds);
+              if (Route) {
+                setSelectedRoute(Route);
+                setBikeBusGroupId(Route.BikeBusGroup.id);
+                setPath(Route.pathCoordinates);
+                setStartGeo(Route.startPoint);
+                setEndGeo(Route.endPoint);
+                setBikeBusStopIds(Route.BikeBusStopIds);
 
               }
             } else {
@@ -916,14 +896,14 @@ const Map: React.FC = () => {
       );
       getDocs(queryObj)
         .then(async (querySnapshot) => {
-          const routes: RouteData[] = [];
+          const routes: Route[] = [];
           const allBikeBusStops: BikeBusStop[] = [];
 
           for (const doc of querySnapshot.docs) {
-            const routeData = doc.data() as RouteData;
-            routes.push(routeData);
+            const Route = doc.data() as Route;
+            routes.push(Route);
 
-            const bikeBusStopIds = routeData.BikeBusStopIds;
+            const bikeBusStopIds = Route.BikeBusStopIds;
             if (bikeBusStopIds) {
               for (const stopid of bikeBusStopIds) {
                 try {
@@ -972,8 +952,8 @@ const Map: React.FC = () => {
         .then((querySnapshot) => {
           const routes: any[] = [];
           querySnapshot.forEach((doc) => {
-            const userRouteData = doc.data();
-            routes.push(userRouteData);
+            const userRoute = doc.data();
+            routes.push(userRoute);
           });
           setUserRoutes(routes);
         })
@@ -1649,148 +1629,105 @@ const Map: React.FC = () => {
   };
 
 
+  // Utility function to convert path coordinates
+  const convertPathCoordinates = (pathCoordinates: any[]) =>
+    pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }));
+
+  // Utility function to generate route name
+  const generateRouteName = (startName: string, endName: string) =>
+    `${startName} to ${endName}`;
+
   const createRoute = async () => {
+    if (!user || !selectedStartLocation || !selectedEndLocation) {
+      console.error('Required user and location data is missing');
+      return;
+    }
+
     try {
+      const [startPointAddress, endPointAddress] = await Promise.all([
+        getStartPointAddress(selectedStartLocation),
+        selectedEndLocation ? getEndPointAddress(selectedEndLocation) : '',
+      ]);
 
-      const startPointAddress = await getStartPointAddress(selectedStartLocation);
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(mapRef.current);
 
-      // Check if selectedEndLocation is not null before calling getEndPointAddress
-      let endPointAddress = '';
-      if (selectedEndLocation) {
-        endPointAddress = await getEndPointAddress(selectedEndLocation);
-      }
-      // Verify user and locations
-      if (!user || !selectedStartLocation || !selectedEndLocation) {
-        throw new Error('Required user and location data is missing');
-      }
-
-      if (user) {
-
-        const convertedPathCoordinates = pathCoordinates.map(coord => ({
-          lat: coord.latitude,
-          lng: coord.longitude,
-        }));
-        if (selectedStartLocation && selectedEndLocation) {
-          const directionsService = new google.maps.DirectionsService();
-          const directionsRenderer = new google.maps.DirectionsRenderer();
-          directionsRenderer.setMap(mapRef.current);
-          directionsService.route(
-            {
-              origin: selectedStartLocation,
-              destination: selectedEndLocation,
-              travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-            },
-            (response, status) => {
-              if (status === "OK") {
-                directionsRenderer.setDirections(response);
-                const route = response?.routes[0];
-                const routeData = {
-                  distance: route?.legs[0]?.distance?.value,
-                  duration: route?.legs[0]?.duration?.value,
-                  arrivalTime: new Date(),
-                  travelMode: travelModeSelector,
-                  origin: {
-                    lat: route?.legs[0]?.start_location?.lat(),
-                    lng: route?.legs[0]?.start_location?.lng()
-                  },
-                  destination: {
-                    lat: route?.legs[0]?.end_location?.lat(),
-                    lng: route?.legs[0]?.end_location?.lng()
-                  },
-                  startPointAddress: startPointAdress,
-                  startPoint: selectedStartLocation,
-                  endPoint: selectedEndLocation,
-                  // if routeStartName is '', then set the routeStartName to be startPointAddress
-                  routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
-                  startPointName: routeStartName,
-                  startPointStreetName: routeStartStreetName,
-                  routeEndStreetName: routeEndStreetName,
-                  endPointName: routeEndName,
-                  endPointAddress: endPointAddress,
-                  routeCreator: "/users/" + user.uid,
-                  routeLeader: "/users/" + user.uid,
-                  routeDescription: description,
-                  pathCoordinates: convertedPathCoordinates,
-                  isBikeBus: false,
-                  ...(travelModeSelector === 'BICYCLING' && { bicyclingSpeed: bicyclingSpeedSelector }),
-                };
-
-                handleCreateRouteSubmit("", startPointAddress, endPointAddress);
-              } else {
-                console.error("Directions request failed due to " + status);
-              }
-            }
-          );
+      directionsService.route({
+        origin: selectedStartLocation,
+        destination: selectedEndLocation,
+        travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode],
+      }, async (response, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(response);
+          const Route = prepareRoute(response?.routes[0], startPointAddress, endPointAddress);
+          await handleCreateRouteSubmit(Route);
+        } else {
+          console.error("Directions request failed due to " + status);
         }
-      }
+      });
     } catch (error) {
-      console.log("Error: ", error);
+      console.error("Error creating route:", error);
     }
   };
 
+  // Function to prepare route data
+  const prepareRoute = (route: google.maps.DirectionsRoute | undefined, startPointAddress: any, endPointAddress: any) => {
+    const convertedPathCoordinates = convertPathCoordinates(pathCoordinates);
+    return {
+      routeName: generateRouteName(routeStartName, routeEndName),
+      startPointAddress,
+      endPointAddress,
+      pathCoordinates: convertedPathCoordinates,
+      routeCreator: user.uid,
+      routeLeader: user.uid,
+      distance: distance,
+      duration: duration,
+      endPoint: selectedEndLocation,
+      startPoint: selectedStartLocation,
+      endPointName: routeEndName,
+      startPointName: routeStartName,
+      isBikeBus: false,
+      travelMode: travelModeSelector,
+      bicyclingSpeed: bicyclingSpeedSelector,
+      bicyclingSpeedSelector: bicyclingSpeedSelector,
+    };
+  };
 
-  const handleCreateRouteSubmit = async (routeType = "", startPointAddress: string, endPointAddress: string) => {
+  const handleCreateRouteSubmit = async (Route: {
+    routeName: string;
+    startPointAddress: any;
+    endPointAddress: any;
+    pathCoordinates: { lat: any; lng: any; }[];
+    routeCreator: DocumentReference<any>;
+    routeLeader: DocumentReference<any>;
+    distance: string;
+    duration: string;
+    endPoint: any;
+    startPoint: any;
+    endPointName: string;
+    startPointName: string;
+    isBikeBus: boolean;
+    travelMode: string;
+    bicyclingSpeed: string;
+    bicyclingSpeedSelector: string;
+  }) => {
     try {
-
-      if (user) {
-
-        const convertedPathCoordinates = pathCoordinates.map(coord => ({
-          lat: coord.latitude,
-          lng: coord.longitude,
-        }));
-
-        const routeData = await addDoc(collection(db, 'routes'), {
-          routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
-          description: description,
-          isBikeBus: false,
-          BikeBusGroupId: "",
-          startPoint: selectedStartLocation,
-          endPoint: selectedEndLocation,
-          routeType: routeType,
-          duration: duration,
-          accountType: accountType,
-          travelMode: travelModeSelector,
-          routeCreator: "/users/" + user?.uid,
-          routeLeader: "/users/" + user?.uid,
-          bicyclingSpeed: bicyclingSpeedSelector,
-          bicyclingSpeedSelector: bicyclingSpeedSelector,
-          pathCoordinates: convertedPathCoordinates,
-          startPointName: startPointAddress,
-          endPointName: routeEndName,
-          startPointAddress: startPointAddress,
-          endPointAddress: endPointAddress,
-          distance: distance,
-          ...(travelModeSelector === 'BICYCLING' && { bicyclingSpeed: bicyclingSpeedSelector }),
-        });
-
-        setUserRoutesEnabled(true);
-
-
-        // if this is not part of the open trip feature, then redirect to the view route page
-        // if route is not "Open Trip", then redirect to the view route page
-        // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
-        if (routeType !== "openTrip") {
-          // history.push(`/viewroute/${routeDocRef.id}`);
-          // show the info box for the route
-          setShouldShowInfoBoxRoute(true);
-          // set the get directions button to false - showGetDirectionsButton
-          setShowGetDirectionsButton(false);
-          // set the create route button to false
-          setShowCreateRouteButton(false);
-          setUserRoutesEnabled(true);
-          
-          // refresh the map page
-          window.location.reload();
-        }
-
-        const routeDocRef = await addDoc(collection(db, 'routes'), routeData);
-
-        return routeDocRef;
+      if (!user) {
+        console.error('User data is missing');
+        return;
       }
+
+      const routeDocRef = await addDoc(collection(db, 'routes'), Route);
+      console.log('Route created with ID: ', routeDocRef.id);
+      // go to the route page
+      history.push(`/viewroute/${routeDocRef.id}`);
+
     } catch (error) {
-      console.log("Error: ", error);
+      console.error("Error submitting route:", error);
     }
   };
+
 
 
   const handleBikeBusRouteClick = async (route: any) => {
@@ -2009,11 +1946,11 @@ const Map: React.FC = () => {
       // let's ensure the endPoint is set before we set the position
       await getDoc(bikeBusGroupData?.BikeBusRoutes[0]).then((doc) => {
         if (doc.exists()) {
-          const routeData = doc.data() as RouteData;
-          // set routeData to the routeData from the document reference
-          setEndPoint(routeData?.endPoint);
-          setPosition(routeData?.endPoint);
-          setMapCenter(routeData?.endPoint);
+          const Route = doc.data() as Route;
+          // set Route to the Route from the document reference
+          setEndPoint(Route?.endPoint);
+          setPosition(Route?.endPoint);
+          setMapCenter(Route?.endPoint);
         }
       });
 
@@ -2031,6 +1968,7 @@ const Map: React.FC = () => {
 
 
   const handleUserRouteClick = async (route: any) => {
+    console.log(route);
 
 
     // set shouldShowInfoBoxRoute to true
@@ -2051,7 +1989,7 @@ const Map: React.FC = () => {
       foundRouteId = docSnapshot.id; // Assuming this gives the correct ID
     });
 
-    // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRouteData to a variable that we can use to get the route data
+    // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRoute to a variable that we can use to get the route data
     // set routeId as foundRouteId
     setRouteId(foundRouteId);
     // let's get the document from the foundRouteId
@@ -2063,7 +2001,7 @@ const Map: React.FC = () => {
     }
 
     // routeDoc should be set to selectedRoute
-    setSelectedRoute(routeDoc.data() as RouteData);
+    setSelectedRoute(routeDoc.data() as Route);
 
     // Check if a route ID was found
     if (foundRouteId) {
@@ -2525,7 +2463,7 @@ const Map: React.FC = () => {
                             height: "40px",
                           }}
                         />
-                        <IonButton shape="round" onClick={getLocation}>
+                        <IonButton size="small" onClick={getLocation}>
                           <IonIcon icon={locateOutline} />
                         </IonButton>
                       </div>
@@ -3061,7 +2999,7 @@ const Map: React.FC = () => {
             <div>
               {shouldShowInfoBoxRoute && selectedRoute && (
                 <InfoBox
-                  position={new google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
+                  position={routeInfoBoxPosition}
                   options={{
                     boxClass: "route-info-box",
                     disableAutoPan: false,

@@ -333,7 +333,7 @@ const AddSchedule: React.FC = () => {
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
       isBikeBus: true,
-      BikeBusGroupId: bikeBusGroupRef,
+      BikeBusGroup: bikeBusGroupRef,
       BikeBusName: BikeBusName,
     });
 

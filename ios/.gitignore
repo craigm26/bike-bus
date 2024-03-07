@@ -1,8 +1,9 @@
 App/build
-App/Pods/*
-
+#App/Pods/*
+App/Pods/
 # ignore everything in App/Pods except for the /Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig file
-!App/Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig
+#!App/Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig
+App/App
 App/output
 DerivedData
 xcuserdata

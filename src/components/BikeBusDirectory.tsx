@@ -34,7 +34,7 @@ interface BikeBus {
     travelMode: string;
 }
 
-interface RouteData {
+interface Route {
     eventCheckInLeader: any;
     startPoint: { lat: number; lng: number };
     endPoint: { lat: number; lng: number };
@@ -55,7 +55,7 @@ interface RouteData {
     BikeBusStop: Coordinate[];
     BikeBusStops: Coordinate[];
     BikeBusStationsIds: string[];
-    BikeBusGroupId: DocumentReference;
+    BikeBusGroup: DocumentReference;
     BikeBusStopIds: DocumentReference[];
     id: string;
     accountType: string;
@@ -67,12 +67,12 @@ const BikeBusDirectory: React.FC = () => {
     const { user } = useAuth();
     const [accountType, setaccountType] = useState<string>('');
     const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
-    const [route, setRoute] = useState<RouteData>();
+    const [route, setRoute] = useState<Route>();
     const [routeId, setRouteId] = useState<string>('');
     const [endPointAddress, setEndPointAddress] = useState<string>('');
     const [endPoint, setEndPoint] = useState<Coordinate>();
     const [cityGroups, setCityGroups] = useState<Record<string, BikeBus[]>>({});
-    const [RouteArray, setRouteArray] = useState<RouteData[]>([]);
+    const [RouteArray, setRouteArray] = useState<Route[]>([]);
 
 
 
@@ -107,7 +107,7 @@ const BikeBusDirectory: React.FC = () => {
         }));
         setBikeBus(BikeBusData);
     
-        const RouteArrayTemp: RouteData[] = [];
+        const RouteArrayTemp: Route[] = [];
     
         for (const bikeBusDoc of querySnapshot.docs) {
             const BikeBusRoutesRef = bikeBusDoc.data().BikeBusRoutes;
@@ -115,8 +115,8 @@ const BikeBusDirectory: React.FC = () => {
             if (Array.isArray(BikeBusRoutesRef)) {
                 for (const routeRef of BikeBusRoutesRef) {
                     const routeDoc = await getDoc(routeRef as DocumentReference);
-                    const routeData = routeDoc.data() as RouteData;
-                    RouteArrayTemp.push(routeData);
+                    const Route = routeDoc.data() as Route;
+                    RouteArrayTemp.push(Route);
                 }
             }
         }
@@ -148,7 +148,7 @@ const BikeBusDirectory: React.FC = () => {
 
 
 
-    const groupByCity = (BikeBusArray: BikeBus[], RouteArray: RouteData[]): Record<string, BikeBus[]> => {
+    const groupByCity = (BikeBusArray: BikeBus[], RouteArray: Route[]): Record<string, BikeBus[]> => {
         return BikeBusArray.reduce((acc: Record<string, BikeBus[]>, curr: BikeBus, index: number) => {
             const routeInfo = RouteArray[index];
             if (!routeInfo || !routeInfo.endPointAddress) {

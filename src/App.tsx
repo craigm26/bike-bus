@@ -129,21 +129,6 @@ const App: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
-  useEffect(() => {
-    const adjustForNotch = async () => {
-      try {
-        const info = await StatusBar.getInfo();
-        const statusBarHeight = (info as any).height;
-        document.documentElement.style.setProperty('--safe-area-top', `${statusBarHeight ? statusBarHeight + 'px' : '0px'}`);
-      } catch (error) {
-        console.log('Error getting status bar info:', error);
-      }
-    };
-  
-    adjustForNotch();
-  }, []);
-
-  
   
 
 
@@ -237,11 +222,11 @@ const App: React.FC = () => {
     return <p>Loading...</p>;
   }
 
-  /* removing for now for iOS testing
+
   if (loadingAuthState) {
     return <IonSpinner />;
   }
-  */
+
 
   return (
     <IonApp>
