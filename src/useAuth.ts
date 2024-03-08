@@ -93,7 +93,7 @@ const useAuth = () => {
       console.error('Error fetching user data:', error);
     }
     return defaultUserData;
-  }
+  };
 
 
 

@@ -74,6 +74,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Check if this URL was sent by AppAuth, if so handle it
+        /*
         if let authorizationFlow = currentAuthorizationFlow, authorizationFlow.resumeExternalUserAgentFlow(with: url) {
             currentAuthorizationFlow = nil
             return true
@@ -82,6 +83,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if Auth.auth().canHandle(url) {
             return true
         }
+         */
         
         // Existing handling of the URL
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)

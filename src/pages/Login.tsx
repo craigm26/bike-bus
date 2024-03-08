@@ -32,6 +32,8 @@ const Login: React.FC = () => {
   const headerContext = useContext(HeaderContext);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     try {
@@ -57,16 +59,17 @@ const Login: React.FC = () => {
 
   const handleGoogleSubmit = async () => {
     try {
-      const userCredential = await signInWithGoogle();
-      if (userCredential?.user) {
-        await processUser(userCredential.user);
+      console.log('starting signInWithGoogle');
+      const userData = await signInWithGoogle();
+      console.log('from Welcome.tsx userCredential', userData);
+      if (userData) {
+        setIsLoggedIn(true);
+        setUsername(userData.username || 'Anonymous Username');
+        await checkAndUpdateAccountModes(userData.uid);
+        history.push('/Map');
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage("Error logging in: " + error.message);
-      } else {
-        setErrorMessage("Error logging in.");
-      }
+      console.error('Error during Google sign in:', error);
     }
   };
 
