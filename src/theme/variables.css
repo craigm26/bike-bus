@@ -168,9 +168,9 @@ http://ionicframework.com/docs/theming/ */
     --ion-text-color: #ffffff;
     --ion-text-color-rgb: 0, 0, 0;
 
-    --ion-item-background: #737373;
+    --ion-item-background: #000000;
 
-    --ion-card-background: #737373;
+    --ion-card-background: #000000;
   
 
     --ion-color-step-50: #0d0d0d;
@@ -199,6 +199,48 @@ http://ionicframework.com/docs/theming/ */
     --ion-toolbar-background: var(--ion-color-step-150);
     --ion-toolbar-border-color: var(--ion-color-step-250);
   }
+
+  .welcome-to-bikebus h1 {
+    font-size: 2.5rem;
+    color: #ffd800;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+
+  .welcome-to-bikebus h3 {
+    font-size: 1.5rem;
+    color: #ffd800;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .welcome-to-bikebus-about h4 {
+    color: #ffd800;
+    line-height: 1.6;
+    font-size: 1.2rem;
+  }
+  
+  .welcome-to-bikebus-buttons {
+    margin-top: 2rem;
+    background-color: #ffd800;
+  }
+
+  .toolbar-container {
+    background-color: #000000
+  }
+
+  .ion-buttons {
+    color: #ffd800;
+  }
+
+  .ion-text {
+    color: #ffd800;
+  }
+
+  .ion-label {
+    color: #ffd800;
+  }
+
 
 
   /*

@@ -14,7 +14,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
@@ -39,14 +39,15 @@ interface BikeBusGroup {
 
 
 
-interface BikeBusStops {
-  id: string; // Document ID
+interface BikeBusStop {
+  BikeBusGroup: DocumentReference;
+  BikeBusRouteId: string;
   BikeBusStopName: string;
-  formattedAddress: string;
-  // `location` should be an object with `lat` and `lng` properties if it's stored as GeoPoint in Firestore
+  id: string;
   location: Coordinate;
-  photos: string; // Assuming it's a string URL or could be an array of string URLs if multiple
   placeId: string;
+  photos: string;
+  formattedAddress: string;
   placeName: string;
 }
 interface Route {
@@ -116,7 +117,8 @@ const ViewRoute: React.FC = () => {
   const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [BikeBusGroup, setBikeBusGroup] = useState<DocumentReference | null>(null);
-  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStops[] | null>(null);
+  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+
 
 
 
@@ -151,7 +153,6 @@ const ViewRoute: React.FC = () => {
     const fetchSingleRoute = async (id: string) => {
       const docRef = doc(db, 'routes', id);
       const docSnap = await getDoc(docRef);
-      console.log(docSnap);
 
       if (docSnap.exists()) {
         const routeData = {
@@ -171,21 +172,6 @@ const ViewRoute: React.FC = () => {
           })),
         };
         setSelectedRoute(routeData);
-
-        if (Array.isArray(routeData.BikeBusStops)) {
-          const bikeBusStopDataArray = [];
-          for (const stopRef of routeData.BikeBusStops) {
-            const stopDoc = await getDoc(stopRef);
-            if (stopDoc.exists()) {
-              const stopData = stopDoc.data() as BikeBusStops;
-              stopData.id = stopDoc.id;
-              bikeBusStopDataArray.push(stopData);
-            }
-          }
-          setBikeBusStops(bikeBusStopDataArray);
-          console.log(bikeBusStopDataArray);
-        }
-
         setBikeBusGroup(routeData.BikeBusGroup);
         setPath(routeData.pathCoordinates);
         setStartGeo(routeData.startPoint);
@@ -198,8 +184,6 @@ const ViewRoute: React.FC = () => {
           });
         // test if the route is a bikebus
         if (routeData.isBikeBus) {
-          console.log("This is a bike bus route");
-          console.log(routeData.BikeBusGroup);
           // fetch the bikebus group data
           const docRef = doc(db, 'bikebusgroups', routeData?.BikeBusGroup?.id);
           const docSnap = await getDoc(docRef);
@@ -208,12 +192,34 @@ const ViewRoute: React.FC = () => {
               ...docSnap.data() as BikeBusGroup,
               id: docSnap.id,
             };
-            console.log(bikeBusGroupData);
           } else {
             // doc.data() will be undefined in this case
             console.log("No such document!");
           }
         }
+
+        const fetchBikeBusStops = async () => {
+          // first let's get the bikebusstop documents from the selectedRoute.BikeBusStops
+          const BikeBusStopsSnapshot = await getDocs(collection(db, 'routes', id, 'BikeBusStops'));
+          // now we want to map through the BikeBusStopsSnapshot and return the data and then set to state
+          const BikeBusStops = BikeBusStopsSnapshot.docs.map((doc) => {
+            const data = doc.data() as any; // use 'any' temporarily to bypass type checking
+            // Assume 'location' is a GeoPoint, extract 'latitude' and 'longitude'
+            const location = data.location; // This should be a Firestore GeoPoint
+            return {
+              ...data,
+              location: {
+                lat: location.latitude,
+                lng: location.longitude,
+              },
+            };
+          });
+    
+          setBikeBusStops(BikeBusStops);
+        }
+    
+    
+        fetchBikeBusStops();
 
       }
 
@@ -280,18 +286,6 @@ const ViewRoute: React.FC = () => {
               </IonLabel>
             </IonCol>
           </IonRow>
-          {isBikeBus && (
-            <IonRow>
-              <IonCol>
-                <IonLabel>
-                  BikeBus Stops:
-                  {bikeBusStops?.map((stop, index) => (
-                    <IonLabel key={index}>{stop.BikeBusStopName}</IonLabel>
-                  ))}
-                </IonLabel>
-              </IonCol>
-            </IonRow>
-          )}
           <IonRow>
             <IonCol>
               <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
@@ -364,15 +358,16 @@ const ViewRoute: React.FC = () => {
                       visible: true,
                     }}
                   />
-                  {bikeBusStops?.map((stop, index) => (
-                    <Marker
-                      zIndex={10}
-                      key={index}
-                      position={{ lat: stop.location.lat, lng: stop.location.lng }}
-                      title={stop.BikeBusStopName}
-                      label={stop.BikeBusStopName}
-                    />
-                  ))}
+                  {BikeBusStops?.map((BikeBusStop, index) => (
+                      <Marker
+                        key={`${BikeBusStop.id}-${index}`}
+                        position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
+                        title={BikeBusStop.BikeBusStopName}
+                        label={`${index + 1}`}
+                        onClick={() => {
+                        }}
+                      />
+                    ))}
                   {startGeo.lat !== 0 && startGeo.lng !== 0 && (
                     <Marker
                       zIndex={1}
