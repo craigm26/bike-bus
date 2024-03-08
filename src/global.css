@@ -16,7 +16,7 @@
 
 @media only screen and (max-width: 768px) {
   .ion-flex-offset-app-header {
-    padding-top: calc(0px + var(--ion-safe-area-top, 30px));
+    padding-top: calc(32px + var(--ion-safe-area-top, 0px));
     background-color: #ffd800;
   }
 }
@@ -26,7 +26,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: calc(62px + var(--ion-safe-area-top, 30px));
+  padding-top: calc(32px + var(--ion-safe-area-top, 0px));
   overflow: hidden;
 }
 

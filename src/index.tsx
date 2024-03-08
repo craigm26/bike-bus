@@ -21,14 +21,13 @@ const FirebaseInitializer = ({ children }: { children: React.ReactNode }) => {
     if (db) {
       setFirebaseInitialized(true);
       console.log('Firebase initialized');
-    }
+    } else {
     console.log('Firebase not initialized');
+    }
   }, []);
 
   if (!firebaseInitialized) {
     <IonText>...Loading the auth state from index</IonText>
-    const { user } = useAuth();
-
     return <IonSpinner />; 
   }
 
