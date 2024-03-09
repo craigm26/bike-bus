@@ -88,7 +88,7 @@ const Help: React.FC = () => {
                   onIonChange={e => setMessage(e.detail.value!)}
                 ></IonInput>
               </IonItem>
-              <IonButton expand="block" className="message-send-button" onClick={writeMessageToFirebase}>Send Feedback or Ask for Help</IonButton>
+              <IonButton shape="round" expand="block" className="message-send-button" onClick={writeMessageToFirebase}>Send Feedback or Ask for Help</IonButton>
             </div>
           </IonCardContent>
           <IonList>
@@ -101,9 +101,9 @@ const Help: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
-                      <IonItem>1. <IonButton className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
-                      <IonItem>2. Create a Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
-                      <IonItem>3. View the Route:  <IonButton className="ion-button-profile" fill="solid" routerLink="/ViewRouteList">View your Routes</IonButton></IonItem>
+                      <IonItem>1. <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/Login">LogIn</IonButton></IonItem>
+                      <IonItem>2. Create a Route:  <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/Help">Help</IonButton></IonItem>
+                      <IonItem>3. View the Route:  <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/ViewRouteList">View your Routes</IonButton></IonItem>
                       <IonItem>4. Select the "Create BikeBus Group" button</IonItem>
                       <IonItem>5. Fill in the "Create BikeBus" form</IonItem>
                       <IonItem>6. Create your schedule of upcoming events</IonItem>

@@ -276,8 +276,8 @@ const ViewSchedule: React.FC = () => {
                         />
                     </div>
                 </IonCard>
-                <IonButton routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
-                <IonButton routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                <IonButton shape="round" routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
+                <IonButton shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
                 <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
                     <IonContent>
                         <IonCardHeader>
@@ -334,11 +334,11 @@ const ViewSchedule: React.FC = () => {
                                         <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
                                     </IonCol>
                                 </IonItem>
-                                <IonButton onClick={handleHandCountModification}>Modify</IonButton>
+                                <IonButton shape="round" onClick={handleHandCountModification}>Modify</IonButton>
                             </> : null}
-                        {(!isEventDone) ? <IonButton onClick={handleEditEvent}>Go to Event</IonButton> : null}
-                        {(isEventDone) ? <IonButton routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
-                        <IonButton onClick={() => setShowEventModal(false)}>Close</IonButton>
+                        {(!isEventDone) ? <IonButton shape="round" onClick={handleEditEvent}>Go to Event</IonButton> : null}
+                        {(isEventDone) ? <IonButton shape="round" routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
+                        <IonButton shape="round" onClick={() => setShowEventModal(false)}>Close</IonButton>
                     </IonContent>
                 </IonModal>
 

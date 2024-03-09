@@ -1,10 +1,10 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useMemo } from 'react';
 import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, indexedDBLocalPersistence, setPersistence } from 'firebase/auth';
 
 
 
@@ -12,11 +12,21 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loadingAuthState, setLoadingAuthState] = useState(true);
+  const [loadingAuthState, setLoadingAuthState] = useState(true);  
+
+  
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
-      if (authUser) {
+
+    const setAuthPersistence = async () => {
+      if (!Capacitor.isNativePlatform()) {
+        await setPersistence(auth, indexedDBLocalPersistence);
+      }
+    };
+
+    setAuthPersistence().then(() => {
+      const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
+        if (authUser) {
         // User is signed in, fetch additional details from Firestore
         const userDocRef = doc(db, 'users', authUser.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -37,8 +47,11 @@ export const AuthProvider = ({ children }) => {
       }
       setLoadingAuthState(false);
     });
+    
 
     return () => unsubscribe();
+  
+  });
   }, []);
 
 

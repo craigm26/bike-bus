@@ -105,9 +105,13 @@ const ViewRouteList: React.FC = () => {
         // Create a reference to the 'routes' collection
         const routesCollection = collection(db, 'routes');
 
+        // console.log test my logged in user's uid
+        console.log(uid);
+
         // Create a query against the collection.
-        // This will fetch all documents where the routeCreator equals the user's uid
-        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
+        // This will fetch all documents where the routeCreator equals the user's uid (("routeCreator", "==", `/users/${uid}`)) or `${uid}`.
+        // const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`) || where("routeCreator", "==", `/${user.uid}`));
+        const q = query(routesCollection, where("routeCreator", "==", `${uid}`));
 
         const querySnapshot = await getDocs(q);
         const routesData: Route[] = querySnapshot.docs.map(doc => ({
@@ -115,6 +119,7 @@ const ViewRouteList: React.FC = () => {
             id: doc.id,
         }));
         setRoutes(routesData);
+        console.log(routesData);
     }, [user]); // here user is a dependency
 
 
@@ -187,7 +192,7 @@ const ViewRouteList: React.FC = () => {
                                 {routes.map((route) => (
                                     <IonItem key={route.id}>
                                         <IonLabel>{route.routeName}</IonLabel>
-                                        <IonButton routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
+                                        <IonButton shape="round" routerLink={`/ViewRoute/${route.id}`}>View Route</IonButton>
                                     </IonItem>
                                 ))}
                             </IonList>

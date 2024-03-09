@@ -6,16 +6,20 @@ import {
   IonCol,
   IonGrid,
   IonRow,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
 } from '@ionic/react';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import useAuth from "../useAuth";
 import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
+import { AuthContext } from '../AuthContext';
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -33,12 +37,12 @@ interface BikeBusGroup {
   routeId: string;
 }
 
+
+
 interface BikeBusStop {
-  BikeBusGroupId: string;
+  BikeBusGroup: DocumentReference;
   BikeBusRouteId: string;
   BikeBusStopName: string;
-  lat: number;
-  lng: number;
   id: string;
   location: Coordinate;
   placeId: string;
@@ -46,29 +50,43 @@ interface BikeBusStop {
   formattedAddress: string;
   placeName: string;
 }
-
 interface Route {
-  BikeBusName: string;
-  BikeBusStopName: string[];
-  BikeBusStopIds: DocumentReference[];
+  newStop: Coordinate | null;
+  BikeBusGroup: DocumentReference;
+  BikeBusStops: DocumentReference[];
   id: string;
-  BikeBusStationsIds: string[];
-  BikeBusGroupId: DocumentReference;
+  endPointAddress: string;
+  endPointName: string;
+  startPointAddress: string;
+  startPointName: string;
+  BikeBusGroupId: string;
+  BikeBusName: string;
   accountType: string;
+  bicyclingSpeed: string;
+  bicyclingSpeedSelector: string;
   description: string;
-  endPoint: Coordinate;
+  distance: string;
+  duration: string;
+  endPoint: {
+    lat: number;
+    lng: number;
+  };
+  isBikeBus: boolean;
+  pathCoordinates: Array<{
+    lat: number;
+    lng: number;
+  }>;
   routeCreator: string;
   routeLeader: string;
   routeName: string;
   routeType: string;
-  startPoint: Coordinate;
-  startPointName: string;
-  endPointName: string;
-  startPointAddress: string;
-  endPointAddress: string;
+  startPoint: {
+    lat: number;
+    lng: number;
+    startPointAddress: string;
+    startPointName: string;
+  };
   travelMode: string;
-  pathCoordinates: Coordinate[];
-  isBikeBus: boolean;
 }
 
 interface Coordinate {
@@ -77,22 +95,16 @@ interface Coordinate {
 }
 
 const ViewRoute: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loadingAuthState } = useContext(AuthContext);
   const history = useHistory();
-
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
   const headerContext = useContext(HeaderContext);
   const [accountType, setaccountType] = useState<string>('');
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
   const { id } = useParams<{ id: string }>();
-  const [bikeBusGroup, setBikeBusGroup] = useState<BikeBusGroup | null>(null);
-  const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-    libraries: libraries,
-  });
   const [loading, setLoading] = useState(true);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -104,9 +116,9 @@ const ViewRoute: React.FC = () => {
   const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
   const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
-  const [BikeBusGroupId, setBikeBusGroupId] = useState<DocumentReference | null>(null);
-  const [BikeBusStopIds, setBikeBusStopIds] = useState<DocumentReference[]>([]);
-  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[] | null>(null);
+  const [BikeBusGroup, setBikeBusGroup] = useState<DocumentReference | null>(null);
+  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+
 
 
 
@@ -115,8 +127,15 @@ const ViewRoute: React.FC = () => {
     height: '100%',
   };
 
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries: libraries,
+  });
+
+  const isBikeBus = selectedRoute?.isBikeBus ?? false;
+
   useEffect(() => {
-    if (id) fetchSingleRoute(id);
 
     if (user) {
       const userRef = doc(db, 'users', user.uid);
@@ -127,114 +146,87 @@ const ViewRoute: React.FC = () => {
             setaccountType(userData.accountType);
           }
         }
-      });
+      }
+      );
     }
 
-  }, [id, user]);
+    const fetchSingleRoute = async (id: string) => {
+      const docRef = doc(db, 'routes', id);
+      const docSnap = await getDoc(docRef);
 
-  const fetchSingleRoute = async (id: string) => {
-    const docRef = doc(db, 'routes', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const routeData = {
-        ...docSnap.data() as Route,
-        id: docSnap.id,
-        isBikeBus: docSnap.data().isBikeBus,
-        startPoint: docSnap.data().startPoint,
-        endPoint: docSnap.data().endPoint,
-        BikeBusGroupId: docSnap.data().BikeBusGroupId,
-        // convert BikeBusGroupId (document reference in firebase) to a string
-        pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
-          lat: coord.lat,  // use 'lat' instead of 'latitude'
-          lng: coord.lng,  // use 'lng' instead of 'longitude'
-        })),
-      };
-      setSelectedRoute(routeData);
-      setBikeBusGroupId(routeData.BikeBusGroupId);
-      setPath(routeData.pathCoordinates);
-      setBikeBusStopIds(routeData.BikeBusStopIds);
-      setStartGeo(routeData.startPoint);
-      setEndGeo(routeData.endPoint);
-      // test if the route is a bikebus
-      if (routeData.isBikeBus) {
-        console.log("This is a bike bus route");
-        console.log(routeData.BikeBusGroupId);
-        // fetch the bikebus group data
-        const docRef = doc(db, 'bikebusgroups', routeData.BikeBusGroupId?.id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const bikeBusGroupData = {
-            ...docSnap.data() as BikeBusGroup,
-            id: docSnap.id,
-          };
-          setBikeBusGroup(bikeBusGroupData);
-          console.log(bikeBusGroupData);
-        } else {
-          // doc.data() will be undefined in this case
-          console.log("No such document!");
-        }
-      }
-      setMapCenter({
-        lat: ((selectedRoute?.startPoint?.lat ?? 0) + (selectedRoute?.endPoint?.lat ?? 0)) / 2,
-        lng: ((selectedRoute?.startPoint?.lng ?? 0) + (selectedRoute?.endPoint?.lng ?? 0)) / 2,
-      });
-
-      if (selectedRoute && selectedRoute.startPoint && selectedRoute.endPoint) {
-        setStartGeo(selectedRoute?.startPoint);
-        console.log(selectedRoute?.startPoint);
-        setEndGeo(selectedRoute.endPoint);
-        console.log(selectedRoute.endPoint);
-      }
-
-      if (selectedRoute && selectedRoute.BikeBusStopIds) {
-        const bikeBusStopData = async () => {
-          // fetch the bikebus stop data by looping through the bikebus stop ids array
-          const bikeBusStopDataArray: BikeBusStop[] = [];
-          for (const bikeBusStopId of selectedRoute.BikeBusStopIds) {
-            const docRef = doc(db, 'bikebusstops', bikeBusStopId.id);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-              const bikeBusStopData = {
-                ...docSnap.data() as BikeBusStop,
-                id: docSnap.id,
-                location: {
-                  lat: docSnap.data()?.lat,
-                  lng: docSnap.data()?.lng,
-                },
-                // also get the formatted address and place name along with the BikeBusStopName field and values
-                formattedAddress: docSnap.data()?.formattedAddress,
-                placeName: docSnap.data()?.placeName,
-                BikeBusStopName: docSnap.data()?.BikeBusStopName,
-              };
-              bikeBusStopDataArray.push(bikeBusStopData);
-              setBikeBusStops(bikeBusStopDataArray);
-              console.log(bikeBusStopData);
-              console.log(bikeBusStops);
-              console.log(bikeBusStopDataArray);
-            } else {
-              // doc.data() will be undefined in this case
-              console.log("No such document!");
-            }
-          }
-          console.log(bikeBusStopDataArray);
-          setBikeBusStops(bikeBusStopDataArray);
-          console.log(bikeBusStopDataArray);
-          console.log(bikeBusStops);
+      if (docSnap.exists()) {
+        const routeData = {
+          ...docSnap.data() as Route,
+          id: docSnap.id,
+          isBikeBus: docSnap.data().isBikeBus,
+          startPoint: docSnap.data().startPoint,
+          endPoint: docSnap.data().endPoint,
+          duration: docSnap.data().duration,
+          distance: docSnap.data().distance,
+          bicyclingSpeed: docSnap.data().bicyclingSpeed,
+          BikeBusGroup: docSnap.data().BikeBusGroup,
+          // convert BikeBusGroupId (document reference in firebase) to a string
+          pathCoordinates: (docSnap.data().pathCoordinates || []).map((coord: any) => ({
+            lat: coord.lat,  // use 'lat' instead of 'latitude'
+            lng: coord.lng,  // use 'lng' instead of 'longitude'
+          })),
         };
+        setSelectedRoute(routeData);
+        setBikeBusGroup(routeData.BikeBusGroup);
+        setPath(routeData.pathCoordinates);
+        setStartGeo(routeData.startPoint);
+        setEndGeo(routeData.endPoint);
+        setStartGeo(routeData?.startPoint);
+          setEndGeo(routeData.endPoint);
+          setMapCenter({
+            lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+            lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+          });
+        // test if the route is a bikebus
+        if (routeData.isBikeBus) {
+          // fetch the bikebus group data
+          const docRef = doc(db, 'bikebusgroups', routeData?.BikeBusGroup?.id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const bikeBusGroupData = {
+              ...docSnap.data() as BikeBusGroup,
+              id: docSnap.id,
+            };
+          } else {
+            // doc.data() will be undefined in this case
+            console.log("No such document!");
+          }
+        }
 
-        //call bikebus stop data
-        bikeBusStopData();
+        const fetchBikeBusStops = async () => {
+          // first let's get the bikebusstop documents from the selectedRoute.BikeBusStops
+          const BikeBusStopsSnapshot = await getDocs(collection(db, 'routes', id, 'BikeBusStops'));
+          // now we want to map through the BikeBusStopsSnapshot and return the data and then set to state
+          const BikeBusStops = BikeBusStopsSnapshot.docs.map((doc) => {
+            const data = doc.data() as any; // use 'any' temporarily to bypass type checking
+            // Assume 'location' is a GeoPoint, extract 'latitude' and 'longitude'
+            const location = data.location; // This should be a Firestore GeoPoint
+            return {
+              ...data,
+              location: {
+                lat: location.latitude,
+                lng: location.longitude,
+              },
+            };
+          });
+    
+          setBikeBusStops(BikeBusStops);
+        }
+    
+    
+        fetchBikeBusStops();
+
       }
-      setLoading(false);
+
     }
-  };
-
-
-
-
-  const isBikeBus = selectedRoute?.isBikeBus ?? false;
-
+    if (id) fetchSingleRoute(id);
+  }
+    , [user, id]);
 
   const deleteRoute = async () => {
     if (selectedRoute) {
@@ -243,16 +235,27 @@ const ViewRoute: React.FC = () => {
       // send message to user that the route was deleted
       alert('Route Deleted');
       history.push('/viewroutelist/');
+    } else {
+      alert('No route to delete');
     }
   };
 
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent style={{ height: '100%' }}>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Viewing {selectedRoute?.routeName}</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
             <IonCol>
-              <IonLabel>Route Name: {selectedRoute?.routeName}</IonLabel>
+              <IonLabel>Speed: {selectedRoute?.bicyclingSpeed}</IonLabel>
             </IonCol>
           </IonRow>
           <IonRow>
@@ -276,189 +279,121 @@ const ViewRoute: React.FC = () => {
               </IonLabel>
             </IonCol>
           </IonRow>
-          {isBikeBus && (
-            <IonRow>
-              <IonCol>
-                <IonLabel>
-                  BikeBus Stops:
-                  {bikeBusStops?.map((stop, index) => (
-                    <span key={index}>{stop.BikeBusStopName}, </span>
-                  ))}
-                </IonLabel>
-              </IonCol>
-            </IonRow>
-          )}
           <IonRow>
             <IonCol>
-              <IonButton routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-              <IonButton onClick={deleteRoute}>Delete Route</IonButton>
-              <IonButton routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
+              <IonLabel>
+                Duration: {selectedRoute?.duration} Minutes
+              </IonLabel>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol>
+              <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+              <IonButton shape="round" color="danger" size="small" onClick={deleteRoute}>Delete Route</IonButton>
+              <IonButton shape="round" size="small" routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
               {isBikeBus && (
-                <IonButton routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroupId?.id}`}>Go to BikeBus</IonButton>
+                <IonButton shape="round" size="small" routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
               )}
             </IonCol>
           </IonRow>
           {!isBikeBus && (
             <IonRow>
               <IonCol>
-                <IonButton routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
+                <IonButton shape="round" size="small" routerLink={`/CreateBikeBusGroup/${id}`}>Create BikeBus Group</IonButton>
               </IonCol>
             </IonRow>
           )}
           <IonRow style={{ flex: '1' }}>
             <IonCol>
-              {isLoaded && selectedRoute ? (
+              {selectedRoute && isLoaded && (
                 <GoogleMap
+                  onLoad={(map) => {
+                    mapRef.current = map;
+                    bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+                  }}
                   mapContainerStyle={containerMapStyle}
                   center={mapCenter}
                   zoom={13}
                   options={{
+                    zoomControl: true,
+                    zoomControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER
+                    },
                     mapTypeControl: false,
+                    mapTypeControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                      mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                    },
                     streetViewControl: false,
                     fullscreenControl: true,
                     disableDoubleClickZoom: true,
                     disableDefaultUI: true,
                     mapId: 'b75f9f8b8cf9c287',
                   }}
+                  onUnmount={() => {
+                    mapRef.current = null;
+                  }}
                 >
-                  <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#000000",
-                        strokeOpacity: 1,
-                        strokeWeight: 5,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
-                      }}
-                    />
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#ffd800",
-                        strokeOpacity: 1,
-                        strokeWeight: 3,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
-                      }}
-                    />
-                  </React.Fragment>
-                  <Marker
-                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                    title="Start"
-                    label={"Start"}
-                    onClick={() => setSelectedMarker(startGeo)}
+                  <Polyline
+                    path={selectedRoute?.pathCoordinates}
+                    options={{
+                      strokeColor: "#000000",
+                      strokeOpacity: 1,
+                      strokeWeight: 5,
+                      geodesic: true,
+                      draggable: false,
+                      editable: false,
+                      visible: true,
+                    }}
                   />
-                  <Marker
-                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                    title="End"
-                    label={"End"}
-                    onClick={() => setSelectedMarker(endGeo)}
+                  <Polyline
+                    path={selectedRoute?.pathCoordinates}
+                    options={{
+                      strokeColor: "#ffd800",
+                      strokeOpacity: 1,
+                      strokeWeight: 3,
+                      geodesic: true,
+                      draggable: false,
+                      editable: false,
+                      visible: true,
+                    }}
                   />
-                  {bikeBusStops?.map((stop, index) => (
+                  {BikeBusStops?.map((BikeBusStop, index) => (
+                      <Marker
+                        key={`${BikeBusStop.id}-${index}`}
+                        position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
+                        title={BikeBusStop.BikeBusStopName}
+                        label={`${index + 1}`}
+                        onClick={() => {
+                        }}
+                      />
+                    ))}
+                  {startGeo.lat !== 0 && startGeo.lng !== 0 && (
                     <Marker
-                      key={index}
-                      position={{ lat: stop.location.lat, lng: stop.location.lng }}
-                      title={stop.BikeBusStopName}
-                      label={stop.BikeBusStopName}
-                      onClick={() => {
-                        setSelectedBikeBusStop(stop.location);
-                        setSelectedStopIndex(index);
-                      }}
+                      zIndex={1}
+                      position={{ lat: startGeo.lat, lng: startGeo.lng }}
+                      title="Start"
+                      label={"Start"}
+                      onClick={() => setSelectedMarker(startGeo)}
                     />
-                  ))}
-                  {selectedMarker && (
-                    <InfoWindow
-                      position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                      onCloseClick={() => setSelectedMarker(null)}
-                    >
-                      <div>
-                        <h4>Marker Data</h4>
-                        <p>Latitude: {selectedMarker.lat}</p>
-                        <p>Longitude: {selectedMarker.lng}</p>
-                      </div>
-                    </InfoWindow>
+                  )}
+                  {endGeo.lat !== 0 && endGeo.lng !== 0 && (
+                    <Marker
+                      zIndex={10}
+                      position={{ lat: endGeo.lat, lng: endGeo.lng }}
+                      title="End"
+                      label={"End"}
+                      onClick={() => setSelectedMarker(endGeo)}
+                    />
                   )}
 
                 </GoogleMap>
-              ) : (
-                <>
-                  {isLoaded && selectedRoute && (
-                    <>
-                      <GoogleMap
-                        mapContainerStyle={containerMapStyle}
-                        center={mapCenter}
-                        zoom={13}
-                        options={{
-                          mapTypeControl: false,
-                          streetViewControl: false,
-                          fullscreenControl: true,
-                          disableDoubleClickZoom: true,
-                          disableDefaultUI: true,
-                        }}
-                      >
-                        <Marker
-                          position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                          title="Start"
-                          onClick={() => setSelectedMarker(startGeo)}
-                        />
-                        <Marker
-                          position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                          title="End"
-                          onClick={() => setSelectedMarker(endGeo)}
-                        />
-                        {selectedMarker && (
-                          <InfoWindow
-                            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                            onCloseClick={() => setSelectedMarker(null)}
-                          >
-                            <div>
-                              <h4>Marker Data</h4>
-                              <p>Latitude: {selectedMarker.lat}</p>
-                              <p>Longitude: {selectedMarker.lng}</p>
-                            </div>
-                          </InfoWindow>
-                        )}
-                        {bikeBusStops?.map((stop, index) => (
-                          <Marker
-                            key={index}
-                            position={{ lat: stop.location.lat, lng: stop.location.lng }}
-                            title={stop.BikeBusStopName}
-                            label={stop.BikeBusStopName}
-                            onClick={() => {
-                              setSelectedBikeBusStop(stop.location);
-                              setSelectedStopIndex(index);
-                            }}
-                          />
-                        ))}
-                      </GoogleMap>
-                      <Polyline
-                        path={selectedRoute.pathCoordinates}
-                        options={{
-                          strokeColor: "#ffd800",
-                          strokeOpacity: 1.0,
-                          strokeWeight: 2,
-                          geodesic: true,
-                          draggable: false,
-                          editable: false,
-                          visible: true,
-                        }}
-                      />
-                    </>
-                  )}
-                </>
               )}
-
             </IonCol>
           </IonRow>
         </IonGrid>
       </IonContent>
     </IonPage>
-
   );
 
 };

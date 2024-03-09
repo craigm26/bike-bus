@@ -121,7 +121,7 @@ const Signup: React.FC = () => {
                             />
                         </IonItem>
 
-                        <IonButton type="submit" expand="block" onClick={() => handleSignup(email, password)} disabled={isEmailTaken || isSubmitting}>
+                        <IonButton shape="round" type="submit" expand="block" onClick={() => handleSignup(email, password)} disabled={isEmailTaken || isSubmitting}>
                             <IonIcon slot="start" icon={personAdd} />
                             Sign Up with Email
                         </IonButton>

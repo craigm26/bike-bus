@@ -47,7 +47,7 @@ interface BikeBusStop {
     lat: Coordinate;
     lng: Coordinate;
     BikeBusStopIds: DocumentReference[];
-    BikeBusGroupId: string;
+    BikeBusGroup: string;
 }
 
 interface Route {
@@ -55,7 +55,7 @@ interface Route {
     BikeBusStopIds: DocumentReference[];
     id: string;
     BikeBusStationsIds: string[];
-    BikeBusGroupId: DocumentReference;
+    BikeBusGroup: DocumentReference;
     accountType: string;
     description: string;
     endPoint: Coordinate;
@@ -108,7 +108,7 @@ interface routeData {
     BikeBusName: string;
     BikeBusStopIds: DocumentReference[];
     id: string;
-    BikeBusGroupId: DocumentReference;
+    BikeBusGroup: DocumentReference;
     accountType: string;
     description: string;
     endPoint: Coordinate;

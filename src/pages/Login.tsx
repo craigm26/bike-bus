@@ -137,14 +137,14 @@ const Login: React.FC = () => {
               onIonChange={(e) => setPassword(e.detail.value!)}
             />
           </IonItem>
-          <IonButton className="email-button" type="button" onClick={handleSubmit}>
+          <IonButton shape="round" className="email-button" type="button" onClick={handleSubmit}>
             Login with Email
           </IonButton>
         </form>
         <PasswordReset email={email} />
         <IonText className="use-google">
           <p>
-            <IonButton color="clear" onClick={handleGoogleSubmit}>
+            <IonButton shape="round" color="clear" onClick={handleGoogleSubmit}>
               <img src={GoogleLogo} alt="Google logo" style={{ marginRight: '0px' }} />
             </IonButton>
           </p>
@@ -152,7 +152,7 @@ const Login: React.FC = () => {
         {/* Apple Sign In Button }
         <IonText className="use-apple">
           <p>
-            <IonButton color="clear" onClick={async () => {
+            <IonButton shape="round" color="clear" onClick={async () => {
               try {
                 const userCredential = await signInWithApple();
                 if (userCredential?.user) {

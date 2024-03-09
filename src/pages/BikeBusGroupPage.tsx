@@ -376,22 +376,22 @@ const BikeBusGroupPage: React.FC = () => {
               <IonRow>
                 <IonCol size="12">
                   {!isUserMember ? (
-                    <IonButton size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
+                    <IonButton shape="round" size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
                   ) : (
-                    <IonButton size="small" onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+                    <IonButton shape="round" size="small" onClick={leaveBikeBus}>Leave BikeBus</IonButton>
                   )}
                   {isUserMember && (
-                    <IonButton size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+                    <IonButton shape="round" size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
                       Bulletin Board
                     </IonButton>
                   )}
                   {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
-                    <IonButton size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                    <IonButton shape="round" size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
                   }
                   {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
-                    <IonButton size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
+                    <IonButton shape="round" size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
                   }
-                  <IonButton size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
+                  <IonButton shape="round" size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
                 </IonCol>
                 <IonModal isOpen={showInviteModal}>
                   <IonHeader>
@@ -426,10 +426,10 @@ const BikeBusGroupPage: React.FC = () => {
                         <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
                       </IonItem>
                     </IonList>
-                    <IonButton expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
-                    <IonButton expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+                    <IonButton shape="round" expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
+                    <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
                     <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
-                    <IonButton onClick={copyUrl}>Copy URL</IonButton>
+                    <IonButton shape="round" onClick={copyUrl}>Copy URL</IonButton>
                   </IonContent>
                 </IonModal>
               </IonRow>
@@ -446,7 +446,7 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonCol size="6">
                   <IonLabel>Members</IonLabel>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <IonButton onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                    <IonButton shape="round" onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
                       {membersData.map((user, index) => (
                         <div style={{ marginRight: '4px' }} key={index}>
                           <Avatar uid={user.id} size="small" />
@@ -472,7 +472,7 @@ const BikeBusGroupPage: React.FC = () => {
                           </IonItem>
                         ))}
                       </IonList>
-                      <IonButton expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
+                      <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
                     </IonContent>
                   </IonModal>
                 </IonCol>
@@ -492,7 +492,7 @@ const BikeBusGroupPage: React.FC = () => {
                 <IonCol size="6">
                 {primaryRoute ? (
                   <>
-                    <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton size="small">View {primaryRoute.routeName}</IonButton></Link>
+                    <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton style={{ maxWidth: '200px' }} className="ion-text-wrap" shape="round" size="small">View {primaryRoute.routeName}</IonButton></Link>
                   </>
                 ) : (
                   <IonText>No primary route set</IonText>
@@ -525,7 +525,7 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonCol>
                     <IonCol size="6">
                       <Link to={`/Event/${nextEventId}`}>
-                        <IonButton size="small">{nextEventTime} {timezone}</IonButton>
+                        <IonButton shape="round" size="small" style={{ maxWidth: '200px' }} className="ion-text-wrap">{nextEventTime} {timezone}</IonButton>
                       </Link>
                     </IonCol>
                   </>
@@ -536,7 +536,7 @@ const BikeBusGroupPage: React.FC = () => {
                     </IonCol>
                     <IonCol size="6">
                       <Link to={`/addschedule/${groupId}`}>
-                        <IonButton size="small">Add Event</IonButton>
+                        <IonButton shape="round" size="small">Add Event</IonButton>
                       </Link>
                     </IonCol>
                   </>
@@ -548,7 +548,7 @@ const BikeBusGroupPage: React.FC = () => {
                 </IonCol>
                 <IonCol size="6">
                   <Link to={`/ViewSchedule/${groupId}`}>
-                    <IonButton size="small">Schedule</IonButton>
+                    <IonButton shape="round" size="small">Schedule</IonButton>
                   </Link>
                 </IonCol>
               </IonRow>

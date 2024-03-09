@@ -7,6 +7,7 @@ import {
   IonRow,
   IonGrid,
   IonCol,
+  IonIcon,
 } from '@ionic/react';
 import './Welcome.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
@@ -14,6 +15,7 @@ import { useHistory } from 'react-router-dom';
 import { User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
+import { logoGithub } from 'ionicons/icons';
 
 const Welcome: React.FC = () => {
   const {
@@ -98,17 +100,28 @@ const Welcome: React.FC = () => {
               </div>
             </IonCol>
           </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="10">
+              <a href="https://github.com/craigm26/bike-bus/discussions/new?category=q-a" target="_blank" rel="noopener noreferrer">
+                <IonButton shape="round" expand="block">
+                  <IonIcon icon={logoGithub} />
+                  FeedBack
+                </IonButton>
+              </a>
+            </IonCol>
+
+          </IonRow>
 
           {isLoggedIn && username ? (
             <>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="10">
-                  <IonButton expand="block" onClick={() => history.push('/Map')}>Continue as {username}</IonButton>
+                  <IonButton shape="round" expand="block" onClick={() => history.push('/Map')}>Continue as {username}</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" onClick={handleLogout}>Logout</IonButton>
+                  <IonButton shape="round" expand="block" onClick={handleLogout}>Logout</IonButton>
                 </IonCol>
               </IonRow>
             </>
@@ -116,12 +129,12 @@ const Welcome: React.FC = () => {
             <>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" routerLink='/Signup'>Signup</IonButton>
+                  <IonButton shape="round" expand="block" routerLink='/Signup'>Signup</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="5">
-                  <IonButton expand="block" routerLink='/Login'>Login</IonButton>
+                  <IonButton shape="round" expand="block" routerLink='/Login'>Login</IonButton>
                 </IonCol>
               </IonRow>
               <IonRow className="ion-justify-content-center">
@@ -130,7 +143,7 @@ const Welcome: React.FC = () => {
                 </IonCol>
               </IonRow>
               <IonText className="use-anonymously">
-                <IonButton onClick={async () => {
+                <IonButton shape="round" onClick={async () => {
                   try {
                     await signInAnonymously();
                     history.push('/Map');

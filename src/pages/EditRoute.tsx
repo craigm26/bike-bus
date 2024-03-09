@@ -11,21 +11,31 @@ import {
   IonCol,
   IonRow,
   IonGrid,
+  IonHeader,
+  IonToolbar,
+  IonSegment,
+  IonSegmentButton,
+  IonText,
+  IonToggle,
+  IonModal,
+  IonButtons,
 } from '@ionic/react';
-import { useContext, useEffect, useState } from 'react';
-import { useAvatar } from '../components/useAvatar';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { HeaderContext } from "../components/HeaderContext";
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import useAuth from "../useAuth";
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
+import { AuthContext } from '../AuthContext';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
-
+interface DistanceDurationResult {
+  distance: string;
+  duration: string;
+  arrivalTime: string;
+}
 
 type DirectionsWaypoint = {
   location: google.maps.LatLng | google.maps.LatLngLiteral;
@@ -37,61 +47,77 @@ interface Coordinate {
   lng: number;
 }
 
-interface BikeBusStops {
-  id: string;
-  StopId: string;
-  BikeBusStopName: string;
-  BikBusGroupId: DocumentReference;
-  BikeBusRouteId: DocumentReference;
-  lat: number;
-  lng: number;
-  BikeBusStopIds: DocumentReference[];
-  BikeBusGroupId: string;
+interface InfoBoxState {
+  show: boolean;
+  content: JSX.Element | null;
+  position: Coordinate | null;
 }
 
 interface BikeBusStop {
+  BikeBusGroup: DocumentReference;
+  BikeBusRouteId: string;
   BikeBusStopName: string;
-}
-
-interface Route {
-  newStop: Coordinate | null;
-  oldIds: Coordinate | null;
-  stopPoint: Coordinate | null;
-  BikeBusStopIds: DocumentReference[];
-  isBikeBus: boolean;
-  BikeBusGroupId: string;
   id: string;
-  accountType: string;
-  description: string;
-  endPoint: Coordinate;
-  endPointAddress: string;
+  location: Coordinate;
+  placeId: string;
+  photos: string;
+  formattedAddress: string;
+  placeName: string;
+}
+interface Route {
+  eventCheckInLeader: any;
+  startPoint: { lat: number; lng: number };
+  endPoint: { lat: number, lng: number };
+  pathCoordinates: { lat: number; lng: number }[];
+  startPointName: string;
   endPointName: string;
-  routeCreator: string;
-  routeLeader: string;
+  startPointAddress: string;
+  endPointAddress: string;
   routeName: string;
   routeType: string;
-  startPoint: Coordinate;
-  startPointAddress: string;
-  startPointName: string;
+  routeCreator: DocumentReference;
+  routeLeader: DocumentReference;
+  description: string;
   travelMode: string;
-  pathCoordinates: Coordinate[];
+  isBikeBus: boolean;
+  BikeBusName: string;
+  BikeBusStops: BikeBusStop[];
+  BikeBusGroup: DocumentReference;
+  id: string;
+  accountType: string;
+  bicylingSpeed: string;
+  bicyclingSpeedSelector: string;
+  routeId: string;
+  name: string;
+  distance: string;
+  duration: string;
+  arrivalTime: string;
 }
 
+
+
+interface RouteLeg {
+  startPoint: Coordinate;
+  endPoint: Coordinate;
+  waypoints: Coordinate[]; // Intermediate BikeBus stops
+  distance?: string;
+  duration?: string;
+}
+
+
 const EditRoute: React.FC = () => {
-  const { user } = useAuth();
-  const { avatarUrl } = useAvatar(user?.uid);
-  const headerContext = useContext(HeaderContext);
-  const [accountType, setaccountType] = useState<string>('');
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const { user, loadingAuthState } = useContext(AuthContext);
+  const [selectedRoute, setSelectedRoute] = useState<Route>();
   const { id } = useParams<{ id: string }>();
   const history = useHistory();
+  const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
+
   const [selectedStartLocation, setSelectedStartLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0, });
   const [selectedEndLocation, setSelectedEndLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [routeStartName, setRouteStartName] = useState<string>('');
   const [routeEndName, setRouteEndName] = useState<string>('');
   const [routeStartFormattedAddress, setRouteStartFormattedAddress] = useState<string>('');
   const [routeEndFormattedAddress, setRouteEndFormattedAddress] = useState<string>('');
-  const [bikeBusStationsIds, setBikeBusStationsIds] = useState<Coordinate[]>([]);
   const [autocompleteStart, setAutocompleteStart] = useState<google.maps.places.SearchBox | null>(null);
   const [autocompleteEnd, setAutocompleteEnd] = useState<google.maps.places.SearchBox | null>(null);
   const [startGeo, setStartGeo] = useState<Coordinate>({ lat: 0, lng: 0 });
@@ -100,27 +126,53 @@ const EditRoute: React.FC = () => {
     lat: startGeo.lat,
     lng: startGeo.lng,
   });
-  const [BikeBusStop, setBikeBusStop] = useState<Coordinate>({ lat: 0, lng: 0 });
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
-    libraries,
-  });
-  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
+
+  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [isClicked, setIsClicked] = useState<boolean>(false);
-  const bikeBusStopsRef = getDoc(doc(db, 'bikebusstops', id));
-  const bikeBusStopsQuery = bikeBusStopsRef;
-  const [selectedStop, setSelectedStop] = React.useState(null);
-  const [selectedStopId, setSelectedStopId] = React.useState(null);
   const [selectedStopIndex, setSelectedStopIndex] = React.useState<string | null>(null);
-
-
-
-
-
+  const [bicyclingSpeed, setBicyclingSpeed] = useState<string>("");
+  const [bicyclingSpeedSelector, setBicyclingSpeedSelector] = useState<string>("");
+  const [travelModeSelector, setTravelModeSelector] = useState<string | null>(null);
+  const [distance, setDistance] = useState<string>('');
+  const [duration, setDuration] = useState<string>('');
+  const [arrivalTime, setArrivalTime] = useState<string>('');
+  const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [directionsFetched, setDirectionsFetched] = useState(false);
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+  const bikeBusStopIds = selectedRoute?.BikeBusStops || [];
+  const [isBicyclingLayerVisible, setIsBicyclingLayerVisible] = useState(false);
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
   };
+
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [currentBikeBusStop, setCurrentBikeBusStop] = useState<BikeBusStop | null>(null);
+  const [bikeBusStopId, setbikeBusStopId] = useState<string>('');
+  const polylineRef = useRef<google.maps.Polyline>(null);
+
+
+
+  useEffect(() => {
+    const polyline = polylineRef.current;
+  
+    if (polyline) {
+      const path = polylineRef.current.getPath();
+      const onPathChanged = () => {
+        const updatedPath = path.getArray().map((coord: { lat: () => any; lng: () => any; }) => ({ latitude: coord.lat(), longitude: coord.lng() }));
+        // Here you can update your state or backend with the updatedPath
+        console.log(updatedPath);
+        // For example, update the local state (this will require a state setup for pathCoordinates):
+        setPathCoordinates(updatedPath);
+      };
+
+      return () => {
+        google.maps.event.clearListeners(path, 'set_at');
+        google.maps.event.clearListeners(path, 'insert_at');
+      };
+    }
+  }, [polylineRef, setPathCoordinates]); // Add dependencies as necessary
+  
 
   const containerMapStyle = {
     width: '100%',
@@ -135,6 +187,32 @@ const EditRoute: React.FC = () => {
   // if the field isbikeBus is set to true, then make the isBikeBus variable true
   const isBikeBus = selectedRoute?.isBikeBus ?? false;
 
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? "",
+    libraries,
+  });
+
+  const fetchBikeBusStops = async () => {
+    // first let's get the bikebusstop documents from the selectedRoute.BikeBusStops
+    const BikeBusStopsSnapshot = await getDocs(collection(db, 'routes', id, 'BikeBusStops'));
+    // now we want to map through the BikeBusStopsSnapshot and return the data and then set to state
+    const BikeBusStops = BikeBusStopsSnapshot.docs.map((doc) => {
+      const data = doc.data() as any; // use 'any' temporarily to bypass type checking
+      // Assume 'location' is a GeoPoint, extract 'latitude' and 'longitude'
+      const location = data.location; // This should be a Firestore GeoPoint
+      return {
+        ...data,
+        location: {
+          lat: location.latitude,
+          lng: location.longitude,
+        },
+      };
+    });
+
+    setBikeBusStops(BikeBusStops);
+  };
+
   // when the map is loading, set startGeo to the route's startPoint
   useEffect(() => {
     if (selectedRoute) {
@@ -144,18 +222,24 @@ const EditRoute: React.FC = () => {
       setEndGeo(selectedRoute.endPoint);
       setRouteStartFormattedAddress(selectedRoute.startPointAddress);
       setRouteEndFormattedAddress(selectedRoute.endPointAddress);
+      setRouteStartName(selectedRoute.startPointName);
+      setRouteEndName(selectedRoute.endPointName);
+      setBicyclingSpeed(selectedRoute.bicylingSpeed);
+      setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
+      setTravelModeSelector(selectedRoute.bicyclingSpeedSelector);
+      setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({ latitude: coord.lat, longitude: coord.lng })));
+      setDistance(selectedRoute.distance);
+      setDuration(selectedRoute.duration);
+      setBikeBusStops(selectedRoute.BikeBusStops);
     }
   }
     , [selectedRoute]);
 
   const onPlaceChangedStart = () => {
-    console.log("onPlaceChangedStart called");
     if (autocompleteStart !== null) {
       const places = autocompleteStart.getPlaces();
       if (places && places.length > 0) {
-        console.log("Places: ", places);
         const place = places[0];
-        console.log("Place: ", place);
         if (place.geometry && place.geometry.location) {
           setSelectedStartLocation({
             lat: place.geometry.location.lat(),
@@ -172,12 +256,10 @@ const EditRoute: React.FC = () => {
   };
 
   const onPlaceChangedDestination = () => {
-    console.log("onPlaceChangedDestination called");
     if (autocompleteEnd !== null) {
       const places = autocompleteEnd.getPlaces();
       if (places && places.length > 0) {
         const place = places[0];
-        console.log("Place: ", place);
         if (place.geometry && place.geometry.location) {
           setSelectedEndLocation({
             lat: place.geometry.location.lat(),
@@ -191,95 +273,86 @@ const EditRoute: React.FC = () => {
     }
   };
 
+  const fetchSingleRoute = async (id: string) => {
+    const docRef = doc(db, 'routes', id);
+    const docSnap = await getDoc(docRef);
+
+
+    if (docSnap.exists()) {
+      const routeData = {
+        ...docSnap.data() as Route,
+        id: docSnap.id,
+        routeName: docSnap.data().routeName,
+        startPoint: docSnap.data().startPoint,
+        startGeo: docSnap.data().startPoint,
+        endGeo: docSnap.data().endPoint,
+        endPoint: docSnap.data().endPoint,
+        BikeBusStops: docSnap.data().BikeBusStops,
+        BikeBusGroupId: docSnap.data().BikeBusGroupId,
+        pathCoordinates: docSnap.data().pathCoordinates,
+        travelMode: docSnap.data().travelMode,
+        bicyclingSpeed: docSnap.data().bicyclingSpeed,
+        bicyclingSpeedSelector: docSnap.data().bicyclingSpeedSelector,
+        distance: docSnap.data().distance,
+        duration: docSnap.data().duration,
+        routeCreator: docSnap.data().routeCreator,
+      };
+      setSelectedRoute(routeData);
+
+      if (routeData.routeCreator !== user.uid) {
+        alert('You are not the creator of this route');
+        history.push('/ViewRoute/' + id);
+      }
+    }
+  };
+
+
   useEffect(() => {
 
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
-          }
+    if (id) fetchSingleRoute(id);
+
+    fetchBikeBusStops();
+
+  }
+    , [id, user, history]);
+
+
+
+  useEffect(() => {
+
+    if (isLoaded) {
+
+      fetchSingleRoute(id);
+
+      if (selectedRoute) {
+
+
+        if (selectedRoute) {
+          setMapCenter({
+            lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
+            lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
+          });
         }
-      });
-    }
 
-    const fetchSingleRoute = async (id: string) => {
-      const docRef = doc(db, 'routes', id);
-      const docSnap = await getDoc(docRef);
+        if (selectedStartLocation) {
+          setStartGeo(selectedStartLocation);
+          setMapCenter(selectedStartLocation);
+        }
 
-      if (docSnap.exists()) {
-        const routeData = {
-          ...docSnap.data() as Route,
-          id: docSnap.id,
-          routeName: docSnap.data().routeName,
-          startPoint: docSnap.data().startPoint,
-          endPoint: docSnap.data().endPoint,
-          // BikeBusStopIds is an array of DocumentReferences
-          BikeBusStopIds: (docSnap.data().BikeBusStopIds ?? []) as DocumentReference[],
-          BikeBusGroupId: docSnap.data().BikeBusGroupId,
-          pathCoordinates: docSnap.data().pathCoordinates, // directly assign the array
-        };
-        setSelectedRoute(routeData);
+        if (selectedEndLocation) {
+          setEndGeo(selectedEndLocation);
+        }
+
+        if (selectedRoute.BikeBusStops) {
+          setBikeBusStops(selectedRoute.BikeBusStops);
+        }
       }
 
-    };
-    fetchSingleRoute(id);
 
-  }, []);
-
-
-
-  useEffect(() => {
-    if (selectedRoute?.BikeBusStopIds && selectedRoute.BikeBusStopIds.length > 0) {
-      // let's fetch the bikebusstop data from the firestore document collection "bikebusstops" and store it in the state variable BikeBusStops
-      const fetchBikeBusStops = async () => {
-        // first let's get the bikebusstop ids from the selectedRoute
-        const bikeBusStopIds = selectedRoute.BikeBusStopIds;
-        // for each bikeBusStopId, let's create a query
-        const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', bikeBusStopIds));
-        getDocs(bikeBusStopsQuery);
-        // for each document, get the actual object document data and store it in the state variable BikeBusStops
-        const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-        const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id,
-        })) as unknown as BikeBusStops[]; // this is the array of BikeBusStops
-        setBikeBusStops(bikeBusStopsData);
-
-      };
-
-      fetchBikeBusStops();
     }
-  }
-    , [selectedRoute]);
 
-  // center the map between the start point of the route and the end point of the route
-  useEffect(() => {
-    if (selectedRoute) {
-      setMapCenter({
-        lat: (selectedRoute.startPoint.lat + selectedRoute.endPoint.lat) / 2,
-        lng: (selectedRoute.startPoint.lng + selectedRoute.endPoint.lng) / 2,
-      });
-    }
   }
-    , [selectedRoute]);
-
-  useEffect(() => {
-    if (selectedStartLocation) {
-      setStartGeo(selectedStartLocation);
-      setMapCenter(selectedStartLocation);
-    }
-  }
-    , [selectedStartLocation]);
-
-  useEffect(() => {
-    if (selectedEndLocation) {
-      setEndGeo(selectedEndLocation);
-    }
-  }
-    , [selectedEndLocation]);
+    , [selectedStartLocation, selectedEndLocation]);
 
   function perpendicularDistance(point: Coordinate, linePoint1: Coordinate, linePoint2: Coordinate): number {
     const { lat: x, lng: y } = point;
@@ -317,46 +390,49 @@ const EditRoute: React.FC = () => {
     }
   }
 
+  //calculate route without legs
   const calculateRoute = async (
     startPoint: Coordinate,
     endPoint: Coordinate,
     waypoints: google.maps.DirectionsWaypoint[],
     travelMode: google.maps.TravelMode,
-    optimize = true
-  ) => {
+    // we also need to add the bicycle speed
+    bicyclingSpeed: number,
+  ): Promise<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string }> => {
+
+
+
     const directionsService = new google.maps.DirectionsService();
+    let totalDistance = 0; // in meters
+    let totalDuration = 0; // in seconds
+
+    const request = {
+      origin: startPoint,
+      destination: endPoint,
+      waypoints: waypoints,
+      travelMode: travelMode,
+    };
 
     if (!startPoint || !endPoint) {
       console.warn("Missing startPoint or endPoint!");
       throw new Error("Missing startPoint or endPoint!");
     }
-    console.log('startPoint: ', startPoint);
-    console.log('endPoint: ', endPoint);
     // now inspect the type that is returned from startPoint and endPoint
-    console.log('typeof startPoint: ', typeof startPoint);
-    console.log('typeof endPoint: ', typeof endPoint);
 
     const batchSize = 10;
     const batches = [];
     const epsilon = 0.00005; // Define epsilon for Douglas-Peucker algorithm. Distance in degrees. 0.00005 is about 5.5 meters.
     const routeRequests = [];
-    console.log('pathCoordinates: ', selectedRoute?.pathCoordinates);
-    console.log('waypoints: ', waypoints);
 
     for (let i = 0; i < waypoints.length; i += batchSize) {
-      console.log('i: ', i)
       const batch: google.maps.DirectionsWaypoint[] = waypoints.slice(i, Math.min(i + batchSize, waypoints.length));
-      console.log('batch: ', batch)
       if (i !== 0) {
         batch.unshift(waypoints[i - 1]);
-        console.log('batch: ', batch)
       }
       if (i + batchSize < waypoints.length) {
         batch.push(waypoints[i + batchSize]);
-        console.log('batch: ', batch)
       }
       batches.push(batch);
-      console.log('batches: ', batches)
     }
 
     for (let i = 0; i < batches.length; i++) {
@@ -366,20 +442,22 @@ const EditRoute: React.FC = () => {
 
       if (!origin || !destination) {
         console.warn("Origin or Destination is missing in batch!");
-        return;
+        return {
+          pathCoordinates: [],
+          distance: "0",
+          duration: "0",
+        };
       }
 
       // Modified slicing logic
       const batchWaypoints = batch.length <= 2 ? batch : batch.slice(1, batch.length - 1);
 
-      console.log('batchWaypoints: ', batchWaypoints);
 
       // Debugging for empty array
       if (batchWaypoints.length === 0) {
         console.warn("batchWaypoints is empty!");
       }
       // deeply inspect the batchWaypoints array
-      console.log('batchWaypoints[0]: ', batchWaypoints[0]);
       if (origin && destination) {
         // If batchWaypoints is empty, it will just route from origin to destination
         routeRequests.push(new Promise<Coordinate[]>((resolve, reject) => {
@@ -395,9 +473,7 @@ const EditRoute: React.FC = () => {
               let newRoutePathCoordinates = newRoute.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
               newRoutePathCoordinates = ramerDouglasPeucker(newRoutePathCoordinates, epsilon);
               resolve(newRoutePathCoordinates);
-              console.log('newRoutePathCoordinates: ', newRoutePathCoordinates);
               // log the response and status from the directionsService.route
-              console.log('response: ', response);
             } else {
               reject('Directions request failed due to ' + status);
             }
@@ -405,211 +481,335 @@ const EditRoute: React.FC = () => {
         }));
       }
 
+      // we have to figure out how to get the distance and duration for the new route
+      // we can use the same function calculateDistanceAndDuration
+      // we can also use the same function getDirectionsAndSimplifyRoute
+
     }
 
-    try {
-      return await Promise.all(routeRequests).then(routeResults => {
-        return routeResults.flat();
-      });
-    } catch (error) {
-      console.error("An error occurred during route calculation:", error);
-      throw new Error("Route calculation failed. Please try again.");
-    }
-  }
+    const BikeBusStopLocations = BikeBusStops.map(BikeBusStop => BikeBusStop.location);
 
-  const ALERT_NO_ROUTE = "No route selected!";
-  const ALERT_MISSING_POINTS = "Missing startPoint or endPoint!";
-
-  const onGenerateNewRouteClick = async () => {
-    if (!selectedRoute) {
-      alert(ALERT_NO_ROUTE);
-      return;
-    }
-
-    if (!selectedRoute.startPoint || !selectedRoute.endPoint) {
-      alert("Missing startPoint or endPoint!");
-      return;
-    }
-
-    const routeRef = doc(db, 'routes', id);
-    const routeSnap = await getDoc(routeRef);
-    const routeData = routeSnap.data() as Route;
-
-    if (!routeData) {
-      alert('Failed to fetch route data.');
-      return;
-    }
-
-    const waypoints = [] as google.maps.DirectionsWaypoint[];
-
-
-    const routeBikeBusStopIds = routeData?.BikeBusStopIds || [];
-    let bikeBusStopsData: Array<BikeBusStops> = [];
-
-    if (routeBikeBusStopIds.length > 0) {
-      const bikeBusStopsQuery = query(collection(db, 'bikebusstops'), where('__name__', 'in', routeBikeBusStopIds));
-      const bikeBusStopsSnapshot = await getDocs(bikeBusStopsQuery);
-      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-      })) as unknown as Array<BikeBusStops>;
-  
-      bikeBusStopsData.forEach(stop => {
-        const location = new google.maps.LatLng(stop.lat, stop.lng);
-        waypoints.push({ location });
-      });
-    }
-
-    setBikeBusStops(bikeBusStopsData);
-    console.log('bikeBusStopsData: ', bikeBusStopsData);
-    // what's the type of bikeBusStopsData?
-    console.log('typeof bikeBusStopsData: ', typeof bikeBusStopsData);
+    const calculateRouteLegs = async (startPoint: Coordinate, endPoint: Coordinate, BikeBusStops: BikeBusStop[]) => {
+      let legs: RouteLeg[] = [];
+      let currentStart = startPoint;
 
 
 
-    if (!selectedRoute.startPoint || !selectedRoute.endPoint) {
-      alert("Missing startPoint or endPoint!");
-      return;
-    }
+      for (let i = 0; i <= BikeBusStops.length; i++) {
+        // Example of accessing lat and lng
+        const currentEnd = i < BikeBusStops.length ? { lat: BikeBusStops[i].location.lat, lng: BikeBusStops[i].location.lng } : endPoint;
+        const leg: RouteLeg = {
+          startPoint: currentStart,
+          endPoint: currentEnd,
+          waypoints: [], // Add waypoints if needed
+        };
+        // Calculate distance and duration for the leg
+        const { pathCoordinates, distance, duration } = await calculateRoute(currentStart, currentEnd, [], travelMode, bicyclingSpeed);
+        leg.distance = distance;
+        leg.duration = duration;
 
-    const selectedTravelMode = google.maps.TravelMode[selectedRoute.travelMode.toUpperCase() as keyof typeof google.maps.TravelMode];
-
-    console.log('selectedTravelMode: ', selectedTravelMode);
-    console.log('selectedRoute.startPoint: ', selectedRoute.startPoint);
-    console.log('selectedRoute.endPoint: ', selectedRoute.endPoint);
-    console.log('waypoints: ', waypoints);
-
-    try {
-      const newCoordinates = await calculateRoute(
-        selectedRoute.startPoint,
-        selectedRoute.endPoint,
-        waypoints,
-        selectedTravelMode
-      );
-
-      setSelectedRoute(prevState => {
-        if (!prevState) return null;
-        return { ...prevState, pathCoordinates: newCoordinates } as Route;
-      });
-
-      if (newCoordinates) {
-        const alertMessage = newCoordinates.length === 0 ? 'New route generated. Click save to update the route.' : 'Route Updated, if you like it, click save to save the new route.';
-        alert(alertMessage);
+        legs.push(leg);
+        currentStart = currentEnd;
       }
 
-      setIsClicked(true);
+      return legs;
+    };
 
-    } catch (error) {
-      console.error('Error generating new route:', error);
-      alert('Failed to generate new route. Please try again.');
-    }
-  };
-
-  const handleDeleteStop = async (StopId: string) => {
     try {
-      if (selectedRoute) {
-        console.log('selectedRoute:', selectedRoute);
-        console.log('id:', id);
-        console.log('StopId:', StopId);
-        console.log('BikeBusStops:', BikeBusStops);
-
-        // Create the DocRefStopid using the id of the stop to be deleted
-        const DocRefStopid = doc(db, 'bikebusstops', StopId);
-        console.log('DocRefStopid:', DocRefStopid);
-
-        // Get the current route data
-        const routeRef = doc(db, 'routes', id);
-        const routeSnap = await getDoc(routeRef);
-        const routeData = routeSnap.data() as Route;
-
-        // Manually filtering out the DocRefStopId
-        const updatedBikeBusStopIds = routeData.BikeBusStopIds.filter((stopId: any) => {
-          return stopId.path !== DocRefStopid.path; // replace with your actual path matching logic
-        });
-
-
-        console.log('routeData:', routeData);
-        console.log('routeData.BikeBusStopIds:', routeData.BikeBusStopIds);
-
-        await updateDoc(routeRef, {
-          ...routeData,
-          BikeBusStopIds: updatedBikeBusStopIds,
-        });
-
-        // Delete the entry from the BikeBusStops array
-        await deleteDoc(doc(db, 'bikebusstops', StopId));  // Changed from 'id' to 'StopId'
-        console.log('Step executed: Deleted BikeBusStop document');
-
-        alert('Stop deleted');
-        setSelectedStopIndex(null);
-        history.push(`/ViewRoute/${id}`)
-      }
-    } catch (error) {
-      console.error("Error deleting document:", error);
-    }
-  };
-
-  const saveBikeBusStopName = async (StopId: string) => {
-    try {
-      if (selectedRoute) {
-        // Find the specific stop to update
-        const stopToUpdate = BikeBusStops.find(stop => stop.id === StopId);
-        if (!stopToUpdate) {
-          console.error("Stop not found");
-          return;
+      const { routes } = await directionsService.route(request);
+      const route = routes[0];
+      route.legs.forEach(leg => {
+        if (leg.distance && leg.duration) {
+          totalDistance += leg.distance.value;
+          totalDuration += leg.duration.value;
         }
+      });
 
-        console.log('Stop to update:', stopToUpdate);
+      // Convert to desired units if necessary
+      const distanceInMiles = totalDistance / 1609.34; // meters to miles
+      const durationInMinutes = totalDuration / 60; // seconds to minutes
 
-        // Create the DocRefStopid using the id of the stop to be updated
-        const DocRefStopid = doc(db, 'bikebusstops', StopId);
-
-        // Perform the update to the document
-        await updateDoc(DocRefStopid, {
-          BikeBusStopName: stopToUpdate.BikeBusStopName,
-        });
-
-        // Close the InfoWindow
-        setSelectedStopIndex(null);
-      }
+      return {
+        pathCoordinates: route.overview_path.map(coord => ({ lat: coord.lat(), lng: coord.lng() })),
+        distance: distanceInMiles.toFixed(2), // rounded to 2 decimal places
+        duration: durationInMinutes.toFixed(2), // rounded to 2 decimal places
+      };
     } catch (error) {
-      console.error("Error updating document:", error);
+      console.error("Failed to calculate route:", error);
+      return {
+        pathCoordinates: [], // Default value if route calculation fails
+        distance: "0",       // Default value
+        duration: "0",       // Default value
+      };
     }
+
   }
+
+
+  const calculateRouteLegs = async (startPoint: Coordinate, endPoint: Coordinate, BikeBusStops: BikeBusStop[]) => {
+    let legs: RouteLeg[] = [];
+    let currentStart = startPoint;
+
+    for (let i = 0; i <= BikeBusStops.length; i++) {
+      const currentEnd = i < BikeBusStops.length ? { lat: BikeBusStops[i].location.lat, lng: BikeBusStops[i].location.lng } : endPoint;
+      const leg: RouteLeg = {
+        startPoint: currentStart,
+        endPoint: currentEnd,
+        waypoints: [], // Add waypoints if needed
+      };
+      // Optionally, calculate distance and duration for each leg here
+      legs.push(leg);
+      currentStart = currentEnd;
+    }
+
+    return legs;
+  };
+
+
+  const generateNewRoute = async () => {
+    if (!selectedRoute) {
+      console.error("No route selected.");
+      return;
+    }
+    // Ensure travelModeSelector is of the correct type
+    const travelMode = travelModeSelector as google.maps.TravelMode ?? google.maps.TravelMode.BICYCLING;
+
+    // the condition to check if there are any BikeBusStops
+    if (selectedRoute.BikeBusStops) {
+      // get new route without legs because there aren't any BikeBusStops
+
+      const routeWithOutLegs = await calculateRoute(selectedRoute.startPoint, selectedRoute.endPoint, [], travelMode, Number(bicyclingSpeed));
+      // now setPathCoordinates to the pathCoordinates of the routeWithOutLegs
+      setPathCoordinates(routeWithOutLegs.pathCoordinates.map(coord => ({ latitude: coord.lat, longitude: coord.lng })));
+      // set the distance and duration of the route
+      setDistance(routeWithOutLegs.distance);
+      setDuration(routeWithOutLegs.duration);
+
+    } else {
+      // Generate route with legs
+      const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops);
+      displayRouteOnMap(legs);
+    }
+
+    // Transform pathCoordinates to match expected structure for setPathCoordinates
+    setPathCoordinates(pathCoordinates.map(coord => ({ latitude: coord.latitude, longitude: coord.longitude })));
+    setDistance(distance);
+    setDuration(duration);
+  }
+
+  const generateLegsFromStops = (stops: typeof BikeBusStops[]): RouteLeg[] => {
+    const legs: RouteLeg[] = [];
+
+    return legs;
+  };
+
+
+  const calculateDistanceAndDuration = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string) => {
+
+    return new Promise<DistanceDurationResult>((resolve, reject) => {
+      const service = new google.maps.DistanceMatrixService();
+      service.getDistanceMatrix({
+        origins: [origin],
+        destinations: [destination],
+        travelMode: google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode],
+      }, (response, status) => {
+        if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+          const distance = response.rows[0].elements[0].distance.value; // meters
+          let duration = response.rows[0].elements[0].duration.value; // seconds
+
+          // Adjust duration based on the selected speed
+          const speedFactor = getSpeedAdjustmentFactor(speedSelector);
+          duration *= speedFactor;
+
+          const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
+          const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+
+          const arrivalTime = new Date();
+          arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
+          const arrivalTimeString = arrivalTime.toLocaleTimeString();
+
+          resolve({
+            distance: distanceInMiles.toString(),
+            duration: durationInMinutes.toString(),
+            arrivalTime: arrivalTimeString,
+          });
+        } else {
+          reject("Error calculating distance and duration: " + status);
+        }
+      });
+    });
+  };
+
+  const getSpeedAdjustmentFactor = (speedSelector: any) => {
+    switch (speedSelector) {
+      case "VERY SLOW": return 1.2;
+      case "SLOW": return 1.1;
+      case "MEDIUM": return 1;
+      case "FAST": return 0.9;
+      default: return 1; // Default to no adjustment
+    }
+  };
+
+  // useEffect the console.log the speedSelector so we can see the changes from the user
+  useEffect(() => {
+
+    const updateRouteInformation = async () => {
+
+      if (selectedRoute) {
+        const origin = selectedRoute.startPoint;
+        const destination = selectedRoute.endPoint;
+        const travelMode = selectedRoute.travelMode;
+        // get the current state of the speedSelector from the UI and pass it to the function
+        const speedSelector = bicyclingSpeedSelector;
+
+        try {
+          const { distance, duration } = await calculateDistanceAndDuration(origin, destination, travelMode, speedSelector);
+          // Update state or UI with calculated distance and duration
+          setDistance(distance);
+          setDuration(duration);
+          setBicyclingSpeed(bicyclingSpeed);
+          return { distance, duration };
+        } catch (
+        error
+        ) {
+          console.error("Failed to calculate distance and duration:", error);
+          // Optionally, handle setting state to reflect the error to the user
+        }
+      }
+    };
+
+    updateRouteInformation();
+
+  }, [bicyclingSpeedSelector]);
+
+
+  const generateRouteWithLegs = async () => {
+
+    if (!selectedRoute) {
+      console.error("No route selected.");
+      return;
+    }
+
+    const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, BikeBusStops);
+
+    for (const leg of legs) {
+      // Convert Coordinate objects to DirectionsWaypoint objects
+      const waypoints: google.maps.DirectionsWaypoint[] = leg.waypoints.map((waypoint) => ({
+        location: waypoint,
+        stopover: true,
+      }));
+
+      // Call Google Maps API to calculate directions for each leg
+      const { distance, duration } = await calculateRoute(leg.startPoint, leg.endPoint, waypoints, google.maps.TravelMode.BICYCLING, Number(bicyclingSpeed));
+      leg.distance = distance;
+      leg.duration = duration;
+    }
+
+    // Update state or UI with the calculated legs
+    // This could involve updating a map view, displaying leg info, etc.
+  };
+
+  const displayRouteOnMap = (legs: RouteLeg[]) => {
+    legs.forEach((leg, index) => {
+      // Create markers for start and end points of each leg
+      new google.maps.Marker({ position: leg.startPoint, map: mapRef.current, label: `Start ${index + 1}` });
+      if (index === legs.length - 1) { // Last leg
+        new google.maps.Marker({ position: leg.endPoint, map: mapRef.current, label: 'End' });
+      }
+
+      // Draw polyline for the leg
+      new google.maps.Polyline({
+        path: [leg.startPoint, ...leg.waypoints, leg.endPoint],
+        strokeColor: "#FF0000",
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        map: mapRef.current,
+      });
+    });
+  };
+
+
+  const updateBikeBusStop = async (bikeBusStopId: string, updatedBikeBusStop: Partial<BikeBusStop>) => {
+    try {
+      const BikeBusStopRef = doc(db, 'routes', id, 'BikeBusStops', bikeBusStopId);
+      await updateDoc(BikeBusStopRef, updatedBikeBusStop);
+      // Update the local state to reflect the change
+      const updatedBikeBusStops = BikeBusStops.map(bikeBusStop => 
+        bikeBusStop.id === bikeBusStopId ? { ...bikeBusStop, ...updatedBikeBusStop } : bikeBusStop
+      );
+      setBikeBusStops(updatedBikeBusStops);
+      setShowInfoModal(false);
+    } catch (error) {
+      console.error("Failed to update BikeBusStop:", error);
+      alert("Error updating BikeBusStop.");
+    }
+  };
+  
+
+  const deleteBikeBusStop = async (bikeBusStopId: string) => {
+    try {
+      await deleteDoc(doc(db, 'routes', id, 'BikeBusStops', bikeBusStopId));
+      // Update the local state to reflect the deletion
+      setBikeBusStops(BikeBusStops.filter(bikeBusStop => bikeBusStop.id !== bikeBusStopId));
+    } catch (error) {
+      console.error("Failed to delete BikeBusStop:", error);
+      alert("Error deleting BikeBusStop.");
+    }
+  };
+  
+
+
+
+  const handleBikeBusStopClick = (bikeBusStopId: React.SetStateAction<string>) => {
+    setbikeBusStopId(bikeBusStopId);
+    console.log("BikeBusStopId:", bikeBusStopId);
+    const bikeBusStop = BikeBusStops.find(stop => stop.id === bikeBusStopId);
+    console.log("BikeBusStop:", bikeBusStop);
+    if (bikeBusStop) {
+      setCurrentBikeBusStop(bikeBusStop);
+      setShowInfoModal(true);
+    }
+  };
 
 
   const handleRouteSave = async () => {
-    console.log('selectedRoute: ', selectedRoute);
-    if (selectedRoute === null) {
-      console.error("selectedRoute is null");
+
+    if (!selectedRoute) {
+      console.error("No route selected.");
       return;
     }
 
-    const routeRef = doc(db, 'routes', selectedRoute.id);
-    const updatedRoute: Partial<Route> = {};
-    if (selectedRoute.routeName !== undefined) updatedRoute.routeName = selectedRoute.routeName;
-    if (selectedRoute.BikeBusGroupId !== undefined) updatedRoute.BikeBusGroupId = selectedRoute.BikeBusGroupId;
-    if (selectedRoute.description !== undefined) updatedRoute.description = selectedRoute.description;
-    if (selectedRoute.routeType !== undefined) updatedRoute.routeType = selectedRoute.routeType;
-    if (selectedRoute.travelMode !== undefined) updatedRoute.travelMode = selectedRoute.travelMode;
-    if (selectedRoute.startPoint !== undefined) updatedRoute.startPoint = selectedRoute.startPoint;
-    if (selectedRoute.endPoint !== undefined) updatedRoute.endPoint = selectedRoute.endPoint;
-    if (selectedRoute.BikeBusStopIds !== undefined) updatedRoute.BikeBusStopIds = selectedRoute.BikeBusStopIds;
-    if (selectedRoute.pathCoordinates !== undefined) updatedRoute.pathCoordinates = selectedRoute.pathCoordinates;
-
     try {
-      await updateDoc(routeRef, updatedRoute);
-      alert('Route Updated');
-      history.push(`/ViewRoute/${id}`);
-    } catch (error) {
-      console.error("Could not update Firestore document:", error);
-    }
+      // Construct the updated route object
+      const updatedRouteData = {
+        routeName: selectedRoute.routeName,
+        startPoint: selectedRoute.startPoint,
+        endPoint: selectedRoute.endPoint,
+        startPointAddress: selectedRoute.startPointAddress,
+        endPointAddress: selectedRoute.endPointAddress,
+        travelMode: selectedRoute.travelMode,
+        pathCoordinates: selectedRoute.pathCoordinates,
+        bicyclingSpeed: selectedRoute.bicyclingSpeedSelector,
+        bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
+        duration: selectedRoute.duration,
+        distance: selectedRoute.distance,
+      };
 
+
+
+      // Update the route in Firestore
+      await updateDoc(doc(db, 'routes', id), updatedRouteData);
+
+      alert("Route successfully updated.");
+    } catch (error) {
+      console.error("Failed to update the route:", error);
+      alert("Error updating route.");
+      history.push(`/ViewRouteList/`);
+    }
+    // Redirect or other post-save actions
+    history.push(`/ViewRouteList/`);
   };
 
-  useEffect(() => {
-    console.log("Google Maps script loaded: ", isLoaded);
-  }, [isLoaded]);
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -617,25 +817,20 @@ const EditRoute: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent style={{ height: '100%' }}>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Editing {selectedRoute?.routeName}</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
-            <IonCol>
-              <IonTitle>
-                Editing Route
-              </IonTitle>
-            </IonCol>
-          </IonRow>
-          <IonRow>
-            <IonLabel>Route Name:</IonLabel>
             <IonInput
               value={selectedRoute?.routeName}
               onIonChange={e => {
-                console.log('Before:', selectedRoute?.routeName);
                 if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
                   setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
                 }
-                console.log('After:', selectedRoute?.routeName);
               }}
             />
           </IonRow>
@@ -648,6 +843,36 @@ const EditRoute: React.FC = () => {
               <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
             </IonSelect>
           </IonItem>
+          {selectedRoute?.travelMode === "BICYCLING" && (
+            <IonItem>
+              <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
+                const newSpeedSelector = e.detail.value;
+                setBicyclingSpeedSelector(newSpeedSelector);
+                if (selectedRoute) {
+                  setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
+                  setBicyclingSpeed(newSpeedSelector);
+                }
+              }
+              }>
+                <IonSegmentButton value="VERY SLOW">
+                  <IonText>Very Slow</IonText>
+                  <IonText>0-5mph</IonText>
+                </IonSegmentButton>
+                <IonSegmentButton value="SLOW">
+                  <IonText>Slow</IonText>
+                  <IonText>5-10mph</IonText>
+                </IonSegmentButton>
+                <IonSegmentButton value="MEDIUM">
+                  <IonText>Medium</IonText>
+                  <IonText>10-12mph</IonText>
+                </IonSegmentButton>
+                <IonSegmentButton value="FAST">
+                  <IonText>Fast</IonText>
+                  <IonText>12-20mph</IonText>
+                </IonSegmentButton>
+              </IonSegment>
+            </IonItem>
+          )}
           <IonItem>
             <IonLabel>Start Point:</IonLabel>
             <StandaloneSearchBox
@@ -682,104 +907,184 @@ const EditRoute: React.FC = () => {
               />
             </StandaloneSearchBox>
           </IonItem>
+          <IonItem>
+            <IonText>Duration: </IonText>
+            <IonText>{duration} Minutes</IonText>
+          </IonItem>
           <IonRow>
             <IonCol>
               {isBikeBus && (
-                <IonButton routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
+                <IonButton size="small" shape="round" routerLink={`/CreateBikeBusStops/${id}`}>Add BikeBusStop</IonButton>
+              )}
+              {isBikeBus && (
+                <IonButton size="small" shape="round" onClick={() => generateRouteWithLegs()}>Generate Route With Legs</IonButton>
               )}
               {!isClicked && (
-                <IonButton onClick={onGenerateNewRouteClick}>Generate New Route</IonButton>
+                <IonButton size="small" shape="round" onClick={generateNewRoute}>Generate New Route</IonButton>
               )}
-              <IonButton routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
-              <IonButton color="success" onClick={handleRouteSave}>Save</IonButton>
-              <IonButton color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+              <IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
+              <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
+              <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
             </IonCol>
           </IonRow>
           {selectedRoute && (
             <IonRow style={{ flex: '1' }}>
               <IonCol>
-                <GoogleMap
-                  mapContainerStyle={containerMapStyle}
-                  center={mapCenter}
-                  zoom={13}
-                  options={{
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: true,
-                    disableDoubleClickZoom: true,
-                    disableDefaultUI: true,
-                    mapId: 'b75f9f8b8cf9c287',
-                  }}
-                >
-                  {BikeBusStops.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
-                      label={stop.BikeBusStopName}
-                      title={stop.BikeBusStopName}
-                      onClick={() => setSelectedStopIndex(stop.StopId)}
-                    >
-                      {selectedStopIndex !== null && (
+                {isLoaded && (
+                  <GoogleMap
+                    onLoad={(map) => {
+                      mapRef.current = map;
+                      bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+                    }}
+                    mapContainerStyle={containerMapStyle}
+                    center={mapCenter}
+                    zoom={13}
+                    options={{
+                      zoomControl: true,
+                      zoomControlOptions: {
+                        position: window.google.maps.ControlPosition.LEFT_CENTER
+                      },
+                      mapTypeControl: false,
+                      mapTypeControlOptions: {
+                        position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                      },
+                      streetViewControl: false,
+                      fullscreenControl: true,
+                      disableDoubleClickZoom: true,
+                      disableDefaultUI: true,
+                      mapId: 'b75f9f8b8cf9c287',
+                    }}
+                    onUnmount={() => {
+                      mapRef.current = null;
+                    }}
+                  >
 
-                        <InfoWindow>
-                          <div>
-                            <h5>{stop.BikeBusStopName}</h5>
-                            <IonInput value={stop.BikeBusStopName} helperText="Enter new BikeBusStopName"
-                              onIonChange={e => {
-                                const updatedStop = { ...stop, BikeBusStopName: e.detail.value! };
-                                setBikeBusStops(prevStops => prevStops.map(s => s.id === stop.id ? updatedStop : s));
-                              }} />
-                            <IonRow>
-                              <IonButton onClick={() => saveBikeBusStopName(stop.id)}>Save BikeBusStop</IonButton>
-                              <IonButton onClick={() => handleDeleteStop(String(stop.id))}>Delete BikeBusStop</IonButton>
-                            </IonRow>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </Marker>
-                  ))}
-                  <Marker
-                    position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                    title="Start"
-                    label={"Start"}
-                  >
-                  </Marker>
-                  <Marker
-                    position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                    title="End"
-                    label={"End"}
-                  >
-                  </Marker>
-                  <React.Fragment key={selectedRoute?.pathCoordinates?.toString()}>
+                    {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
+
+                      <IonToggle
+                        checked={isBicyclingLayerVisible}
+                        onIonChange={e => {
+                          setIsBicyclingLayerVisible(e.detail.checked);
+                          if (bicyclingLayerRef.current) {
+                            bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
+                          }
+                        }}
+                      >
+                        <IonLabel>Toggle Bicycling Layer</IonLabel>
+                      </IonToggle>
+                    )}
                     <Polyline
                       path={selectedRoute?.pathCoordinates}
                       options={{
-                        strokeColor: "#000000",
+                        zIndex: 1,
+                        strokeColor: "#1a73e8",
                         strokeOpacity: 1,
                         strokeWeight: 5,
                         geodesic: true,
-                        draggable: false,
-                        editable: false,
+                        draggable: true,
+                        editable: true,
                         visible: true,
                       }}
-                    />
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#ffd800",
-                        strokeOpacity: 1,
-                        strokeWeight: 3,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
+                      onLoad={(polyline) => {
+                        // Use polyline.getPath() to access the path and attach listeners
+                        const path = polyline.getPath();
+                    
+                        const updatePathCoordinates = () => {
+                          const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
+                          // Update your state or backend with the updatedPath here
+                          console.log(updatedPath);
+                        };
+                    
+                        google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
+                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
+                    
+                        // Optional: Store the polyline or its path in state if you need to remove listeners later
                       }}
                     />
-                  </React.Fragment>
-                </GoogleMap>
+                    {BikeBusStops?.map((bikeBusStop, index) => (
+                      <Marker
+                        key={bikeBusStop.id}
+                        position={{ lat: bikeBusStop.location.lat, lng: bikeBusStop.location.lng }}
+                        title={bikeBusStop.BikeBusStopName}
+                        label={`${index + 1}`}
+                        onClick={() => handleBikeBusStopClick(bikeBusStop.id)}
+                      />
+                    ))}
+                    <IonModal isOpen={showInfoModal} onDidDismiss={() => setShowInfoModal(false)}>
+                      <IonHeader>
+                        <IonToolbar>
+                          <IonTitle>Update or Delete BikeBusStop</IonTitle>
+                          <IonButtons slot="end">
+                            <IonButton onClick={() => setShowInfoModal(false)}>Close</IonButton>
+                          </IonButtons>
+                        </IonToolbar>
+                      </IonHeader>
+                      <IonContent>
+                        <IonGrid>
+                          <IonRow>
+                            <IonCol>
+                              <IonItem>
+                                <IonLabel position="stacked">BikeBusStop Name</IonLabel>
+                                <IonInput
+                                  value={currentBikeBusStop?.BikeBusStopName ?? ""}
+                                  onIonChange={(e) => {
+                                    const newBikeBusStop = currentBikeBusStop ? { ...currentBikeBusStop, BikeBusStopName: e.detail.value || "" } : null;
+                                    setCurrentBikeBusStop(newBikeBusStop);
+                                  }}
+                                />
+                              </IonItem>
+                            </IonCol>
+                          </IonRow>
+                          <IonRow>
+                            <IonCol>
+                              <IonButton
+                                color="success"
+                                onClick={() => {
+                                  if (currentBikeBusStop) {
+                                    updateBikeBusStop(currentBikeBusStop.id, { BikeBusStopName: currentBikeBusStop.BikeBusStopName });
+                                  }
+                                }}
+                              >
+                                Update
+                              </IonButton>
+                            </IonCol>
+                            <IonCol>
+                              <IonButton
+                                color="danger"
+                                onClick={() => {
+                                  if (currentBikeBusStop && currentBikeBusStop.id) {
+                                    deleteBikeBusStop(currentBikeBusStop.id);
+                                  }
+                                }}
+                              >
+                                Delete
+                              </IonButton>
 
+                            </IonCol>
+                          </IonRow>
+                        </IonGrid>
+                      </IonContent>
+                    </IonModal>
+
+                    <Marker
+                      zIndex={1}
+                      position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
+                      title="Start"
+                      label={"Start"}
+                    />
+                    <Marker
+                      zIndex={10}
+                      position={{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }}
+                      title="End"
+                      label={"End"}
+                    />
+                  </GoogleMap>
+
+                )}
               </IonCol>
             </IonRow>
+
           )}
 
         </IonGrid>

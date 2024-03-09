@@ -5,6 +5,10 @@
 /.pnp
 .pnp.js
 
+/ios/App/Pods/*
+
+# ignore everything in App/Pods except for the /Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig file
+!/ios/App/Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig
 # testing
 /coverage
 

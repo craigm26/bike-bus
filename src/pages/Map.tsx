@@ -11,9 +11,9 @@ import {
   IonSegmentButton,
   IonCardContent,
   IonSpinner,
+  IonText,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
-import useAuth from "../useAuth";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc } from "firebase/firestore";
@@ -28,6 +28,7 @@ import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader, StandaloneSear
 import AnonymousAvatarMapMarker from "../components/AnonymousAvatarMapMarker";
 import AvatarMapMarker from "../components/AvatarMapMarker";
 import Sidebar from "../components/Mapping/Sidebar";
+import useFirebaseRoutes from "../hooks/useFirebaseRoutes";
 import React from "react";
 import { useAvatar } from "../components/useAvatar";
 import { addDoc, collection } from 'firebase/firestore';
@@ -58,7 +59,7 @@ interface BikeBusStop {
   BikeBusRouteId: string;
 }
 
-interface RouteData {
+interface Route {
   eventCheckInLeader: any;
   startPoint: { lat: number; lng: number };
   endPoint: { lat: number, lng: number };
@@ -69,8 +70,8 @@ interface RouteData {
   endPointAddress: string;
   routeName: string;
   routeType: string;
-  routeCreator: string;
-  routeLeader: string;
+  routeCreator: DocumentReference;
+  routeLeader: DocumentReference;
   description: string;
   travelMode: string;
   isBikeBus: boolean;
@@ -79,12 +80,15 @@ interface RouteData {
   BikeBusStop: Coordinate[];
   BikeBusStops: Coordinate[];
   BikeBusStationsIds: string[];
-  BikeBusGroupId: DocumentReference;
+  BikeBusGroup: DocumentReference;
   BikeBusStopIds: DocumentReference[];
   id: string;
   accountType: string;
   routeId: string;
   name: string;
+  distance: string;
+  duration: string;
+  arrivalTime: string;
 }
 
 interface MarkerType {
@@ -93,19 +97,12 @@ interface MarkerType {
   BikeBusGroupClusterId: string;
 }
 
-
-type School = {
-  id: string;
-  SchoolName: string;
-  Location: string;
-  Organization?: DocumentReference;
+interface DistanceDurationResult {
+  distance: string;
+  duration: string;
+  arrivalTime: string;
 }
 
-
-interface Point {
-  lat: number;
-  lng: number;
-}
 
 interface FetchedUserData {
   username: string;
@@ -130,27 +127,12 @@ interface BikeBusEvent {
   };
 }
 
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-
-  return function (...args: Parameters<T>) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 
 const Map: React.FC = () => {
   const { user, isAnonymous, loadingAuthState } = useContext(AuthContext);
   const history = useHistory();
   const { id } = useParams<{ id: string }>();
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const [isActiveEvent, setIsActiveEvent] = useState(false);
   const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
@@ -170,6 +152,7 @@ const Map: React.FC = () => {
     lng: startGeo.lng,
   });
   const [mapZoom, setMapZoom] = useState(13);
+  const { routes, loading } = useFirebaseRoutes(user?.uid);
   const [getLocationClicked, setGetLocationClicked] = useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const { avatarUrl } = useAvatar(user?.uid);
@@ -236,7 +219,7 @@ const Map: React.FC = () => {
   // the leaderUID is the user.uid of the leader which is stored in the selectedRoute.routeLeader
   const [leaderUID, setLeaderUID] = useState<string>('');
   const isEventLeader = user?.uid === leaderUID;
-  const [selectedRoute, setSelectedRoute] = useState<RouteData | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [bikeBusGroupId, setBikeBusGroupId] = useState<string>('');
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [path, setPath] = useState<Coordinate[]>([]);
@@ -265,6 +248,16 @@ const Map: React.FC = () => {
   const [routeId, setRouteId] = useState('');
   const [shouldShowInfoBoxRoute, setShouldShowInfoBoxRoute] = useState(false);
   const [infoBoxContent, setInfoBoxContent] = useState(<></>);
+  const [bicyclingSpeedSelector, setBicyclingSpeedSelector] = useState('SLOW');
+  const [bicyclingSpeed, setBicyclingSpeed] = useState(10);
+  const [showSearchContainer, setShowSearchContainer] = useState(true);
+
+
+  let routeInfoBoxPosition;
+  if (selectedRoute !== null) {
+    routeInfoBoxPosition = new window.google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng);
+  }
+
 
 
   interface Trip {
@@ -411,7 +404,7 @@ const Map: React.FC = () => {
       const q = query(bikeBusGroupsRef);
       const querySnapshot = await getDocs(q);
 
-      const BikeBusRoutesData: RouteData[] = [];
+      const BikeBusRoutesData: Route[] = [];
 
       let endPointCoordinates: any[] = [];
       let BikeBusNames: string[] = [];
@@ -431,14 +424,14 @@ const Map: React.FC = () => {
       for (const routeRef of BikeBusRoutesRef) {
         if (routeRef instanceof DocumentReference) {
           const routeDoc = await getDoc(routeRef);
-          const routeData = routeDoc.data() as RouteData;
-          if (routeData) {
-            BikeBusRoutesData.push(routeData);
-            if (routeData.endPoint) {
-              endPointCoordinates.push(routeData.endPoint);
-              BikeBusNames.push(routeData.routeName || 'Unnamed'); // Assume routeName exists
+          const Route = routeDoc.data() as Route;
+          if (Route) {
+            BikeBusRoutesData.push(Route);
+            if (Route.endPoint) {
+              endPointCoordinates.push(Route.endPoint);
+              BikeBusNames.push(Route.routeName || 'Unnamed'); // Assume routeName exists
             } else {
-              console.error('Missing endPoint for route:', routeData);
+              console.error('Missing endPoint for route:', Route);
             }
           } else {
             console.error('No data for routeRef:', routeRef);
@@ -483,15 +476,15 @@ const Map: React.FC = () => {
             const selectedRouteRef = eventData?.eventRoute;
             if (selectedRouteRef) {
               const routeSnapshot = await getDoc(selectedRouteRef);
-              const routeData = routeSnapshot.data() as RouteData;
+              const Route = routeSnapshot.data() as Route;
 
-              if (routeData) {
-                setSelectedRoute(routeData);
-                setBikeBusGroupId(routeData.BikeBusGroupId.id);
-                setPath(routeData.pathCoordinates);
-                setStartGeo(routeData.startPoint);
-                setEndGeo(routeData.endPoint);
-                setBikeBusStopIds(routeData.BikeBusStopIds);
+              if (Route) {
+                setSelectedRoute(Route);
+                setBikeBusGroupId(Route.BikeBusGroup.id);
+                setPath(Route.pathCoordinates);
+                setStartGeo(Route.startPoint);
+                setEndGeo(Route.endPoint);
+                setBikeBusStopIds(Route.BikeBusStopIds);
 
               }
             } else {
@@ -903,14 +896,14 @@ const Map: React.FC = () => {
       );
       getDocs(queryObj)
         .then(async (querySnapshot) => {
-          const routes: RouteData[] = [];
+          const routes: Route[] = [];
           const allBikeBusStops: BikeBusStop[] = [];
 
           for (const doc of querySnapshot.docs) {
-            const routeData = doc.data() as RouteData;
-            routes.push(routeData);
+            const Route = doc.data() as Route;
+            routes.push(Route);
 
-            const bikeBusStopIds = routeData.BikeBusStopIds;
+            const bikeBusStopIds = Route.BikeBusStopIds;
             if (bikeBusStopIds) {
               for (const stopid of bikeBusStopIds) {
                 try {
@@ -959,8 +952,8 @@ const Map: React.FC = () => {
         .then((querySnapshot) => {
           const routes: any[] = [];
           querySnapshot.forEach((doc) => {
-            const userRouteData = doc.data();
-            routes.push(userRouteData);
+            const userRoute = doc.data();
+            routes.push(userRoute);
           });
           setUserRoutes(routes);
         })
@@ -1367,95 +1360,221 @@ const Map: React.FC = () => {
     }
   }
 
-  const getDirections = () => {
-    // let's show a message to the user that we're getting directions
-    window.alert("The blue line on the map allows you to drag the route to change it. After the route is saved by clicking 'Create Route', you can modify the route");
-    return new Promise(async (resolve, reject) => {
-      if (selectedStartLocation && selectedEndLocation) {
-
-        const directionsService = new google.maps.DirectionsService();
-        const directionsRenderer = new google.maps.DirectionsRenderer();
-        directionsRenderer.setMap(mapRef.current);
-        directionsService.route(
-          {
-            origin: selectedStartLocation,
-            destination: selectedEndLocation,
-            travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-          },
-          (response, status) => {
-            if (status === "OK" && response) {
-              directionsRenderer.setDirections(response);
-
-              const pathPoints: LatLng[] = response.routes[0].overview_path.map((latLng: any) => ({
-                latitude: latLng.lat(),
-                longitude: latLng.lng(),
-              }));
-              const epsilon = 0.0001;
-              const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, epsilon);
-              resolve(simplifiedPathPoints);
-
-              directionsRenderer.setOptions({
-                draggable: true,
-                preserveViewport: true,
-              });
-
-              directionsRenderer.addListener('directions_changed', () => {
-                // did the user drag the route?
-                const newDirections = directionsRenderer.getDirections();
-                const newRoute = newDirections?.routes[0];
-                if (newRoute?.overview_path) {
-                  const newRoutePathPoints: LatLng[] = newRoute.overview_path.map((latLng: any) => ({
-                    latitude: latLng.lat(),
-                    longitude: latLng.lng(),
-                  }));
-                  const newSimplifiedPathPoints = ramerDouglasPeucker(newRoutePathPoints, epsilon);
-
-                  // Update pathCoordinates state
-                  setPathCoordinates(newRoutePathPoints);
-                  resolve(newSimplifiedPathPoints);
-                }
-              });
-              setPathCoordinates(simplifiedPathPoints);
-            } else {
-              console.error("Directions request failed due to " + status);
-              reject(status);
-            }
-          }
-        );
-
-        const service = new google.maps.DistanceMatrixService();
-        service.getDistanceMatrix(
-          {
-            origins: [selectedStartLocation],
-            destinations: [selectedEndLocation],
-            travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-          },
-          (response, status) => {
-            if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
-              const distance = response?.rows[0]?.elements[0]?.distance?.value;
-              const duration = response?.rows[0]?.elements[0]?.duration?.value;
-
-              setDistance(
-                (Math.round((distance * 0.000621371192) * 100) / 100).toString()
-              );
-
-              setDuration(
-                (Math.round((duration * 0.0166667) * 100) / 100).toString()
-              );
-
-              const arrivalTime = new Date();
-              const durationInMinutes = duration / 60;
-              arrivalTime.setMinutes(arrivalTime.getMinutes() + durationInMinutes);
-              setArrivalTime(arrivalTime.toLocaleTimeString());
-            } else {
-              console.error("Error calculating distance:", status);
-            }
-          }
-        );
+  const getDirections = async () => {
+    window.alert("The blue line on the map allows you to drag the route to change it. After the route is saved by clicking 'Create Route', you can modify the route.");
+    try {
+      if (!selectedStartLocation || !selectedEndLocation) {
+        throw new Error("Start or end location is not set");
       }
+
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer({
+        draggable: true,
+        map: mapRef.current,
+        preserveViewport: true,
+      });
+
+      let distanceValue = '';
+      let durationValue = '';
+      let arrivalTimeValue = '';
+
+      if (travelModeSelector) {
+        // Use travelModeSelector
+        console.log(travelModeSelector);
+        const travelMode: keyof typeof google.maps.TravelMode = travelModeSelector as keyof typeof google.maps.TravelMode;
+        let speedSelector = ''; // Default to an empty string or a sensible default for other modes
+        if (travelModeSelector === 'BICYCLING') {
+          // Set speedSelector for BICYCLING mode based on the selected speed from the user in the state of speedSelector
+          speedSelector = bicyclingSpeedSelector;
+        }
+        const result = await directionsService.route({
+          origin: selectedStartLocation,
+          destination: selectedEndLocation,
+          travelMode: google.maps.TravelMode[travelMode],
+        });
+
+        directionsRenderer.setDirections(result);
+
+        // Call calculateDistanceAndDuration and destructure its result
+        const calculationResult = await calculateDistanceAndDuration(
+          selectedStartLocation,
+          selectedEndLocation,
+          travelModeSelector,
+          speedSelector
+        );
+
+        // Assign the results from calculationResult to the scoped variables
+        distanceValue = calculationResult.distance;
+        durationValue = calculationResult.duration;
+        arrivalTimeValue = calculationResult.arrivalTime;
+
+        setDistance(distanceValue);
+        setDuration(durationValue);
+        setArrivalTime(arrivalTimeValue);
+
+
+      } else {
+        // Handle the case where travelModeSelector is undefined
+        console.log('travelModeSelector is undefined');
+      }
+
+      // Indicate that directions have been fetched
       setDirectionsFetched(true);
+    } catch (error) {
+      console.error("Failed to get directions:", error);
+      // Optionally, handle setting state to reflect the error to the user
+    }
+  };
+
+
+  const calculateDistanceAndDuration = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string) => {
+
+
+    return new Promise<DistanceDurationResult>((resolve, reject) => {
+      const service = new google.maps.DistanceMatrixService();
+      service.getDistanceMatrix({
+        origins: [origin],
+        destinations: [destination],
+        travelMode: google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode],
+      }, (response, status) => {
+        if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+          const distance = response.rows[0].elements[0].distance.value; // meters
+          let duration = response.rows[0].elements[0].duration.value; // seconds
+
+          // Adjust duration based on the selected speed
+          const speedFactor = getSpeedAdjustmentFactor(speedSelector);
+          duration *= speedFactor;
+
+          const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
+          const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+
+          const arrivalTime = new Date();
+          arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
+          const arrivalTimeString = arrivalTime.toLocaleTimeString();
+
+          resolve({
+            distance: distanceInMiles.toString(),
+            duration: durationInMinutes.toString(),
+            arrivalTime: arrivalTimeString,
+          });
+        } else {
+          reject("Error calculating distance and duration: " + status);
+        }
+      });
     });
   };
+
+  const getSpeedAdjustmentFactor = (speedSelector: any) => {
+    switch (speedSelector) {
+      case "VERY SLOW": return 1.2;
+      case "SLOW": return 1.1;
+      case "MEDIUM": return 1;
+      case "FAST": return 0.9;
+      default: return 1; // Default to no adjustment
+    }
+  };
+
+  const handleRouteChange = async (directionsResult: google.maps.DirectionsResult | null) => {
+    // Simplify route if necessary and calculate distance and duration
+    if (!directionsResult) {
+      throw new Error("Directions result is null");
+    }
+    const pathPoints = directionsResult.routes[0].overview_path.map(latLng => ({ latitude: latLng.lat(), longitude: latLng.lng() }));
+    const simplifiedPathPoints = ramerDouglasPeucker(pathPoints, 0.0001);
+
+    // Optionally update the state with the new simplified path points
+    setPathCoordinates(simplifiedPathPoints);
+
+    console.log(travelModeSelector);
+    const travelMode: keyof typeof google.maps.TravelMode = travelModeSelector as keyof typeof google.maps.TravelMode;
+    let speedSelector = ''; // Default to an empty string or a sensible default for other modes
+    if (travelModeSelector === 'BICYCLING') {
+      // Set speedSelector for BICYCLING mode based on the selected speed from the user in the state of speedSelector
+      speedSelector = bicyclingSpeedSelector;
+    }
+
+    if (selectedStartLocation === null || selectedEndLocation === null) {
+      console.error("Start or end location is null");
+      return; // Stop the function if either is null
+    }
+
+
+    // Call calculateDistanceAndDuration and destructure its result
+    const calculationResult = await calculateDistanceAndDuration(
+      selectedStartLocation,
+      selectedEndLocation,
+      travelModeSelector,
+      speedSelector
+    );
+
+    let distanceValue = '';
+    let durationValue = '';
+    let arrivalTimeValue = '';
+
+    // Assign the results from calculationResult to the scoped variables
+    distanceValue = calculationResult.distance;
+    durationValue = calculationResult.duration;
+    arrivalTimeValue = calculationResult.arrivalTime;
+
+    setDistance(distanceValue);
+    setDuration(durationValue);
+    setArrivalTime(arrivalTimeValue);
+  };
+
+  const getDirectionsAndSimplifyRoute = async () => {
+    try {
+      if (!selectedStartLocation || !selectedEndLocation) {
+        throw new Error("Start or end location is not set");
+      }
+
+      // Setup DirectionsService and DirectionsRenderer
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer({
+        draggable: true,
+        map: mapRef.current,
+        preserveViewport: true,
+      });
+
+      let distanceValue = '';
+      let durationValue = '';
+      let arrivalTimeValue = '';
+
+      if (travelModeSelector) {
+        // Use travelModeSelector
+        console.log(travelModeSelector);
+        const travelMode = google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode];
+        let speedSelector = ''; // Default to an empty string or a sensible default for other modes
+        if (travelModeSelector === 'BICYCLING') {
+          // Set speedSelector for BICYCLING mode based on the selected speed from the user in the state of speedSelector
+          speedSelector = bicyclingSpeedSelector;
+          // also enable the bicycling layer if the ref is not null
+        }
+
+
+        // Fetch and set initial directions
+        const initialResult = await directionsService.route({
+          origin: selectedStartLocation,
+          destination: selectedEndLocation,
+          travelMode: travelMode,
+        });
+        directionsRenderer.setDirections(initialResult);
+        handleRouteChange(initialResult); // Function to process the route, calculate distances, etc.
+
+        // Listen for directions changes (e.g., user drags the route)
+        google.maps.event.addListener(directionsRenderer, 'directions_changed', () => {
+          const newDirections = directionsRenderer.getDirections();
+          handleRouteChange(newDirections); // Re-process the new route
+        });
+
+        // Indicate that directions have been fetched
+        setDirectionsFetched(true);
+      }
+    }
+    catch (error) {
+      console.error("Failed to get directions:", error);
+      // Optionally, handle setting state to reflect the error to the user
+    }
+  }
 
   const updateRoute = (newRoute: google.maps.DirectionsResult) => {
     if (directionsRenderer) {
@@ -1510,143 +1629,114 @@ const Map: React.FC = () => {
   };
 
 
+  // Utility function to convert path coordinates
+  const convertPathCoordinates = (pathCoordinates: any[]) =>
+    pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }));
+
+  // Utility function to generate route name
+  const generateRouteName = (startName: string, endName: string) =>
+    `${startName} to ${endName}`;
+
   const createRoute = async () => {
+    if (!user || !selectedStartLocation || !selectedEndLocation) {
+      console.error('Required user and location data is missing');
+      return;
+    }
+
     try {
+      const [startPointAddress, endPointAddress] = await Promise.all([
+        getStartPointAddress(selectedStartLocation),
+        selectedEndLocation ? getEndPointAddress(selectedEndLocation) : '',
+      ]);
 
-      const startPointAddress = await getStartPointAddress(selectedStartLocation);
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(mapRef.current);
 
-      // Check if selectedEndLocation is not null before calling getEndPointAddress
-      let endPointAddress = '';
-      if (selectedEndLocation) {
-        endPointAddress = await getEndPointAddress(selectedEndLocation);
-      }
-      // Verify user and locations
-      if (!user || !selectedStartLocation || !selectedEndLocation) {
-        throw new Error('Required user and location data is missing');
-      }
-
-      if (user) {
-
-        const convertedPathCoordinates = pathCoordinates.map(coord => ({
-          lat: coord.latitude,
-          lng: coord.longitude,
-        }));
-        if (selectedStartLocation && selectedEndLocation) {
-          const directionsService = new google.maps.DirectionsService();
-          const directionsRenderer = new google.maps.DirectionsRenderer();
-          directionsRenderer.setMap(mapRef.current);
-          directionsService.route(
-            {
-              origin: selectedStartLocation,
-              destination: selectedEndLocation,
-              travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode]
-            },
-            (response, status) => {
-              if (status === "OK") {
-                directionsRenderer.setDirections(response);
-                const route = response?.routes[0];
-                const routeData = {
-                  distance: route?.legs[0]?.distance?.value,
-                  duration: route?.legs[0]?.duration?.value,
-                  arrivalTime: new Date(),
-                  travelMode: travelModeSelector,
-                  origin: {
-                    lat: route?.legs[0]?.start_location?.lat(),
-                    lng: route?.legs[0]?.start_location?.lng()
-                  },
-                  destination: {
-                    lat: route?.legs[0]?.end_location?.lat(),
-                    lng: route?.legs[0]?.end_location?.lng()
-                  },
-                  startPointAddress: startPointAdress,
-                  startPoint: selectedStartLocation,
-                  endPoint: selectedEndLocation,
-                  // if routeStartName is '', then set the routeStartName to be startPointAddress
-                  routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
-
-                  startPointName: routeStartName,
-                  startPointStreetName: routeStartStreetName,
-                  routeEndStreetName: routeEndStreetName,
-                  endPointName: routeEndName,
-                  endPointAddress: endPointAddress,
-                  routeCreator: "/users/" + user.uid,
-                  routeLeader: "/users/" + user.uid,
-                  routeDescription: description,
-                  pathCoordinates: convertedPathCoordinates,
-                  isBikeBus: false,
-                };
-
-                handleCreateRouteSubmit("", startPointAddress, endPointAddress);
-              } else {
-                console.error("Directions request failed due to " + status);
-              }
-            }
-          );
+      directionsService.route({
+        origin: selectedStartLocation,
+        destination: selectedEndLocation,
+        travelMode: google.maps.TravelMode[travelModeSelector as keyof typeof google.maps.TravelMode],
+      }, async (response, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(response);
+          const Route = prepareRoute(response?.routes[0], startPointAddress, endPointAddress);
+          await handleCreateRouteSubmit(Route);
+        } else {
+          console.error("Directions request failed due to " + status);
         }
-      }
+      });
     } catch (error) {
-      console.log("Error: ", error);
+      console.error("Error creating route:", error);
     }
   };
 
+  // Function to prepare route data
+  const prepareRoute = (route: google.maps.DirectionsRoute | undefined, startPointAddress: any, endPointAddress: any) => {
+    const convertedPathCoordinates = convertPathCoordinates(pathCoordinates);
+    return {
+      routeName: generateRouteName(routeStartName, routeEndName),
+      startPointAddress,
+      endPointAddress,
+      pathCoordinates: convertedPathCoordinates,
+      routeCreator: user.uid,
+      routeLeader: user.uid,
+      distance: distance,
+      duration: duration,
+      endPoint: selectedEndLocation,
+      startPoint: selectedStartLocation,
+      endPointName: routeEndName,
+      startPointName: routeStartName,
+      isBikeBus: false,
+      travelMode: travelModeSelector,
+      bicyclingSpeed: bicyclingSpeedSelector,
+      bicyclingSpeedSelector: bicyclingSpeedSelector,
+    };
+  };
 
-  const handleCreateRouteSubmit = async (routeType = "", startPointAddress: string, endPointAddress: string) => {
+  const handleCreateRouteSubmit = async (Route: {
+    routeName: string;
+    startPointAddress: any;
+    endPointAddress: any;
+    pathCoordinates: { lat: any; lng: any; }[];
+    routeCreator: DocumentReference<any>;
+    routeLeader: DocumentReference<any>;
+    distance: string;
+    duration: string;
+    endPoint: any;
+    startPoint: any;
+    endPointName: string;
+    startPointName: string;
+    isBikeBus: boolean;
+    travelMode: string;
+    bicyclingSpeed: string;
+    bicyclingSpeedSelector: string;
+  }) => {
     try {
-
-      if (user) {
-
-        const convertedPathCoordinates = pathCoordinates.map(coord => ({
-          lat: coord.latitude,
-          lng: coord.longitude,
-        }));
-
-        const routeDocRef = await addDoc(collection(db, 'routes'), {
-          routeName: `${routeStartName ? routeStartName + ' on ' : ''}${routeStartStreetName} to ${routeEndName}`,
-          description: description,
-          isBikeBus: false,
-          BikeBusGroupId: "",
-          startPoint: selectedStartLocation,
-          endPoint: selectedEndLocation,
-          routeType: routeType,
-          duration: duration,
-          accountType: accountType,
-          travelMode: travelModeSelector,
-          routeCreator: "/users/" + user?.uid,
-          routeLeader: "/users/" + user?.uid,
-          pathCoordinates: convertedPathCoordinates,
-          startPointName: startPointAddress,
-          endPointName: routeEndName,
-          startPointAddress: startPointAddress,
-          endPointAddress: endPointAddress,
-          distance: distance,
-        });
-
-        // if this is not part of the open trip feature, then redirect to the view route page
-        // if route is not "Open Trip", then redirect to the view route page
-        // also set the converterPathCoordinates to the pathCoordinates to be used throughout document
-        if (routeType !== "openTrip") {
-          // history.push(`/viewroute/${routeDocRef.id}`);
-          // show the info box for the route
-          setShouldShowInfoBoxRoute(true);
-          // set the get directions button to false - showGetDirectionsButton
-          setShowGetDirectionsButton(false);
-          // set the create route button to false
-          setShowCreateRouteButton(false);
-          // refresh the map page
-          window.location.reload();
-        }
-        return routeDocRef;
+      if (!user) {
+        console.error('User data is missing');
+        return;
       }
+
+      const routeDocRef = await addDoc(collection(db, 'routes'), Route);
+      console.log('Route created with ID: ', routeDocRef.id);
+      // go to the route page
+      history.push(`/viewroute/${routeDocRef.id}`);
+
     } catch (error) {
-      console.log("Error: ", error);
+      console.error("Error submitting route:", error);
     }
   };
+
 
 
   const handleBikeBusRouteClick = async (route: any) => {
 
+    // let's not show the search container
+    setShowSearchContainer(false);
+
     // let's get the events for this bikebus group
-    const bikeBusGroupId = route.BikeBusGroupId.id;
+    const bikeBusGroupId = route.BikeBusGroup.id;
     const bikeBusGroupRef = doc(db, 'bikebusgroups', bikeBusGroupId);
 
     // get the events for this bikebus group
@@ -1703,7 +1793,7 @@ const Map: React.FC = () => {
 
     // we'll have to convert this infoWindow into a infoBox and include this: 
     /*{isUserMember && (
-      <IonButton size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+      <IonButton shape="round" size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
         Bulletin Board
       </IonButton>
     )}
@@ -1716,7 +1806,7 @@ const Map: React.FC = () => {
     <h4>Upcoming Events:</h4>
     ${next3EventsHTML}
   </div>
-    <a href="/bikebusgrouppage/${route.BikeBusGroupId.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
+    <a href="/bikebusgrouppage/${route.BikeBusGroup.id}" style="display: inline-block; padding: 10px; background-color: #ffd800; color: black; text-decoration: none;">
     View ${route.BikeBusName}
   </a>`
       ;
@@ -1856,11 +1946,11 @@ const Map: React.FC = () => {
       // let's ensure the endPoint is set before we set the position
       await getDoc(bikeBusGroupData?.BikeBusRoutes[0]).then((doc) => {
         if (doc.exists()) {
-          const routeData = doc.data() as RouteData;
-          // set routeData to the routeData from the document reference
-          setEndPoint(routeData?.endPoint);
-          setPosition(routeData?.endPoint);
-          setMapCenter(routeData?.endPoint);
+          const Route = doc.data() as Route;
+          // set Route to the Route from the document reference
+          setEndPoint(Route?.endPoint);
+          setPosition(Route?.endPoint);
+          setMapCenter(Route?.endPoint);
         }
       });
 
@@ -1878,6 +1968,7 @@ const Map: React.FC = () => {
 
 
   const handleUserRouteClick = async (route: any) => {
+    console.log(route);
 
 
     // set shouldShowInfoBoxRoute to true
@@ -1898,7 +1989,7 @@ const Map: React.FC = () => {
       foundRouteId = docSnapshot.id; // Assuming this gives the correct ID
     });
 
-    // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRouteData to a variable that we can use to get the route data
+    // the foundRouteId is the id of the document in the routes collection, we need to set the selectedRoute to a variable that we can use to get the route data
     // set routeId as foundRouteId
     setRouteId(foundRouteId);
     // let's get the document from the foundRouteId
@@ -1910,11 +2001,10 @@ const Map: React.FC = () => {
     }
 
     // routeDoc should be set to selectedRoute
-    setSelectedRoute(routeDoc.data() as RouteData);
+    setSelectedRoute(routeDoc.data() as Route);
 
     // Check if a route ID was found
     if (foundRouteId) {
-      console.log("foundRouteId: ", foundRouteId);
       setRouteId(foundRouteId); // Set the state with the found route ID
       // we need to update the selectedRoute variable with the foundRouteId
       setShouldShowInfoBoxRoute(true);
@@ -1989,7 +2079,7 @@ const Map: React.FC = () => {
   };
 
   const createBikeBus = async (routeId: string) => {
-    <IonButton routerLink={`/CreateBikeBusGroup/${routeId}`}>Create BikeBus Group</IonButton>
+    <IonButton shape="round" routerLink={`/CreateBikeBusGroup/${routeId}`}>Create BikeBus Group</IonButton>
   };
 
 
@@ -2027,10 +2117,12 @@ const Map: React.FC = () => {
 
   const handleCloseOpenTripClick = () => {
     setInfoWindowOpenTrip({ isOpen: false, content: '', position: null, trip: null });
+    setShowSearchContainer(true);
   };
 
   const handleCloseClick = () => {
     setInfoWindow({ isOpen: false, content: '', position: null });
+    setShowSearchContainer(true);
   };
 
   const createTripDocument = async (user: any, selectedStartLocation: any, selectedEndLocation: any, pathCoordinates: any) => {
@@ -2311,637 +2403,657 @@ const Map: React.FC = () => {
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent>
-          <IonRow className="map-base">
-            <GoogleMap
-              onLoad={(map) => {
-                mapRef.current = map;
-                bicyclingLayerRef.current = new google.maps.BicyclingLayer();
-              }}
-              mapContainerStyle={{
-                width: "100%",
-                height: "100%",
-              }}
-              center={mapCenter}
-              zoom={15}
-              options={{
-                clickableIcons: false,
-                disableDefaultUI: true,
-                zoomControl: true,
-                zoomControlOptions: {
-                  position: window.google.maps.ControlPosition.LEFT_CENTER
-                },
-                mapTypeControl: false,
-                mapTypeControlOptions: {
-                  position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
-                  mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
-                },
-                disableDoubleClickZoom: true,
-                minZoom: 3,
-                maxZoom: 18,
-                mapId: 'b75f9f8b8cf9c287',
-              }}
-              onUnmount={() => {
-                mapRef.current = null;
-              }}
-            >
-              {infoWindowClusterBikeBus.isOpen && infoWindowClusterBikeBus.position && (
-                <InfoWindow
-                  position={infoWindowClusterBikeBus.position}
-                  onCloseClick={() => setInfoWindowClusterBikeBus({ isOpen: false, position: null, content: '' })}
-                >
-                  <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                </InfoWindow>
-              )}
-              {!id && (
-                <IonGrid className="search-container">
-                  <IonRow>
-                    <IonCol>
-                      <StandaloneSearchBox
-                        onLoad={onLoadStartingLocation}
-                        onPlacesChanged={onPlaceChangedStart}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
-                          <input
-                            type="text"
-                            autoComplete="on"
-                            placeholder={userLocationAddress}
-                            style={{
-                              width: "350px",
-                              height: "40px",
-                            }}
-                          />
-                          <IonButton onClick={getLocation}>
-                            <IonIcon icon={locateOutline} />
-                          </IonButton>
-                        </div>
-                      </StandaloneSearchBox>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      <StandaloneSearchBox
-                        onLoad={onLoadDestinationValue}
-                        onPlacesChanged={onPlaceChangedDestination}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
-                          <input
-                            type="text"
-                            autoComplete="on"
-                            placeholder="Enter Destination"
-                            value={destinationValue}
-                            onChange={(e) => setDestinationValue(e.target.value)}
-                            style={{
-                              width: "350px",
-                              height: "40px",
-                            }}
-                          />
-                        </div>
-                      </StandaloneSearchBox>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    {isActiveEvent && (
-                      <IonButton onClick={endOpenTrip}>End Open Trip</IonButton>
-                    )}
-                  </IonRow>
-                  {showGetDirectionsButton && !isActiveEvent && !id && (
-                    <IonRow>
-                      <IonCol>
-                        <IonLabel>Travel Mode:</IonLabel>
-                        <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
-                          setTravelMode(e.detail.value);
-                          setTravelModeSelector(e.detail.value);
-                        }}>
-                          <IonSegmentButton value="WALKING">
-                            <IonIcon icon={walkOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="BICYCLING">
-                            <IonIcon icon={bicycleOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="DRIVING">
-                            <IonIcon icon={carOutline} />
-                          </IonSegmentButton>
-                          <IonSegmentButton value="TRANSIT">
-                            <IonIcon icon={busOutline} />
-                          </IonSegmentButton>
-                        </IonSegment>
-                      </IonCol>
-                    </IonRow>
+        <IonRow className="map-base">
+          <GoogleMap
+            onLoad={(map) => {
+              mapRef.current = map;
+              bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+            }}
+            mapContainerStyle={{
+              width: "100%",
+              height: "100%",
+            }}
+            center={mapCenter}
+            zoom={15}
+            options={{
+              clickableIcons: false,
+              disableDefaultUI: true,
+              zoomControl: true,
+              zoomControlOptions: {
+                position: window.google.maps.ControlPosition.LEFT_CENTER
+              },
+              mapTypeControl: false,
+              mapTypeControlOptions: {
+                position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+              },
+              disableDoubleClickZoom: true,
+              minZoom: 3,
+              maxZoom: 18,
+              mapId: 'b75f9f8b8cf9c287',
+            }}
+            onUnmount={() => {
+              mapRef.current = null;
+            }}
+          >
+            {infoWindowClusterBikeBus.isOpen && infoWindowClusterBikeBus.position && (
+              <InfoWindow
+                position={infoWindowClusterBikeBus.position}
+                onCloseClick={() => setInfoWindowClusterBikeBus({ isOpen: false, position: null, content: '' })}
+              >
+                <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+              </InfoWindow>
+            )}
+            {!id && showSearchContainer && (
+              <IonGrid className="search-container">
+                <IonRow>
+                  <IonCol>
+                    <StandaloneSearchBox
+                      onLoad={onLoadStartingLocation}
+                      onPlacesChanged={onPlaceChangedStart}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>A</div>
+                        <input
+                          type="text"
+                          autoComplete="on"
+                          placeholder={userLocationAddress}
+                          style={{
+                            width: "350px",
+                            height: "40px",
+                          }}
+                        />
+                        <IonButton size="small" onClick={getLocation}>
+                          <IonIcon icon={locateOutline} />
+                        </IonButton>
+                      </div>
+                    </StandaloneSearchBox>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol>
+                    <StandaloneSearchBox
+                      onLoad={onLoadDestinationValue}
+                      onPlacesChanged={onPlaceChangedDestination}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ color: 'red', marginRight: '10px', fontSize: '24px' }}>B</div>
+                        <input
+                          type="text"
+                          autoComplete="on"
+                          placeholder="Enter Destination"
+                          value={destinationValue}
+                          onChange={(e) => setDestinationValue(e.target.value)}
+                          style={{
+                            width: "350px",
+                            height: "40px",
+                          }}
+                        />
+                      </div>
+                    </StandaloneSearchBox>
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  {isActiveEvent && (
+                    <IonButton shape="round" onClick={endOpenTrip}>End Open Trip</IonButton>
                   )}
+                </IonRow>
+                {showGetDirectionsButton && !isActiveEvent && !id && (
                   <IonRow>
                     <IonCol>
-                      {showGetDirectionsButton && !isActiveEvent && <IonButton expand="block" onClick={getDirections}>Get Directions</IonButton>}
+                      <IonLabel>Travel Mode:</IonLabel>
+                      <IonSegment value={travelModeSelector} onIonChange={(e: CustomEvent) => {
+                        setTravelMode(e.detail.value);
+                        setTravelModeSelector(e.detail.value);
+                      }}>
+                        <IonSegmentButton value="WALKING">
+                          <IonIcon icon={walkOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="BICYCLING">
+                          <IonIcon icon={bicycleOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="DRIVING">
+                          <IonIcon icon={carOutline} />
+                        </IonSegmentButton>
+                        <IonSegmentButton value="TRANSIT">
+                          <IonIcon icon={busOutline} />
+                        </IonSegmentButton>
+                      </IonSegment>
                     </IonCol>
+                  </IonRow>
+                )}
+                {travelModeSelector === "BICYCLING" && showGetDirectionsButton && !isActiveEvent && !id && (
+                  <IonRow>
                     <IonCol>
-                      {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                        <IonButton expand="block" onClick={createRoute}>Create Route</IonButton>)
+                      <IonLabel>Speed:</IonLabel>
+                      <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
+                        setBicyclingSpeed(e.detail.value);
+                        setBicyclingSpeedSelector(e.detail.value);
                       }
-                    </IonCol>
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
-                        <IonButton expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
-                      )}
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol>
-                      {showGetDirectionsButton && directionsFetched && (
-                        <>
-                          {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
-                            <IonRow>
-                              <IonLabel>Distance: {distance} miles </IonLabel>
-                            </IonRow>
-                          )}
-                          {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
-                            <IonRow>
-                              <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
-                            </IonRow>
-                          )}
-                          {showGetDirectionsButton && directionsFetched && (
-                            <IonRow>
-                              <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
-                            </IonRow>
-                          )}
-                        </>
-                      )}
+                      }>
+                        <IonSegmentButton value="VERY SLOW">
+                          <IonText>Very Slow</IonText>
+                          <IonText>0-5mph</IonText>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="SLOW">
+                          {/*need to find svg font awesome icons to represent animals and speed*/}
+                          <IonText>Slow</IonText>
+                          <IonText>5-10mph</IonText>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="MEDIUM">
+                          <IonText>Medium</IonText>
+                          <IonText>10-12mph</IonText>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="FAST">
+                          <IonText>Fast</IonText>
+                          <IonText>12-20mph</IonText>
+                        </IonSegmentButton>
+                      </IonSegment>
                     </IonCol>
                   </IonRow>
-                </IonGrid>
-              )}
-              {!isActiveBikeBusEvent && bikeBusEnabled && bikeBusRoutes.map((route: any) => {
-                const keyPrefix = route.id || route.routeName;
-                return (
-                  <div key={`${keyPrefix}`}>
-                    <Polyline
-                      key={`${keyPrefix}-border`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#000000", // Border color
-                        strokeOpacity: .7,
-                        strokeWeight: 3, // Border thickness
-                        clickable: true,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#000000", // Main line color
-                              strokeOpacity: .7,
-                              strokeWeight: 3,
-                              fillColor: "#000000",
-                              fillOpacity: .7,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
+                )}
+                <IonRow>
+                  <IonCol>
+                    {showGetDirectionsButton && !isActiveEvent && <IonButton shape="round" expand="block" onClick={getDirectionsAndSimplifyRoute}>Get Directions</IonButton>}
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                      <IonButton shape="round" expand="block" onClick={createRoute}>Create Route</IonButton>)
+                    }
+                  </IonCol>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && !isAnonymous && !isActiveEvent && (
+                      <IonButton shape="round" expand="block" onClick={startOpenTrip}>Start Open Trip</IonButton>
+                    )}
+                  </IonCol>
+                </IonRow>
+                <IonRow>
+                  <IonCol>
+                    {showGetDirectionsButton && directionsFetched && (
+                      <>
+                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                          <IonRow>
+                            <IonLabel>Distance: {distance} miles </IonLabel>
+                          </IonRow>
+                        )}
+                        {showGetDirectionsButton && directionsFetched && !isActiveEvent && (
+                          <IonRow>
+                            <IonLabel>Estimated Time of Trip: {duration} minutes</IonLabel>
+                          </IonRow>
+                        )}
+                        {showGetDirectionsButton && directionsFetched && (
+                          <IonRow>
+                            <IonLabel>Estimated Time of Arrival: {arrivalTime}</IonLabel>
+                          </IonRow>
+                        )}
+                      </>
+                    )}
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
+            )}
+            {!isActiveBikeBusEvent && bikeBusEnabled && bikeBusRoutes.map((route: any) => {
+              const keyPrefix = route.id || route.routeName;
+              return (
+                <div key={`${keyPrefix}`}>
+                  <Polyline
+                    key={`${keyPrefix}-border`}
+                    path={route.pathCoordinates}
+                    options={{
+                      zIndex: 10,
+                      strokeColor: "#000000", // Border color
+                      strokeOpacity: .7,
+                      strokeWeight: 4, // Border thickness
+                      clickable: true,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#000000", // Main line color
+                            strokeOpacity: .7,
+                            strokeWeight: 4,
+                            fillColor: "#000000",
+                            fillOpacity: .7,
+                            scale: 3,
                           },
-                        ],
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                    onClick={() => { handleBikeBusRouteClick(route) }}
+                  />
+                  <Polyline
+                    key={`${keyPrefix}-main`}
+                    path={route.pathCoordinates}
+                    options={{
+                      zIndex: 10,
+                      strokeColor: "#ffd800", // Main line color
+                      strokeOpacity: 1,
+                      strokeWeight: 2,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#ffd800", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#ffd800",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                  />
+                  {infoWindow.isOpen && infoWindow.position && (
+                    <InfoWindow
+                      position={infoWindow.position}
+                      onCloseClick={handleCloseClick}
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                    </InfoWindow>
+                  )}
+                  {route.endPoint && (
+                    <Marker
+                      key={`${keyPrefix}-end`}
+                      label={`${route.BikeBusName}`}
+                      position={route.endPoint}
+                      icon={{
+                        url: generateSVGBikeBus(route.BikeBusName),
+                        scaledSize: new google.maps.Size(260, 20),
                       }}
                       onClick={() => { handleBikeBusRouteClick(route) }}
                     />
-                    <Polyline
-                      key={`${keyPrefix}-main`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#ffd800", // Main line color
-                        strokeOpacity: 1,
-                        strokeWeight: 2,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#ffd800", // Main line color
-                              strokeOpacity: 1,
-                              strokeWeight: 2,
-                              fillColor: "#ffd800",
-                              fillOpacity: 1,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
-                          },
-                        ],
-                      }}
-                    />
-                    {infoWindow.isOpen && infoWindow.position && (
-                      <InfoWindow
-                        position={infoWindow.position}
-                        onCloseClick={handleCloseClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                      </InfoWindow>
-                    )}
-                    {route.endPoint && (
+                  )}
+                  {bikeBusStopData?.map((bikeBusStop: BikeBusStop) => {
+                    return (
                       <Marker
-                        key={`${keyPrefix}-end`}
-                        label={`${route.BikeBusName}`}
-                        position={route.endPoint}
-                        icon={{
-                          url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => { handleBikeBusRouteClick(route) }}
+                        key={bikeBusStop.id}
+                        label={bikeBusStop.BikeBusStopName}
+                        position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
                       />
-                    )}
-                    {bikeBusStopData?.map((bikeBusStop: BikeBusStop) => {
-                      return (
-                        <Marker
-                          key={bikeBusStop.id}
-                          label={bikeBusStop.BikeBusStopName}
-                          position={{ lat: bikeBusStop.lat, lng: bikeBusStop.lng }}
-                        />
-                      );
-                    })}
+                    );
+                  })}
 
-                  </div>
-                );
-              })}
-              {!isActiveBikeBusEvent && userRoutesEnabled && userRoutes.map((route: any, index: number) => {
-                const keyPrefix = route.id || `${route.routeName}-${index}`;
-                return (
-                  <div key={`${keyPrefix}`}>
-                    <Polyline
-                      key={`${keyPrefix}-border`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#000000", // Border color
-                        strokeOpacity: .7,
-                        strokeWeight: 3, // Border thickness
-                        clickable: true,
-                        draggable: true,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#000000", // Main line color
-                              strokeOpacity: .7,
-                              strokeWeight: 3,
-                              fillColor: "#000000",
-                              fillOpacity: .7,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
+                </div>
+              );
+            })}
+            {!isActiveBikeBusEvent && userRoutesEnabled && userRoutes.map((route: any, index: number) => {
+              const keyPrefix = route.id || `${route.routeName}-${index}`;
+              return (
+                <div key={`${keyPrefix}`}>
+                  <Polyline
+                    key={`${keyPrefix}-border`}
+                    path={route.pathCoordinates}
+                    options={{
+                      strokeColor: "#000000", // Border color
+                      strokeOpacity: .7,
+                      strokeWeight: 3, // Border thickness
+                      clickable: true,
+                      draggable: true,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#000000", // Main line color
+                            strokeOpacity: .7,
+                            strokeWeight: 3,
+                            fillColor: "#000000",
+                            fillOpacity: .7,
+                            scale: 3,
                           },
-                        ],
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                    onClick={() => handleUserRouteClick(route)}
+                  />
+                  <Polyline
+                    key={`${keyPrefix}-main`}
+                    path={route.pathCoordinates}
+                    options={{
+                      strokeColor: "#88C8F7", // Main line color
+                      strokeOpacity: 1,
+                      strokeWeight: 2,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#88C8F7", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#88C8F7",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                  />
+                  {infoWindow.isOpen && infoWindow.position && (
+                    <InfoWindow
+                      position={infoWindow.position}
+                      onCloseClick={handleCloseClick}
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                    </InfoWindow>
+                  )}
+                  {route.endPoint && (
+                    <Marker
+                      key={`${keyPrefix}-end`}
+                      label={`${route.routeName}`}
+                      position={route.endPoint}
+                      icon={{
+                        url: generateSVGUserRoutes(route.routeName),
+                        scaledSize: new google.maps.Size(260, 20),
                       }}
                       onClick={() => handleUserRouteClick(route)}
                     />
-                    <Polyline
-                      key={`${keyPrefix}-main`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#88C8F7", // Main line color
-                        strokeOpacity: 1,
-                        strokeWeight: 2,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#88C8F7", // Main line color
-                              strokeOpacity: 1,
-                              strokeWeight: 2,
-                              fillColor: "#88C8F7",
-                              fillOpacity: 1,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
+                  )}
+                </div>
+              );
+            })}
+            {isActiveBikeBusEvent && bikeBusRoutes.map((route: any) => {
+              const keyPrefix = route.id || route.routeName;
+              return (
+                <div key={`${keyPrefix}`}>
+                  <Polyline
+                    key={`${keyPrefix}-border`}
+                    path={route.pathCoordinates}
+                    options={{
+                      strokeColor: "#80ff00",
+                      strokeOpacity: .7,
+                      strokeWeight: 3, // Border thickness
+                      clickable: true,
+                      draggable: false,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#80ff00", // Main line color
+                            strokeOpacity: .7,
+                            strokeWeight: 3,
+                            fillColor: "#80ff00",
+                            fillOpacity: .7,
+                            scale: 3,
                           },
-                        ],
-                      }}
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                    onClick={() => { handleBikeBusRouteClick(route) }}
+                  />
+                  <Polyline
+                    key={`${keyPrefix}-main`}
+                    path={route.pathCoordinates}
+                    options={{
+                      strokeColor: "#80ff00", // Main line color
+                      strokeOpacity: 1,
+                      strokeWeight: 2,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#80ff00", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#80ff00",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
+                    }}
+                  />
+                  {infoWindow.isOpen && infoWindow.position && (
+                    <InfoWindow
+                      position={infoWindow.position}
+                      onCloseClick={handleCloseClick}
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
+                    </InfoWindow>
+                  )}
+
+                  {route.startPoint && (
+                    <Marker
+                      key={`${keyPrefix}-start`}
+                      position={route.startPoint}
+                      onClick={() => { handleBikeBusRouteClick(route) }}
                     />
-                    {infoWindow.isOpen && infoWindow.position && (
-                      <InfoWindow
-                        position={infoWindow.position}
-                        onCloseClick={handleCloseClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                      </InfoWindow>
-                    )}
-                    {route.endPoint && (
+                  )}
+                  {route.bikeBusStops && route.bikeBusStops.map((stop: any) => {
+                    const keyPrefix = stop.id || stop.stopName;
+                    return (
                       <Marker
-                        key={`${keyPrefix}-end`}
-                        label={`${route.routeName}`}
-                        position={route.endPoint}
+                        key={`${keyPrefix}-stop`}
+                        label={`${stop.stopName}`}
+                        position={stop.stopLocation}
                         icon={{
-                          url: generateSVGUserRoutes(route.routeName),
+                          url: generateSVGBikeBus(stop.stopName),
                           scaledSize: new google.maps.Size(260, 20),
                         }}
-                        onClick={() => handleUserRouteClick(route)}
+                        onClick={() => { handleBikeBusRouteClick(route) }}
                       />
-                    )}
-                  </div>
-                );
-              })}
-              {isActiveBikeBusEvent && bikeBusRoutes.map((route: any) => {
-                const keyPrefix = route.id || route.routeName;
-                return (
-                  <div key={`${keyPrefix}`}>
-                    <Polyline
-                      key={`${keyPrefix}-border`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#80ff00",
-                        strokeOpacity: .7,
-                        strokeWeight: 3, // Border thickness
-                        clickable: true,
-                        draggable: false,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#80ff00", // Main line color
-                              strokeOpacity: .7,
-                              strokeWeight: 3,
-                              fillColor: "#80ff00",
-                              fillOpacity: .7,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
-                          },
-                        ],
+                    );
+                  }
+                  )
+                  }
+                  {route.endPoint && (
+                    <Marker
+                      key={`${keyPrefix}-end`}
+                      label={`${route.BikeBusName}`}
+                      position={route.endPoint}
+                      icon={{
+                        url: generateSVGBikeBus(route.BikeBusName),
+                        scaledSize: new google.maps.Size(260, 20),
                       }}
                       onClick={() => { handleBikeBusRouteClick(route) }}
                     />
-                    <Polyline
-                      key={`${keyPrefix}-main`}
-                      path={route.pathCoordinates}
-                      options={{
-                        strokeColor: "#80ff00", // Main line color
-                        strokeOpacity: 1,
-                        strokeWeight: 2,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#80ff00", // Main line color
-                              strokeOpacity: 1,
-                              strokeWeight: 2,
-                              fillColor: "#80ff00",
-                              fillOpacity: 1,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
-                          },
-                        ],
-                      }}
-                    />
-                    {infoWindow.isOpen && infoWindow.position && (
-                      <InfoWindow
-                        position={infoWindow.position}
-                        onCloseClick={handleCloseClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindow.content }} />
-                      </InfoWindow>
-                    )}
-
-                    {route.startPoint && (
-                      <Marker
-                        key={`${keyPrefix}-start`}
-                        position={route.startPoint}
-                        onClick={() => { handleBikeBusRouteClick(route) }}
-                      />
-                    )}
-                    {route.bikeBusStops && route.bikeBusStops.map((stop: any) => {
-                      const keyPrefix = stop.id || stop.stopName;
-                      return (
-                        <Marker
-                          key={`${keyPrefix}-stop`}
-                          label={`${stop.stopName}`}
-                          position={stop.stopLocation}
-                          icon={{
-                            url: generateSVGBikeBus(stop.stopName),
-                            scaledSize: new google.maps.Size(260, 20),
-                          }}
-                          onClick={() => { handleBikeBusRouteClick(route) }}
-                        />
-                      );
-                    }
-                    )
-                    }
-                    {route.endPoint && (
-                      <Marker
-                        key={`${keyPrefix}-end`}
-                        label={`${route.BikeBusName}`}
-                        position={route.endPoint}
-                        icon={{
-                          url: generateSVGBikeBus(route.BikeBusName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => { handleBikeBusRouteClick(route) }}
-                      />
-                    )}
-                  </div>
-                );
-              }
-              )
-              }
-              {openTripsEnabled && !isActiveBikeBusEvent && openTrips.map((trip: any) => {
-                const keyPrefix = trip.id || trip.routeName;
-                return (
-                  <div key={`${keyPrefix}`}>
-                    <Polyline
-                      key={`${keyPrefix}-border`}
-                      path={trip.pathCoordinates}
-                      options={{
-                        strokeColor: "#80ff00", // Border color
-                        strokeOpacity: .7,
-                        strokeWeight: 5, // Border thickness
-                        clickable: true,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              // make the stroke color a nice complementary green color to #ffd800
-                              strokeColor: "#80ff00", // Main line color
-                              strokeOpacity: .7,
-                              strokeWeight: 5,
-                              fillColor: "#80ff00",
-                              fillOpacity: .7,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
-                          },
-                        ],
-                      }}
-                      onClick={() => { handleOpenTripRouteClick(trip) }}
-                    />
-                    {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
-                      <InfoWindow
-                        position={infoWindowOpenTrip.position}
-                        onCloseClick={handleCloseOpenTripClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
-                      </InfoWindow>
-                    )}
-
-                    <Polyline
-                      key={`${keyPrefix}-main`}
-                      onClick={() => { handleOpenTripRouteClick(trip) }}
-                      path={trip.pathCoordinates}
-                      options={{
-                        strokeColor: "#80ff00", // Main line color
-                        strokeOpacity: 1,
-                        strokeWeight: 2,
-                        icons: [
-                          {
-                            icon: {
-                              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                              strokeColor: "#80ff00", // Main line color
-                              strokeOpacity: 1,
-                              strokeWeight: 2,
-                              fillColor: "#80ff00",
-                              fillOpacity: 1,
-                              scale: 3,
-                            },
-                            offset: "100%",
-                            repeat: "100px",
-                          },
-                        ],
-                      }}
-                    />
-                    {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
-                      <InfoWindow
-                        position={infoWindowOpenTrip.position}
-                        onCloseClick={handleCloseOpenTripClick}
-                      >
-                        <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
-                      </InfoWindow>
-                    )}
-                    {trip.startPoint && (
-                      <Marker
-                        key={`${keyPrefix}-start`}
-                        label={`Start of ${trip.eventName}`}
-                        position={trip.startPoint}
-                        onClick={() => { handleOpenTripRouteClick(trip) }}
-                      />
-                    )}
-                    {trip.endPoint && (
-                      <Marker
-                        key={`${keyPrefix}-end`}
-                        label={`End of ${trip.eventName}`}
-                        position={trip.endPoint}
-                        onClick={() => { handleOpenTripRouteClick(trip) }}
-                      />
-                    )}
-                    {trip.eventLeaderLocation && (
-                      <Marker
-                        key={`${keyPrefix}-leader`}
-                        label={`Leader of ${trip.eventName}`}
-                        position={trip.eventLeaderLocation}
-                        icon={{
-                          url: generateSVGBikeBus(trip.eventName),
-                          scaledSize: new google.maps.Size(260, 20),
-                        }}
-                        onClick={() => { handleOpenTripRouteClick(trip) }}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-              <div>
-                {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
-                {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
-              </div>
-              <div>
-                {isEventLeader && !id && !isActiveBikeBusEvent && isActiveEvent && (
-                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton color="danger" onClick={endTripAndCheckOutAll}>End Trip For All</IonButton>
-                  </div>
-                )}
-                {!isEventLeader && !isActiveBikeBusEvent && isActiveEvent && !id && (
-                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton color="danger" onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
-                  </div>
-                )}
-              </div>
-              <div>
-                {isEventLeader && id && isActiveBikeBusEvent && (
-                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton color="danger" onClick={endBikeBusAndCheckOutAll}>End BikeBus Event For All</IonButton>
-                  </div>
-                )}
-                {!isEventLeader && id && isActiveBikeBusEvent && (
-                  <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
-                    <IonButton color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
-                  </div>
-                )}
-              </div>
-              <div>
-                {shouldShowInfoBoxRoute && selectedRoute && (
-                  <InfoBox
-                    position={new google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng)}
+                  )}
+                </div>
+              );
+            }
+            )
+            }
+            {openTripsEnabled && !isActiveBikeBusEvent && openTrips.map((trip: any) => {
+              const keyPrefix = trip.id || trip.routeName;
+              return (
+                <div key={`${keyPrefix}`}>
+                  <Polyline
+                    key={`${keyPrefix}-border`}
+                    path={trip.pathCoordinates}
                     options={{
-                      boxClass: "route-info-box",
-                      disableAutoPan: false,
-                      pixelOffset: new google.maps.Size(0, -40),
-                      zIndex: 1,
-                      closeBoxURL: "",
-                      enableEventPropagation: true,
+                      strokeColor: "#80ff00", // Border color
+                      strokeOpacity: .7,
+                      strokeWeight: 5, // Border thickness
+                      clickable: true,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            // make the stroke color a nice complementary green color to #ffd800
+                            strokeColor: "#80ff00", // Main line color
+                            strokeOpacity: .7,
+                            strokeWeight: 5,
+                            fillColor: "#80ff00",
+                            fillOpacity: .7,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
                     }}
-                  >
-                    <div style={{ padding: '5px', position: 'relative' }}>
-                      {infoBoxContent}
-                      <IonIcon
-                        icon={closeOutline}
-                        className="route-info-box-close"
-                        onClick={handleCloseInfoBox}
-                      />
-                    </div>
-                  </InfoBox>
-                )}
-              </div>
-              <div>
-                {selectedStartLocation && (
-                  <Marker
-                    position={selectedStartLocation}
-                    icon={{
-                      url: "/assets/markers/MarkerA.svg",
-                      scaledSize: new google.maps.Size(20, 20),
+                    onClick={() => { handleOpenTripRouteClick(trip) }}
+                  />
+                  {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
+                    <InfoWindow
+                      position={infoWindowOpenTrip.position}
+                      onCloseClick={handleCloseOpenTripClick}
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
+                    </InfoWindow>
+                  )}
+
+                  <Polyline
+                    key={`${keyPrefix}-main`}
+                    onClick={() => { handleOpenTripRouteClick(trip) }}
+                    path={trip.pathCoordinates}
+                    options={{
+                      strokeColor: "#80ff00", // Main line color
+                      strokeOpacity: 1,
+                      strokeWeight: 2,
+                      icons: [
+                        {
+                          icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            strokeColor: "#80ff00", // Main line color
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: "#80ff00",
+                            fillOpacity: 1,
+                            scale: 3,
+                          },
+                          offset: "100%",
+                          repeat: "100px",
+                        },
+                      ],
                     }}
                   />
-                )}
-                {selectedEndLocation && (
-                  <Marker position={selectedEndLocation}
-                    icon={{
-                      url: "/assets/markers/MarkerB.svg",
-                      scaledSize: new google.maps.Size(20, 20),
-                    }}
-                  />
-                )}
-              </div>
-              <Sidebar
-                mapRef={mapRef}
-                getLocation={getLocation}
-                bikeBusEnabled={bikeBusEnabled}
-                userRoutesEnabled={userRoutesEnabled}
-                setBikeBusEnabled={setBikeBusEnabled}
-                setUserRoutesEnabled={setUserRoutesEnabled}
-                openTripsEnabled={openTripsEnabled}
-                setOpenTripsEnabled={setOpenTripsEnabled}
-                bicyclingLayerEnabled={bicyclingLayerEnabled}
-                setBicyclingLayerEnabled={setBicyclingLayerEnabled}
-                handleBicyclingLayerToggle={handleBicyclingLayerToggle}
-              />
-              <Polyline
-                path={pathCoordinates.map(coord => ({ lat: coord.latitude, lng: coord.longitude }))}
-                options={{
-                  strokeColor: "#FF0000",
-                  strokeOpacity: 1.0,
-                  strokeWeight: 2,
-                  geodesic: true,
-                  clickable: false,
-                  editable: false,
-                  draggable: false,
-                }}
-              />
-            </GoogleMap>
-          </IonRow>
+                  {infoWindowOpenTrip.isOpen && infoWindowOpenTrip.position && infoWindowOpenTrip.trip && (
+                    <InfoWindow
+                      position={infoWindowOpenTrip.position}
+                      onCloseClick={handleCloseOpenTripClick}
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: infoWindowOpenTrip.content }} />
+                    </InfoWindow>
+                  )}
+                  {trip.startPoint && (
+                    <Marker
+                      key={`${keyPrefix}-start`}
+                      label={`Start of ${trip.eventName}`}
+                      position={trip.startPoint}
+                      onClick={() => { handleOpenTripRouteClick(trip) }}
+                    />
+                  )}
+                  {trip.endPoint && (
+                    <Marker
+                      key={`${keyPrefix}-end`}
+                      label={`End of ${trip.eventName}`}
+                      position={trip.endPoint}
+                      onClick={() => { handleOpenTripRouteClick(trip) }}
+                    />
+                  )}
+                  {trip.eventLeaderLocation && (
+                    <Marker
+                      key={`${keyPrefix}-leader`}
+                      label={`Leader of ${trip.eventName}`}
+                      position={trip.eventLeaderLocation}
+                      icon={{
+                        url: generateSVGBikeBus(trip.eventName),
+                        scaledSize: new google.maps.Size(260, 20),
+                      }}
+                      onClick={() => { handleOpenTripRouteClick(trip) }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            <div>
+              {user && isAnonymous && userLocation && <AnonymousAvatarMapMarker position={userLocation} uid={user.uid} />}
+              {user && !isAnonymous && userLocation && <AvatarMapMarker uid={user.uid} position={userLocation} />}
+            </div>
+            <div>
+              {isEventLeader && !id && !isActiveBikeBusEvent && isActiveEvent && (
+                <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                  <IonButton shape="round" color="danger" onClick={endTripAndCheckOutAll}>End Trip For All</IonButton>
+                </div>
+              )}
+              {!isEventLeader && !isActiveBikeBusEvent && isActiveEvent && !id && (
+                <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                  <IonButton shape="round" color="danger" onClick={endTripAndCheckOut}>Check Out of Trip</IonButton>
+                </div>
+              )}
+            </div>
+            <div>
+              {isEventLeader && id && isActiveBikeBusEvent && (
+                <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                  <IonButton shape="round" color="danger" onClick={endBikeBusAndCheckOutAll}>End BikeBus Event For All</IonButton>
+                </div>
+              )}
+              {!isEventLeader && id && isActiveBikeBusEvent && (
+                <div style={{ position: 'absolute', top: '17px', right: '60px' }}>
+                  <IonButton shape="round" color="danger" onClick={endBikeBusAndCheckOut}>Check Out of BikeBus Event</IonButton>
+                </div>
+              )}
+            </div>
+            <div>
+              {shouldShowInfoBoxRoute && selectedRoute && (
+                <InfoBox
+                  position={routeInfoBoxPosition}
+                  options={{
+                    boxClass: "route-info-box",
+                    disableAutoPan: false,
+                    pixelOffset: new google.maps.Size(0, -40),
+                    zIndex: 1,
+                    closeBoxURL: "",
+                    enableEventPropagation: true,
+                  }}
+                >
+                  <div style={{ padding: '5px', position: 'relative' }}>
+                    {infoBoxContent}
+                    <IonIcon
+                      icon={closeOutline}
+                      className="route-info-box-close"
+                      onClick={handleCloseInfoBox}
+                    />
+                  </div>
+                </InfoBox>
+              )}
+            </div>
+            <div>
+              {selectedStartLocation && (
+                <Marker
+                  position={selectedStartLocation}
+                  icon={{
+                    url: "/assets/markers/MarkerA.svg",
+                    scaledSize: new google.maps.Size(20, 20),
+                  }}
+                />
+              )}
+              {selectedEndLocation && (
+                <Marker position={selectedEndLocation}
+                  icon={{
+                    url: "/assets/markers/MarkerB.svg",
+                    scaledSize: new google.maps.Size(20, 20),
+                  }}
+                />
+              )}
+            </div>
+            <Sidebar
+              mapRef={mapRef}
+              getLocation={getLocation}
+              bikeBusEnabled={bikeBusEnabled}
+              userRoutesEnabled={userRoutesEnabled}
+              setBikeBusEnabled={setBikeBusEnabled}
+              setUserRoutesEnabled={setUserRoutesEnabled}
+              openTripsEnabled={openTripsEnabled}
+              setOpenTripsEnabled={setOpenTripsEnabled}
+              bicyclingLayerEnabled={bicyclingLayerEnabled}
+              setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+              handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+            />
+          </GoogleMap>
+        </IonRow>
       </IonContent >
     </IonPage >
   );

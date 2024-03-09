@@ -159,7 +159,7 @@ const AddSchedule: React.FC = () => {
           setIsLoading(true); // Start the loader
           // Fetch the user's routes
           const routesCollectionRef = collection(db, 'routes');
-          const q = query(routesCollectionRef, where("routeCreator", "==", `/users/${user.uid}`));
+          const q = query(routesCollectionRef, where("routeCreator", "==", `${user.uid}`));
           console.log('q:', q);
           const querySnapshot = await getDocs(q);
           console.log('querySnapshot:', querySnapshot);
@@ -333,7 +333,7 @@ const AddSchedule: React.FC = () => {
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
       isBikeBus: true,
-      BikeBusGroupId: bikeBusGroupRef,
+      BikeBusGroup: bikeBusGroupRef,
       BikeBusName: BikeBusName,
     });
 

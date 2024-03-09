@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Redirect, Switch } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner, IonIcon } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc, DocumentReference } from 'firebase/firestore';
@@ -8,6 +8,7 @@ import { db } from './firebaseConfig';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
 import { Share } from '@capacitor/share';
+import { StatusBar } from '@capacitor/status-bar';
 import i18n from './i18n';
 import { useTranslation } from 'react-i18next';
 
@@ -31,7 +32,7 @@ import CreateBikeBusStops from './pages/CreateBikeBusStops';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { shareOutline } from 'ionicons/icons';
+import { logoGithub, shareOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -111,7 +112,7 @@ type GRoute = {
 
 
 const App: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loadingAuthState } = useContext(AuthContext);
   const [loading, setLoading] = useState<boolean>(true);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
@@ -121,7 +122,6 @@ const App: React.FC = () => {
   const [groupData, setGroupData] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const { t } = useTranslation();
-  const { loadingAuthState } = useContext(AuthContext);
 
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -129,11 +129,15 @@ const App: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
+
+
+
   useEffect(() => {
+
     if (user !== undefined) {
       setLoading(false);
     }
-    if (user) {
+    if (user && user.uid) {
       const userRef = doc(db, 'users', user.uid);
       getDoc(userRef).then((docSnapshot) => {
         if (docSnapshot.exists()) {
@@ -152,10 +156,6 @@ const App: React.FC = () => {
       });
     }
 
-  }, [user]);
-
-
-  useEffect(() => {
     if (user) {
       const fetchData = async () => {
         const userRef = doc(db, 'users', user.uid);
@@ -165,9 +165,7 @@ const App: React.FC = () => {
           const userData = docSnapshot.data();
           if (userData && userData.bikebusgroups) {
             const groupRefs = userData.bikebusgroups;
-            const groupSnapshots = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
-
-            const groups = groupSnapshots.map(snapshot => snapshot.data());
+            const groups = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
 
             for (const group of groups) {
               if (group && group.BikeBusRoutes) {
@@ -224,9 +222,11 @@ const App: React.FC = () => {
     return <p>Loading...</p>;
   }
 
+
   if (loadingAuthState) {
     return <IonSpinner />;
   }
+
 
   return (
     <IonApp>
@@ -334,6 +334,9 @@ const App: React.FC = () => {
                               },
                             ]}
                           />
+                          <IonButton onClick={() => window.open('https://github.com/craigm26/bike-bus/discussions/new?category=q-a', '_blank')}>
+                            <IonIcon icon={logoGithub} />
+                          </IonButton>
                           <IonButton onClick={() => setShowActionSheet(true)}>
                             <ShareIcon style={{ width: '18px', height: '18px' }} />
                           </IonButton>
@@ -413,7 +416,7 @@ const App: React.FC = () => {
                       <Route exact path="/Profile">
                         <Profile onClose={function (): void {
                           throw new Error('Function not implemented.');
-                        } } />
+                        }} />
                       </Route>
                       <Route exact path="/Account">
                         <Account />

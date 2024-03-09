@@ -97,10 +97,10 @@ const Profile: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       // User not logged in
       return (
         <>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
+          <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
             Login
           </IonButton>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
+          <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
             Sign Up
           </IonButton>
         </>
@@ -109,10 +109,10 @@ const Profile: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       // User logged in but is anonymous
       return (
         <>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
+          <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/SignUp" onClick={onClose}>
             Sign Up to Add Avatar
           </IonButton>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
+          <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/Login" onClick={onClose}>
             Login to Account
           </IonButton>
           <Logout />
@@ -122,17 +122,17 @@ const Profile: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       // User logged in and not anonymous
       return (
         <>
-          <IonButton className="ion-button-profile" fill="solid" routerLink="/account" onClick={onClose}>
+          <IonButton shape="round" className="ion-button-profile" fill="solid" routerLink="/account" onClick={onClose}>
             Account
           </IonButton>
           <Logout />
           {avatarUrl && (
-            <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
+            <IonButton shape="round" className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
               Change Avatar
             </IonButton>
           )}
           {!avatarUrl && (
-            <IonButton className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
+            <IonButton shape="round" className="ion-button-profile" fill="solid" onClick={() => fileInputRef.current?.click()}>
               Upload Avatar
             </IonButton>
           )}

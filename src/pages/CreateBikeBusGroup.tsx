@@ -12,7 +12,7 @@ import {
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import './Help.css';
-import useAuth from '../useAuth'; // Import useAuth hook
+import useAuth from '../useAuth'; 
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { personCircleOutline } from 'ionicons/icons';
@@ -98,7 +98,6 @@ const CreateBikeBusGroup: React.FC = () => {
     }
   }, [user, RouteID,]);
 
-  const label = user?.username ? user.username : "anonymous";
 
   if (!user || !user.uid) {
     // If the user object is null, redirect to the login page
@@ -135,7 +134,7 @@ const CreateBikeBusGroup: React.FC = () => {
     // add the bikebusgroupid to the routes collection in the firestore document for the route
     const routeRef = doc(db, 'routes', RouteID);
     await updateDoc(routeRef, {
-      BikeBusGroupId: doc(db, 'bikebusgroups', bikebusgroupId),
+      BikeBusGroup: doc(db, 'bikebusgroups', bikebusgroupId),
       BikeBusName: BikeBusName,
       isBikeBus: true,
     });
