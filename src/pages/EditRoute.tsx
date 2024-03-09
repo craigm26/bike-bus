@@ -17,21 +17,17 @@ import {
   IonSegmentButton,
   IonText,
   IonToggle,
-  IonIcon,
   IonModal,
-  IonItemDivider,
+  IonButtons,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow, InfoBox } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
-import { set } from 'date-fns';
-import { get } from 'http';
-import { closeOutline } from 'ionicons/icons';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -145,20 +141,38 @@ const EditRoute: React.FC = () => {
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const bikeBusStopIds = selectedRoute?.BikeBusStops || [];
-  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
-  const [newStop, setNewStop] = useState<Coordinate | null>(null);
-  const [selectedMarker, setSelectedMarker] = useState<BikeBusStop>();
   const [isBicyclingLayerVisible, setIsBicyclingLayerVisible] = useState(false);
   const onLoadDestinationValue = (ref: google.maps.places.SearchBox) => {
     setAutocompleteEnd(ref);
   };
-  const [displayInfoBox, setDisplayInfoBox] = useState(false);
-  const [shouldShowInfoBoxRoute, setShouldShowInfoBoxRoute] = useState(false);
-  const [infoBoxContent, setInfoBoxContent] = useState(<></>);
+
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [currentBikeBusStop, setCurrentBikeBusStop] = useState<BikeBusStop | null>(null);
+  const [bikeBusStopId, setbikeBusStopId] = useState<string>('');
+  const polylineRef = useRef<google.maps.Polyline>(null);
 
 
+
+  useEffect(() => {
+    const polyline = polylineRef.current;
+  
+    if (polyline) {
+      const path = polylineRef.current.getPath();
+      const onPathChanged = () => {
+        const updatedPath = path.getArray().map((coord: { lat: () => any; lng: () => any; }) => ({ latitude: coord.lat(), longitude: coord.lng() }));
+        // Here you can update your state or backend with the updatedPath
+        console.log(updatedPath);
+        // For example, update the local state (this will require a state setup for pathCoordinates):
+        setPathCoordinates(updatedPath);
+      };
+
+      return () => {
+        google.maps.event.clearListeners(path, 'set_at');
+        google.maps.event.clearListeners(path, 'insert_at');
+      };
+    }
+  }, [polylineRef, setPathCoordinates]); // Add dependencies as necessary
+  
 
   const containerMapStyle = {
     width: '100%',
@@ -714,75 +728,47 @@ const EditRoute: React.FC = () => {
     });
   };
 
-  const updateBikeBusStop = async (id: string, updatedBikeBusStop: Partial<BikeBusStop>) => {
-    console.log("Updating BikeBusStop:", updatedBikeBusStop);
+
+  const updateBikeBusStop = async (bikeBusStopId: string, updatedBikeBusStop: Partial<BikeBusStop>) => {
     try {
-      const BikeBusStopRef = doc(db, 'routes', id, 'BikeBusStops', id);
-      // what data is being updated?
-      console.log("Updating BikeBusStop:", updatedBikeBusStop);
+      const BikeBusStopRef = doc(db, 'routes', id, 'BikeBusStops', bikeBusStopId);
       await updateDoc(BikeBusStopRef, updatedBikeBusStop);
-      const updatedBikeBusStops = BikeBusStops.map(BikeBusStop => {
-        if (BikeBusStop.id === id) {
-          return { ...BikeBusStop, ...updatedBikeBusStop };
-        } else {
-          return BikeBusStop;
-        }
-      });
+      // Update the local state to reflect the change
+      const updatedBikeBusStops = BikeBusStops.map(bikeBusStop => 
+        bikeBusStop.id === bikeBusStopId ? { ...bikeBusStop, ...updatedBikeBusStop } : bikeBusStop
+      );
       setBikeBusStops(updatedBikeBusStops);
       setShowInfoModal(false);
     } catch (error) {
       console.error("Failed to update BikeBusStop:", error);
       alert("Error updating BikeBusStop.");
-      setShowInfoModal(false);
     }
   };
+  
 
-  const deleteBikeBusStop = async (id: string) => {
+  const deleteBikeBusStop = async (bikeBusStopId: string) => {
     try {
-      // Delete the BikeBusStop from Firestore
-      await deleteDoc(doc(db, 'routes', id, 'BikeBusStops', id));
-      // Remove the BikeBusStop from the state
-      setBikeBusStops(BikeBusStops.filter(BikeBusStop => BikeBusStop.id !== id));
+      await deleteDoc(doc(db, 'routes', id, 'BikeBusStops', bikeBusStopId));
+      // Update the local state to reflect the deletion
+      setBikeBusStops(BikeBusStops.filter(bikeBusStop => bikeBusStop.id !== bikeBusStopId));
     } catch (error) {
       console.error("Failed to delete BikeBusStop:", error);
       alert("Error deleting BikeBusStop.");
     }
   };
+  
 
-  useEffect(() => {
-    if (selectedMarker) {
-      setInfoBoxContent(displayStopInfoBox(selectedMarker));
+
+
+  const handleBikeBusStopClick = (bikeBusStopId: React.SetStateAction<string>) => {
+    setbikeBusStopId(bikeBusStopId);
+    console.log("BikeBusStopId:", bikeBusStopId);
+    const bikeBusStop = BikeBusStops.find(stop => stop.id === bikeBusStopId);
+    console.log("BikeBusStop:", bikeBusStop);
+    if (bikeBusStop) {
+      setCurrentBikeBusStop(bikeBusStop);
+      setShowInfoModal(true);
     }
-  }, [selectedMarker]);
-
-
-  const [infoBox, setInfoBox] = useState<InfoBoxState>({
-    show: false,
-    content: null,
-    position: null,
-  });
-
-
-  const handleBikeBusStopClick = (BikeBusStop: BikeBusStop) => {
-    setCurrentBikeBusStop(BikeBusStop);
-    setShowInfoModal(true);
-  };
-
-
-  // let's create a function for displaying a infobox for the BikeBusStops after displayStopInfoBox is set to true when clicking on the bikebusstop marker
-  const displayStopInfoBox = (BikeBusStop: BikeBusStop): JSX.Element => {
-    return (
-      <InfoWindow
-        position={BikeBusStop.location}
-        onCloseClick={() => setDisplayInfoBox(false)}
-      >
-        <div>
-          <h3>{BikeBusStop.placeName}</h3>
-          <p>{BikeBusStop.formattedAddress}</p>
-          <button onClick={() => deleteBikeBusStop(BikeBusStop.id)}>Delete</button>
-        </div>
-      </InfoWindow>
-    );
   };
 
 
@@ -807,7 +793,6 @@ const EditRoute: React.FC = () => {
         bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
         duration: selectedRoute.duration,
         distance: selectedRoute.distance,
-        BikeBusStops: BikeBusStops,
       };
 
 
@@ -992,70 +977,93 @@ const EditRoute: React.FC = () => {
                     <Polyline
                       path={selectedRoute?.pathCoordinates}
                       options={{
-                        strokeColor: "#000000",
+                        zIndex: 1,
+                        strokeColor: "#1a73e8",
                         strokeOpacity: 1,
                         strokeWeight: 5,
                         geodesic: true,
-                        draggable: false,
-                        editable: false,
+                        draggable: true,
+                        editable: true,
                         visible: true,
                       }}
-                    />
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        strokeColor: "#ffd800",
-                        strokeOpacity: 1,
-                        strokeWeight: 3,
-                        geodesic: true,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
+                      onLoad={(polyline) => {
+                        // Use polyline.getPath() to access the path and attach listeners
+                        const path = polyline.getPath();
+                    
+                        const updatePathCoordinates = () => {
+                          const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
+                          // Update your state or backend with the updatedPath here
+                          console.log(updatedPath);
+                        };
+                    
+                        google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
+                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
+                    
+                        // Optional: Store the polyline or its path in state if you need to remove listeners later
                       }}
                     />
-                    {BikeBusStops?.map((BikeBusStop, index) => (
+                    {BikeBusStops?.map((bikeBusStop, index) => (
                       <Marker
-                        key={`${BikeBusStop.id}-${index}`}
-                        position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
-                        title={BikeBusStop.BikeBusStopName}
+                        key={bikeBusStop.id}
+                        position={{ lat: bikeBusStop.location.lat, lng: bikeBusStop.location.lng }}
+                        title={bikeBusStop.BikeBusStopName}
                         label={`${index + 1}`}
-                        onClick={() => handleBikeBusStopClick(BikeBusStop)}
+                        onClick={() => handleBikeBusStopClick(bikeBusStop.id)}
                       />
                     ))}
                     <IonModal isOpen={showInfoModal} onDidDismiss={() => setShowInfoModal(false)}>
+                      <IonHeader>
+                        <IonToolbar>
+                          <IonTitle>Update or Delete BikeBusStop</IonTitle>
+                          <IonButtons slot="end">
+                            <IonButton onClick={() => setShowInfoModal(false)}>Close</IonButton>
+                          </IonButtons>
+                        </IonToolbar>
+                      </IonHeader>
                       <IonContent>
-                        <div style={{ padding: '12px', minWidth: '200px', minHeight: '100px', background: 'white', borderRadius: '5px', position: 'relative' }}>
-                          <h3>{currentBikeBusStop?.placeName}</h3>
-                          <p>{currentBikeBusStop?.formattedAddress}</p>
-                          <IonItemDivider>
-                            <IonLabel>Update BikeBusStop Below</IonLabel>
-                          </IonItemDivider>
-                          <IonInput
-                            value={currentBikeBusStop?.placeName}
-                            placeholder='Enter Name of BikeBus Stop Here...'
-                            onIonChange={e => {
-                              if (currentBikeBusStop && e.detail.value !== null && e.detail.value !== undefined) {
-                                setCurrentBikeBusStop({ ...currentBikeBusStop, placeName: e.detail.value });
-                              }
-                            }}
-                          />
-                          <IonButton onClick={() => updateBikeBusStop} color="success">
-                            Save Updates
-                          </IonButton>
-                          <IonButton onClick={() => {
-                            if (currentBikeBusStop) deleteBikeBusStop(currentBikeBusStop.id);
-                            setShowInfoModal(false);
-                          }} color="danger">
-                            Delete
-                          </IonButton>
-                          <IonButton
-                            onClick={() => setShowInfoModal(false)}
-                            style={{ position: 'absolute', top: '5px', right: '5px' }}
-                            fill="clear"
-                          >
-                            Close
-                          </IonButton>
-                        </div>
+                        <IonGrid>
+                          <IonRow>
+                            <IonCol>
+                              <IonItem>
+                                <IonLabel position="stacked">BikeBusStop Name</IonLabel>
+                                <IonInput
+                                  value={currentBikeBusStop?.BikeBusStopName ?? ""}
+                                  onIonChange={(e) => {
+                                    const newBikeBusStop = currentBikeBusStop ? { ...currentBikeBusStop, BikeBusStopName: e.detail.value || "" } : null;
+                                    setCurrentBikeBusStop(newBikeBusStop);
+                                  }}
+                                />
+                              </IonItem>
+                            </IonCol>
+                          </IonRow>
+                          <IonRow>
+                            <IonCol>
+                              <IonButton
+                                color="success"
+                                onClick={() => {
+                                  if (currentBikeBusStop) {
+                                    updateBikeBusStop(currentBikeBusStop.id, { BikeBusStopName: currentBikeBusStop.BikeBusStopName });
+                                  }
+                                }}
+                              >
+                                Update
+                              </IonButton>
+                            </IonCol>
+                            <IonCol>
+                              <IonButton
+                                color="danger"
+                                onClick={() => {
+                                  if (currentBikeBusStop && currentBikeBusStop.id) {
+                                    deleteBikeBusStop(currentBikeBusStop.id);
+                                  }
+                                }}
+                              >
+                                Delete
+                              </IonButton>
+
+                            </IonCol>
+                          </IonRow>
+                        </IonGrid>
                       </IonContent>
                     </IonModal>
 
@@ -1071,32 +1079,6 @@ const EditRoute: React.FC = () => {
                       title="End"
                       label={"End"}
                     />
-                    <div>
-                      {infoBox.show && infoBox.position && (
-                        <InfoBox
-                          position={new google.maps.LatLng(infoBox.position.lat, infoBox.position.lng)}
-                          options={{
-                            boxStyle: {
-                              background: `white`,
-                              padding: `12px`,
-                              fontSize: `0.9rem`,
-                              width: "200px",
-                              borderRadius: `5px`,
-                              height: "100px",
-                            },
-                            closeBoxMargin: "10px 2px 2px 2px",
-                            disableAutoPan: false,
-                            pixelOffset: new google.maps.Size(0, -40),
-                            zIndex: 1,
-                            closeBoxURL: "",
-                            enableEventPropagation: true,
-                          }}
-                          onCloseClick={() => setInfoBox({ ...infoBox, show: false })}
-                        >
-                          {infoBoxContent}
-                        </InfoBox>
-                      )}
-                    </div>
                   </GoogleMap>
 
                 )}

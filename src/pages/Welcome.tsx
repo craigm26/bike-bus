@@ -7,6 +7,7 @@ import {
   IonRow,
   IonGrid,
   IonCol,
+  IonIcon,
 } from '@ionic/react';
 import './Welcome.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
@@ -14,6 +15,7 @@ import { useHistory } from 'react-router-dom';
 import { User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import useAuth from '../useAuth';
+import { logoGithub } from 'ionicons/icons';
 
 const Welcome: React.FC = () => {
   const {
@@ -97,6 +99,17 @@ const Welcome: React.FC = () => {
                 ></iframe>
               </div>
             </IonCol>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="10">
+              <a href="https://github.com/craigm26/bike-bus/discussions/new?category=q-a" target="_blank" rel="noopener noreferrer">
+                <IonButton shape="round" expand="block">
+                  <IonIcon icon={logoGithub} />
+                  FeedBack
+                </IonButton>
+              </a>
+            </IonCol>
+
           </IonRow>
 
           {isLoggedIn && username ? (

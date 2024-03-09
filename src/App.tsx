@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Redirect, Switch } from 'react-router-dom';
-import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner } from '@ionic/react';
+import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner, IonIcon } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import useAuth from './useAuth';
 import { getDoc, doc, DocumentReference } from 'firebase/firestore';
@@ -32,7 +32,7 @@ import CreateBikeBusStops from './pages/CreateBikeBusStops';
 import { RouteProvider } from './components/RouteContext';
 import CreateRoute from './pages/createRoute';
 import React from 'react';
-import { shareOutline } from 'ionicons/icons';
+import { logoGithub, shareOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
 import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
@@ -129,7 +129,7 @@ const App: React.FC = () => {
 
   const label = user?.username ? user.username : "anonymous";
 
-  
+
 
 
   useEffect(() => {
@@ -334,6 +334,9 @@ const App: React.FC = () => {
                               },
                             ]}
                           />
+                          <IonButton onClick={() => window.open('https://github.com/craigm26/bike-bus/discussions/new?category=q-a', '_blank')}>
+                            <IonIcon icon={logoGithub} />
+                          </IonButton>
                           <IonButton onClick={() => setShowActionSheet(true)}>
                             <ShareIcon style={{ width: '18px', height: '18px' }} />
                           </IonButton>
@@ -413,7 +416,7 @@ const App: React.FC = () => {
                       <Route exact path="/Profile">
                         <Profile onClose={function (): void {
                           throw new Error('Function not implemented.');
-                        } } />
+                        }} />
                       </Route>
                       <Route exact path="/Account">
                         <Account />
