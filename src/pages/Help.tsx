@@ -97,7 +97,7 @@ const Help: React.FC = () => {
               {openSection === 1 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle color={'secondary'}>How do I create a BikeBus?</IonCardTitle>
+                    <IonCardTitle >How do I create a BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
@@ -118,7 +118,7 @@ const Help: React.FC = () => {
               {openSection === 2 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle color={'secondary'}>Creating a Route</IonCardTitle>
+                    <IonCardTitle>Creating a Route</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
@@ -137,7 +137,7 @@ const Help: React.FC = () => {
               {openSection === 3 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle color={'secondary'}>How do I join a BikeBus?</IonCardTitle>
+                    <IonCardTitle>How do I join a BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
@@ -158,7 +158,7 @@ const Help: React.FC = () => {
               {openSection === 4 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle color={'secondary'}>What are the roles in a BikeBus?</IonCardTitle>
+                    <IonCardTitle>What are the roles in a BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
@@ -180,7 +180,7 @@ const Help: React.FC = () => {
               {openSection === 5 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle color={'secondary'}>How do I invite people to my BikeBus?</IonCardTitle>
+                    <IonCardTitle>How do I invite people to my BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>

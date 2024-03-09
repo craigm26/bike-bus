@@ -249,7 +249,7 @@ http://ionicframework.com/docs/theming/ */
    */
 
    .md body {
-    --ion-background-color: #000000;
+    --ion-background-color: #807120;
     --ion-background-color-rgb: 255, 216, 0;
 
     --ion-text-color: #ffffff;
@@ -257,13 +257,13 @@ http://ionicframework.com/docs/theming/ */
 
     --ion-border-color: #222222;
 
-    --ion-item-background: #f2f2f2;
+    --ion-item-background: #807120;
 
-    --ion-toolbar-background: #f2f2f2;
+    --ion-toolbar-background: #807120;
 
     --ion-tab-bar-background: #f2f2f2;
 
-    --ion-card-background: #f2f2f2;
+    --ion-card-background: #807120;
 
     --ion-alert-background: #f2f2f2;
   
