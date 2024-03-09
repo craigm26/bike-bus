@@ -1,8 +1,6 @@
 import {
   IonContent,
   IonPage,
-  IonAvatar,
-  IonIcon,
   IonCardTitle,
   IonCard,
   IonCardContent,
@@ -20,88 +18,45 @@ import {
 import { useEffect, useState } from 'react';
 import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
-import { useAvatar } from '../components/useAvatar';
-import Avatar from '../components/Avatar';
-import { personCircleOutline } from 'ionicons/icons';
 import { doc, setDoc, collection, getDoc } from "firebase/firestore";
 import { db } from '../firebaseConfig';
 
 const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
-  const { avatarUrl } = useAvatar(user?.uid);
-  const [accountType, setaccountType] = useState<string>('');
-  const [showPopover, setShowPopover] = useState(false);
-  const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<number>(0);
   const [email, setEmail] = useState<string>('');
   const [message, setMessage] = useState<string>('');
 
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
-
-
-  const togglePopover = (e: any) => {
-    console.log('togglePopover called');
-    console.log('event:', e);
-    setPopoverEvent(e.nativeEvent);
-    setShowPopover((prevState) => !prevState);
-    console.log('showPopover state:', showPopover);
-  };
-
-  const avatarElement = user ? (
-    avatarUrl ? (
-      <IonAvatar>
-        <Avatar uid={user.uid} size="extrasmall" />
-      </IonAvatar>
-    ) : (
-      <IonIcon icon={personCircleOutline} />
-    )
-  ) : (
-    <IonIcon icon={personCircleOutline} />
-  );
-
+  // not sure if this useEffect() still serves a purpose
+  // nothing in its .then() was affecting anything used in the component
+  // but maybe Firebase has some side effect that I'm not aware of
+  // please remove either it or this comment during the PR review
   useEffect(() => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setaccountType(userData.accountType);
-          }
-        }
-      });
+      getDoc(userRef)
     }
   }, [user]);
 
-  const label = user?.username ? user.username : "anonymous";
 
   const writeMessageToFirebase = async () => {
-    console.log("writeMessageToFirebase called");
-    console.log("email:", email);
-    console.log("message:", message);
     const date = new Date();
     const dateStr = date.toISOString();
-    console.log("dateStr:", dateStr);
     const messageObj = {
       email: email,
       message: message,
       date: dateStr,
     };
-    console.log("messageObj:", messageObj);
     // let's add the document to the document collection "feedback"
     try {
       const docRef = doc(collection(db, "feedback"));
       await setDoc(docRef, messageObj);
-      setEmail('');
-      setMessage('');
     } catch (e) {
       console.error("Error writing document: ", e);
+    } finally {
+      setEmail('');
+      setMessage('');
     }
-    setEmail('');
-    setMessage('');
   }
 
   return (
@@ -138,11 +93,11 @@ const Help: React.FC = () => {
           </IonCardContent>
           <IonList>
             <IonItemGroup>
-              <IonButton shape="round" expand="full" onClick={() => toggleSection('section1')}>How do I create a BikeBus?</IonButton>
-              {openSection === 'section1' &&
+              <IonButton expand="full" onClick={() => setOpenSection(openSection !== 1 ? 1 : 0)}>How do I create a BikeBus?</IonButton>
+              {openSection === 1 &&
                 <IonCard>
                   <IonCardHeader>
-                    <IonCardTitle>How do I create a BikeBus?</IonCardTitle>
+                    <IonCardTitle >How do I create a BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
@@ -159,8 +114,8 @@ const Help: React.FC = () => {
               }
             </IonItemGroup>
             <IonItemGroup>
-              <IonButton shape="round" expand="full" onClick={() => toggleSection('section2')}>Creating a Route</IonButton>
-              {openSection === 'section2' &&
+              <IonButton expand="full" onClick={() => setOpenSection(openSection !== 2 ? 2 : 0)}>Creating a Route</IonButton>
+              {openSection === 2 &&
                 <IonCard>
                   <IonCardHeader>
                     <IonCardTitle>Creating a Route</IonCardTitle>
@@ -178,8 +133,8 @@ const Help: React.FC = () => {
               }
             </IonItemGroup>
             <IonItemGroup>
-              <IonButton shape="round" expand="full" onClick={() => toggleSection('section3')}>How do I join a BikeBus?</IonButton>
-              {openSection === 'section3' &&
+              <IonButton expand="full" onClick={() => setOpenSection(openSection !== 3 ? 3 : 0)}>How do I join a BikeBus?</IonButton>
+              {openSection === 3 &&
                 <IonCard>
                   <IonCardHeader>
                     <IonCardTitle>How do I join a BikeBus?</IonCardTitle>
@@ -199,8 +154,8 @@ const Help: React.FC = () => {
               }
             </IonItemGroup>
             <IonItemGroup>
-              <IonButton shape="round" expand="full" onClick={() => toggleSection('section4')}>What are the roles in a BikeBus?</IonButton>
-              {openSection === 'section4' &&
+              <IonButton expand="full" onClick={() => setOpenSection(openSection !== 4 ? 4 : 0)}>What are the roles in a BikeBus?</IonButton>
+              {openSection === 4 &&
                 <IonCard>
                   <IonCardHeader>
                     <IonCardTitle>What are the roles in a BikeBus?</IonCardTitle>
@@ -221,14 +176,15 @@ const Help: React.FC = () => {
               }
             </IonItemGroup>
             <IonItemGroup>
-              <IonButton shape="round" expand="full" onClick={() => toggleSection('section5')}>How do I invite people to my BikeBus?</IonButton>
-              {openSection === 'section5' &&
+              <IonButton expand="full" onClick={() => setOpenSection(openSection !== 5 ? 5 : 0)}>How do I invite people to my BikeBus?</IonButton>
+              {openSection === 5 &&
                 <IonCard>
                   <IonCardHeader>
                     <IonCardTitle>How do I invite people to my BikeBus?</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
+                      <IonItem>This section is still under construction.</IonItem>
                     </IonList>
                   </IonCardContent>
                 </IonCard>
