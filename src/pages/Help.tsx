@@ -32,11 +32,13 @@ const writeMessageToFirebase = async () => {
   const date = new Date();
   const dateStr = date.toISOString();
 
+  const finalEmail = email === '' ? 'No Email' : email;
+
   try {
     const docRef = doc(collection(db, "feedback"));
     await setDoc(docRef, {});
 
-    await updateDoc(docRef, { email: email });
+    await updateDoc(docRef, { email: finalEmail });
     await updateDoc(docRef, { message: message });
     await updateDoc(docRef, { date: dateStr });
 
@@ -85,7 +87,6 @@ const writeMessageToFirebase = async () => {
                 <IonLabel aria-required position="floating">Email Address (Optional)</IonLabel>
                 <IonInput
                   required={false}
-                  aria-required
                   placeholder="Email Address"
                   value={email}
                   onIonChange={e => setEmail(e.detail.value!)}
