@@ -18,8 +18,10 @@ import {
 import { useEffect, useState } from 'react';
 import './Help.css';
 import useAuth from '../useAuth'; // Import useAuth hook
-import { doc, setDoc, collection, getDoc } from "firebase/firestore";
+import { doc, setDoc, collection, getDoc, updateDoc } from "firebase/firestore";
 import { db } from '../firebaseConfig';
+import { request, gql } from 'graphql-request';
+
 
 const Help: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
@@ -27,37 +29,50 @@ const Help: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [message, setMessage] = useState<string>('');
 
-  // not sure if this useEffect() still serves a purpose
-  // nothing in its .then() was affecting anything used in the component
-  // but maybe Firebase has some side effect that I'm not aware of
-  // please remove either it or this comment during the PR review
-  useEffect(() => {
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef)
-    }
-  }, [user]);
 
+const writeMessageToFirebase = async () => {
+  const date = new Date();
+  const dateStr = date.toISOString();
 
-  const writeMessageToFirebase = async () => {
-    const date = new Date();
-    const dateStr = date.toISOString();
-    const messageObj = {
-      email: email,
-      message: message,
-      date: dateStr,
+  // let's add the document to the document collection "feedback"
+  try {
+    const docRef = doc(collection(db, "feedback"));
+    await setDoc(docRef, {}); // create an empty document first
+
+    await updateDoc(docRef, { email: email });
+    await updateDoc(docRef, { message: message });
+    await updateDoc(docRef, { date: dateStr });
+
+    /* Test: Create a GitHub discussion post after setting the GitHub Token
+    const endpoint = 'https://api.github.com/graphql';
+    const mutation = gql`
+      mutation CreateDiscussion($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+        createDiscussion(input: {repositoryId: $repositoryId, categoryId: $categoryId, title: $title, body: $body}) {
+          discussion {
+            id
+          }
+        }
+      }
+    `;
+    const variables = {
+      repositoryId: "<repository-id>",
+      categoryId: "<category-id>",
+      title: "New Discussion",
+      body: message
     };
-    // let's add the document to the document collection "feedback"
-    try {
-      const docRef = doc(collection(db, "feedback"));
-      await setDoc(docRef, messageObj);
-    } catch (e) {
-      console.error("Error writing document: ", e);
-    } finally {
-      setEmail('');
-      setMessage('');
-    }
+    const headers = {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    };
+    await request(endpoint, mutation, variables, headers);
+    */
+  } catch (e) {
+    console.error("Error writing document: ", e);
+  } finally {
+    setEmail('');
+    setMessage('');
   }
+  history.back();
+}
 
   return (
     <IonPage className="ion-flex-offset-app">
