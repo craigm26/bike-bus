@@ -15,16 +15,14 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import './Help.css';
-import useAuth from '../useAuth'; // Import useAuth hook
-import { doc, setDoc, collection, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, collection, updateDoc } from "firebase/firestore";
 import { db } from '../firebaseConfig';
 import { request, gql } from 'graphql-request';
 
 
 const Help: React.FC = () => {
-  const { user } = useAuth(); // Use the useAuth hook to get the user object
   const [openSection, setOpenSection] = useState<number>(0);
   const [email, setEmail] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -34,10 +32,9 @@ const writeMessageToFirebase = async () => {
   const date = new Date();
   const dateStr = date.toISOString();
 
-  // let's add the document to the document collection "feedback"
   try {
     const docRef = doc(collection(db, "feedback"));
-    await setDoc(docRef, {}); // create an empty document first
+    await setDoc(docRef, {});
 
     await updateDoc(docRef, { email: email });
     await updateDoc(docRef, { message: message });
@@ -70,8 +67,8 @@ const writeMessageToFirebase = async () => {
   } finally {
     setEmail('');
     setMessage('');
+    history.back();
   }
-  history.back();
 }
 
   return (
@@ -85,9 +82,9 @@ const writeMessageToFirebase = async () => {
           <IonCardContent>
             <div>
               <IonItem lines="none" className="message-email-item">
-                <IonLabel aria-required position="floating">Email Address</IonLabel>
+                <IonLabel aria-required position="floating">Email Address (Optional)</IonLabel>
                 <IonInput
-                  required={true}
+                  required={false}
                   aria-required
                   placeholder="Email Address"
                   value={email}
@@ -95,7 +92,7 @@ const writeMessageToFirebase = async () => {
                 ></IonInput>
               </IonItem>
               <IonItem lines="none" className="message-text-item">
-                <IonLabel position="floating">Message</IonLabel>
+                <IonLabel position="floating">Message (Required)</IonLabel>
                 <IonInput
                   required={true}
                   placeholder="Message"
