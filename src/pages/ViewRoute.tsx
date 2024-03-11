@@ -118,8 +118,9 @@ const ViewRoute: React.FC = () => {
   const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [BikeBusGroup, setBikeBusGroup] = useState<DocumentReference | null>(null);
-  const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [isUserLeader, setIsUserLeader] = useState(false);
+  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+
 
 
 
@@ -365,16 +366,15 @@ const ViewRoute: React.FC = () => {
                       visible: true,
                     }}
                   />
-                  {BikeBusStops?.map((BikeBusStop, index) => (
-                    <Marker
-                      key={`${BikeBusStop.id}-${index}`}
-                      position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
-                      title={BikeBusStop.BikeBusStopName}
-                      label={`${index + 1}`}
-                      onClick={() => {
-                      }}
-                    />
-                  ))}
+                  {bikeBusStops.map((BikeBusStop, index) => (
+                      <Marker
+                        zIndex={2}
+                        key={index}
+                        label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
+                        position={BikeBusStop.location}
+                        title={BikeBusStop.BikeBusStopName}
+                      />
+                    ))}
                   {startGeo.lat !== 0 && startGeo.lng !== 0 && (
                     <Marker
                       zIndex={1}

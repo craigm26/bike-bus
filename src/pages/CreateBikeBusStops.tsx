@@ -9,6 +9,8 @@ import {
   IonRow,
   IonGrid,
   IonText,
+  IonInput,
+  IonCardSubtitle,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -80,7 +82,6 @@ const CreateBikeBusStop: React.FC = () => {
   const [Photos, setPhotos] = useState<BikeBusStop['photos']>('');
   const [PlaceId, setPlaceId] = useState<BikeBusStop['placeId']>('');
   const [rerender, setRerender] = useState(0);
-  const newStop = BikeBusStops[BikeBusStops.length - 1];
 
 
 
@@ -118,7 +119,7 @@ const CreateBikeBusStop: React.FC = () => {
         lat: geoPoint.latitude,
         lng: geoPoint.longitude
       });
-      
+
 
       // since we know the BikeBusStopIds are DocumentReferences, we can get the data from the bikebusstops collection
       // and add it to the routeData
@@ -215,7 +216,7 @@ const CreateBikeBusStop: React.FC = () => {
 
   const addNewStop = async (newStop: Coordinate, bikeBusStopDetails: Omit<BikeBusStop, 'id'>): Promise<void> => {
     if (!id) return; // Ensure we have a route ID
-  
+
     await addDoc(collection(db, 'routes', id, 'BikeBusStops'), {
       ...bikeBusStopDetails,
       location: new GeoPoint(newStop.lat, newStop.lng),
@@ -226,7 +227,7 @@ const CreateBikeBusStop: React.FC = () => {
       placeName: PlaceName,
     });
 
-    
+
     alert('BikeBusStop added successfully!');
     history.push(`/EditRoute/${id}`);
   };
@@ -276,10 +277,6 @@ const CreateBikeBusStop: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  
-
-
-
   return (
     <IonPage className="ion-flex-offset-app">
       <IonContent fullscreen>
@@ -289,16 +286,26 @@ const CreateBikeBusStop: React.FC = () => {
               <IonTitle>
                 Create BikeStop
               </IonTitle>
+              <IonCardSubtitle>
+                <IonText>Name your Stop, search for the location, then "Save New BikeBusStop"</IonText>
+              </IonCardSubtitle>
             </IonCol>
           </IonRow>
-          <IonText>Search for Name by searching for the location. If you like the name of the BikeBus Stop, then "save new bikebusstop"</IonText>
           <IonItem lines="full">
-            <IonLabel>BikeBusStop Name: {BikeBusStopName}</IonLabel>
+            <IonLabel position="floating">BikeBus Stop Name: </IonLabel>
+            <IonInput
+              placeholder="BikeBusStopName"
+              onIonChange={(e) => {
+                console.log("Before setting state:", e.detail.value);
+                setBikeBusStopName(e.detail.value!);
+              }}
+            ></IonInput>
           </IonItem>
           <IonItem lines="full">
             <IonLabel>Search for a location:</IonLabel>
           </IonItem>
           <LocationInput onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
+          <IonGrid>
           <IonRow>
             <IonCol>
               <IonButton size='default' onClick={() => {
@@ -330,6 +337,7 @@ const CreateBikeBusStop: React.FC = () => {
               <IonButton color="danger" size='default' routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
             </IonCol>
           </IonRow>
+          </IonGrid>
           <GoogleMap
             mapContainerStyle={{
               width: '100%',
@@ -347,27 +355,27 @@ const CreateBikeBusStop: React.FC = () => {
             }}
             onClick={onMapClick}
           >
-              {BikeBusStops && BikeBusStops.map((stop, index) => (
-                <Marker
-                  key={index}
-                  position={{ lat: stop.lat, lng: stop.lng }}
-                  title={`Stop ${index + 1}, ${BikeBusStopName}`}
-                  label={`${BikeBusStopName}`}
+            {BikeBusStops && BikeBusStops.map((stop, index) => (
+              <Marker
+                key={index}
+                position={{ lat: stop.lat, lng: stop.lng }}
+                title={`Stop ${index + 1}, ${BikeBusStopName}`}
+                label={`${BikeBusStopName}`}
 
-                />
-              ))}
-              <Polyline
-                path={selectedRoute ? selectedRoute.pathCoordinates : []}
-                options={{
-                  strokeColor: "#FF0000",
-                  strokeOpacity: 1.0,
-                  strokeWeight: 2,
-                  geodesic: true,
-                  draggable: true,
-                  editable: false,
-                  visible: true,
-                }}
               />
+            ))}
+            <Polyline
+              path={selectedRoute ? selectedRoute.pathCoordinates : []}
+              options={{
+                strokeColor: "#FF0000",
+                strokeOpacity: 1.0,
+                strokeWeight: 2,
+                geodesic: true,
+                draggable: true,
+                editable: false,
+                visible: true,
+              }}
+            />
           </GoogleMap>
         </IonGrid>
       </IonContent >
