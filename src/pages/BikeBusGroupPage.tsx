@@ -15,6 +15,7 @@ import { use } from 'i18next';
 import { star, navigateOutline } from 'ionicons/icons';
 import moment from 'moment-timezone';
 import BulletinBoards from './BulletinBoards';
+import { is } from 'date-fns/locale';
 
 
 interface Coordinate {
@@ -263,7 +264,6 @@ const BikeBusGroupPage: React.FC = () => {
         return docSnapshot.exists() ? { ...docSnapshot.data() as object, id: docSnapshot.id } : null;
       }));
       setRoutesData(routesArray.filter(e => e));
-
       setIsUserLeader(groupData?.BikeBusLeader.id === uid);
       setIsUserMember(groupData?.BikeBusMembers?.some((memberRef: any) => memberRef.path === `users/${uid}`));
 
@@ -278,7 +278,7 @@ const BikeBusGroupPage: React.FC = () => {
       // 
     };
 
-    
+
 
     fetchData();
   }, [user, selectedBBOROrgValue]);
@@ -385,11 +385,13 @@ const BikeBusGroupPage: React.FC = () => {
                       Bulletin Board
                     </IonButton>
                   )}
-                  {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+                  {isUserLeader && (
                     <IonButton shape="round" size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                  )
                   }
-                  {((accountType === 'Leader' || accountType === 'Org Admin' || accountType === 'App Admin') && isUserLeader) &&
+                  {isUserLeader && (
                     <IonButton shape="round" size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
+                  )
                   }
                   <IonButton shape="round" size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
                 </IonCol>
@@ -490,14 +492,14 @@ const BikeBusGroupPage: React.FC = () => {
                   <IonLabel>Primary Route:</IonLabel>
                 </IonCol>
                 <IonCol size="6">
-                {primaryRoute ? (
-                  <>
-                    <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton style={{ maxWidth: '200px' }} className="ion-text-wrap" shape="round" size="small">View {primaryRoute.routeName}</IonButton></Link>
-                  </>
-                ) : (
-                  <IonText>No primary route set</IonText>
-                )}
-              </IonCol>
+                  {primaryRoute ? (
+                    <>
+                      <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton style={{ maxWidth: '200px' }} className="ion-text-wrap" shape="round" size="small">View {primaryRoute.routeName}</IonButton></Link>
+                    </>
+                  ) : (
+                    <IonText>No primary route set</IonText>
+                  )}
+                </IonCol>
                 <IonCol size="6">
                 </IonCol>
               </IonRow>
@@ -560,24 +562,24 @@ const BikeBusGroupPage: React.FC = () => {
             </IonGrid>
           </div>
         </IonCardContent>
-          <IonCardHeader>
-            <IonCardSubtitle>Routes</IonCardSubtitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonList>
-              {routesData.map((route, index) => (
-                <IonItem key={index} button onClick={() => viewRouteDetails(route.id)}>
-                  <IonIcon icon={navigateOutline} slot="start" />
-                  <IonLabel>
-                    {route.routeName}
-                    {primaryRoute && primaryRoute.id === route.id && (
-                      <IonIcon icon={star} style={{ marginLeft: '8px', color: 'gold' }} />
-                    )}
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          </IonCardContent>
+        <IonCardHeader>
+          <IonCardSubtitle>Routes</IonCardSubtitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <IonList>
+            {routesData.map((route, index) => (
+              <IonItem key={index} button onClick={() => viewRouteDetails(route.id)}>
+                <IonIcon icon={navigateOutline} slot="start" />
+                <IonLabel>
+                  {route.routeName}
+                  {primaryRoute && primaryRoute.id === route.id && (
+                    <IonIcon icon={star} style={{ marginLeft: '8px', color: 'gold' }} />
+                  )}
+                </IonLabel>
+              </IonItem>
+            ))}
+          </IonList>
+        </IonCardContent>
       </IonContent >
     </IonPage >
   );

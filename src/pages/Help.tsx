@@ -32,7 +32,7 @@ const writeMessageToFirebase = async () => {
   const date = new Date();
   const dateStr = date.toISOString();
 
-  const finalEmail = email === '' ? 'No Email' : email;
+  const finalEmail = email === "" ? "anonymous" : email;
 
   try {
     const docRef = doc(collection(db, "feedback"));
