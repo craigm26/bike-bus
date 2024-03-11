@@ -20,6 +20,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
+import { is } from 'date-fns/locale';
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -118,6 +119,7 @@ const ViewRoute: React.FC = () => {
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [BikeBusGroup, setBikeBusGroup] = useState<DocumentReference | null>(null);
   const [BikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+  const [isUserLeader, setIsUserLeader] = useState(false);
 
 
 
@@ -173,15 +175,16 @@ const ViewRoute: React.FC = () => {
         };
         setSelectedRoute(routeData);
         setBikeBusGroup(routeData.BikeBusGroup);
+        setIsUserLeader(routeData?.routeLeader === user?.uid);
         setPath(routeData.pathCoordinates);
         setStartGeo(routeData.startPoint);
         setEndGeo(routeData.endPoint);
         setStartGeo(routeData?.startPoint);
-          setEndGeo(routeData.endPoint);
-          setMapCenter({
-            lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
-            lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
-          });
+        setEndGeo(routeData.endPoint);
+        setMapCenter({
+          lat: (routeData.startPoint.lat + routeData.endPoint.lat) / 2,
+          lng: (routeData.startPoint.lng + routeData.endPoint.lng) / 2,
+        });
         // test if the route is a bikebus
         if (routeData.isBikeBus) {
           // fetch the bikebus group data
@@ -214,11 +217,11 @@ const ViewRoute: React.FC = () => {
               },
             };
           });
-    
+
           setBikeBusStops(BikeBusStops);
         }
-    
-    
+
+
         fetchBikeBusStops();
 
       }
@@ -288,8 +291,12 @@ const ViewRoute: React.FC = () => {
           </IonRow>
           <IonRow>
             <IonCol>
-              <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
-              <IonButton shape="round" color="danger" size="small" onClick={deleteRoute}>Delete Route</IonButton>
+              {isUserLeader && (
+                <IonButton shape="round" size="small" routerLink={`/EditRoute/${id}`}>Edit Route</IonButton>
+              )}
+              {isUserLeader && (
+                <IonButton shape="round" color="danger" size="small" onClick={deleteRoute}>Delete Route</IonButton>
+              )}
               <IonButton shape="round" size="small" routerLink={'/ViewRouteList/'}>Go to Route List</IonButton>
               {isBikeBus && (
                 <IonButton shape="round" size="small" routerLink={`/bikebusgrouppage/${selectedRoute?.BikeBusGroup?.id}`}>Go to BikeBus</IonButton>
@@ -359,15 +366,15 @@ const ViewRoute: React.FC = () => {
                     }}
                   />
                   {BikeBusStops?.map((BikeBusStop, index) => (
-                      <Marker
-                        key={`${BikeBusStop.id}-${index}`}
-                        position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
-                        title={BikeBusStop.BikeBusStopName}
-                        label={`${index + 1}`}
-                        onClick={() => {
-                        }}
-                      />
-                    ))}
+                    <Marker
+                      key={`${BikeBusStop.id}-${index}`}
+                      position={{ lat: BikeBusStop.location.lat, lng: BikeBusStop.location.lng }}
+                      title={BikeBusStop.BikeBusStopName}
+                      label={`${index + 1}`}
+                      onClick={() => {
+                      }}
+                    />
+                  ))}
                   {startGeo.lat !== 0 && startGeo.lng !== 0 && (
                     <Marker
                       zIndex={1}

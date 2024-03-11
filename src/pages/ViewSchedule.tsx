@@ -104,6 +104,7 @@ const ViewSchedule: React.FC = () => {
     const [eventRouteName, setEventRouteName] = useState<string>('');
     const [routeEventId, setRouteEventId] = useState<string>('');
     const [eventRouteString, setEventRouteString] = useState<string>('');
+    const [isUserLeader, setIsUserLeader] = useState(false);
 
 
     const parseDate = (dateString: string) => {
@@ -166,7 +167,7 @@ const ViewSchedule: React.FC = () => {
 
         formattedData = BikeBusData.map(bus => ({
             value: bus.id,
-            label: bus.BikeBusName
+            label: bus.BikeBusName,
         }));
 
         return formattedData;
@@ -323,6 +324,11 @@ const ViewSchedule: React.FC = () => {
         setShowEventModal(true);
         setEventLink(eventLink);
 
+        // to determine the isLeader, check if the currently logged in user uid is in the bikebusgroup data field "BikeBusLeader"
+
+        const isLeader = selectedEvent?.BikeBusGroup?.BikeBusLeader?.id === user?.uid;
+        setIsUserLeader(isLeader);
+
         // make a const for eventSummarlink
         const eventSummaryLink = `/eventsummary/${event.id}`;
         console.log(eventSummaryLink);
@@ -355,9 +361,10 @@ const ViewSchedule: React.FC = () => {
     const isEventLeader = selectedEvent?.leader.includes(username);
 
     const deleteEvent = async () => {
-        // first check that the user is the leader of the event
-        if (!isEventLeader) {
-            alert('You are not the leader of this event');
+        // first check that the user is the leader of the BikeBus
+        console.log('isUserLeader', isUserLeader);
+        if (!isUserLeader) {
+            alert('You are not the BikeBus leader, please ask the leader to delete this event.');
             return;
         }
 

@@ -108,6 +108,7 @@ const AddSchedule: React.FC = () => {
   const [BikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [userRoutes, setUserRoutes] = useState<BusRoute[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUserLeader, setIsUserLeader] = useState(false);
 
 
 
@@ -140,6 +141,9 @@ const AddSchedule: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
+    const uid = user?.uid;
+
+
     const fetchBikeBusGroupAndRoutes = async () => {
       try {
         const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
@@ -149,11 +153,13 @@ const AddSchedule: React.FC = () => {
         if (bikeBusGroupSnapshot.exists()) {
           const bikeBusGroupData = bikeBusGroupSnapshot.data();
           setBikeBusGroup(bikeBusGroupData);
+          setIsUserLeader(bikeBusGroupData?.BikeBusLeader.id === uid);
         }
 
         // get the name of the bikebusgroup from the bikebusgroup document in the database
         const BikeBusName = bikeBusGroupSnapshot.data()?.BikeBusName;
         setBikeBusName(BikeBusName);
+
 
         if (user) {
           setIsLoading(true); // Start the loader
