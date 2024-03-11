@@ -351,7 +351,6 @@ const EditRoute: React.FC = () => {
 
         if (selectedStartLocation) {
           setStartGeo(selectedStartLocation);
-          setMapCenter(selectedStartLocation);
         }
 
         if (selectedEndLocation) {
@@ -973,7 +972,7 @@ const EditRoute: React.FC = () => {
                           }
                         }}
                       >
-                        <IonLabel>Toggle Bicycling Layer</IonLabel>
+                        <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
                       </IonToggle>
                     )}
                     {bikeBusStops.map((BikeBusStop, index) => (

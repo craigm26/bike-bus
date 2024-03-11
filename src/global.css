@@ -510,6 +510,20 @@
 
 }
 
+/* Specific Styles for Editing Route Details */
+.toggle-bicycle-layer {
+  margin: 0px;
+  padding: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  /* Darker shadow to contrast with yellow */
+  display: inline-block;
+  /* Ensure the element shrinks to fit content */
+  word-wrap: break-word;
+  /* make background behind text blurry so as to make the text more readable */
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
 /* Specific Styles for Each Element */
 .bikebus-event-name {
   font-family: 'indie-flower', sans-serif;

@@ -76,40 +76,46 @@ interface Coordinate {
   lat: number;
   lng: number;
 }
-interface BikeBusStops {
-  id: string;
-  StopId: string;
+interface BikeBusStop {
+  BikeBusGroup: DocumentReference;
+  BikeBusRouteId: string;
   BikeBusStopName: string;
-  BikBusGroupId: DocumentReference;
-  BikeBusRouteId: DocumentReference;
-  lat: number;
-  lng: number;
-  BikeBusStopIds: DocumentReference[];
-  BikeBusGroupId: string;
+  id: string;
+  location: Coordinate;
+  placeId: string;
+  photos: string;
+  formattedAddress: string;
+  placeName: string;
 }
 
 interface Route {
-  BikeBusName: string;
-  BikeBusStopIds: DocumentReference[];
-  id: string;
-  BikeBusStationsIds: string[];
-  BikeBusGroupId: DocumentReference;
-  accountType: string;
-  description: string;
-  endPoint: Coordinate;
-  duration: number;
-  routeCreator: string;
-  routeLeader: string;
-  routeName: string;
-  routeType: string;
-  startPoint: Coordinate;
+  eventCheckInLeader: any;
+  startPoint: { lat: number; lng: number };
+  endPoint: { lat: number, lng: number };
+  pathCoordinates: { lat: number; lng: number }[];
   startPointName: string;
   endPointName: string;
   startPointAddress: string;
   endPointAddress: string;
+  routeName: string;
+  routeType: string;
+  routeCreator: DocumentReference;
+  routeLeader: DocumentReference;
+  description: string;
   travelMode: string;
-  pathCoordinates: Coordinate[];
   isBikeBus: boolean;
+  BikeBusName: string;
+  BikeBusStops: BikeBusStop[];
+  BikeBusGroup: DocumentReference;
+  id: string;
+  accountType: string;
+  bicylingSpeed: string;
+  bicyclingSpeedSelector: string;
+  routeId: string;
+  name: string;
+  distance: string;
+  duration: string;
+  arrivalTime: string;
 }
 
 interface FirestoreRef {
@@ -200,7 +206,7 @@ const Event: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [routeData, setRouteData] = useState<Route | null>(null);
   const [path, setPath] = useState<Coordinate[]>([]);
-  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStops[]>([]);
+  const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [bikeBusStopIds, setBikeBusStopIds] = useState<DocumentReference[]>([]);
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
@@ -341,23 +347,38 @@ const Event: React.FC = () => {
     };
     const fetchRoute = async (routeId: string) => {
       const docRouteRef = doc(db, 'routes', routeId);
+      setRouteId(routeId);
       const docRouteSnapshot = await getDoc(docRouteRef);
       if (docRouteSnapshot.exists()) {
         const routeData = docRouteSnapshot.data() as Route;
         setRouteData(routeData);
         setPath(routeData.pathCoordinates);
-        setBikeBusStopIds(routeData.BikeBusStopIds);
         setStartAddress(routeData.startPointAddress);
         setEndAddress(routeData.endPointAddress);
       }
     };
-    // let's fetch the bikebusstop data from the firestore document collection "bikebusstops"
+    // let's fetch the bikebusstop document collection array data from inside the firestore document routeData.id
     const fetchBikeBusStops = async () => {
-      const bikeBusStopsRef = collection(db, 'bikebusstops');
-      const bikeBusStopsSnapshot = await getDocs(bikeBusStopsRef);
-      const bikeBusStopsData = bikeBusStopsSnapshot.docs.map(doc => doc.data()) as BikeBusStops[];
-      setBikeBusStops(bikeBusStopsData);
+      // first let's get the bikebusstop documents from the selectedRoute.BikeBusStops
+      const BikeBusStopsSnapshot = await getDocs(collection(db, 'routes', RouteId, 'BikeBusStops'));
+      // now we want to map through the BikeBusStopsSnapshot and return the data and then set to state
+      const BikeBusStops = BikeBusStopsSnapshot.docs.map((doc) => {
+        const data = doc.data() as any; // use 'any' temporarily to bypass type checking
+        // Assume 'location' is a GeoPoint, extract 'latitude' and 'longitude'
+        const location = data.location; // This should be a Firestore GeoPoint
+        return {
+          ...doc.data() as BikeBusStop,
+          id: doc.id,
+          location: {
+            lat: location.latitude,
+            lng: location.longitude,
+          },
+        };
+      });
+  
+      setBikeBusStops(BikeBusStops);
     };
+
     const fetchBikeBusGroup = async (bikeBusGroupRef: DocumentReference) => {
       const groupDocSnapshot = await getDoc(bikeBusGroupRef);
       if (groupDocSnapshot.exists()) {
@@ -381,33 +402,10 @@ const Event: React.FC = () => {
     });
   }, [id]);
 
-  const fetchBikeBusStopData = async (bikeBusStopId: DocumentReference) => {
-    const docSnap = await getDoc(bikeBusStopId);
-    if (docSnap.exists()) {
-      return docSnap.data() as BikeBusStops;
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    const fetchAllStops = async () => {
-      if (Array.isArray(bikeBusStopIds) && bikeBusStopIds.length > 0) {
-        const fetchedStops = await Promise.all(
-          bikeBusStopIds.map((stopId) => fetchBikeBusStopData(stopId))
-        );
-        setBikeBusStops(fetchedStops.filter((stop) => stop !== null) as BikeBusStops[]);
-      }
-    };
-    
-
-    fetchAllStops();
-  }, [bikeBusStopIds]);
-
 
   useEffect(() => {
     if (routeData) {
-      console.log('routeData', routeData)
-      setBikeBusStopIds(routeData.BikeBusStopIds);
+      console.log('routeData', routeData);
       setPathCoordinates(routeData.pathCoordinates);
 
       setMapCenter({
@@ -418,7 +416,6 @@ const Event: React.FC = () => {
       setEndGeo(routeData.endPoint);
       setSelectedStartLocation(routeData.startPoint);
       setSelectedEndLocation(routeData.endPoint);
-      console.log('routeData.startPoint', routeData.startPoint)
 
       // let's set the zoom level based on the distance between the start and end points
       const distance = Math.sqrt(Math.pow(routeData.startPoint.lat - routeData.endPoint.lat, 2) + Math.pow(routeData.startPoint.lng - routeData.endPoint.lng, 2));
@@ -809,8 +806,10 @@ const Event: React.FC = () => {
 
 
   useEffect(() => {
-    console.log("Google Maps script loaded: ", isLoaded);
-    console.log("Google Maps load error: ", loadError);
+    if (mapRef.current && mapLoaded) {
+      mapRef.current.setCenter(mapCenter);
+      mapRef.current.setZoom(mapZoom);
+    }
   }, [isLoaded, loadError]);
 
   if (loadError) {
@@ -901,27 +900,6 @@ const Event: React.FC = () => {
                       ],
                     }}
                   />
-                  {bikeBusStops.map((stop, index) => (
-                    <Marker
-                      key={index}
-                      position={{ lat: Number(stop.lat), lng: Number(stop.lng) }}
-                      label={stop.BikeBusStopName}
-                      title={stop.BikeBusStopName}
-                      onClick={() => setSelectedStopIndex(index)}
-                    >
-                      {selectedStopIndex === index && (
-                        <InfoWindow>
-                          <div>
-                            <h5>{stop.BikeBusStopName}</h5>
-                            <IonText>
-                              <p>{stop.lat}</p>
-                              <p>{stop.lng}</p>
-                            </IonText>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </Marker>
-                  ))}
                 </div>
               )}
               <div>
@@ -1113,6 +1091,17 @@ const Event: React.FC = () => {
                     }}
                   />
                 )}
+                {isLoaded && pathCoordinates && pathCoordinates.length > 0 && bikeBusStops && (
+                  bikeBusStops.map((BikeBusStop: BikeBusStop, index: number) => (
+                    <Marker
+                      key={index}
+                      zIndex={10}
+                      label={BikeBusStop?.BikeBusStopName || 'BikeBus Stop'}
+                      position={BikeBusStop?.location}
+                      title={BikeBusStop?.BikeBusStopName}
+                    />
+                  ))
+                )}
               </div>
               <div>
               </div>
@@ -1162,27 +1151,22 @@ const Event: React.FC = () => {
                             onIonChange={e => {
                               if (typeof e.detail.value === 'string') {
                                 const startDateTime = new Date(e.detail.value);
-                                console.log('Start DateTime selected', startDateTime);
                                 setStartDateTime(startDateTime.toISOString());
                                 setEventEndTime(startDateTime.toISOString());
                                 // bring in the duration value from the route data so that we can use it to calculate the endTime for the function addDuration
                                 const duration = routeData?.duration ?? 0;
-                                console.log('duration:', duration);
                                 setExpectedDuration(duration);
 
                                 // Define addDuration here
                                 const addDuration = (duration: number) => {
-                                  console.log('startDateTime:', startDateTime);
                                   const endTimeDate = new Date(startDateTime);
-                                  console.log('endTimeDate:', endTimeDate);
                                   duration = Math.ceil(duration);
                                   endTimeDate.setMinutes(endTimeDate.getMinutes() + duration);
                                   const endTime = endTimeDate.toString();
-                                  console.log('endTime:', endTime);
                                   setEventEndTime(endTime);
                                 };
 
-                                addDuration(duration);
+                                addDuration(Number(duration));
                               }
                             }}
 
