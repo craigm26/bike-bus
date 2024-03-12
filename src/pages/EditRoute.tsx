@@ -23,7 +23,7 @@ import {
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc,  } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc, } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
@@ -74,8 +74,8 @@ interface Route {
   endPoint: { lat: number, lng: number };
   pathCoordinates: {
     latitude: any;
-    longitude: any; lat: number; lng: number 
-}[];
+    longitude: any; lat: number; lng: number
+  }[];
   startPointName: string;
   endPointName: string;
   startPointAddress: string;
@@ -156,6 +156,7 @@ const EditRoute: React.FC = () => {
   const [bikeBusStop, setBikeBusStop] = useState<BikeBusStop>();
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
+  const [updatedPath, setUpdatedPath] = useState<{ latitude: number; longitude: number; }[]>([]);
 
 
 
@@ -607,7 +608,7 @@ const EditRoute: React.FC = () => {
         location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
         stopover: true,
       }));
-      
+
       // Generate route with legs
       const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops);
       // Now we can use the legs to generate the route
@@ -768,11 +769,16 @@ const EditRoute: React.FC = () => {
       return;
     }
 
+    console.log("Saving route:", selectedRoute);
+    console.log("Path coordinates:", selectedRoute.pathCoordinates);
+
     try {
       const formattedPathCoordinates = selectedRoute.pathCoordinates.map(coord => ({
         lat: coord.lat,
         lng: coord.lng,
       }));
+
+      console.log("Formatted path coordinates:", formattedPathCoordinates);
 
       const routeRef = doc(db, 'routes', id);
 
@@ -793,7 +799,7 @@ const EditRoute: React.FC = () => {
         distance: distance,
       };
 
-
+      console.log("Updated route data:", updatedRouteData);
 
       // Update the route in Firestore
       await updateDoc(routeRef, updatedRouteData);
@@ -812,6 +818,42 @@ const EditRoute: React.FC = () => {
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
+
+  const getDirectionsAndSimplifyRoute = async (
+    startPoint: { lat: number; lng: number },
+    endPoint: { lat: number; lng: number },
+    BikeBusStops: BikeBusStop[],
+    travelMode: string,
+    bicyclingSpeedSelector: string,
+    path: google.maps.MVCArray<google.maps.LatLng>
+  ) => {
+    try {
+      // first, let's convert the stop.location to a google.maps.LatLng
+            
+      const waypoints: google.maps.DirectionsWaypoint[] = BikeBusStops.map((stop) => ({
+        // we need to convert the stop.location to a google.maps.LatLng
+        location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
+        stopover: true,
+      }));
+
+      const route = await calculateRoute(
+        startPoint,
+        endPoint,
+        waypoints,
+        travelMode as google.maps.TravelMode,
+        getSpeedAdjustmentFactor(bicyclingSpeedSelector)
+      );
+
+      const simplifiedPath = ramerDouglasPeucker(route.pathCoordinates, 0.001);
+
+      path.clear();
+      simplifiedPath.forEach((coordinate) => {
+        path.push(new google.maps.LatLng(coordinate.lat, coordinate.lng));
+      });
+    } catch (error) {
+      console.error("Error getting directions and simplifying route:", error);
+    }
+  };
 
   return (
     <IonPage className="ion-flex-offset-app">
@@ -968,15 +1010,29 @@ const EditRoute: React.FC = () => {
                         // Use polyline.getPath() to access the path and attach listeners
                         const path = polyline.getPath();
 
+                        // we should try to smooth out the route by using the Douglas-Peucker algorithm
+                        // we can use the ramerDouglasPeucker function to simplify the path
+                        // we can also use the perpendicularDistance function to calculate the perpendicular distance
+                        // we can also use the getDirectionsAndSimplifyRoute function to get the directions and simplify the route
+                        getDirectionsAndSimplifyRoute(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops, selectedRoute.travelMode, selectedRoute.bicyclingSpeedSelector, path);
+
                         const updatePathCoordinates = () => {
-                          const updatedPath = path.getArray().map(coord => ({ latitude: coord.lat(), longitude: coord.lng() }));
-                          console.log('updatedPath:', updatedPath);
-                          // For example, update the local state (this will require a state setup for pathCoordinates):
-                          setPathCoordinates(updatedPath); 
+                          const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
+                          console.log('updatedPath:', updatedPath); // updatedPath gets the new coordinates, but pathCoordinates doesn't get updated
+                          // send the updatedPath to the const handleRouteChange as a callback
+                          setSelectedRoute((prevRoute) => {
+                            if (prevRoute) {
+                              return {
+                                ...prevRoute,
+                                pathCoordinates: updatedPath as { latitude: any; longitude: any; lat: number; lng: number; }[], // Update the type of pathCoordinates
+                              };
+                            }
+                            return prevRoute;
+                          });
                         };
 
                         google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
-                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);                       
+                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
 
                       }}
                     />

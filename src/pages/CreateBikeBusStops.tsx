@@ -307,7 +307,7 @@ const CreateBikeBusStop: React.FC = () => {
             </IonCol>
           </IonRow>
           <IonItem lines="full">
-            <IonLabel position="floating">BikeBus Stop Name: </IonLabel>
+            <IonLabel>BikeBus Stop Name: </IonLabel>
             <IonInput
               placeholder="BikeBus Stop Name"
               onIonChange={(e) => {
