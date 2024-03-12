@@ -23,13 +23,14 @@ import {
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc, QuerySnapshot } from 'firebase/firestore';
+import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc,  } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
 import { get } from 'http';
+import { set } from 'date-fns';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -71,7 +72,10 @@ interface Route {
   eventCheckInLeader: any;
   startPoint: { lat: number; lng: number };
   endPoint: { lat: number, lng: number };
-  pathCoordinates: { lat: number; lng: number }[];
+  pathCoordinates: {
+    latitude: any;
+    longitude: any; lat: number; lng: number 
+}[];
   startPointName: string;
   endPointName: string;
   startPointAddress: string;
@@ -151,6 +155,7 @@ const EditRoute: React.FC = () => {
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [bikeBusStop, setBikeBusStop] = useState<BikeBusStop>();
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
+  const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
 
 
 
@@ -230,7 +235,7 @@ const EditRoute: React.FC = () => {
       setRouteEndName(selectedRoute.endPointName);
       setBicyclingSpeed(selectedRoute.bicylingSpeed);
       setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
-      setTravelModeSelector(selectedRoute.bicyclingSpeedSelector);
+      setTravelModeSelector(selectedRoute.travelMode);
       setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({ latitude: coord.lat, longitude: coord.lng })));
       setDistance(selectedRoute.distance);
       setDuration(selectedRoute.duration);
@@ -328,6 +333,13 @@ const EditRoute: React.FC = () => {
     // we can use the getDocs function to get the documents from the collection reference
     const legsSnapshot = getDocs(legsRef);
 
+    // set bikeBusStops as waypoints
+    const waypoints = bikeBusStops.map(stop => ({
+      location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
+      stopover: true,
+    }));
+    SetWaypoints(waypoints);
+
   }
     , [id, user, history]);
 
@@ -401,16 +413,11 @@ const EditRoute: React.FC = () => {
     }
   }
 
-  //calculate route without legs
-  const calculateRoute = async (
-    startPoint: Coordinate,
-    endPoint: Coordinate,
-    waypoints: google.maps.DirectionsWaypoint[],
-    travelMode: google.maps.TravelMode,
-    // we also need to add the bicycle speed
-    bicyclingSpeed: number,
-  ): Promise<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string }> => {
 
+
+  //calculate route without legs
+  const calculateRoute = async (startPoint: Coordinate, endPoint: Coordinate, waypoints: google.maps.DirectionsWaypoint[], travelMode: google.maps.TravelMode, bicyclingSpeed: number,
+  ): Promise<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string }> => {
 
 
     const directionsService = new google.maps.DirectionsService();
@@ -596,6 +603,11 @@ const EditRoute: React.FC = () => {
       setDuration(routeWithOutLegs.duration);
 
     } else {
+      const waypoints = selectedRoute.BikeBusStops.map(stop => ({
+        location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
+        stopover: true,
+      }));
+      
       // Generate route with legs
       const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops);
       // Now we can use the legs to generate the route
@@ -757,25 +769,34 @@ const EditRoute: React.FC = () => {
     }
 
     try {
+      const formattedPathCoordinates = selectedRoute.pathCoordinates.map(coord => ({
+        lat: coord.lat,
+        lng: coord.lng,
+      }));
+
+      const routeRef = doc(db, 'routes', id);
+
       // Construct the updated route object
       const updatedRouteData = {
-        routeName: selectedRoute.routeName,
-        startPoint: selectedRoute.startPoint,
-        endPoint: selectedRoute.endPoint,
-        startPointAddress: selectedRoute.startPointAddress,
-        endPointAddress: selectedRoute.endPointAddress,
-        travelMode: selectedRoute.travelMode,
-        pathCoordinates: selectedRoute.pathCoordinates,
-        bicyclingSpeed: selectedRoute.bicyclingSpeedSelector,
+        routeName: selectedRoute?.routeName,
+        startPoint: selectedRoute?.startPoint,
+        endPoint: selectedRoute?.endPoint,
+        startPointName: selectedRoute.startPointName,
+        endPointName: selectedRoute.endPointName,
+        startPointAddress: routeStartFormattedAddress,
+        endPointAddress: routeEndFormattedAddress,
+        travelMode: selectedRoute?.travelMode,
+        pathCoordinates: formattedPathCoordinates,
+        bicyclingSpeed: bicyclingSpeedSelector,
         bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
-        duration: selectedRoute.duration,
-        distance: selectedRoute.distance,
+        duration: duration,
+        distance: distance,
       };
 
 
 
       // Update the route in Firestore
-      await updateDoc(doc(db, 'routes', id), updatedRouteData);
+      await updateDoc(routeRef, updatedRouteData);
 
       alert("Route successfully updated.");
     } catch (error) {
@@ -894,7 +915,7 @@ const EditRoute: React.FC = () => {
                 <IonButton size="small" shape="round" onClick={() => setshowInfoStopModal(true)}>Manage BikeBusStops</IonButton>
               )}
               <IonButton size="small" shape="round" onClick={generateNewRoute}>Generate New Route</IonButton>
-              <IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>
+              {/*<IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>*/}
               <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
               <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
             </IonCol>
@@ -948,15 +969,14 @@ const EditRoute: React.FC = () => {
                         const path = polyline.getPath();
 
                         const updatePathCoordinates = () => {
-                          const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
-                          // Update your state or backend with the updatedPath here
-                          console.log(updatedPath);
+                          const updatedPath = path.getArray().map(coord => ({ latitude: coord.lat(), longitude: coord.lng() }));
+                          console.log('updatedPath:', updatedPath);
+                          // For example, update the local state (this will require a state setup for pathCoordinates):
+                          setPathCoordinates(updatedPath); 
                         };
 
                         google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
-                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
-
-                        // Optional: Store the polyline or its path in state if you need to remove listeners later
+                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);                       
 
                       }}
                     />

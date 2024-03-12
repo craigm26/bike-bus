@@ -11,6 +11,7 @@ import {
   IonText,
   IonInput,
   IonCardSubtitle,
+  IonCardTitle,
 } from '@ionic/react';
 import { useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -217,9 +218,23 @@ const CreateBikeBusStop: React.FC = () => {
   const addNewStop = async (newStop: Coordinate, bikeBusStopDetails: Omit<BikeBusStop, 'id'>): Promise<void> => {
     if (!id) return; // Ensure we have a route ID
 
+    console.log('Adding new stop:', bikeBusStopDetails);
+    console.log('BikeBusStops:', BikeBusStops);
+    console.log('PlaceLocation:', PlaceLocation);
+    console.log('location:', newStop);
+    console.log('location:', newStop.lat);
+    console.log('location:', newStop.lng);
+
+    // Extract coordinates more accurately
+    const coords = PlaceLocation.replace(/[()]/g, '').split(',');
+    const lat = parseFloat(coords[0].trim());
+    const lng = parseFloat(coords[1].trim());
+
+    console.log('Parsed location:', { lat, lng });
+
     await addDoc(collection(db, 'routes', id, 'BikeBusStops'), {
       ...bikeBusStopDetails,
-      location: new GeoPoint(newStop.lat, newStop.lng),
+      location: new GeoPoint(lat, lng),
       BikeBusStopName: BikeBusStopName,
       placeId: PlaceId,
       photos: Photos,
@@ -227,10 +242,10 @@ const CreateBikeBusStop: React.FC = () => {
       placeName: PlaceName,
     });
 
-
     alert('BikeBusStop added successfully!');
     history.push(`/EditRoute/${id}`);
-  };
+};
+
 
 
   const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
@@ -283,9 +298,9 @@ const CreateBikeBusStop: React.FC = () => {
         <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <IonRow>
             <IonCol>
-              <IonTitle>
+              <IonCardTitle>
                 Create BikeStop
-              </IonTitle>
+              </IonCardTitle>
               <IonCardSubtitle>
                 <IonText>Name your Stop, search for the location, then "Save New BikeBusStop"</IonText>
               </IonCardSubtitle>
@@ -294,7 +309,7 @@ const CreateBikeBusStop: React.FC = () => {
           <IonItem lines="full">
             <IonLabel position="floating">BikeBus Stop Name: </IonLabel>
             <IonInput
-              placeholder="BikeBusStopName"
+              placeholder="BikeBus Stop Name"
               onIonChange={(e) => {
                 console.log("Before setting state:", e.detail.value);
                 setBikeBusStopName(e.detail.value!);
@@ -306,37 +321,37 @@ const CreateBikeBusStop: React.FC = () => {
           </IonItem>
           <LocationInput onLocationChange={setPlaceLocation} defaultLocation={PlaceLocation} onPlaceSelected={handlePlaceSelected} onPhotos={handlePhotos} setFormattedAddress={setFormattedAddress} setPlaceName={setPlaceName} />
           <IonGrid>
-          <IonRow>
-            <IonCol>
-              <IonButton size='default' onClick={() => {
-                setPlaceLocation('');
-                setPlaceName('');
-                setFormattedAddress('');
-                setPhotos('');
-                setPlaceId('');
-                setRerender(prev => prev + 1);
-              }}>Clear Address</IonButton>
-            </IonCol>
-            <IonCol>
-              <IonButton size='default' color="success" onClick={() => addNewStop({
-                lat: parseFloat(PlaceLocation.split(',')[0]),
-                lng: parseFloat(PlaceLocation.split(',')[1]),
-              }, {
-                BikeBusRouteId: selectedRoute?.BikeBusRouteId || '',
-                BikeBusStopName: BikeBusStopName,
-                placeId: PlaceId,
-                photos: Photos,
-                formattedAddress: FormattedAddress,
-                placeName: PlaceName,
-                BikeBusGroup: doc(db, 'bikebusgroups', id),
-                location: { lat: parseFloat(PlaceLocation.split(',')[0]), lng: parseFloat(PlaceLocation.split(',')[1]) },
-              })}>Save New BikeBusStop</IonButton>
+            <IonRow>
+              <IonCol>
+                <IonButton size='default' onClick={() => {
+                  setPlaceLocation('');
+                  setPlaceName('');
+                  setFormattedAddress('');
+                  setPhotos('');
+                  setPlaceId('');
+                  setRerender(prev => prev + 1);
+                }}>Clear Address</IonButton>
+              </IonCol>
+              <IonCol>
+                <IonButton size='default' color="success" onClick={() => addNewStop({
+                  lat: parseFloat(PlaceLocation.split(',')[0]),
+                  lng: parseFloat(PlaceLocation.split(',')[1]),
+                }, {
+                  BikeBusRouteId: selectedRoute?.BikeBusRouteId || '',
+                  BikeBusStopName: BikeBusStopName,
+                  placeId: PlaceId,
+                  photos: Photos,
+                  formattedAddress: FormattedAddress,
+                  placeName: PlaceName,
+                  BikeBusGroup: doc(db, 'bikebusgroups', id),
+                  location: { lat: parseFloat(PlaceLocation.split(',')[0]), lng: parseFloat(PlaceLocation.split(',')[1]) },
+                })}>Save New BikeBusStop</IonButton>
 
-            </IonCol>
-            <IonCol>
-              <IonButton color="danger" size='default' routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
-            </IonCol>
-          </IonRow>
+              </IonCol>
+              <IonCol>
+                <IonButton color="danger" size='default' routerLink={`/EditRoute/${id}`}>Cancel</IonButton>
+              </IonCol>
+            </IonRow>
           </IonGrid>
           <GoogleMap
             mapContainerStyle={{
