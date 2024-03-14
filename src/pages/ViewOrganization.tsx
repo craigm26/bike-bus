@@ -14,7 +14,6 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { useEffect, useState } from "react";
-import "./ViewOrganization.css";
 import useAuth from "../useAuth";
 import { db } from "../firebaseConfig";
 import { DocumentReference, DocumentSnapshot, getDoc } from "firebase/firestore";

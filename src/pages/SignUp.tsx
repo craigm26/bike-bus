@@ -1,14 +1,12 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonRow, IonText, IonTitle, IonToolbar } from '@ionic/react';
-import './Signup.css';
+import { IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonInput, IonItem, IonPage, IonRow, IonText, IonTitle, IonToolbar } from '@ionic/react';
 import { db } from '../firebaseConfig';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { User } from '@firebase/auth';
 import { AuthContext } from '../AuthContext';
 import { personAdd } from 'ionicons/icons';
-import { set } from 'date-fns';
-import { error } from 'console';
+
 
 
 const Signup: React.FC = () => {

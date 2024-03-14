@@ -11,7 +11,6 @@ import {
   IonSelectOption,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
-import './Help.css';
 import useAuth from '../useAuth'; 
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -19,7 +18,7 @@ import { personCircleOutline } from 'ionicons/icons';
 import { db } from '../firebaseConfig';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, arrayUnion, updateDoc, getDocs, setDoc } from 'firebase/firestore';
 import React from 'react';
 
 const CreateBikeBusGroup: React.FC = () => {

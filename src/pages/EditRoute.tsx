@@ -29,8 +29,6 @@ import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
-import { get } from 'http';
-import { set } from 'date-fns';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -48,12 +46,6 @@ type DirectionsWaypoint = {
 interface Coordinate {
   lat: number;
   lng: number;
-}
-
-interface InfoBoxState {
-  show: boolean;
-  content: JSX.Element | null;
-  position: Coordinate | null;
 }
 
 // a BikeBusStop is an array of BikeBusStops that exist as a subcollection of the route
@@ -157,6 +149,7 @@ const EditRoute: React.FC = () => {
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
   const [updatedPath, setUpdatedPath] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [route, setRoute] = useState<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string } | null>(null);
 
 
 
@@ -221,6 +214,14 @@ const EditRoute: React.FC = () => {
     });
 
     setBikeBusStops(BikeBusStops);
+
+    // since we're setting BikeBusStops, let's also set the waypoints
+    const waypoints = BikeBusStops.map(stop => ({
+      location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
+      stopover: true,
+    }));
+    SetWaypoints(waypoints);
+
   };
 
   // when the map is loading, set startGeo to the route's startPoint
@@ -589,6 +590,21 @@ const EditRoute: React.FC = () => {
       console.error("No route selected.");
       return;
     }
+
+    console.log("Generating new route:", selectedRoute);
+    console.log(
+      "Start point:",
+      selectedRoute.startPoint,
+      "End point:",
+      selectedRoute.endPoint,
+      "BikeBusStops:",
+      selectedRoute.BikeBusStops,
+      "Travel mode:",
+      selectedRoute.travelMode,
+      "Bicycling speed:",
+      selectedRoute.bicyclingSpeedSelector
+    );
+
     // Ensure travelModeSelector is of the correct type
     const travelMode = travelModeSelector as google.maps.TravelMode ?? google.maps.TravelMode.BICYCLING;
 
@@ -811,14 +827,10 @@ const EditRoute: React.FC = () => {
       history.push(`/ViewRouteList/`);
     }
     // Redirect or other post-save actions
-    history.push(`/ViewRouteList/`);
+    history.push(`/ViewRoute/${id}`);
   };
 
-
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
-
+  
   const getDirectionsAndSimplifyRoute = async (
     startPoint: { lat: number; lng: number },
     endPoint: { lat: number; lng: number },
@@ -828,13 +840,10 @@ const EditRoute: React.FC = () => {
     path: google.maps.MVCArray<google.maps.LatLng>
   ) => {
     try {
-      // first, let's convert the stop.location to a google.maps.LatLng
-            
-      const waypoints: google.maps.DirectionsWaypoint[] = BikeBusStops.map((stop) => ({
-        // we need to convert the stop.location to a google.maps.LatLng
-        location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
-        stopover: true,
-      }));
+      // fetchBikeBusStops(); to setWayPoint for use in the calculateRoute function
+
+      fetchBikeBusStops();
+      console.log(waypoints);
 
       const route = await calculateRoute(
         startPoint,
@@ -843,299 +852,334 @@ const EditRoute: React.FC = () => {
         travelMode as google.maps.TravelMode,
         getSpeedAdjustmentFactor(bicyclingSpeedSelector)
       );
+      setRoute(route);
+    
 
+    if (route) {
       const simplifiedPath = ramerDouglasPeucker(route.pathCoordinates, 0.001);
-
       path.clear();
       simplifiedPath.forEach((coordinate) => {
         path.push(new google.maps.LatLng(coordinate.lat, coordinate.lng));
       });
-    } catch (error) {
-      console.error("Error getting directions and simplifying route:", error);
-    }
-  };
 
-  return (
-    <IonPage className="ion-flex-offset-app">
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Editing {selectedRoute?.routeName}</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <IonRow>
-            <IonInput
-              value={selectedRoute?.routeName}
-              onIonChange={e => {
-                if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
-                  setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
-                }
+      setDirectionsFetched(true);
+      // prepare data for update to Firestore
+      const formattedPathCoordinates = simplifiedPath.map(coord => ({
+        latitude: coord.lat,
+        longitude: coord.lng,
+        lat: coord.lat,
+        lng: coord.lng,
+      }));
+      setSelectedRoute(prevRoute => {
+        if (!prevRoute) return prevRoute;
+
+        const updatedPathCoordinates = formattedPathCoordinates.map(coord => ({
+          latitude: coord.lat,
+          longitude: coord.lng,
+          // Include lat and lng if they're actually used/needed elsewhere
+          lat: coord.lat,
+          lng: coord.lng,
+        }));
+
+        return {
+          ...prevRoute,
+          pathCoordinates: updatedPathCoordinates,
+          distance: route.distance,
+          duration: route.duration,
+        };
+      });
+
+    } else {
+      console.error("Route is undefined");
+    }
+
+
+  } catch (error) {
+    console.error("Error getting directions and simplifying route:", error);
+  }
+};
+
+
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+return (
+  <IonPage className="ion-flex-offset-app">
+    <IonHeader>
+      <IonToolbar>
+        <IonTitle>Editing {selectedRoute?.routeName}</IonTitle>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent fullscreen>
+      <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <IonRow>
+          <IonInput
+            value={selectedRoute?.routeName}
+            onIonChange={e => {
+              if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
+                setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
+              }
+            }}
+          />
+        </IonRow>
+        <IonItem>
+          <IonLabel>Travel Mode:</IonLabel>
+          <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
+            <IonSelectOption value="WALKING">Walking</IonSelectOption>
+            <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
+            <IonSelectOption value="CAR">Car</IonSelectOption>
+            <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
+          </IonSelect>
+        </IonItem>
+        {selectedRoute?.travelMode === "BICYCLING" && (
+          <IonItem>
+            <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
+              const newSpeedSelector = e.detail.value;
+              setBicyclingSpeedSelector(newSpeedSelector);
+              if (selectedRoute) {
+                setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
+                setBicyclingSpeed(newSpeedSelector);
+              }
+            }
+            }>
+              <IonSegmentButton value="VERY SLOW">
+                <IonText>Very Slow</IonText>
+                <IonText>0-5mph</IonText>
+              </IonSegmentButton>
+              <IonSegmentButton value="SLOW">
+                <IonText>Slow</IonText>
+                <IonText>5-10mph</IonText>
+              </IonSegmentButton>
+              <IonSegmentButton value="MEDIUM">
+                <IonText>Medium</IonText>
+                <IonText>10-12mph</IonText>
+              </IonSegmentButton>
+              <IonSegmentButton value="FAST">
+                <IonText>Fast</IonText>
+                <IonText>12-20mph</IonText>
+              </IonSegmentButton>
+            </IonSegment>
+          </IonItem>
+        )}
+        <IonItem>
+          <IonLabel>Start Point:</IonLabel>
+          <StandaloneSearchBox
+            onLoad={onLoadStartingLocation}
+            onPlacesChanged={onPlaceChangedStart}
+          >
+            <input
+              type="text"
+              autoComplete="on"
+              placeholder={routeStartFormattedAddress}
+              style={{
+                width: "250px",
+                height: "40px",
               }}
             />
-          </IonRow>
-          <IonItem>
-            <IonLabel>Travel Mode:</IonLabel>
-            <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
-              <IonSelectOption value="WALKING">Walking</IonSelectOption>
-              <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
-              <IonSelectOption value="CAR">Car</IonSelectOption>
-              <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
-            </IonSelect>
-          </IonItem>
-          {selectedRoute?.travelMode === "BICYCLING" && (
-            <IonItem>
-              <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
-                const newSpeedSelector = e.detail.value;
-                setBicyclingSpeedSelector(newSpeedSelector);
-                if (selectedRoute) {
-                  setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
-                  setBicyclingSpeed(newSpeedSelector);
-                }
-              }
-              }>
-                <IonSegmentButton value="VERY SLOW">
-                  <IonText>Very Slow</IonText>
-                  <IonText>0-5mph</IonText>
-                </IonSegmentButton>
-                <IonSegmentButton value="SLOW">
-                  <IonText>Slow</IonText>
-                  <IonText>5-10mph</IonText>
-                </IonSegmentButton>
-                <IonSegmentButton value="MEDIUM">
-                  <IonText>Medium</IonText>
-                  <IonText>10-12mph</IonText>
-                </IonSegmentButton>
-                <IonSegmentButton value="FAST">
-                  <IonText>Fast</IonText>
-                  <IonText>12-20mph</IonText>
-                </IonSegmentButton>
-              </IonSegment>
-            </IonItem>
-          )}
-          <IonItem>
-            <IonLabel>Start Point:</IonLabel>
-            <StandaloneSearchBox
-              onLoad={onLoadStartingLocation}
-              onPlacesChanged={onPlaceChangedStart}
-            >
-              <input
-                type="text"
-                autoComplete="on"
-                placeholder={routeStartFormattedAddress}
-                style={{
-                  width: "250px",
-                  height: "40px",
-                }}
-              />
-            </StandaloneSearchBox>
-          </IonItem>
-          <IonItem>
-            <IonLabel>End Point:</IonLabel>
-            <StandaloneSearchBox
-              onLoad={onLoadDestinationValue}
-              onPlacesChanged={onPlaceChangedDestination}
-            >
-              <input
-                type="text"
-                autoComplete="on"
-                placeholder={routeEndFormattedAddress}
-                style={{
-                  width: "250px",
-                  height: "40px",
-                }}
-              />
-            </StandaloneSearchBox>
-          </IonItem>
-          <IonItem>
-            <IonText>Duration: </IonText>
-            <IonText>{duration} Minutes</IonText>
-          </IonItem>
-          <IonRow>
+          </StandaloneSearchBox>
+        </IonItem>
+        <IonItem>
+          <IonLabel>End Point:</IonLabel>
+          <StandaloneSearchBox
+            onLoad={onLoadDestinationValue}
+            onPlacesChanged={onPlaceChangedDestination}
+          >
+            <input
+              type="text"
+              autoComplete="on"
+              placeholder={routeEndFormattedAddress}
+              style={{
+                width: "250px",
+                height: "40px",
+              }}
+            />
+          </StandaloneSearchBox>
+        </IonItem>
+        <IonItem>
+          <IonText>Duration: </IonText>
+          <IonText>{duration} Minutes</IonText>
+        </IonItem>
+        <IonRow>
+          <IonCol>
+            {isBikeBus && (
+              <IonButton size="small" shape="round" onClick={() => setshowInfoStopModal(true)}>Manage BikeBusStops</IonButton>
+            )}
+            <IonButton size="small" shape="round" onClick={generateNewRoute}>Generate New Path</IonButton>
+            {/*<IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>*/}
+            <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
+            <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+          </IonCol>
+        </IonRow>
+        {selectedRoute && (
+          <IonRow style={{ flex: '1' }}>
             <IonCol>
-              {isBikeBus && (
-                <IonButton size="small" shape="round" onClick={() => setshowInfoStopModal(true)}>Manage BikeBusStops</IonButton>
+              {isLoaded && (
+                <GoogleMap
+                  onLoad={(map) => {
+                    mapRef.current = map;
+                    bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+                  }}
+                  mapContainerStyle={containerMapStyle}
+                  center={mapCenter}
+                  zoom={13}
+                  options={{
+                    zoomControl: true,
+                    zoomControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER
+                    },
+                    mapTypeControl: true,
+                    mapTypeControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
+                      mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                    },
+                    streetViewControl: false,
+                    fullscreenControl: true,
+                    disableDoubleClickZoom: true,
+                    disableDefaultUI: true,
+                    mapId: 'b75f9f8b8cf9c287',
+                  }}
+                  onUnmount={() => {
+                    mapRef.current = null;
+                  }}
+                >
+                  <Polyline
+                    path={selectedRoute?.pathCoordinates}
+                    options={{
+                      zIndex: 1,
+                      strokeColor: "#1a73e8",
+                      strokeOpacity: 1,
+                      strokeWeight: 5,
+                      geodesic: true,
+                      draggable: true,
+                      editable: true,
+                      visible: true,
+                    }}
+                    onLoad={(polyline) => {
+                      // Use polyline.getPath() to access the path and attach listeners
+                      const path = polyline.getPath();
+
+                      getDirectionsAndSimplifyRoute(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops, selectedRoute.travelMode, selectedRoute.bicyclingSpeedSelector, path);
+
+                      const updatePathCoordinates = () => {
+                        const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
+                        // send the updatedPath to the const handleRouteChange as a callback
+                        setSelectedRoute((prevRoute) => {
+                          if (prevRoute) {
+                            return {
+                              ...prevRoute,
+                              pathCoordinates: updatedPath as { latitude: any; longitude: any; lat: number; lng: number; }[], // Update the type of pathCoordinates
+                            };
+                          }
+                          return prevRoute;
+                        });
+                      };
+
+                      google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
+                      google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
+
+                    }}
+                  />
+
+                  {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
+
+                    <IonToggle
+                      checked={isBicyclingLayerVisible}
+                      onIonChange={e => {
+                        setIsBicyclingLayerVisible(e.detail.checked);
+                        if (bicyclingLayerRef.current) {
+                          bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
+                        }
+                      }}
+                    >
+                      <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
+                    </IonToggle>
+                  )}
+                  {bikeBusStops.map((BikeBusStop, index) => (
+                    <Marker
+                      key={index}
+                      label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
+                      position={BikeBusStop.location}
+                      title={BikeBusStop.BikeBusStopName}
+                      onClick={() =>
+                        handleBikeBusStopClick(BikeBusStop)
+                      }
+                    />
+                  ))}
+                  <IonModal isOpen={showInfoStopModal} onDidDismiss={() => setshowInfoStopModal(false)}>
+                    <IonHeader>
+                      <IonToolbar>
+                        <IonTitle>Add, Update or Delete BikeBusStops</IonTitle>
+                        <IonButtons slot="end">
+                          <IonButton onClick={() => setshowInfoStopModal(false)}>Close</IonButton>
+                        </IonButtons>
+                      </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                      <IonGrid>
+                        <IonRow>
+                          <IonCol size="12">
+                            <IonButton
+                              color="primary"
+                              onClick={() => {
+                                history.push(`/CreateBikeBusStops/${id}`);
+                              }}
+                            >
+                              Add BikeBusStop
+                            </IonButton>
+                          </IonCol>
+                        </IonRow>
+                        <IonRow>
+                          <IonList>
+                            {bikeBusStops.map((stop, index) => {
+                              return (
+                                <IonItem key={stop.id}>
+                                  <IonLabel>BikeBusStop Name:</IonLabel>
+                                  <IonInput
+                                    value={stop.BikeBusStopName}
+                                    onIonChange={(e) => setBikeBusStopName(e.detail.value!)}
+                                  />
+                                  <IonButton color="light" onClick={() => handleUpdateClick(stop.id)}>
+                                    Update Name
+                                  </IonButton>
+                                  <IonButton color="danger" onClick={() => handleDeleteClick(stop.id)}>
+                                    Delete
+                                  </IonButton>
+                                </IonItem>
+                              )
+                            }
+                            )}
+                          </IonList>
+
+                        </IonRow>
+                      </IonGrid>
+                    </IonContent>
+                  </IonModal>
+                  <Marker
+                    zIndex={1}
+                    position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
+                    title="Start"
+                    label={"Start"}
+                  />
+                  <Marker
+                    zIndex={10}
+                    position={{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }}
+                    title="End"
+                    label={"End"}
+                  />
+                </GoogleMap>
+
               )}
-              <IonButton size="small" shape="round" onClick={generateNewRoute}>Generate New Route</IonButton>
-              {/*<IonButton size="small" shape="round" routerLink={`/UpdateRouteManually/${id}`}>Update Route Manually</IonButton>*/}
-              <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
-              <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
             </IonCol>
           </IonRow>
-          {selectedRoute && (
-            <IonRow style={{ flex: '1' }}>
-              <IonCol>
-                {isLoaded && (
-                  <GoogleMap
-                    onLoad={(map) => {
-                      mapRef.current = map;
-                      bicyclingLayerRef.current = new google.maps.BicyclingLayer();
-                    }}
-                    mapContainerStyle={containerMapStyle}
-                    center={mapCenter}
-                    zoom={13}
-                    options={{
-                      zoomControl: true,
-                      zoomControlOptions: {
-                        position: window.google.maps.ControlPosition.LEFT_CENTER
-                      },
-                      mapTypeControl: false,
-                      mapTypeControlOptions: {
-                        position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
-                        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
-                      },
-                      streetViewControl: false,
-                      fullscreenControl: true,
-                      disableDoubleClickZoom: true,
-                      disableDefaultUI: true,
-                      mapId: 'b75f9f8b8cf9c287',
-                    }}
-                    onUnmount={() => {
-                      mapRef.current = null;
-                    }}
-                  >
-                    <Polyline
-                      path={selectedRoute?.pathCoordinates}
-                      options={{
-                        zIndex: 1,
-                        strokeColor: "#1a73e8",
-                        strokeOpacity: 1,
-                        strokeWeight: 5,
-                        geodesic: true,
-                        draggable: true,
-                        editable: true,
-                        visible: true,
-                      }}
-                      onLoad={(polyline) => {
-                        // Use polyline.getPath() to access the path and attach listeners
-                        const path = polyline.getPath();
 
-                        // we should try to smooth out the route by using the Douglas-Peucker algorithm
-                        // we can use the ramerDouglasPeucker function to simplify the path
-                        // we can also use the perpendicularDistance function to calculate the perpendicular distance
-                        // we can also use the getDirectionsAndSimplifyRoute function to get the directions and simplify the route
-                        getDirectionsAndSimplifyRoute(selectedRoute.startPoint, selectedRoute.endPoint, selectedRoute.BikeBusStops, selectedRoute.travelMode, selectedRoute.bicyclingSpeedSelector, path);
+        )}
 
-                        const updatePathCoordinates = () => {
-                          const updatedPath = path.getArray().map(coord => ({ lat: coord.lat(), lng: coord.lng() }));
-                          console.log('updatedPath:', updatedPath); // updatedPath gets the new coordinates, but pathCoordinates doesn't get updated
-                          // send the updatedPath to the const handleRouteChange as a callback
-                          setSelectedRoute((prevRoute) => {
-                            if (prevRoute) {
-                              return {
-                                ...prevRoute,
-                                pathCoordinates: updatedPath as { latitude: any; longitude: any; lat: number; lng: number; }[], // Update the type of pathCoordinates
-                              };
-                            }
-                            return prevRoute;
-                          });
-                        };
-
-                        google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
-                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
-
-                      }}
-                    />
-
-                    {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
-
-                      <IonToggle
-                        checked={isBicyclingLayerVisible}
-                        onIonChange={e => {
-                          setIsBicyclingLayerVisible(e.detail.checked);
-                          if (bicyclingLayerRef.current) {
-                            bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
-                          }
-                        }}
-                      >
-                        <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
-                      </IonToggle>
-                    )}
-                    {bikeBusStops.map((BikeBusStop, index) => (
-                      <Marker
-                        key={index}
-                        label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
-                        position={BikeBusStop.location}
-                        title={BikeBusStop.BikeBusStopName}
-                        onClick={() =>
-                          handleBikeBusStopClick(BikeBusStop)
-                        }
-                      />
-                    ))}
-                    <IonModal isOpen={showInfoStopModal} onDidDismiss={() => setshowInfoStopModal(false)}>
-                      <IonHeader>
-                        <IonToolbar>
-                          <IonTitle>Add, Update or Delete BikeBusStops</IonTitle>
-                          <IonButtons slot="end">
-                            <IonButton onClick={() => setshowInfoStopModal(false)}>Close</IonButton>
-                          </IonButtons>
-                        </IonToolbar>
-                      </IonHeader>
-                      <IonContent>
-                        <IonGrid>
-                          <IonRow>
-                            <IonCol size="12">
-                              <IonButton
-                                color="primary"
-                                onClick={() => {
-                                  history.push(`/CreateBikeBusStops/${id}`);
-                                }}
-                              >
-                                Add BikeBusStop
-                              </IonButton>
-                            </IonCol>
-                          </IonRow>
-                          <IonRow>
-                            <IonList>
-                              {bikeBusStops.map((stop, index) => {
-                                console.log(stop);
-                                return (
-                                  <IonItem key={stop.id}>
-                                    <IonLabel>BikeBusStop Name:</IonLabel>
-                                    <IonInput
-                                      value={stop.BikeBusStopName}
-                                      onIonChange={(e) => setBikeBusStopName(e.detail.value!)}
-                                    />
-                                    <IonButton color="light" onClick={() => handleUpdateClick(stop.id)}>
-                                      Update Name
-                                    </IonButton>
-                                    <IonButton color="danger" onClick={() => handleDeleteClick(stop.id)}>
-                                      Delete
-                                    </IonButton>
-                                  </IonItem>
-                                )
-                              }
-                              )}
-                            </IonList>
-
-                          </IonRow>
-                        </IonGrid>
-                      </IonContent>
-                    </IonModal>
-                    <Marker
-                      zIndex={1}
-                      position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
-                      title="Start"
-                      label={"Start"}
-                    />
-                    <Marker
-                      zIndex={10}
-                      position={{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }}
-                      title="End"
-                      label={"End"}
-                    />
-                  </GoogleMap>
-
-                )}
-              </IonCol>
-            </IonRow>
-
-          )}
-
-        </IonGrid>
-      </IonContent>
-    </IonPage >
-  );
+      </IonGrid>
+    </IonContent>
+  </IonPage >
+);
 };
 
 export default EditRoute;

@@ -12,7 +12,6 @@ import {
   IonText,
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
-import './About.css';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';

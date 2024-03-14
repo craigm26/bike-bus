@@ -1,72 +1,71 @@
- 
-  .profile-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    z-index: 10;
-  }
+ .profile-container {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(255, 255, 255, 0.8);
+   z-index: 10;
+ }
 
-  /* Profile.css */
+ /* Profile.css */
 
-.ion-content-profile {
-  background-color: #f8f8f8;
-}
+ .ion-content-profile {
+   background-color: #f8f8f8;
+ }
 
-.avatar-container-profile {
-  text-align: center;
-  padding-top: 20px;
-  padding-bottom: 20px;
-}
+ .avatar-container-profile {
+   text-align: center;
+   padding-top: 20px;
+   padding-bottom: 20px;
+ }
 
-.img-center-profile {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: 50%;
-  object-fit: cover;
-}
+ .img-center-profile {
+   display: block;
+   margin-left: auto;
+   margin-right: auto;
+   border-radius: 50%;
+   object-fit: cover;
+ }
 
-.ion-avatar-profile img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-}
+ .ion-avatar-profile img {
+   width: 100px;
+   height: 100px;
+   border-radius: 50%;
+ }
 
-.ion-button-profile {
-  margin-top: 20px;
-}
+ .ion-button-profile {
+   margin-top: 20px;
+ }
 
 
-.ion-label-profile h2 {
-  color: #212121;
-  font-weight: 500;
-  margin-top: 10px;
-}
+ .ion-label-profile h2 {
+   color: #212121;
+   font-weight: 500;
+   margin-top: 10px;
+ }
 
-.ion-text-profile {
-  color: #757575;
-  font-size: 14px;
-  display: block;
-  margin-top: 5px;
-}
+ .ion-text-profile {
+   color: #757575;
+   font-size: 14px;
+   display: block;
+   margin-top: 5px;
+ }
 
-.ion-toolbar-profile {
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  margin: 10px 0px 0px 0px;
-  width: 100%;
-  background: #fff;
-  box-shadow: 0px -2px 5px rgba(0, 0, 0, 0.05);
-}
+ .ion-toolbar-profile {
+   align-items: center;
+   justify-content: center;
+   position: fixed;
+   margin: 10px 0px 0px 0px;
+   width: 100%;
+   background: #fff;
+   box-shadow: 0px -2px 5px rgba(0, 0, 0, 0.05);
+ }
 
-.ion-toolbar-profile ion-button {
-  width: 100%;
-  justify-content: center;
-}
+ .ion-toolbar-profile ion-button {
+   width: 100%;
+   justify-content: center;
+ }

@@ -238,10 +238,8 @@ const ViewSchedule: React.FC = () => {
                     const bikeBusGroupRef = doc(db, 'bikebusgroups', id);
                     eventsSnapshot = await getDocs(query(collection(db, "event"), where("BikeBusGroup", "==", bikeBusGroupRef)));
                 }
-                console.log(eventsSnapshot);
 
                 // we'll need to eventually fill the events array with the events from the database (eventsSnapshot)
-                console.log('events', events);
 
 
                 // Helper function to convert a Firestore snapshot to an Event object
@@ -249,7 +247,6 @@ const ViewSchedule: React.FC = () => {
 
                     // Convert Timestamps to Dates and return the event object
                     const startTimestamp = eventData.start.toDate();
-                    console.log('eventData.end', eventData.end)
                     // convert the Timestamp to a Date
                     const endTimestamp = eventData.endTimestamp?.toDate();
 
@@ -260,8 +257,6 @@ const ViewSchedule: React.FC = () => {
                         const groupIdData = await getDoc(eventData?.groupId);
 
                         const routeSnapshot = await getDoc(eventData.route);
-                        console.log('routeSnapshot', routeSnapshot);
-                        console.log('eventData.route', eventData.route);
                         const routeData = routeSnapshot.data();
 
                         // get the route id (document id) from the route snapshot
@@ -299,8 +294,6 @@ const ViewSchedule: React.FC = () => {
 
                 const filteredEventDocs = eventDocs.filter((event): event is Event => event !== null);
                 setEvents(filteredEventDocs);
-                console.log('filteredEventDocs', filteredEventDocs);
-                console.log('events', events);
             }
             catch (error) {
                 console.error("Error in fetching data:", error);
@@ -316,15 +309,25 @@ const ViewSchedule: React.FC = () => {
 
     const handleSelectEvent = async (event: Event) => {
         const eventLink = `/event/${event.id}`;
+        console.log('event', event);
         setSelectedEvent(event);
-        console.log('selectedRoute', event.route);
-        console.log('routeEventId', routeEventId);
+        setEventRouteName(event.route.routeName);
+        // when there's a routeName, let's look for the document id with a fresh query to the route collection
+        if (event.route.routeName) {
+            const routeQuery = query(collection(db, 'route'), where('routeName', '==', event.route.routeName));
+            const routeQuerySnapshot = await getDocs(routeQuery);
+            routeQuerySnapshot.forEach(doc => {
+                console.log('routeQuerySnapshot', doc.id, '=>', doc.data());
+                setEventRouteString(doc.data().routeString);
+                console.log('routeString', doc.data().routeString);
+            });
+        } else {
+            console.error('Invalid route data:', event.route);
+        }
         setEvents(events);
         setEventId(event.id);
         setShowEventModal(true);
         setEventLink(eventLink);
-
-        // to determine the isLeader, check if the currently logged in user uid is in the bikebusgroup data field "BikeBusLeader"
 
         const isLeader = selectedEvent?.BikeBusGroup?.BikeBusLeader?.id === user?.uid;
         setIsUserLeader(isLeader);
@@ -371,6 +374,9 @@ const ViewSchedule: React.FC = () => {
         // Create DocumentReference and Delete from Firestore using v9 syntax
         const docRef = doc(db, 'event', eventId);
         await deleteDoc(docRef);
+        // also delete the event from the BikeBusGroup
+        const BikeBusGroupRef = doc(db, 'bikebusgroups', selectedBBOROrgValue);
+        await deleteDoc(doc(BikeBusGroupRef, 'event', eventId));
         setShowEventModal(false);
         // refresh page
         window.location.reload();
@@ -444,8 +450,8 @@ const ViewSchedule: React.FC = () => {
                     </IonCard>
                     {id !== "OZrruuBJptp9wkAAVUt7" && (
                         <>
-                            <IonButton shape="round" routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
-                            <IonButton shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                            <IonButton size="small" shape="round" routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
+                            <IonButton size="small" shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
                         </>
                     )}
                     <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
@@ -456,7 +462,13 @@ const ViewSchedule: React.FC = () => {
                             </IonItem>
                             <IonItem lines="none">
                                 <IonLabel>Route</IonLabel>
-                                <IonButton shape="round" routerLink={`/ViewRoute/${routeEventId}`}>View {selectedEvent?.route?.routeName} Route</IonButton>
+                                {/*if the id is OZrruuBJptp9wkAAVUt7, then don't display the View Route button*/}
+                                {id !== "OZrruuBJptp9wkAAVUt7" && (  
+                                <IonButton size="small" shape="round" routerLink={`/ViewRoute/${routeEventId}`}>View {selectedEvent?.route?.routeName}</IonButton>
+                                )}
+                                {id === "OZrruuBJptp9wkAAVUt7" && (
+                                    <IonText>{selectedEvent?.route?.routeName}</IonText>
+                                )}
                             </IonItem>
                             <IonTitle>RSVPs</IonTitle>
                             <IonItem lines="none">
@@ -499,13 +511,13 @@ const ViewSchedule: React.FC = () => {
                                             <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
                                         </IonCol>
                                     </IonItem>
-                                    <IonButton shape="round" onClick={handleHandCountModification}>Modify</IonButton>
+                                    <IonButton size="small" shape="round" onClick={handleHandCountModification}>Modify</IonButton>
                                 </> : null}
-                            {(!isEventDone) ? <IonButton shape="round" onClick={deleteEvent}>Delete Event</IonButton> : null}
-                            {(!isEventDone) ? <IonButton shape="round" onClick={handleEditEvent}>Go to Event</IonButton> : null}
-                            {(!isEventDone) ? <IonButton shape="round" routerLink={`/bikebusgrouppage/${selectedBBOROrgValue}`}>Back to BikeBusGroup</IonButton> : null}
-                            {(isEventDone) ? <IonButton shape="round" routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
-                            <IonButton shape="round" onClick={() => setShowEventModal(false)}>Close</IonButton>
+                            {(!isEventDone) ? <IonButton size="small" shape="round" onClick={deleteEvent}>Delete Event</IonButton> : null}
+                            {(!isEventDone) ? <IonButton size="small" shape="round" onClick={handleEditEvent}>Go to Event</IonButton> : null}
+                            {(id !== "OZrruuBJptp9wkAAVUt7") ? <IonButton size="small" shape="round" routerLink={`/bikebusgrouppage/${selectedBBOROrgValue}`}>BikeBusGroup</IonButton> : null}
+                            {(isEventDone) ? <IonButton size="small" shape="round" routerLink={eventSummaryLink}>Event Summary</IonButton> : null}
+                            <IonButton size="small" shape="round" onClick={() => setShowEventModal(false)}>Close</IonButton>
                         </IonContent>
                     </IonModal>
                 </IonGrid>

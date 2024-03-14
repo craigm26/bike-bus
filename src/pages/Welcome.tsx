@@ -9,7 +9,6 @@ import {
   IonCol,
   IonIcon,
 } from '@ionic/react';
-import './Welcome.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import { useHistory } from 'react-router-dom';
 import { User } from '@firebase/auth';
@@ -36,7 +35,6 @@ const Welcome: React.FC = () => {
       console.log('userCredential', userCredential);
       if (!userCredential) {
         throw new Error('userCredential is null, Failed to sign in with Google.');
-        console.log('userCredential is null');
       }
       if (userCredential) {
         await processUser(userCredential.user);
@@ -85,7 +83,7 @@ const Welcome: React.FC = () => {
           <IonRow className="welcome-to-bikebus">
             <IonCol size="12">
               <h1>BikeBus</h1>
-              <h3>BikeBus is an app to help BikeBus leaders and parents organize BikeBus rides and help kids ride to school safely.</h3>
+              <h3>The BikeBus app helps leaders create and organize group bicycling rides</h3>
             </IonCol>
           </IonRow>
           <IonRow className="ion-justify-content-center video-container">

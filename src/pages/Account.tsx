@@ -6,9 +6,7 @@ import {
     IonText,
     IonItem,
     IonList,
-    IonCard,
     IonCardContent,
-    IonCardHeader,
     IonCardTitle,
     IonTitle,
     IonIcon,
@@ -18,11 +16,10 @@ import {
     IonHeader,
     IonToolbar,
 } from '@ionic/react';
-import './Account.css';
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
 import { db, storage } from '../firebaseConfig';
-import { doc, getDoc, updateDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ref, uploadBytesResumable } from '@firebase/storage';
 import { cogOutline } from 'ionicons/icons';

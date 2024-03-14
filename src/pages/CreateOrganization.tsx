@@ -14,7 +14,6 @@ import {
   IonSelectOption,
 } from '@ionic/react';
 import { useEffect, useState, useContext } from 'react';
-import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';
@@ -23,7 +22,6 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from "firebase/firestore";
 import React from "react";
-import './CreateOrganization.css'
 import { useHistory } from 'react-router-dom';
 import { HeaderContext } from '../components/HeaderContext';
 

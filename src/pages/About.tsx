@@ -14,7 +14,6 @@ import {
   IonButton,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
-import './About.css';
 import useAuth from '../useAuth'; // Import useAuth hook
 import { useAvatar } from '../components/useAvatar';
 import Avatar from '../components/Avatar';

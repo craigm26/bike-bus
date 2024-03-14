@@ -8,9 +8,11 @@ import {
   IonInput,
   IonButton,
   IonText,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
-import './Login.css';
 import GoogleLogo from '../assets/web_neutral_sq_SI.svg';
 import AppleLogo from '../assets/Apple_logo_black.svg';
 import PasswordReset from '../components/PasswordReset';
@@ -103,7 +105,12 @@ const Login: React.FC = () => {
 
   return (
     <IonPage className="ion-flex-offset-app">
-      <IonContent className='login-container'>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Login</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
         <IonText className="signup">
           <p>
             Don't have an account?{' '}

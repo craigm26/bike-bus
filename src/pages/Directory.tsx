@@ -4,7 +4,6 @@ import useAuth from "../useAuth";
 import { db } from '../firebaseConfig';
 import { collection, doc, getDoc, getDocs, updateDoc, query, where, DocumentReference } from 'firebase/firestore';
 import { useHistory } from "react-router-dom";
-import './Directory.css';
 
 interface BikeBus extends Route {
     BikeBusName: any;

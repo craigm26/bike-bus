@@ -5,13 +5,11 @@ import {
     IonToolbar,
     IonTitle,
     IonButton,
-    IonInput,
     IonItem,
     IonLabel,
     IonList,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
-    IonModal,
     IonAlert,
     IonCol,
     IonRow,
@@ -20,12 +18,10 @@ import { InputChangeEventDetail } from '@ionic/core';
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
 import { db } from '../firebaseConfig';
-import { collection, query, orderBy, startAfter, getDocs, addDoc, Timestamp, limit, DocumentData, QueryDocumentSnapshot, where, getDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, addDoc, Timestamp, DocumentData, QueryDocumentSnapshot, where, getDoc, doc, updateDoc } from 'firebase/firestore';
 // what's the browser import of capacitor?
 import { Browser } from '@capacitor/browser';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import './News.css';
-import { set } from 'date-fns';
 
 
 

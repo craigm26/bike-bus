@@ -16,7 +16,6 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { useState } from 'react';
-import './Help.css';
 import { doc, setDoc, collection, updateDoc } from "firebase/firestore";
 import { db } from '../firebaseConfig';
 import { request, gql } from 'graphql-request';
