@@ -5,19 +5,16 @@ import { Capacitor } from '@capacitor/core';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { createUserWithEmailAndPassword, indexedDBLocalPersistence, setPersistence } from 'firebase/auth';
-
-
-
+import i18n from './i18n';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loadingAuthState, setLoadingAuthState] = useState(true);  
-
-  
+  const [loadingAuthState, setLoadingAuthState] = useState(true);
+  const [docSnapshot, setDocSnapshot] = useState(null);
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
-
     const setAuthPersistence = async () => {
       if (!Capacitor.isNativePlatform()) {
         await setPersistence(auth, indexedDBLocalPersistence);
@@ -27,131 +24,123 @@ export const AuthProvider = ({ children }) => {
     setAuthPersistence().then(() => {
       const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
         if (authUser) {
-        // User is signed in, fetch additional details from Firestore
-        const userDocRef = doc(db, 'users', authUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          // Merge auth user object with Firestore document data
-          const fullUserDetails = {
-            ...authUser, // contains UID, email, etc.
-            ...userDocSnap.data() // contains accountType, and other custom fields
-          };
-          setUser(fullUserDetails);
+          // User is signed in, fetch additional details from Firestore
+          const userDocRef = doc(db, 'users', authUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            // Merge auth user object with Firestore document data
+            const fullUserDetails = {
+              ...authUser, // contains UID, email, etc.
+              ...userDocSnap.data() // contains accountType, and other custom fields
+            };
+            setUser(fullUserDetails);
+          } else {
+            console.log("No such document!");
+            setUser(authUser); // Fallback to just auth user details
+          }
         } else {
-          console.log("No such document!");
-          setUser(authUser); // Fallback to just auth user details
+          // User is signed out
+          setUser(null);
         }
-      } else {
-        // User is signed out
-        setUser(null);
-      }
-      setLoadingAuthState(false);
-    });
-    
+        setLoadingAuthState(false);
+      });
 
-    return () => unsubscribe();
-  
-  });
+      return () => unsubscribe();
+    });
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    getDoc(userRef).then(async (snapshot) => {
+      if (!snapshot.exists()) return;
+      setDocSnapshot(snapshot);
+      const userData = docSnapshot?.data();
+      if (!userData) return;
+      i18n.changeLanguage(userData?.preferredLanguage || 'en');
+      if (userData.bikebusgroups) {
+        const groupRefs = userData.bikebusgroups;
+        const groups = await Promise.all(groupRefs.map((ref) => getDoc(ref)));
+        const groupData = groups.map((group) => group?.data() || null);
+        setGroups(groupData.filter((group) => group !== null));
+      }
+    });
+  }, [user]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [groups]);
+
+  const fetchGroups = async () => {
+    for (const group of groups) {
+      if (!group) continue;
+      if (group?.BikeBusRoutes) {
+        const routeSnapshot = await getDoc(group.BikeBusRoutes[0]);
+        group.route = routeSnapshot.data();
+      }
+
+      if (group?.event && group?.event[0]) {
+        const eventSnapshot = await getDoc(group.event[0]);
+        group.event = eventSnapshot.data();
+      }
+    }
+  };
+
+  const processSignIn = async (userCredential) => {
+    // Fetch additional user details from Firestore and set in context
+    const userDocRef = doc(db, 'users', userCredential.user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+    const data = userDocSnap.exists() ? userDocSnap.data() : {};
+    setUser({
+      ...userCredential.user,
+      ...data
+    });
+  }
 
   const signInWithEmailAndPassword = async (email, password) => {
     try {
-      let userCredential;
-      if (Capacitor.isNativePlatform()) {
-        const result = await FirebaseAuthentication.signInWithEmailAndPassword({ email, password });
-        userCredential = result;
-      } else {
-        userCredential = await auth.signInWithEmailAndPassword(email, password);
-      }
-      // Fetch additional user details from Firestore and set in context
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        setUser({
-          ...userCredential.user,
-          ...userDocSnap.data()
-        });
-      } else {
-        setUser(userCredential.user);
-      }
+      const userCredential = Capacitor.isNativePlatform() ?
+        await FirebaseAuthentication.signInWithEmailAndPassword({ email, password }) :
+        await auth.signInWithEmailAndPassword(email, password);
+      processSignIn(userCredential);
     } catch (error) {
       console.error('Error during email/password login:', error.message);
     }
   };
 
-
   const signUpWithEmailAndPassword = async (email, password) => {
     try {
-      let userCredential;
-      if (Capacitor.isNativePlatform()) {
-        // Assuming FirebaseAuthentication plugin handles user creation
-        const result = await FirebaseAuthentication.signUpWithEmailAndPassword({ email, password });
-        userCredential = { user: result.user };
-        // set additional details in Firestore
-        const user = result.user;
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          email: user.email,
-          enabledAccountModes: ['Member'],
-        });
-        setUser(user);
-        return userCredential;
-      } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          email: user.email,
-          enabledAccountModes: ['Member'],
-        });
-        // ensure that the user.uid is the same as the document id
-        setUser(user);
-        return userCredential;
-      }
+      const nativePlatform = Capacitor.isNativePlatform();
+      const result = nativePlatform ?
+        await FirebaseAuthentication.signUpWithEmailAndPassword({ email, password }) :
+        await createUserWithEmailAndPassword(auth, email, password);
+      const user = result.user;
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, {
+        email: user.email,
+        enabledAccountModes: ['Member'],
+      });
+      setUser(user);
+      return nativePlatform ? { user: result.user } : result;
     } catch (error) {
       console.error('Error during email/password sign up:', error.message);
       throw error; // Ensure errors are propagated for proper handling
     }
   };
 
-
-
   const signInWithGoogle = async () => {
-    let userCredential;
     try {
-      const result = await FirebaseAuthentication.signInWithGoogle();
-      userCredential = result;
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        setUser({
-          ...userCredential.user,
-          ...userDocSnap.data() 
-        });
-      } else {
-        setUser(userCredential.user);
-      }
+      const userCredential = await FirebaseAuthentication.signInWithGoogle();
+      processSignIn(userCredential);
     } catch (error) {
       console.error('Error during Google login:', error.message);
     }
   };
 
   const signInWithApple = async () => {
-    let userCredential;
     try {
-      const result = await FirebaseAuthentication.signInWithApple();
-      userCredential = result;
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        setUser({
-          ...userCredential.user,
-          ...userDocSnap.data() 
-        });
-      } else {
-        setUser(userCredential.user);
-      }
+      const userCredential = await FirebaseAuthentication.signInWithApple();
+      processSignIn(userCredential);
     } catch (error) {
       console.error('Error during Apple login:', error.message);
     }
@@ -180,7 +169,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loadingAuthState, signInWithEmailAndPassword, signInWithGoogle, signInWithApple, signInAnonymously, logout, signUpWithEmailAndPassword }}>
+    <AuthContext.Provider value={{
+      user,
+      groups,
+      loadingAuthState,
+      signInWithEmailAndPassword,
+      signInWithGoogle,
+      signInWithApple,
+      signInAnonymously,
+      logout,
+      signUpWithEmailAndPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
