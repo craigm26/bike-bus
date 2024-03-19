@@ -1,15 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Route, Redirect, Switch } from 'react-router-dom';
 import { IonApp, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonPage, IonMenuToggle, IonLabel, IonRouterOutlet, setupIonicReact, IonButton, IonText, IonFabButton, IonFab, IonButtons, IonChip, IonMenuButton, IonPopover, IonAvatar, IonActionSheet, IonSpinner, IonIcon } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import useAuth from './useAuth';
-import { getDoc, doc, DocumentReference } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import { getDoc } from 'firebase/firestore';
 import { HeaderContext } from './components/HeaderContext';
 import { MapProvider } from './components/Mapping/MapContext';
 import { Share } from '@capacitor/share';
-import { StatusBar } from '@capacitor/status-bar';
-import i18n from './i18n';
 import { useTranslation } from 'react-i18next';
 
 
@@ -34,7 +30,6 @@ import CreateRoute from './pages/createRoute';
 import React from 'react';
 import { logoGithub, shareOutline } from 'ionicons/icons';
 import Avatar from './components/Avatar';
-import { useAvatar } from './components/useAvatar';
 import ViewSchedule from './pages/ViewSchedule';
 import AddSchedule from './pages/AddSchedule';
 import UpdateRouteManually from './pages/UpdateRouteManually';
@@ -81,152 +76,35 @@ import EditOrganization from './pages/EditOrganization';
 import { AuthContext } from './AuthContext';
 import { useContext } from 'react';
 
-
-
 setupIonicReact();
-
-type Group = {
-  id: number;
-  BikeBusRoutes: any[];
-  BikeBusName: string;
-  event: {
-    id: string;
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
-
-type Coordinate = {
-  lat: number;
-  lng: number;
-};
-
-type GRoute = {
-  startPoint: Coordinate;
-  endPoint: Coordinate;
-  [key: string]: any;
-}
-
-
-
-
 
 const App: React.FC = () => {
   const { user, loadingAuthState } = useContext(AuthContext);
-  const [loading, setLoading] = useState<boolean>(true);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const { avatarUrl } = useAvatar(user?.uid);
   const [showHeader, setShowHeader] = useState(true);
-  const [accountType, setAccountType] = useState<string>('');
-  const [groupData, setGroupData] = useState<any>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const { t } = useTranslation();
 
-
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-
   const label = user?.username ? user.username : "anonymous";
-
-
-
-
-  useEffect(() => {
-
-    if (user !== undefined) {
-      setLoading(false);
-    }
-    if (user && user.uid) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.accountType) {
-            setAccountType(userData.accountType);
-          }
-
-          // Assuming the user's preferred language is stored as 'preferredLanguage' in userData
-          if (userData && userData.preferredLanguage) {
-            i18n.changeLanguage(userData.preferredLanguage);  // Set the language in i18next
-          } else {
-            i18n.changeLanguage('en');  // Default to English if preferred language is not set
-          }
-        }
-      });
-    }
-
-    if (user) {
-      const fetchData = async () => {
-        const userRef = doc(db, 'users', user.uid);
-        const docSnapshot = await getDoc(userRef);
-
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData && userData.bikebusgroups) {
-            const groupRefs = userData.bikebusgroups;
-            const groups = await Promise.all(groupRefs.map((ref: DocumentReference<unknown>) => getDoc(ref)));
-
-            for (const group of groups) {
-              if (group && group.BikeBusRoutes) {
-                const routeRef = group.BikeBusRoutes[0];
-                const routeSnapshot = await getDoc(routeRef);
-
-                group.route = routeSnapshot.data();
-              }
-
-              if (group && group.event && group.event[0]) {
-                const eventRef = group.event[0];
-                const eventSnapshot = await getDoc(eventRef);
-
-                group.event = eventSnapshot.data();
-              }
-            }
-
-            setGroupData(groups);
-          }
-        }
-      };
-
-      fetchData();
-    }
-  }, [user]);
-
-
-
-  const avatarElement = useMemo(() => {
-    return user ? (
-      avatarUrl ? (
-        <IonAvatar>
-          <Avatar uid={user.uid} size="extrasmall" />
-        </IonAvatar>
-      ) : (
-        <UserIcon style={{ width: '24px', height: '24px' }} />
-      )
-    ) : (
-      <UserIcon style={{ width: '24px', height: '24px' }} />
-    );
-  }, [user, avatarUrl]);
-
-
   const togglePopover = (e: any) => {
     setPopoverEvent(e.nativeEvent);
     setShowPopover((prevState) => !prevState);
   };
 
-
-
-
-
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-
+  const avatarElement = () => {
+    return user ? (
+      <IonAvatar>
+        <Avatar uid={user.uid} size="extrasmall" />
+      </IonAvatar>
+    ) : (
+      <UserIcon style={{ width: '24px', height: '24px' }} />
+    )
+  };
 
   if (loadingAuthState) {
     return <IonSpinner />;
   }
-
 
   return (
     <IonApp>
@@ -296,7 +174,7 @@ const App: React.FC = () => {
                         </IonText>
                         <IonButton fill="clear" slot="end" onClick={togglePopover}>
                           <IonChip>
-                            {avatarElement}
+                            {avatarElement()}
                             <IonLabel>{label}</IonLabel>
                           </IonChip>
                         </IonButton>
