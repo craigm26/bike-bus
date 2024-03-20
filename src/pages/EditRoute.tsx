@@ -31,6 +31,7 @@ import { useHistory } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
+import { set } from 'date-fns';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -67,7 +68,9 @@ interface Route {
   endPoint: { lat: number, lng: number };
   pathCoordinates: {
     latitude: any;
-    longitude: any; lat: number; lng: number
+    longitude: any;
+    lat?: number;
+    lng?: number;
   }[];
   startPointName: string;
   endPointName: string;
@@ -144,36 +147,14 @@ const EditRoute: React.FC = () => {
   };
 
   const [showInfoStopModal, setshowInfoStopModal] = useState(false);
-  const polylineRef = useRef<google.maps.Polyline>(null);
+  // Assuming you're trying to store a Google Maps Polyline instance
+  const polylineRef = useRef<google.maps.Polyline | null>(null);
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
   const [updatedPath, setUpdatedPath] = useState<{ latitude: number; longitude: number; }[]>([]);
   const [route, setRoute] = useState<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string } | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState<boolean>(false);
-
-
-/*
-  useEffect(() => {
-    const polyline = polylineRef.current;
-
-    if (polyline) {
-      const path = polylineRef.current.getPath();
-      const onPathChanged = () => {
-        const updatedPath = path.getArray().map((coord: { lat: () => any; lng: () => any; }) => ({ latitude: coord.lat(), longitude: coord.lng() }));
-        // Here you can update your state or backend with the updatedPath
-        console.log(updatedPath);
-        // For example, update the local state (this will require a state setup for pathCoordinates):
-        setPathCoordinates(updatedPath);
-      };
-
-      return () => {
-        google.maps.event.clearListeners(path, 'set_at');
-        google.maps.event.clearListeners(path, 'insert_at');
-      };
-    }
-  }, [polylineRef, setPathCoordinates]); // Add dependencies as necessary
-*/
 
 
   const containerMapStyle = {
@@ -239,7 +220,10 @@ const EditRoute: React.FC = () => {
       setBicyclingSpeed(selectedRoute.bicylingSpeed);
       setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
       setTravelModeSelector(selectedRoute.travelMode);
-      setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({ latitude: coord.lat, longitude: coord.lng })));
+      setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({
+        latitude: coord.lat ?? 0, // default to 0 if coord.lat is undefined
+        longitude: coord.lng ?? 0 // default to 0 if coord.lng is undefined
+      })));
       setDistance(selectedRoute.distance);
       setDuration(selectedRoute.duration);
     }
@@ -345,6 +329,8 @@ const EditRoute: React.FC = () => {
 
   }
     , [id]);
+
+
 
 
   function perpendicularDistance(point: Coordinate, linePoint1: Coordinate, linePoint2: Coordinate): number {
@@ -665,17 +651,19 @@ const EditRoute: React.FC = () => {
     }
 
     console.log("Saving route:", selectedRoute);
-    console.log("Path coordinates:", selectedRoute.pathCoordinates);
+    console.log("Saving Path coordinates:", selectedRoute.pathCoordinates);
+    console.log("Saving Updated Path coordinates:", updatedPath);
     // let's use the pathCoordinates that are in the update pathCoordinates function
-    console.log("Updated path coordinates:", updatedPath);  // This should be the updated path coordinates
+    const formattedPathCoordinates = selectedRoute.pathCoordinates.map(coord => ({
+      latitude: coord.lat,
+      longitude: coord.lng,
+      lat: coord.lat,
+      lng: coord.lng,
+    }));
 
+    console.log("Formatted Path coordinates:", formattedPathCoordinates);
     try {
-      const formattedPathCoordinates = updatedPath.map(coord => ({
-        lat: coord.latitude,
-        lng: coord.longitude,
-      }));
 
-      console.log("Formatted path coordinates:", formattedPathCoordinates);
 
       const routeRef = doc(db, 'routes', id);
 
@@ -689,7 +677,8 @@ const EditRoute: React.FC = () => {
         startPointAddress: routeStartFormattedAddress,
         endPointAddress: routeEndFormattedAddress,
         travelMode: selectedRoute?.travelMode,
-        pathCoordinates: formattedPathCoordinates,
+        // updatedPath is currently an empty array, so we need to use the pathCoordinates from the selectedRoute
+        pathCoordinates: selectedRoute.pathCoordinates,
         bicyclingSpeed: bicyclingSpeedSelector,
         bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
         duration: duration,
@@ -785,6 +774,21 @@ const EditRoute: React.FC = () => {
     }
   };
 
+  const polylinePath = selectedRoute?.pathCoordinates
+    .filter(coord => coord.lat !== undefined && coord.lng !== undefined) // Filter out coordinates with undefined lat or lng
+    .map(coord => ({
+      lat: coord.lat || 0, // Provide a default value of 0 if lat is undefined
+      lng: coord.lng || 0, // Provide a default value of 0 if lng is undefined
+    }));
+
+  const logUpdatedPath = () => {
+    if (!polylineRef.current) return; // Check if the polylineRef is set
+    const updatedPath = polylineRef.current.getPath().getArray().map(coord => ({
+      latitude: coord.lat(),
+      longitude: coord.lng(),
+    }));
+    console.log("Updated path coordinates:", updatedPath); // Log the updated path
+  };
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -798,132 +802,132 @@ const EditRoute: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-      <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <IonToggle
-          checked={isDetailVisible}
-          onIonChange={e => {
-            setIsDetailVisible(e.detail.checked);
-          }}
-        >
-          <IonLabel className="toggle-detail-layer">Toggle Details</IonLabel>
-        </IonToggle>
-        {isDetailVisible && selectedRoute && (
-          <>
-            <IonRow>
-              <IonInput
-                value={selectedRoute?.routeName}
-                onIonChange={e => {
-                  if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
-                    setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
-                  }
-                }}
-              />
-            </IonRow>
-            <IonItem>
-            {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
-                      <IonToggle
-                        checked={isBicyclingLayerVisible}
-                        onIonChange={e => {
-                          setIsBicyclingLayerVisible(e.detail.checked);
-                          if (bicyclingLayerRef.current) {
-                            bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
-                          }
-                        }}
-                      >
-                        <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
-                      </IonToggle>
-                    )}
-            </IonItem>
-            <IonItem>
-              <IonLabel>Travel Mode:</IonLabel>
-              <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
-                <IonSelectOption value="WALKING">Walking</IonSelectOption>
-                <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
-                <IonSelectOption value="CAR">Car</IonSelectOption>
-                <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
-              </IonSelect>
-            </IonItem>
-            {selectedRoute?.travelMode === "BICYCLING" && (
+        <IonGrid style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <IonToggle
+            checked={isDetailVisible}
+            onIonChange={e => {
+              setIsDetailVisible(e.detail.checked);
+            }}
+          >
+            <IonLabel className="toggle-detail-layer">Toggle Details</IonLabel>
+          </IonToggle>
+          {isDetailVisible && selectedRoute && (
+            <>
+              <IonRow>
+                <IonInput
+                  value={selectedRoute?.routeName}
+                  onIonChange={e => {
+                    if (selectedRoute && e.detail.value !== null && e.detail.value !== undefined) {
+                      setSelectedRoute({ ...selectedRoute, routeName: e.detail.value });
+                    }
+                  }}
+                />
+              </IonRow>
               <IonItem>
-                <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
-                  const newSpeedSelector = e.detail.value;
-                  setBicyclingSpeedSelector(newSpeedSelector);
-                  if (selectedRoute) {
-                    setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
-                    setBicyclingSpeed(newSpeedSelector);
-                  }
-                }
-                }>
-                  <IonSegmentButton value="VERY SLOW">
-                    <IonText>Very Slow</IonText>
-                    <IonText>0-5mph</IonText>
-                  </IonSegmentButton>
-                  <IonSegmentButton value="SLOW">
-                    <IonText>Slow</IonText>
-                    <IonText>5-10mph</IonText>
-                  </IonSegmentButton>
-                  <IonSegmentButton value="MEDIUM">
-                    <IonText>Medium</IonText>
-                    <IonText>10-12mph</IonText>
-                  </IonSegmentButton>
-                  <IonSegmentButton value="FAST">
-                    <IonText>Fast</IonText>
-                    <IonText>12-20mph</IonText>
-                  </IonSegmentButton>
-                </IonSegment>
-              </IonItem>
-            )}
-            <IonItem>
-              <IonLabel>Start Point:</IonLabel>
-              <StandaloneSearchBox
-                onLoad={onLoadStartingLocation}
-                onPlacesChanged={onPlaceChangedStart}
-              >
-                <input
-                  type="text"
-                  autoComplete="on"
-                  placeholder={routeStartFormattedAddress}
-                  style={{
-                    width: "250px",
-                    height: "40px",
-                  }}
-                />
-              </StandaloneSearchBox>
-            </IonItem>
-            <IonItem>
-              <IonLabel>End Point:</IonLabel>
-              <StandaloneSearchBox
-                onLoad={onLoadDestinationValue}
-                onPlacesChanged={onPlaceChangedDestination}
-              >
-                <input
-                  type="text"
-                  autoComplete="on"
-                  placeholder={routeEndFormattedAddress}
-                  style={{
-                    width: "250px",
-                    height: "40px",
-                  }}
-                />
-              </StandaloneSearchBox>
-            </IonItem>
-            <IonItem>
-              <IonText>Duration: </IonText>
-              <IonText>{duration} Minutes</IonText>
-            </IonItem>
-            <IonRow>
-              <IonCol>
-                {isBikeBus && (
-                  <IonButton size="small" shape="round" onClick={() => setshowInfoStopModal(true)}>Manage BikeBusStops</IonButton>
+                {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
+                  <IonToggle
+                    checked={isBicyclingLayerVisible}
+                    onIonChange={e => {
+                      setIsBicyclingLayerVisible(e.detail.checked);
+                      if (bicyclingLayerRef.current) {
+                        bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
+                      }
+                    }}
+                  >
+                    <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
+                  </IonToggle>
                 )}
-                <IonButton size="small" shape="round" onClick={getDirectionsAndSimplifyRoute}>Generate New Path</IonButton>
-                <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
-                <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
-              </IonCol>
-            </IonRow>
-          </>
-        )}
-                  {selectedRoute && (
+              </IonItem>
+              <IonItem>
+                <IonLabel>Travel Mode:</IonLabel>
+                <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
+                  <IonSelectOption value="WALKING">Walking</IonSelectOption>
+                  <IonSelectOption value="BICYCLING">Bicycling</IonSelectOption>
+                  <IonSelectOption value="CAR">Car</IonSelectOption>
+                  <IonSelectOption value="TRANSIT">Transit</IonSelectOption>
+                </IonSelect>
+              </IonItem>
+              {selectedRoute?.travelMode === "BICYCLING" && (
+                <IonItem>
+                  <IonSegment value={bicyclingSpeedSelector} onIonChange={(e: CustomEvent) => {
+                    const newSpeedSelector = e.detail.value;
+                    setBicyclingSpeedSelector(newSpeedSelector);
+                    if (selectedRoute) {
+                      setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
+                      setBicyclingSpeed(newSpeedSelector);
+                    }
+                  }
+                  }>
+                    <IonSegmentButton value="VERY SLOW">
+                      <IonText>Very Slow</IonText>
+                      <IonText>0-5mph</IonText>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="SLOW">
+                      <IonText>Slow</IonText>
+                      <IonText>5-10mph</IonText>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="MEDIUM">
+                      <IonText>Medium</IonText>
+                      <IonText>10-12mph</IonText>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="FAST">
+                      <IonText>Fast</IonText>
+                      <IonText>12-20mph</IonText>
+                    </IonSegmentButton>
+                  </IonSegment>
+                </IonItem>
+              )}
+              <IonItem>
+                <IonLabel>Start Point:</IonLabel>
+                <StandaloneSearchBox
+                  onLoad={onLoadStartingLocation}
+                  onPlacesChanged={onPlaceChangedStart}
+                >
+                  <input
+                    type="text"
+                    autoComplete="on"
+                    placeholder={routeStartFormattedAddress}
+                    style={{
+                      width: "250px",
+                      height: "40px",
+                    }}
+                  />
+                </StandaloneSearchBox>
+              </IonItem>
+              <IonItem>
+                <IonLabel>End Point:</IonLabel>
+                <StandaloneSearchBox
+                  onLoad={onLoadDestinationValue}
+                  onPlacesChanged={onPlaceChangedDestination}
+                >
+                  <input
+                    type="text"
+                    autoComplete="on"
+                    placeholder={routeEndFormattedAddress}
+                    style={{
+                      width: "250px",
+                      height: "40px",
+                    }}
+                  />
+                </StandaloneSearchBox>
+              </IonItem>
+              <IonItem>
+                <IonText>Duration: </IonText>
+                <IonText>{duration} Minutes</IonText>
+              </IonItem>
+              <IonRow>
+                <IonCol>
+                  {isBikeBus && (
+                    <IonButton size="small" shape="round" onClick={() => setshowInfoStopModal(true)}>Manage BikeBusStops</IonButton>
+                  )}
+                  <IonButton size="small" shape="round" onClick={getDirectionsAndSimplifyRoute}>Generate New Path</IonButton>
+                  <IonButton size="small" shape="round" color="success" onClick={handleRouteSave}>Save</IonButton>
+                  <IonButton size="small" shape="round" color="danger" routerLink={`/ViewRoute/${id}`}>Cancel</IonButton>
+                </IonCol>
+              </IonRow>
+            </>
+          )}
+          {selectedRoute && (
             <IonRow style={{ flex: '1' }}>
               <IonCol>
                 {isLoaded && (
@@ -962,36 +966,56 @@ const EditRoute: React.FC = () => {
                     }}
                   >
                     <Polyline
-                      path={selectedRoute.pathCoordinates}
+                      path={polylinePath}
                       options={{
                         zIndex: 1,
                         strokeColor: "#1a73e8",
                         strokeOpacity: 1,
                         strokeWeight: 5,
                         geodesic: true,
-                        draggable: false,
+                        draggable: true,
                         editable: true,
                         visible: true,
                       }}
                       onLoad={(polyline) => {
-                        // Use polyline.getPath() to access the path and attach listeners
+                        polylineRef.current = polyline;
                         const path = polyline.getPath();
-                        console.log("Polyline path:", path.getArray());
+                        path.clear();
+                        path.push(new google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng));
 
-                        const updatePathCoordinates = () => {
-                          const path = polylineRef.current?.getPath();
-                          const updatedPath = path?.getArray().map(coord => ({ latitude: coord.lat(), longitude: coord.lng() })) ?? [];
+                        const updatePathInState = () => {
+                          const updatedPath = path.getArray().map(coord => ({
+                            latitude: coord.lat(),
+                            longitude: coord.lng(),
+                            lat: coord.lat(),
+                            lng: coord.lng(),
+                          }));
                           setUpdatedPath(updatedPath);
-                        };
+                          setSelectedRoute(prevRoute => {
+                            if (!prevRoute) return prevRoute;
 
-                        console.log("Polyline loaded:", polyline);
-                        console.log("Polyline path:", path.getArray());
+                            const simplifiedPath = updatedPath.map(coord => ({
+                              latitude: coord.lat,
+                              longitude: coord.lng,
+                              lat: coord.lat,
+                              lng: coord.lng,
+                            }));
 
-                        google.maps.event.addListener(path, 'set_at', updatePathCoordinates);
-                        google.maps.event.addListener(path, 'insert_at', updatePathCoordinates);
+                            return {
+                              ...prevRoute,
+                              pathCoordinates: simplifiedPath,
+                            };
+                          }
+                          );
+                        }
 
+                        // Attach listeners to update the state on user interaction
+                        google.maps.event.addListener(path, 'set_at', updatePathInState);
+                        google.maps.event.addListener(path, 'insert_at', updatePathInState);
                       }}
                     />
+
+
                     {bikeBusStops.map((BikeBusStop, index) => (
                       <Marker
                         key={index}
