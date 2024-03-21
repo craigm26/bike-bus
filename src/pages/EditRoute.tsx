@@ -67,10 +67,8 @@ interface Route {
   startPoint: { lat: number; lng: number };
   endPoint: { lat: number, lng: number };
   pathCoordinates: {
-    latitude: any;
-    longitude: any;
-    lat?: number;
-    lng?: number;
+    lat: number;
+    lng: number;
   }[];
   startPointName: string;
   endPointName: string;
@@ -137,7 +135,7 @@ const EditRoute: React.FC = () => {
   const [distance, setDistance] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
   const [arrivalTime, setArrivalTime] = useState<string>('');
-  const [pathCoordinates, setPathCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [pathCoordinates, setPathCoordinates] = useState<{ lat: number; lng: number; }[]>([]);
   const [directionsFetched, setDirectionsFetched] = useState(false);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const mapRef = React.useRef<google.maps.Map | null>(null);
@@ -152,7 +150,7 @@ const EditRoute: React.FC = () => {
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
-  const [updatedPath, setUpdatedPath] = useState<{ latitude: number; longitude: number; }[]>([]);
+  const [updatedPath, setUpdatedPath] = useState<{ lat: number; lng: number; }[]>([]);
   const [route, setRoute] = useState<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string } | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState<boolean>(false);
 
@@ -221,8 +219,8 @@ const EditRoute: React.FC = () => {
       setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
       setTravelModeSelector(selectedRoute.travelMode);
       setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({
-        latitude: coord.lat ?? 0, // default to 0 if coord.lat is undefined
-        longitude: coord.lng ?? 0 // default to 0 if coord.lng is undefined
+        lat: coord.lat,
+        lng: coord.lng,
       })));
       setDistance(selectedRoute.distance);
       setDuration(selectedRoute.duration);
@@ -649,19 +647,15 @@ const EditRoute: React.FC = () => {
       console.error("No route selected.");
       return;
     }
+    // test to see if updatedPath is an empty array or filled in
+    console.log("Updated path coordinates:", updatedPath);
 
-    console.log("Saving route:", selectedRoute);
-    console.log("Saving Path coordinates:", selectedRoute.pathCoordinates);
-    console.log("Saving Updated Path coordinates:", updatedPath);
-    // let's use the pathCoordinates that are in the update pathCoordinates function
-    const formattedPathCoordinates = selectedRoute.pathCoordinates.map(coord => ({
-      latitude: coord.lat,
-      longitude: coord.lng,
-      lat: coord.lat,
-      lng: coord.lng,
-    }));
+    // if it's filled in, then we want to use the updatedPath instead of the pathCoordinates
+    // we also want to use the updatedPath for the pathCoordinates in the Firestore document
+    if (updatedPath.length > 0) {
+      setPathCoordinates(updatedPath);
+    }
 
-    console.log("Formatted Path coordinates:", formattedPathCoordinates);
     try {
 
 
@@ -678,7 +672,7 @@ const EditRoute: React.FC = () => {
         endPointAddress: routeEndFormattedAddress,
         travelMode: selectedRoute?.travelMode,
         // updatedPath is currently an empty array, so we need to use the pathCoordinates from the selectedRoute
-        pathCoordinates: selectedRoute.pathCoordinates,
+        pathCoordinates: pathCoordinates,
         bicyclingSpeed: bicyclingSpeedSelector,
         bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
         duration: duration,
@@ -781,14 +775,41 @@ const EditRoute: React.FC = () => {
       lng: coord.lng || 0, // Provide a default value of 0 if lng is undefined
     }));
 
-  const logUpdatedPath = () => {
-    if (!polylineRef.current) return; // Check if the polylineRef is set
-    const updatedPath = polylineRef.current.getPath().getArray().map(coord => ({
-      latitude: coord.lat(),
-      longitude: coord.lng(),
-    }));
-    console.log("Updated path coordinates:", updatedPath); // Log the updated path
-  };
+  useEffect(() => {
+    // This effect sets up event listeners whenever the polylineRef.current changes
+    // Ensures we clean up listeners when the component unmounts or the polyline changes
+    const polyline = polylineRef.current;
+    if (polyline) {
+      const path = polyline.getPath();
+
+      // Define the update function
+      const updatePathInState = () => {
+        const updatedPath = path.getArray().map(coord => ({
+          lat: coord.lat(),
+          lng: coord.lng(),
+        }));
+        console.log("Updated path coordinates:", updatedPath);
+        setUpdatedPath(updatedPath);
+        // Additional state updates as needed
+        console.log("pathCoordinates:", pathCoordinates);
+        setPathCoordinates(updatedPath);
+        console.log("pathCoordinates:", pathCoordinates);
+      };
+
+      // Attach listeners
+      google.maps.event.addListener(path, 'set_at', updatePathInState);
+      google.maps.event.addListener(path, 'insert_at', updatePathInState);
+      google.maps.event.addListener(path, 'remove_at', updatePathInState);
+
+      // Cleanup function to remove listeners
+      return () => {
+        google.maps.event.clearListeners(path, 'set_at');
+        google.maps.event.clearListeners(path, 'insert_at');
+        google.maps.event.clearListeners(path, 'remove_at');
+      };
+    }
+  }, [polylineRef.current]); // Dependency array ensures effect runs only when polylineRef.current changes
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -966,7 +987,7 @@ const EditRoute: React.FC = () => {
                     }}
                   >
                     <Polyline
-                      path={polylinePath}
+                      path={selectedRoute.pathCoordinates}
                       options={{
                         zIndex: 1,
                         strokeColor: "#1a73e8",
@@ -979,39 +1000,8 @@ const EditRoute: React.FC = () => {
                       }}
                       onLoad={(polyline) => {
                         polylineRef.current = polyline;
-                        const path = polyline.getPath();
-                        path.clear();
-                        path.push(new google.maps.LatLng(selectedRoute.startPoint.lat, selectedRoute.startPoint.lng));
-
-                        const updatePathInState = () => {
-                          const updatedPath = path.getArray().map(coord => ({
-                            latitude: coord.lat(),
-                            longitude: coord.lng(),
-                            lat: coord.lat(),
-                            lng: coord.lng(),
-                          }));
-                          setUpdatedPath(updatedPath);
-                          setSelectedRoute(prevRoute => {
-                            if (!prevRoute) return prevRoute;
-
-                            const simplifiedPath = updatedPath.map(coord => ({
-                              latitude: coord.lat,
-                              longitude: coord.lng,
-                              lat: coord.lat,
-                              lng: coord.lng,
-                            }));
-
-                            return {
-                              ...prevRoute,
-                              pathCoordinates: simplifiedPath,
-                            };
-                          }
-                          );
-                        }
-
-                        // Attach listeners to update the state on user interaction
-                        google.maps.event.addListener(path, 'set_at', updatePathInState);
-                        google.maps.event.addListener(path, 'insert_at', updatePathInState);
+                        // ensure this changes the polylineRef.current
+                        console.log("polylineRef.current:", polylineRef.current);
                       }}
                     />
 
