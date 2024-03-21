@@ -20,18 +20,16 @@ import {
   IonModal,
   IonButtons,
   IonList,
-  IonAccordionGroup,
-  IonAccordion,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
 import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc, } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
+import SidebarEditRoute from "../components/Mapping/SidebarEditRoute";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
-import { set } from 'date-fns';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -153,6 +151,8 @@ const EditRoute: React.FC = () => {
   const [updatedPath, setUpdatedPath] = useState<{ lat: number; lng: number; }[]>([]);
   const [route, setRoute] = useState<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string } | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState<boolean>(false);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
+
 
 
   const containerMapStyle = {
@@ -557,6 +557,46 @@ const EditRoute: React.FC = () => {
     });
   };
 
+  // build a function that takes in the updatedPath and calculates the distance and duration
+  const calculateDistanceAndDurationOnUpdatedPath = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string, waypoints: google.maps.DirectionsWaypoint[] = []): Promise<DistanceDurationResult> => {
+      
+      return new Promise<DistanceDurationResult>((resolve, reject) => {
+        // how do we pass in the updatedPath and/or waypoints to the calculateDistanceAndDuration function?
+  
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix({
+          origins: [origin],
+          destinations: [destination],
+          travelMode: google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode],
+        }, (response, status) => {
+          if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+            const distance = response.rows[0].elements[0].distance.value; // meters
+            let duration = response.rows[0].elements[0].duration.value; // seconds
+  
+            // Adjust duration based on the selected speed
+            const speedFactor = getSpeedAdjustmentFactor(speedSelector);
+            duration *= speedFactor;
+  
+            const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
+            const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+  
+            const arrivalTime = new Date();
+            arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
+            const arrivalTimeString = arrivalTime.toLocaleTimeString();
+  
+            resolve({
+              distance: distanceInMiles.toString(),
+              duration: durationInMinutes.toString(),
+              arrivalTime: arrivalTimeString,
+            });
+          } else {
+            reject("Error calculating distance and duration: " + status);
+          }
+        });
+      });
+    }
+
+
   const getSpeedAdjustmentFactor = (speedSelector: any) => {
     switch (speedSelector) {
       case "VERY SLOW": return 1.2;
@@ -640,6 +680,16 @@ const EditRoute: React.FC = () => {
     setshowInfoStopModal(true);
   };
 
+  const handleBicyclingLayerToggle = (enabled: boolean) => {
+    if (bicyclingLayerRef.current && mapRef.current) {
+      if (enabled) {
+        bicyclingLayerRef.current.setMap(mapRef.current); // Show the layer
+      } else {
+        bicyclingLayerRef.current.setMap(null); // Hide the layer
+      }
+    }
+  };
+
 
   const handleRouteSave = async () => {
 
@@ -654,6 +704,19 @@ const EditRoute: React.FC = () => {
     // we also want to use the updatedPath for the pathCoordinates in the Firestore document
     if (updatedPath.length > 0) {
       setPathCoordinates(updatedPath);
+      // also, we need to recalculate the distance and duration using the updatedPath on calculateDistanceAndDurationOnUpdatedPath
+      const origin = selectedRoute.startPoint;
+      const destination = selectedRoute.endPoint;
+      const travelMode = selectedRoute.travelMode;
+      const speedSelector = selectedRoute.bicyclingSpeedSelector;
+      const waypoints = updatedPath.map(coord => ({
+        location: new google.maps.LatLng(coord.lat, coord.lng),
+        stopover: true,
+      }));
+      const { distance, duration } = await calculateDistanceAndDurationOnUpdatedPath(origin, destination, travelMode, speedSelector, waypoints);
+      setDistance(distance);
+      setDuration(duration);
+      
     }
 
     try {
@@ -845,21 +908,6 @@ const EditRoute: React.FC = () => {
                 />
               </IonRow>
               <IonItem>
-                {bicyclingLayerRef.current && selectedRoute.travelMode === "BICYCLING" && (
-                  <IonToggle
-                    checked={isBicyclingLayerVisible}
-                    onIonChange={e => {
-                      setIsBicyclingLayerVisible(e.detail.checked);
-                      if (bicyclingLayerRef.current) {
-                        bicyclingLayerRef.current.setMap(e.detail.checked ? mapRef.current : null);
-                      }
-                    }}
-                  >
-                    <IonLabel className="toggle-bicycle-layer">Toggle Bicycling Layer</IonLabel>
-                  </IonToggle>
-                )}
-              </IonItem>
-              <IonItem>
                 <IonLabel>Travel Mode:</IonLabel>
                 <IonSelect aria-label='Travel Mode' value={selectedRoute?.travelMode} onIonChange={e => selectedRoute && setSelectedRoute({ ...selectedRoute, travelMode: e.detail.value })}>
                   <IonSelectOption value="WALKING">Walking</IonSelectOption>
@@ -965,9 +1013,8 @@ const EditRoute: React.FC = () => {
                       zoomControlOptions: {
                         position: window.google.maps.ControlPosition.LEFT_CENTER
                       },
-                      mapTypeControl: false,
+                      mapTypeControl: true,
                       mapTypeControlOptions: {
-                        position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
                         mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
                       },
                       streetViewControl: true,
@@ -1078,6 +1125,12 @@ const EditRoute: React.FC = () => {
                       title="End"
                       label={"End"}
                     />
+                    <SidebarEditRoute
+              mapRef={mapRef}
+              bicyclingLayerEnabled={bicyclingLayerEnabled}
+              setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+              handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+            />
                   </GoogleMap>
 
                 )}

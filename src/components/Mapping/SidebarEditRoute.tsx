@@ -4,13 +4,6 @@ import { useState } from 'react';
 
 type SidebarProps = {
     mapRef: React.RefObject<google.maps.Map | null>;
-    getLocation: () => void;
-    bikeBusEnabled: boolean;
-    userRoutesEnabled: boolean;
-    setBikeBusEnabled: (value: boolean) => void;
-    setUserRoutesEnabled: (value: boolean) => void;
-    openTripsEnabled: boolean;
-    setOpenTripsEnabled: (value: boolean) => void;
     bicyclingLayerEnabled: boolean;
     setBicyclingLayerEnabled: (value: boolean) => void;
     handleBicyclingLayerToggle: (enabled: boolean) => void;
@@ -18,13 +11,6 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({
     mapRef,
-    getLocation,
-    bikeBusEnabled,
-    setBikeBusEnabled,
-    userRoutesEnabled,
-    setUserRoutesEnabled,
-    openTripsEnabled,
-    setOpenTripsEnabled,
     bicyclingLayerEnabled,
     setBicyclingLayerEnabled,
     handleBicyclingLayerToggle
@@ -33,20 +19,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
-    };
-
-    const handleZoomIn = () => {
-        if (mapRef.current) {
-            const currentZoom = mapRef.current.getZoom() || 0;
-            mapRef.current.setZoom(currentZoom + 1);
-        }
-    };
-
-    const handleZoomOut = () => {
-        if (mapRef.current) {
-            const currentZoom = mapRef.current.getZoom() || 0;
-            mapRef.current.setZoom(currentZoom - 1);
-        }
     };
 
     const handleSetMapType = (mapTypeId: google.maps.MapTypeId) => {
@@ -73,24 +45,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
                             <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
                         </div>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>BikeBus</IonLabel>
-                                <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Routes</IonLabel>
-                                <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Open Trips</IonLabel>
-                                <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                            </IonCol>
-                        </IonRow>
                         <IonRow>
                             <IonCol>
                                 <IonLabel>Bicycling Layer</IonLabel>
