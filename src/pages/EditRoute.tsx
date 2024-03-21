@@ -1013,10 +1013,6 @@ const EditRoute: React.FC = () => {
                       zoomControlOptions: {
                         position: window.google.maps.ControlPosition.LEFT_CENTER
                       },
-                      mapTypeControl: true,
-                      mapTypeControlOptions: {
-                        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
-                      },
                       streetViewControl: true,
                       streetViewControlOptions: {
                         position: window.google.maps.ControlPosition.LEFT_CENTER
