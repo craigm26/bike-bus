@@ -1,0 +1,29 @@
+[debug] [2024-03-21T22:55:21.462Z] ----------------------------------------------------------------------
+[debug] [2024-03-21T22:55:21.464Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2024-03-21T22:55:21.464Z] CLI Version:   13.0.1
+[debug] [2024-03-21T22:55:21.464Z] Platform:      win32
+[debug] [2024-03-21T22:55:21.464Z] Node Version:  v18.19.0
+[debug] [2024-03-21T22:55:21.465Z] Time:          Thu Mar 21 2024 15:55:21 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-03-21T22:55:21.465Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-03-21T22:55:21.518Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-03-21T22:55:21.518Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2024-03-21T22:55:21.518Z] [iam] checking project bikebus-71dd5 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2024-03-21T22:55:21.519Z] > refreshing access token with scopes: []
+[debug] [2024-03-21T22:55:21.521Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-03-21T22:55:21.521Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-03-21T22:55:21.722Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2024-03-21T22:55:21.722Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-03-21T22:55:21.731Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions [none]
+[debug] [2024-03-21T22:55:21.731Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions x-goog-quota-user=projects/bikebus-71dd5
+[debug] [2024-03-21T22:55:21.731Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2024-03-21T22:55:21.988Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions 200
+[debug] [2024-03-21T22:55:21.989Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/bikebus-71dd5:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2024-03-21T22:55:21.991Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 [none]
+[debug] [2024-03-21T22:55:22.336Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 200
+[debug] [2024-03-21T22:55:22.336Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/bikebus-71dd5 {"projectId":"bikebus-71dd5","projectNumber":"787807444789","displayName":"BikeBus","name":"projects/bikebus-71dd5","resources":{"hostingSite":"bikebus-71dd5","realtimeDatabaseInstance":"bikebus-71dd5-default-rtdb","storageBucket":"bikebus-71dd5.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_7d2290e0-9e4a-49fd-838d-216e0f0c7d54"}
+[info] 
+[info] === Deploying to 'bikebus-71dd5'...
+[info] 
+[info] i  deploying hosting 
+[info] Running command: npm run build

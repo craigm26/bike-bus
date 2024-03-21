@@ -82,8 +82,8 @@
     "ws": "^8.15.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "env-cmd -f .env.production react-scripts build",
+    "start": "env-cmd -f .env.development ionic serve",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint . --ignore-path .gitignore",
