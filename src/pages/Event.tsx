@@ -106,6 +106,8 @@ interface FetchedUserData {
 
 
 
+
+
 const Event: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
@@ -191,7 +193,7 @@ const Event: React.FC = () => {
     });
     setBikeBusStops(BikeBusStops);
   };
-  
+
 
   useEffect(() => {
     if (user) {
@@ -722,6 +724,42 @@ const Event: React.FC = () => {
 
   const hiddenStyle: React.CSSProperties = isPrinting ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' };
 
+  function convertToGPX(pathCoordinates: any[]) {
+    let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
+  <gpx version="1.1" creator="YourAppName" xmlns="http://www.topografix.com/GPX/1/1">
+    <trk>
+      <name>YourRouteName</name>
+      <trkseg>\n`;
+
+    pathCoordinates.forEach(coord => {
+      gpxContent += `      <trkpt lat="${coord.lat}" lon="${coord.lng}"></trkpt>\n`;
+    });
+
+    gpxContent += `    </trkseg>
+    </trk>
+  </gpx>`;
+
+    return gpxContent;
+  }
+
+
+  const handleExportGPX = () => {
+    if (!pathCoordinates || pathCoordinates.length === 0) {
+      alert("No route data available to export.");
+      return;
+    }
+
+    const gpxContent = convertToGPX(pathCoordinates);
+    const blob = new Blob([gpxContent], { type: "application/gpx+xml" });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = "route.gpx"; // You can dynamically name the file here
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+  };
 
 
   useEffect(() => {
@@ -880,6 +918,7 @@ const Event: React.FC = () => {
                       {!isEventEnded && (
                         <IonButton size="small" onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
                       )}
+                      <IonButton size="small" onClick={handleExportGPX}>Export GPX</IonButton>
                       <IonModal isOpen={showRSVPListModal}>
                         <IonHeader>
                           <IonToolbar>
@@ -1028,7 +1067,7 @@ const Event: React.FC = () => {
                       );
                     } else {
                       console.error("Invalid position for Marker:", position);
-                      return null; 
+                      return null;
                     }
                   })
                 )}
