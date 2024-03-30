@@ -62,7 +62,7 @@ const Account: React.FC = () => {
     const [username, setUsername] = useState<string>('');
     const [selectedTimezone, setSelectedTimezone] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('');
-    const [accountType, setaccountType] = useState<string>('');
+    const [accountType, setAccountType] = useState<string>('');
     const [timezone, setTimezone] = useState<string>('');
     const [enabledAccountModes, setEnabledAccountModes] = useState<string[]>([]);
     const [BikeBusGroups, setBikeBusGroups] = useState<Group[]>([]);
@@ -73,61 +73,56 @@ const Account: React.FC = () => {
 
 
 
-    useEffect(() => {
 
+    useEffect(() => {
         if (!loadingAuthState && !user) {
-            // Redirect to login if not loading and no user
             history.push('/login');
             return;
         }
         const fetchUser = async () => {
-            if (user?.uid) {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                const userData = userDoc.data();
-                if (userData) {
-                    setFirstName(userData.firstName);
-                    setLastName(userData.lastName);
-                    setUsername(userData.username);
-                    setaccountType(userData.accountType);
-                    setEnabledAccountModes(userData.enabledAccountModes || DEFAULT_ACCOUNT_MODES);
-                    setBikeBusGroups(userData.BikeBusGroups);
-                    setSavedDestinations(userData.savedDestinations);
-                    setSelectedTimezone(userData.timezone || '');
-                    setSelectedLanguage(userData.preferredLanguage || '');
+            try {
+                if (user?.uid) {
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        setFirstName(userData.firstName);
+                        setLastName(userData.lastName);
+                        setUsername(userData.username);
+                        setAccountType(userData.accountType);
+                        setEnabledAccountModes(userData.enabledAccountModes || DEFAULT_ACCOUNT_MODES);
+                        setBikeBusGroups(userData.BikeBusGroups || []);
+                        setSavedDestinations(userData.savedDestinations || []);
+                        setSelectedTimezone(userData.timezone || '');
+                        setSelectedLanguage(userData.preferredLanguage || '');
+                    }
                 }
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
             }
         };
         fetchUser();
-
     }, [user, loadingAuthState]);
 
-    const currentTimeInTimezone = selectedTimezone ? moment.tz(selectedTimezone).format('YYYY-MM-DD HH:mm:ss z') : '';
-
-
-
     const fetchRoutes = useCallback(async () => {
-        // Assuming that your uid is stored in the user.uid
-        const uid = user?.uid;
-
-        if (!uid) {
-            // If there's no user, we cannot fetch routes
-            return;
+        try {
+            if (user?.uid) {
+                const routesCollectionRef = collection(db, 'routes');
+                const q = query(routesCollectionRef, where("routeCreator", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+                const routesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Route[];
+                setRoutes(routesData);
+            }
+        } catch (error) {
+            console.error("Failed to fetch routes:", error);
         }
+    }, [user]);
 
-        // Create a reference to the 'routes' collection
-        const routesCollection = collection(db, 'routes');
+    useEffect(() => {
+        fetchRoutes();
+    }, [fetchRoutes]);
 
-        // Create a query against the collection.
-        // This will fetch all documents where the routeCreator equals the user's uid
-        const q = query(routesCollection, where("routeCreator", "==", `/users/${uid}`));
-
-        const querySnapshot = await getDocs(q);
-        const routesData: Route[] = querySnapshot.docs.map(doc => ({
-            ...doc.data() as Route,
-            id: doc.id,
-        }));
-        setRoutes(routesData);
-    }, [user]); // here user is a dependency
+    const currentTimeInTimezone = selectedTimezone ? moment.tz(selectedTimezone).format('YYYY-MM-DD HH:mm:ss z') : '';
 
     // find routes wiht the current user.uid as the routeLeader or the routeCreator. These are the routes that the user can edit, view or delete
     const isUserLeader = routes.some((route) => route.routeLeader === `/users/${user?.uid}` || route.routeCreator === `/users/${user?.uid}`);
