@@ -1,21 +1,36 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonChip, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText, IonCardSubtitle } from '@ionic/react';
+import React, { useEffect, useState } from 'react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCardContent, IonCardHeader, IonCardTitle, IonList, IonItem, IonButton, IonLabel, IonInput, IonModal, IonRouterLink, IonAvatar, IonIcon, IonCol, IonGrid, IonRow, IonText, IonCardSubtitle } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, Timestamp, DocumentData, DocumentReference } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
 import { useAvatar } from '../components/useAvatar';
-import { HeaderContext } from '../components/HeaderContext';
 import { useParams, Link, useHistory } from 'react-router-dom';
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { personCircleOutline } from 'ionicons/icons';
 import Avatar from '../components/Avatar';
 import QRCode from 'qrcode.react';
 import './BikeBusGroupPage.css';
-import { use } from 'i18next';
 import { star, navigateOutline } from 'ionicons/icons';
 import moment from 'moment-timezone';
-import BulletinBoards from './BulletinBoards';
-import { is } from 'date-fns/locale';
+import StatisticsCard from '../components/StatisticsCard';
+import DetailedStatistics from '../components/DetailedStatistics';
+
+interface BikeBusStatistics {
+  totalHandCount: number;
+  totalRSVPCount: number;
+  averageHandCount: number;
+  averageRSVPCount: number;
+  // Add more as needed
+}
+
+interface EventDetails {
+  numberOfEvents: number;
+  totalDuration: number;
+  averageDuration: number;
+  totalDistance: number;
+  averageDistance: number;
+  // ...any other details you need
+}
 
 
 interface Coordinate {
@@ -30,12 +45,24 @@ interface BulletinBoard {
 interface Event {
   startTimestamp: Timestamp;
   id: string;
+  duration: string;
+  distance: string;
   groupId: string;
   start?: { seconds: number, nanoseconds: number } | string;
   startTime: string;
   eventName: string;
   BikeBusGroup: FirestoreRef;
   timezone: string;
+  rsvpCount: number;
+  handCountEvent: number;
+  leader: string[];
+  captains: string[];
+  sheepdogs: string[];
+  sprinters: string[];
+  caboose: string[];
+  kids: string[];
+  members: string[];
+  BikeBusRoute: FirestoreRef;
 }
 
 interface FirestoreRef {
@@ -74,41 +101,43 @@ const BikeBusGroupPage: React.FC = () => {
   const [routesData, setRoutesData] = useState<any[]>([]);
   const [BikeBus, setBikeBus] = useState<BikeBus[]>([]);
   const [leaderData, setLeaderData] = useState<any>('');
-  const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [isUserLeader, setIsUserLeader] = useState<boolean>(false);
   const [isUserMember, setIsUserMember] = useState<boolean>(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [eventsData, setEventsData] = useState<Event[]>([]);
-  const [messagesData, setMessagesData] = useState<any[]>([]);
-  const [eventIds, setEventIds] = useState<string[]>([]);
-  const [eventId, setEventId] = useState<string[]>([]);
-  const [eventData, setEventData] = useState<any[]>([]);
-  const [eventDocs, setEventDocs] = useState<any[]>([]);
-  const [eventDocsData, setEventDocsData] = useState<any[]>([]);
-  const [messageInput, setMessageInput] = useState('');
-  const [imageInput, setImageInput] = useState(null);
+
   const [username, setUsername] = useState<string>('');
-  const [usernames, setUsernames] = useState<string[]>([]);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverEvent, setPopoverEvent] = useState<any>();
-  const [showEventModal, setShowEventModal] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [memberUserNames, setMemberUsernames] = useState<string[]>([]);
-  const [leaderUserName, setLeaderUsername] = useState<string>('');
-  const [leaderAvatar, setLeaderAvatar] = useState<string>('');
   const [showMembersModal, setShowMembersModal] = useState(false);
   const label = user?.username ? user.username : "anonymous";
   // selectedBBOROrgValue is the same value of groupId. It's used to filter the bulletin boards by the groupId.
   const [selectedBBOROrgValue, setSelectedBBOROrgValue] = useState<string>('');
   const [nextEventId, setNextEventId] = useState<string>('');
   const [nextEvent, setNextEvent] = useState<Event | null>(null); // [0] is the next event
-  const [nextTime, setNextTime] = useState<string>('');
   const [nextEventTime, setNextEventTime] = useState<string>('');
   const [membersData, setMembersData] = useState<Member[]>([]);
   const { groupId } = useParams<{ groupId?: string }>();
   const [primaryRoute, setPrimaryRoute] = useState<any>(null);
   const [timezone, setTimezone] = useState<string>('');
+  const [statistics, setStatistics] = useState<BikeBusStatistics>({
+    totalHandCount: 0,
+    totalRSVPCount: 0,
+    averageHandCount: 0,
+    averageRSVPCount: 0,
+  });
+
+  const [eventDetails, setEventDetails] = useState<EventDetails>({
+    numberOfEvents: 0,
+    totalDuration: 0,
+    averageDuration: 0,
+    totalDistance: 0,
+    averageDistance: 0,
+  });
+
 
 
 
@@ -312,6 +341,61 @@ const BikeBusGroupPage: React.FC = () => {
 
     }
   }, [eventsData]);
+
+  // Helper function to convert event duration to a consistent unit (minutes)
+  const parseDuration = (duration: string) => {
+    return parseFloat(duration) || 0;
+  };
+
+  // Helper function to parse event distance
+  const parseDistance = (distance: string) => {
+    return parseFloat(distance) || 0;
+  };
+
+
+  useEffect(() => {
+    let totalHandCount = 0;
+    let totalRSVPCount = 0;
+    let totalDistance = 0;
+    let totalDuration = 0;
+  
+    eventsData.forEach(event => {
+      totalHandCount += event.handCountEvent || 0;
+      // Summing the length of each role array for RSVP count
+      totalRSVPCount += (event.leader?.length || 0) + 
+                        (event.captains?.length || 0) +
+                        (event.sheepdogs?.length || 0) +
+                        (event.sprinters?.length || 0) +
+                        (event.caboose?.length || 0) +
+                        (event.kids?.length || 0) +
+                        (event.members?.length || 0);
+      totalDistance += parseDistance(event.distance);
+      totalDuration += parseDuration(event.duration);
+    });
+  
+    const numberOfEvents = eventsData.length;
+    const averageHandCount = totalHandCount / numberOfEvents;
+    const averageRSVPCount = totalRSVPCount / numberOfEvents;
+    const averageDistance = totalDistance / numberOfEvents;
+    const averageDuration = totalDuration / numberOfEvents;
+  
+    setStatistics({
+      totalHandCount,
+      totalRSVPCount,
+      averageHandCount: isNaN(averageHandCount) ? 0 : averageHandCount,
+      averageRSVPCount: isNaN(averageRSVPCount) ? 0 : averageRSVPCount,
+    });
+  
+    setEventDetails({
+      numberOfEvents,
+      totalDuration,
+      averageDuration: isNaN(averageDuration) ? 0 : averageDuration,
+      totalDistance,
+      averageDistance: isNaN(averageDistance) ? 0 : averageDistance,
+    });
+  }, [eventsData]);
+  
+
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -562,6 +646,17 @@ const BikeBusGroupPage: React.FC = () => {
             </IonGrid>
           </div>
         </IonCardContent>
+        <IonCardContent>
+          <IonButton shape="round" size="small" onClick={() => setShowFullPage(true)}>
+            View Statistics
+          </IonButton>
+          <StatisticsCard statistics={statistics} />
+        </IonCardContent>
+        <IonModal isOpen={showFullPage} onDidDismiss={() => setShowFullPage(false)}>
+          <IonContent>
+            <DetailedStatistics statistics={statistics} eventDetails={eventDetails} />
+          </IonContent>
+        </IonModal>
         <IonCardHeader>
           <IonCardSubtitle>Routes</IonCardSubtitle>
         </IonCardHeader>

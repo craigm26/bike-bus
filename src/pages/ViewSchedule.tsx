@@ -20,6 +20,7 @@ import {
     IonSelect,
     IonSelectOption,
     IonTitle,
+    IonToast,
 } from '@ionic/react';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -105,6 +106,9 @@ const ViewSchedule: React.FC = () => {
     const [routeEventId, setRouteEventId] = useState<string>('');
     const [eventRouteString, setEventRouteString] = useState<string>('');
     const [isUserLeader, setIsUserLeader] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [updateSuccess, setUpdateSuccess] = useState(false);
+    const [updateError, setUpdateError] = useState("");
 
 
     const parseDate = (dateString: string) => {
@@ -361,6 +365,8 @@ const ViewSchedule: React.FC = () => {
         history.push(`/event/${eventId}`); // Navigate to the event page
     };
 
+    // isEventLeader is a boolean that checks if the user is the leader of the BikeBus - this is used to determine if the user can delete the event
+    // the EventLeader field is a single value of username - so we check if the user's username is in the leader field
     const isEventLeader = selectedEvent?.leader.includes(username);
 
     const deleteEvent = async () => {
@@ -382,26 +388,29 @@ const ViewSchedule: React.FC = () => {
         window.location.reload();
     };
 
-    const handleHandCountModification = () => {
-        // first check that the user is the leader of the event
+    const handleHandCountModification = async () => {
         if (!isEventLeader) {
-            alert('You are not the leader of this event');
+            alert('You are not the leader of this event. Please ask the leader to update the hand count.');
             return;
         }
 
-        const updatedEvent = { ...selectedEvent, handCountEvent: modifiedHandCount };
-        // Update Firestore
-        // Create DocumentReference and Update Firestore
-        const cleanedEvent: { [key: string]: FieldValue | Partial<unknown> | undefined } =
-            Object.fromEntries(
-                Object.entries(updatedEvent).filter(([key, val]) => val !== undefined)
-            ) as { [key: string]: FieldValue | Partial<unknown> | undefined };
+        setIsUpdating(true); // Indicate the start of an update operation
+        try {
+            const updatedEvent = { ...selectedEvent, handCountEvent: modifiedHandCount };
+            const cleanedEvent: any = { ...updatedEvent };
 
-        const docRef = doc(db, 'event', eventId);
-        updateDoc(docRef, cleanedEvent);
+            const docRef = doc(db, 'event', eventId);
+            await updateDoc(docRef, cleanedEvent);
 
-
-        setShowEventModal(false);
+            // Update local state and UI
+            setEvents(events.map(event => event.id === eventId ? { ...event, handCountEvent: modifiedHandCount } : event));
+            setUpdateSuccess(true);
+            setModifiedHandCount(0); // Reset the input field
+        } catch (error) {
+            console.error("Error updating hand count:", error);
+            setUpdateError("Failed to update hand count. Please try again.");
+        }
+        setIsUpdating(false); // Indicate that the update operation is complete
     };
 
     return (
@@ -463,8 +472,8 @@ const ViewSchedule: React.FC = () => {
                             <IonItem lines="none">
                                 <IonLabel>Route</IonLabel>
                                 {/*if the id is OZrruuBJptp9wkAAVUt7, then don't display the View Route button*/}
-                                {id !== "OZrruuBJptp9wkAAVUt7" && (  
-                                <IonButton size="small" shape="round" routerLink={`/ViewRoute/${routeEventId}`}>View {selectedEvent?.route?.routeName}</IonButton>
+                                {id !== "OZrruuBJptp9wkAAVUt7" && (
+                                    <IonButton size="small" shape="round" routerLink={`/ViewRoute/${routeEventId}`}>View {selectedEvent?.route?.routeName}</IonButton>
                                 )}
                                 {id === "OZrruuBJptp9wkAAVUt7" && (
                                     <IonText>{selectedEvent?.route?.routeName}</IonText>
@@ -499,20 +508,35 @@ const ViewSchedule: React.FC = () => {
                                 <IonLabel>Members:</IonLabel>
                                 <IonText>{selectedEvent?.members?.join(', ')}</IonText>
                             </IonItem>
-                            {(isEventDone) ?
+                            {(isEventDone) ? (
                                 <>
                                     <IonItem lines="none">
-                                        <IonCol>
-                                            <IonLabel>Hand Count Event:</IonLabel>
-                                            <IonText>{selectedEvent?.handCountEvent}</IonText>
-                                        </IonCol>
-                                        <IonCol>
-                                            <IonLabel>Modify Hand Count:</IonLabel>
-                                            <IonInput type="number" value={modifiedHandCount} onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
-                                        </IonCol>
+                                        <IonLabel position="stacked">Hand Count Event</IonLabel>
+                                        <IonInput type="number" value={modifiedHandCount} placeholder="Enter hand count" onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
                                     </IonItem>
-                                    <IonButton size="small" shape="round" onClick={handleHandCountModification}>Modify</IonButton>
-                                </> : null}
+                                    <IonButton shape="round" size="small" className="button-modify" onClick={handleHandCountModification} disabled={isUpdating}>
+                                        {isUpdating ? 'Updating...' : 'Modify Hand Count'}
+                                    </IonButton>
+                                    {updateSuccess && (
+                                        <IonToast
+                                            isOpen={updateSuccess}
+                                            onDidDismiss={() => setUpdateSuccess(false)}
+                                            message="Hand count updated successfully."
+                                            duration={2000}
+                                            color="success"
+                                        />
+                                    )}
+                                    {updateError && (
+                                        <IonToast
+                                            isOpen={!!updateError}
+                                            onDidDismiss={() => setUpdateError("")}
+                                            message={updateError}
+                                            duration={2000}
+                                            color="danger"
+                                        />
+                                    )}
+                                </>
+                            ) : null}
                             {(!isEventDone) ? <IonButton size="small" shape="round" onClick={deleteEvent}>Delete Event</IonButton> : null}
                             {(!isEventDone) ? <IonButton size="small" shape="round" onClick={handleEditEvent}>Go to Event</IonButton> : null}
                             {(id !== "OZrruuBJptp9wkAAVUt7") ? <IonButton size="small" shape="round" routerLink={`/bikebusgrouppage/${selectedBBOROrgValue}`}>BikeBusGroup</IonButton> : null}

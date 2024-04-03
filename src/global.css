@@ -947,3 +947,9 @@ h1, h4 {
   --inner-padding-end: 20px; 
   background-color: #e2e2e2;
 } 
+
+.button-modify {
+  --background: var(--ion-color-primary);
+  --background-activated: var(--ion-color-primary-tint);
+  --border-radius: 8px; /* Rounded borders for buttons */
+}

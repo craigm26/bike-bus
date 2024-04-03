@@ -518,7 +518,7 @@ const Map: React.FC = () => {
     const serverTimestamp = () => {
       return new Date();
     };
-    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', eventEndeventEndTimeStamp: serverTimestamp() }, { merge: true });
+    await setDoc(tripDataIdDoc, { status: 'ended', tripStatus: 'ended', eventStatus: 'ended', eventEndeventEndTimeStamp: serverTimestamp() }, { merge: true });
     const tripSnapshot = await getDoc(tripDataIdDoc);
     const tripData = tripSnapshot.data();
     const eventDataId = tripData?.eventId;
@@ -580,7 +580,8 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    // update the handCountEvent to the number the user inputted
+    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
     history.push(eventSummaryUrl);
 
   };
@@ -639,7 +640,7 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
     history.push(eventSummaryUrl);
@@ -714,7 +715,7 @@ const Map: React.FC = () => {
     // then set the handCountEvent to the number the user inputted
     const handCountEvent = parseInt(handCountEventBox!);
     const handCountEventDoc = doc(db, 'event', id);
-    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
     history.push(eventSummaryUrl);
 
   };
@@ -776,7 +777,7 @@ const Map: React.FC = () => {
     const handCountEvent = parseInt(handCountEventBox!);
     // save the handCountEvent to the database
     const handCountEventDoc = doc(db, 'event', id);
-    await setDoc(handCountEventDoc, { handCountEvent: handCountEvent }, { merge: true });
+    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
     history.push(eventSummaryUrl);
 
   };
