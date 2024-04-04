@@ -1,15 +1,10 @@
 import {
     IonContent,
     IonPage,
-    IonHeader,
-    IonToolbar,
     IonCard,
     IonButton,
     IonModal,
     IonLabel,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
     IonItem,
     IonText,
     IonInput,
@@ -26,9 +21,9 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
-import { DocumentData, DocumentReference, FieldValue, Timestamp, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { DocumentData, Timestamp, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import useAuth from "../useAuth";
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
@@ -38,10 +33,7 @@ import startOfWeek from 'date-fns/startOfWeek'
 import getDay from 'date-fns/getDay'
 import enUS from 'date-fns/locale/en-US'
 import { utcToZonedTime } from 'date-fns-tz';
-import { set } from 'date-fns';
 import { Organization, BikeBus } from '../components/BulletinBoards/MessageTypes';
-import { use } from 'i18next';
-import { group } from 'console';
 
 const locales = {
     'en-US': enUS,
@@ -79,7 +71,7 @@ type Event = {
     sheepdogs: [],
     sprinters: [],
     status: string,
-    handCountEvent: number,
+    headCountEvent: number,
 };
 
 
@@ -99,7 +91,7 @@ const ViewSchedule: React.FC = () => {
     const [endTime, setEndTime] = useState<string>('');
     const [eventSummaryLink, setEventSummaryLink] = useState<string>('');
     const [isEventDone, setIsEventDone] = useState<boolean>(false);
-    const [modifiedHandCount, setModifiedHandCount] = useState<number>(0);
+    const [modifiedHeadCount, setmodifiedHeadCount] = useState<number>(0);
     const [username, setusername] = useState<string>('');
     const [combinedList, setCombinedList] = useState<{ value: string, label: string }[]>([]);
     const [eventRouteName, setEventRouteName] = useState<string>('');
@@ -309,7 +301,7 @@ const ViewSchedule: React.FC = () => {
         fetchDetailedEvents(id);
         console.log('events', events);
 
-    }, [id, timeZone, setModifiedHandCount, user, user?.uid]);
+    }, [id, timeZone, setmodifiedHeadCount, user, user?.uid]);
 
     const handleSelectEvent = async (event: Event) => {
         const eventLink = `/event/${event.id}`;
@@ -388,7 +380,7 @@ const ViewSchedule: React.FC = () => {
         window.location.reload();
     };
 
-    const handleHandCountModification = async () => {
+    const handleHeadCountModification = async () => {
         if (!isEventLeader) {
             alert('You are not the leader of this event. Please ask the leader to update the hand count.');
             return;
@@ -396,19 +388,19 @@ const ViewSchedule: React.FC = () => {
 
         setIsUpdating(true); // Indicate the start of an update operation
         try {
-            const updatedEvent = { ...selectedEvent, handCountEvent: modifiedHandCount };
+            const updatedEvent = { ...selectedEvent, headCountEvent: modifiedHeadCount };
             const cleanedEvent: any = { ...updatedEvent };
 
             const docRef = doc(db, 'event', eventId);
             await updateDoc(docRef, cleanedEvent);
 
             // Update local state and UI
-            setEvents(events.map(event => event.id === eventId ? { ...event, handCountEvent: modifiedHandCount } : event));
+            setEvents(events.map(event => event.id === eventId ? { ...event, headCountEvent: modifiedHeadCount } : event));
             setUpdateSuccess(true);
-            setModifiedHandCount(0); // Reset the input field
+            setmodifiedHeadCount(0); // Reset the input field
         } catch (error) {
-            console.error("Error updating hand count:", error);
-            setUpdateError("Failed to update hand count. Please try again.");
+            console.error("Error updating head count:", error);
+            setUpdateError("Failed to update head count. Please try again.");
         }
         setIsUpdating(false); // Indicate that the update operation is complete
     };
@@ -511,17 +503,17 @@ const ViewSchedule: React.FC = () => {
                             {(isEventDone) ? (
                                 <>
                                     <IonItem lines="none">
-                                        <IonLabel position="stacked">Hand Count Event</IonLabel>
-                                        <IonInput type="number" value={modifiedHandCount} placeholder="Enter hand count" onIonChange={e => setModifiedHandCount(Number(e.detail.value!))} />
+                                        <IonLabel position="stacked">Head Count Event</IonLabel>
+                                        <IonInput type="number" value={modifiedHeadCount} placeholder="Enter hand count" onIonChange={e => setmodifiedHeadCount(Number(e.detail.value!))} />
                                     </IonItem>
-                                    <IonButton shape="round" size="small" className="button-modify" onClick={handleHandCountModification} disabled={isUpdating}>
-                                        {isUpdating ? 'Updating...' : 'Modify Hand Count'}
+                                    <IonButton shape="round" size="small" className="button-modify" onClick={handleHeadCountModification} disabled={isUpdating}>
+                                        {isUpdating ? 'Updating...' : 'Modify Head Count'}
                                     </IonButton>
                                     {updateSuccess && (
                                         <IonToast
                                             isOpen={updateSuccess}
                                             onDidDismiss={() => setUpdateSuccess(false)}
-                                            message="Hand count updated successfully."
+                                            message="Head count updated successfully."
                                             duration={2000}
                                             color="success"
                                         />

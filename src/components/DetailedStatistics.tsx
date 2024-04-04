@@ -3,9 +3,9 @@ import React from 'react';
 import { IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonList, IonItem } from '@ionic/react';
 
 interface BikeBusStatistics {
-  totalHandCount: number;
+  totalHeadCount: number;
   totalRSVPCount: number;
-  averageHandCount: number;
+  averageHeadCount: number;
   averageRSVPCount: number;
   // Additional statistics you might calculate
 }
@@ -33,9 +33,9 @@ const DetailedStatistics: React.FC<Props> = ({ statistics, eventDetails }) => {
       </IonCardHeader>
       <IonCardContent>
         <IonList>
-          <IonItem>Total Hand Counts: {statistics.totalHandCount}</IonItem>
+          <IonItem>Total Head Counts: {statistics.totalHeadCount}</IonItem>
           <IonItem>Total RSVP Counts: {statistics.totalRSVPCount}</IonItem>
-          <IonItem>Average Hand Counts: {statistics.averageHandCount.toFixed(2)}</IonItem>
+          <IonItem>Average Head Counts: {statistics.averageHeadCount.toFixed(2)}</IonItem>
           <IonItem>Average RSVP Counts: {statistics.averageRSVPCount.toFixed(2)}</IonItem>
           <IonItem>Number of Events: {eventDetails.numberOfEvents}</IonItem>
           <IonItem>Total Duration of All Events: {eventDetails.totalDuration}</IonItem>

@@ -512,7 +512,7 @@ const Map: React.FC = () => {
 
 
   const endTripAndCheckOutAll = async () => {
-    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('headCountEvent')
     const tripDataIdDoc = doc(db, 'event', id);
     // get the serverTimeStamp() and set it as eventEndTimeStamp
     const serverTimestamp = () => {
@@ -574,14 +574,14 @@ const Map: React.FC = () => {
 
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
-    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('headCountEvent')
     // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
-    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
-    // then set the handCountEvent to the number the user inputted
-    const handCountEvent = parseInt(handCountEventBox!);
-    const handCountEventDoc = doc(db, 'event', id);
-    // update the handCountEvent to the number the user inputted
-    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
+    const headCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the headCountEvent to the number the user inputted
+    const headCountEvent = parseInt(headCountEventBox!);
+    const headCountEventDoc = doc(db, 'event', id);
+    // update the headCountEvent to the number the user inputted
+    await updateDoc(headCountEventDoc, { headCountEvent: headCountEvent });
     history.push(eventSummaryUrl);
 
   };
@@ -634,13 +634,13 @@ const Map: React.FC = () => {
     }
 
     const eventDataURL = tripDataIdDoc.id;
-    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('headCountEvent')
     // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
-    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
-    // then set the handCountEvent to the number the user inputted
-    const handCountEvent = parseInt(handCountEventBox!);
-    const handCountEventDoc = doc(db, 'event', id);
-    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
+    const headCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the headCountEvent to the number the user inputted
+    const headCountEvent = parseInt(headCountEventBox!);
+    const headCountEventDoc = doc(db, 'event', id);
+    await updateDoc(headCountEventDoc, { headCountEvent: headCountEvent });
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
     history.push(eventSummaryUrl);
@@ -709,13 +709,13 @@ const Map: React.FC = () => {
 
     const eventDataURL = eventDataIdDoc.id;
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
-    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('headCountEvent')
     // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
-    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
-    // then set the handCountEvent to the number the user inputted
-    const handCountEvent = parseInt(handCountEventBox!);
-    const handCountEventDoc = doc(db, 'event', id);
-    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
+    const headCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the headCountEvent to the number the user inputted
+    const headCountEvent = parseInt(headCountEventBox!);
+    const headCountEventDoc = doc(db, 'event', id);
+    await updateDoc(headCountEventDoc, { headCountEvent: headCountEvent });
     history.push(eventSummaryUrl);
 
   };
@@ -770,14 +770,14 @@ const Map: React.FC = () => {
     const eventDataURL = tripDataIdDoc.id;
 
     const eventSummaryUrl = `/eventsummary/${eventDataURL}`;
-    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('handCountEvent')
+    // in case nobody actually checks in, we need the leader to be able to input a number to represent the number of people on the trip ('headCountEvent')
     // first, show a dialog box for the user in case they want to input a number for the number of people on the trip
-    const handCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
-    // then set the handCountEvent to the number the user inputted
-    const handCountEvent = parseInt(handCountEventBox!);
-    // save the handCountEvent to the database
-    const handCountEventDoc = doc(db, 'event', id);
-    await updateDoc(handCountEventDoc, { handCountEvent: handCountEvent });
+    const headCountEventBox = window.prompt('Please enter the number of people on the trip', '0');
+    // then set the headCountEvent to the number the user inputted
+    const headCountEvent = parseInt(headCountEventBox!);
+    // save the headCountEvent to the database
+    const headCountEventDoc = doc(db, 'event', id);
+    await updateDoc(headCountEventDoc, { headCountEvent: headCountEvent });
     history.push(eventSummaryUrl);
 
   };

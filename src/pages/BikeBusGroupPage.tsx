@@ -16,9 +16,9 @@ import StatisticsCard from '../components/StatisticsCard';
 import DetailedStatistics from '../components/DetailedStatistics';
 
 interface BikeBusStatistics {
-  totalHandCount: number;
+  totalHeadCount: number;
   totalRSVPCount: number;
-  averageHandCount: number;
+  averageHeadCount: number;
   averageRSVPCount: number;
   // Add more as needed
 }
@@ -54,7 +54,7 @@ interface Event {
   BikeBusGroup: FirestoreRef;
   timezone: string;
   rsvpCount: number;
-  handCountEvent: number;
+  HeadCountEvent: number;
   leader: string[];
   captains: string[];
   sheepdogs: string[];
@@ -124,9 +124,9 @@ const BikeBusGroupPage: React.FC = () => {
   const [primaryRoute, setPrimaryRoute] = useState<any>(null);
   const [timezone, setTimezone] = useState<string>('');
   const [statistics, setStatistics] = useState<BikeBusStatistics>({
-    totalHandCount: 0,
+    totalHeadCount: 0,
     totalRSVPCount: 0,
-    averageHandCount: 0,
+    averageHeadCount: 0,
     averageRSVPCount: 0,
   });
 
@@ -354,13 +354,13 @@ const BikeBusGroupPage: React.FC = () => {
 
 
   useEffect(() => {
-    let totalHandCount = 0;
+    let totalHeadCount = 0;
     let totalRSVPCount = 0;
     let totalDistance = 0;
     let totalDuration = 0;
   
     eventsData.forEach(event => {
-      totalHandCount += event.handCountEvent || 0;
+      totalHeadCount += event.HeadCountEvent || 0;
       // Summing the length of each role array for RSVP count
       totalRSVPCount += (event.leader?.length || 0) + 
                         (event.captains?.length || 0) +
@@ -374,15 +374,15 @@ const BikeBusGroupPage: React.FC = () => {
     });
   
     const numberOfEvents = eventsData.length;
-    const averageHandCount = totalHandCount / numberOfEvents;
+    const averageHeadCount = totalHeadCount / numberOfEvents;
     const averageRSVPCount = totalRSVPCount / numberOfEvents;
     const averageDistance = totalDistance / numberOfEvents;
     const averageDuration = totalDuration / numberOfEvents;
   
     setStatistics({
-      totalHandCount,
+      totalHeadCount,
       totalRSVPCount,
-      averageHandCount: isNaN(averageHandCount) ? 0 : averageHandCount,
+      averageHeadCount: isNaN(averageHeadCount) ? 0 : averageHeadCount,
       averageRSVPCount: isNaN(averageRSVPCount) ? 0 : averageRSVPCount,
     });
   
