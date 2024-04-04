@@ -25,8 +25,8 @@ const FirebaseInitializer = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   if (!firebaseInitialized) {
-
-    return <IonSpinner />; 
+    console.log('Firebase not initialized');
+    //return <IonSpinner />; 
   }
 
   return <>{children}</>; 

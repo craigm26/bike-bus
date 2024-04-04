@@ -13,7 +13,7 @@ class YourSimpleAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
       return AppAttestProvider(app: app)
     } else {
       // Fallback to Debug provider or another appropriate provider for simulators
-      return DeviceCheckProvider(app: app)
+      return AppCheckDebugProvider(app: app)
     }
   }
   
@@ -37,7 +37,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
         // Instantiate your custom App Check provider factory
-        let providerFactory = YourSimpleAppCheckProviderFactory()
+        // let providerFactory = YourSimpleAppCheckProviderFactory()
+        // here's the debug provider factory:
+        let providerFactory = AppCheckDebugProviderFactory()
         AppCheck.setAppCheckProviderFactory(providerFactory)
         
         // Configure Firebase with your custom App Check provider

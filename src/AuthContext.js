@@ -14,39 +14,47 @@ export const AuthProvider = ({ children }) => {
   const [docSnapshot, setDocSnapshot] = useState(null);
   const [groups, setGroups] = useState([]);
 
+  
   useEffect(() => {
     const setAuthPersistence = async () => {
-      if (!Capacitor.isNativePlatform()) {
-        await setPersistence(auth, indexedDBLocalPersistence);
+      try {
+        // Only set persistence if it's not a native platform
+        if (!Capacitor.isNativePlatform()) {
+          await setPersistence(auth, indexedDBLocalPersistence);
+        }
+      } catch (error) {
+        console.error('Error setting persistence:', error);
       }
     };
-
-    setAuthPersistence().then(() => {
-      const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
-        if (authUser) {
-          // User is signed in, fetch additional details from Firestore
-          const userDocRef = doc(db, 'users', authUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            // Merge auth user object with Firestore document data
-            const fullUserDetails = {
-              ...authUser, // contains UID, email, etc.
-              ...userDocSnap.data() // contains accountType, and other custom fields
-            };
-            setUser(fullUserDetails);
-          } else {
-            console.log("No such document!");
-            setUser(authUser); // Fallback to just auth user details
-          }
+  
+    const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
+      // Proceed with setting the user and auth state regardless of persistence success
+      if (authUser) {
+        // User is signed in, fetch additional details from Firestore
+        const userDocRef = doc(db, 'users', authUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          // Merge auth user object with Firestore document data
+          const fullUserDetails = {
+            ...authUser, // contains UID, email, etc.
+            ...userDocSnap.data() // contains accountType, and other custom fields
+          };
+          setUser(fullUserDetails);
         } else {
-          // User is signed out
-          setUser(null);
+          console.log("No such document!");
+          setUser(authUser); // Fallback to just auth user details
         }
-        setLoadingAuthState(false);
-      });
-
-      return () => unsubscribe();
+      } else {
+        // User is signed out
+        setUser(null);
+      }
+      setLoadingAuthState(false);
     });
+  
+    setAuthPersistence();
+  
+    // Make sure to clean up the listener when the component unmounts
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
