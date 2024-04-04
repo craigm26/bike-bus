@@ -56,6 +56,8 @@ interface event {
   caboose: string[];
   members: string[];
   BikeBusGroup: string;
+  status: string;
+  headCountEvent: number;
 }
 
 
@@ -794,7 +796,7 @@ const EventSummary: React.FC = () => {
                 <IonGrid className="bikebus-event-handcount">
                   <IonRow>
                     <IonCol>
-                      <IonLabel>Hand Count: {eventData?.handCountEvent}</IonLabel>
+                      <IonLabel>Head Count: {eventData?.headCountEvent}</IonLabel>
                     </IonCol>
                   </IonRow>
                 </IonGrid>

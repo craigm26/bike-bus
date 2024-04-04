@@ -19,6 +19,7 @@ import {
   IonDatetime,
   IonTextarea,
   IonText,
+  IonCardSubtitle,
 } from '@ionic/react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useAuth from '../useAuth';
@@ -546,44 +547,44 @@ const Event: React.FC = () => {
     setRole([]);
     setShowRSVPModal(false);
   };
-  
-    // Function to handle un-RSVP (leaving an event)
-// Function to handle un-RSVP (leaving an event and all roles)
-const handleUnRSVP = async () => {
-  if (!user || !username) {
-    console.error("User not found. Cannot un-RSVP.");
-    return;
-  }
 
-  const eventRef = doc(db, 'event', id);
-
-  try {
-    const docSnapshot = await getDoc(eventRef);
-    if (docSnapshot.exists()) {
-      const eventData = docSnapshot.data();
-      // Define all possible roles within the event
-      const roles = ['members', 'leaders', 'captains', 'sheepdogs', 'sprinters', 'parents', 'kids', 'caboose'];
-
-      // Initialize an object to hold the updates
-      let updates: { [key: string]: any } = {};
-
-      // Check each role to see if the user is part of it and prepare update object
-      roles.forEach(role => {
-        if (eventData[role] && eventData[role].includes(username)) {
-          updates[role] = arrayRemove(username); // Prepare to remove user from this role
-        }
-      });
-
-      // Update the document with the prepared updates
-      await updateDoc(eventRef, updates);
-      console.log("User successfully removed from all roles and RSVP list.");
-    } else {
-      console.error("Event document does not exist.");
+  // Function to handle un-RSVP (leaving an event)
+  // Function to handle un-RSVP (leaving an event and all roles)
+  const handleUnRSVP = async () => {
+    if (!user || !username) {
+      console.error("User not found. Cannot un-RSVP.");
+      return;
     }
-  } catch (error) {
-    console.error("Failed to un-RSVP user:", error);
-  }
-};
+
+    const eventRef = doc(db, 'event', id);
+
+    try {
+      const docSnapshot = await getDoc(eventRef);
+      if (docSnapshot.exists()) {
+        const eventData = docSnapshot.data();
+        // Define all possible roles within the event
+        const roles = ['members', 'leaders', 'captains', 'sheepdogs', 'sprinters', 'parents', 'kids', 'caboose'];
+
+        // Initialize an object to hold the updates
+        let updates: { [key: string]: any } = {};
+
+        // Check each role to see if the user is part of it and prepare update object
+        roles.forEach(role => {
+          if (eventData[role] && eventData[role].includes(username)) {
+            updates[role] = arrayRemove(username); // Prepare to remove user from this role
+          }
+        });
+
+        // Update the document with the prepared updates
+        await updateDoc(eventRef, updates);
+        console.log("User successfully removed from all roles and RSVP list.");
+      } else {
+        console.error("Event document does not exist.");
+      }
+    } catch (error) {
+      console.error("Failed to un-RSVP user:", error);
+    }
+  };
 
 
   // Date and time formatting options
@@ -915,7 +916,7 @@ const handleUnRSVP = async () => {
                       <IonModal isOpen={showRSVPModal}>
                         <IonHeader>
                           <IonToolbar>
-                            <IonTitle>Select a Role</IonTitle>
+                            <IonCardSubtitle>Select a Role</IonCardSubtitle>
                             <IonText>To ensure that your RSVP saves, your Account must have a username filled in</IonText>
                           </IonToolbar>
                         </IonHeader>
