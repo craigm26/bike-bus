@@ -153,6 +153,8 @@ const EditRoute: React.FC = () => {
   const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
+  const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
+
 
 
   const containerMapStyle = {
@@ -924,6 +926,36 @@ const EditRoute: React.FC = () => {
     }
   }, [polylineRef.current]); // Dependency array ensures effect runs only when polylineRef.current changes
 
+  // Base offset at zoom level 13 (you can adjust this according to your preferences)
+  const BASE_LAT_OFFSET = 0.0015; // 0.0010 is approximately 111 meters
+  const BASE_LNG_OFFSET = 0.0015;
+  const BASE_ZOOM_LEVEL = 13;
+
+  // Function to get current offset based on zoom level
+  const getCurrentOffset = (zoomLevel: number) => {
+    // The higher the zoom, the less the offset
+    const zoomDifference = Math.pow(2, BASE_ZOOM_LEVEL - zoomLevel);
+    return {
+      latOffset: BASE_LAT_OFFSET * zoomDifference,
+      lngOffset: BASE_LNG_OFFSET * zoomDifference,
+    };
+  };
+
+  // Use the function to get the current offset
+
+  useEffect(() => {
+    if (mapRef.current) {
+      const listener = mapRef.current.addListener('zoom_changed', () => {
+        // Update current zoom level state with the new zoom level
+        setCurrentZoomLevel(mapRef.current?.getZoom() ?? 13);
+      });
+  
+      return () => {
+        google.maps.event.removeListener(listener);
+      };
+    }
+  }, [mapRef.current]);
+
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -1058,7 +1090,7 @@ const EditRoute: React.FC = () => {
                     }}
                     mapContainerStyle={containerMapStyle}
                     center={mapCenter}
-                    zoom={13}
+                    zoom={currentZoomLevel}
                     options={{
                       zoomControl: true,
                       zoomControlOptions: {
@@ -1112,39 +1144,18 @@ const EditRoute: React.FC = () => {
                       />
                     ))}
                     {routeLegsEnabled && routeLegs.map((leg, index) => {
-                      // Calculate the midpoint for the label position
                       const midLat = (getNumber(leg.startPoint.lat) + getNumber(leg.endPoint.lat)) / 2;
                       const midLng = (getNumber(leg.startPoint.lng) + getNumber(leg.endPoint.lng)) / 2;
-
-                      // Calculate the angle of the line
-                      const angleDeg = Math.atan2(
-                        getNumber(leg.endPoint.lng) - getNumber(leg.startPoint.lng),
-                        getNumber(leg.endPoint.lat) - getNumber(leg.startPoint.lat)
-                      ) * 180 / Math.PI;
-
-                      // Adjust rotation for the overlay
-                      const rotationStyle = {
-                        transform: `rotate(${angleDeg}deg)`,
-                        transformOrigin: 'center',
-                      };
+  
+                      const { latOffset, lngOffset } = getCurrentOffset(currentZoomLevel);
+  
+                      const offsetMidLat = midLat + latOffset;
+                      const offsetMidLng = midLng + lngOffset;
 
                       return (
                         <React.Fragment key={index}>
-                          <Polyline
-                            path={[
-                              { lat: leg.startPoint.lat as number, lng: leg.startPoint.lng as number },
-                              { lat: leg.endPoint.lat as number, lng: leg.endPoint.lng as number },
-                            ]}
-                            options={{
-                              zIndex: 0,
-                              strokeColor: "#000000",
-                              strokeOpacity: 0,
-                              strokeWeight: 0,
-                              geodesic: true,
-                            }}
-                          />
                           <OverlayView
-                            position={{ lat: midLat, lng: midLng }}
+                            position={{ lat: offsetMidLat, lng: offsetMidLng }}
                             mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                           >
                             <div style={{
@@ -1155,7 +1166,6 @@ const EditRoute: React.FC = () => {
                               whiteSpace: "nowrap", // Keep text on a single line
                               display: "inline-block", // Adjust width based on content
                               minWidth: "100px", // Set a minimum width if necessary
-                              ...rotationStyle
                             }}>
                               <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
                               <div>Distance: {leg.distance} miles</div>

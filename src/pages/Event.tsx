@@ -28,9 +28,11 @@ import Avatar from '../components/Avatar';
 import { doc, getDoc, setDoc, arrayUnion, onSnapshot, collection, where, getDocs, query, serverTimestamp, updateDoc, DocumentReference, Timestamp, GeoPoint, arrayRemove } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useParams, useHistory } from "react-router-dom";
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api';
 import QRCode from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
+// import sidebarevent from '../components/Mapping/SidebarEvent';
+import SidebarEvent from '../components/Mapping/SidebarEvent';
 
 
 
@@ -122,6 +124,8 @@ const Event: React.FC = () => {
   const { user } = useAuth(); // Use the useAuth hook to get the user object
   const { avatarUrl } = useAvatar(user?.uid);
   const mapRef = React.useRef<google.maps.Map | null>(null);
+  const bicyclingLayerRef = useRef<google.maps.BicyclingLayer | null>(null);
+
   const [members, setMembers] = useState<string[]>([]);
   const [accountType, setaccountType] = useState<string>('');
   const { id } = useParams<{ id: string }>();
@@ -169,7 +173,6 @@ const Event: React.FC = () => {
     lng: startGeo.lng,
   });
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapZoom, setMapZoom] = useState(13);
 
   const [showStartDateTimeModal, setShowStartDateTimeModal] = useState(false);
   const [startDateTime, setStartDateTime] = useState<string>('');
@@ -178,6 +181,10 @@ const Event: React.FC = () => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState<string>('');
   const [legs, setLegs] = useState<RouteLeg[]>([]);
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
+  const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
+  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
+  const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
 
 
 
@@ -203,27 +210,18 @@ const Event: React.FC = () => {
       };
     });
     setBikeBusStops(BikeBusStops);
+
+    // since we're setting BikeBusStops, let's also fetch the existing legs of the route
+    const legsSnapshot = await getDocs(collection(db, `routes/${RouteId}/legs`));
+    console.log('legsSnapshot', legsSnapshot);
+    const legs = legsSnapshot.docs.map(doc => doc.data() as RouteLeg);
+    console.log('legs', legs);
+    setRouteLegs(legs);
+    console.log('routeLegs', routeLegs);
+
   };
 
-  const fetchLegs = async (legs: RouteLeg[]) => {
-    if (!RouteId) {
-      console.error("RouteId is not set. Cannot fetch Legs.");
-      return;
-    }
-    console.log(`Fetching Legs with RouteId: ${RouteId}`);
-    const legsSnapshot = await getDocs(collection(db, `routes/${RouteId}/legs`));
-    const legsData: RouteLeg[] = legsSnapshot.docs.map(doc => {
-      const data = doc.data() as RouteLeg;
-      return {
-        ...data,
-        startPoint: new google.maps.LatLng(data.startPoint.lat as number, data.startPoint.lng as number),
-        endPoint: new google.maps.LatLng(data.endPoint.lat as number, data.endPoint.lng as number),
-      };
-    });
-    setLegs(legsData);
-  }; 
 
-  
 
 
   useEffect(() => {
@@ -343,6 +341,7 @@ const Event: React.FC = () => {
         fetchRoute(eventData.route.id).then(() => {
           fetchBikeBusStops();
           console.log('bikebussstops', bikeBusStops);
+          console.log('routeLegs', routeLegs);
           if (eventData?.BikeBusGroup) {
             fetchBikeBusGroup(eventData.BikeBusGroup);
           }
@@ -359,9 +358,7 @@ const Event: React.FC = () => {
 
       fetchBikeBusStops();
       console.log('bikebussstops', bikeBusStops);
-
-      fetchLegs(route.legs);
-      
+      console.log('routeLegs', routeLegs);
 
       setMapCenter({
         lat: (route.startPoint.lat + route.endPoint.lat) / 2,
@@ -375,28 +372,28 @@ const Event: React.FC = () => {
       // let's set the zoom level based on the distance between the start and end points
       const distance = Math.sqrt(Math.pow(route.startPoint.lat - route.endPoint.lat, 2) + Math.pow(route.startPoint.lng - route.endPoint.lng, 2));
       if (distance < 0.01) {
-        setMapZoom(17);
+        setCurrentZoomLevel(16);
       }
       else if (distance < 0.02) {
-        setMapZoom(16);
+        setCurrentZoomLevel(16);
       }
       else if (distance < 0.03) {
-        setMapZoom(15);
+        setCurrentZoomLevel(15);
       }
       else if (distance < 0.04) {
-        setMapZoom(14);
+        setCurrentZoomLevel(14);
       }
       else if (distance < 0.05) {
-        setMapZoom(13);
+        setCurrentZoomLevel(13);
       }
       else if (distance < 0.06) {
-        setMapZoom(12);
+        setCurrentZoomLevel(12);
       }
       else if (distance < 0.07) {
-        setMapZoom(11);
+        setCurrentZoomLevel(11);
       }
       else if (distance > 0.07) {
-        setMapZoom(1);
+        setCurrentZoomLevel(1);
       }
     }
 
@@ -838,9 +835,56 @@ const Event: React.FC = () => {
   useEffect(() => {
     if (mapRef.current && mapLoaded) {
       mapRef.current.setCenter(mapCenter);
-      mapRef.current.setZoom(mapZoom);
     }
   }, [isLoaded, loadError]);
+
+  const handleBicyclingLayerToggle = (enabled: boolean | ((prevState: boolean) => boolean)) => {
+    setBicyclingLayerEnabled(enabled);
+    if (bicyclingLayerRef.current) {
+      if (enabled && mapRef.current) {
+        bicyclingLayerRef.current.setMap(mapRef.current);
+      } else {
+        bicyclingLayerRef.current.setMap(null);
+      }
+    }
+  };
+  
+
+  const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
+
+  // Base offset at zoom level 13 (you can adjust this according to your preferences)
+  const BASE_LAT_OFFSET = 0.0040; // 0.0010 is approximately 111 meters
+  const BASE_LNG_OFFSET = 0.0040;
+  const BASE_ZOOM_LEVEL = 13;
+
+  // Function to get current offset based on zoom level
+  const getCurrentOffset = (zoomLevel: number) => {
+    // The higher the zoom, the less the offset
+    const zoomDifference = Math.pow(2, BASE_ZOOM_LEVEL - zoomLevel);
+    return {
+      latOffset: BASE_LAT_OFFSET * zoomDifference,
+      lngOffset: BASE_LNG_OFFSET * zoomDifference,
+    };
+  };
+
+  // Use the function to get the current offset
+
+  useEffect(() => {
+    if (mapRef.current && !bicyclingLayerRef.current) {
+      bicyclingLayerRef.current = new google.maps.BicyclingLayer();
+      // You may need to conditionally set the map here as well
+      if (bicyclingLayerEnabled) {
+        bicyclingLayerRef.current.setMap(mapRef.current);
+      }
+      const listener = mapRef.current.addListener('zoom_changed', () => {
+        setCurrentZoomLevel(mapRef.current?.getZoom() ?? 13);
+      });
+      return () => {
+        google.maps.event.removeListener(listener);
+      };
+    }
+  }, [mapRef.current, bicyclingLayerEnabled]);
+  
 
   if (loadError) {
     return <div>Error loading Google Maps: {loadError.message}</div>;
@@ -866,7 +910,7 @@ const Event: React.FC = () => {
                 height: "100%",
               }}
               center={mapCenter}
-              zoom={mapZoom}
+              zoom={currentZoomLevel}
               options={{
                 disableDefaultUI: true,
                 zoomControl: false,
@@ -1148,6 +1192,43 @@ const Event: React.FC = () => {
                     }
                   })
                 )}
+                {routeLegsEnabled && routeLegs.map((leg, index) => {
+
+                  const midLat = (getNumber(leg.startPoint.lat) + getNumber(leg.endPoint.lat)) / 2;
+                  const midLng = (getNumber(leg.startPoint.lng) + getNumber(leg.endPoint.lng)) / 2;
+
+                  // Use the function to get the current offset
+                  const { latOffset, lngOffset } = getCurrentOffset(currentZoomLevel);
+
+                  // Apply the dynamic offset to the midpoint
+                  const offsetMidLat = midLat + latOffset;
+                  const offsetMidLng = midLng + lngOffset;
+
+                  return (
+                    <React.Fragment key={index}>
+                      <OverlayView
+                        position={{ lat: offsetMidLat, lng: offsetMidLng }}
+                        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                      >
+                        <div style={{
+                          background: "white",
+                          border: "1px solid #ccc",
+                          padding: "4px 8px",
+                          borderRadius: "3px",
+                          whiteSpace: "nowrap",
+                          display: "inline-block",
+                          minWidth: "100px",
+
+                        }}>
+                          <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
+                          <div>Distance: {leg.distance} miles</div>
+                          <div>Duration: {leg.duration} minutes</div>
+                        </div>
+                      </OverlayView>
+
+                    </React.Fragment>
+                  )
+                })}
               </div>
               <div>
               </div>
@@ -1269,6 +1350,14 @@ const Event: React.FC = () => {
                   </IonRow>
                 </IonGrid>
               </div>
+              <SidebarEvent
+                mapRef={mapRef}
+                bicyclingLayerEnabled={bicyclingLayerEnabled}
+                setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+                handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+                routeLegsEnabled={routeLegsEnabled}
+                setRouteLegsEnabled={setRouteLegsEnabled}
+              />
             </GoogleMap>
           </IonRow>
         </IonGrid>
