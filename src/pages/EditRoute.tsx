@@ -95,11 +95,13 @@ interface Route {
 }
 
 interface RouteLeg {
+  id?: string; // Now includes an optional id
   startPoint: Coordinate | google.maps.LatLng;
   endPoint: Coordinate | google.maps.LatLng;
   distance?: string;
   duration?: string;
 }
+
 
 
 const EditRoute: React.FC = () => {
@@ -207,8 +209,9 @@ const EditRoute: React.FC = () => {
     // since we're setting BikeBusStops, let's also fetch the existing legs of the route
     const legsRef = collection(db, 'routes', id, 'legs');
     const legsSnapshot = await getDocs(legsRef);
-    const legs = legsSnapshot.docs.map(doc => doc.data() as RouteLeg);
+    const legs = legsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as RouteLeg }));
     setRouteLegs(legs);
+
 
   };
 
@@ -564,6 +567,7 @@ const EditRoute: React.FC = () => {
     });
   };
 
+
   // build a function that takes in the updatedPath and calculates the distance and duration
   const calculateDistanceAndDurationOnUpdatedPath = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string, waypoints: google.maps.DirectionsWaypoint[] = []): Promise<DistanceDurationResult> => {
 
@@ -675,6 +679,15 @@ const EditRoute: React.FC = () => {
 
       console.log("Calculated Legs:", legs);
 
+      const adjustDurationByBicyclingSpeed = (durationInSeconds: number, bicyclingSpeedSelector: string): number => {
+        const speedFactor = getSpeedAdjustmentFactor(bicyclingSpeedSelector);
+        return durationInSeconds * speedFactor;
+      };
+
+      // since we have the leg durations, we need to adjust the duration based on the bicyclingSpeedSelector
+      legs.forEach(leg => {
+        leg.duration = adjustDurationByBicyclingSpeed(Number(leg.duration), selectedRoute.bicyclingSpeedSelector).toString();
+      });
 
       const saveRouteLegsToFirebase = async (routeId: string, legs: RouteLeg[]) => {
         const legsRef = collection(db, `routes/${routeId}/legs`);
@@ -743,6 +756,35 @@ const EditRoute: React.FC = () => {
 
   }, [bicyclingSpeedSelector]);
 
+  const formatDuration = (duration: string | undefined) => {
+    const durationNumber = Number(duration);
+    if (isNaN(durationNumber)) {
+      return '0.00'; // Return a default or error value if the conversion fails
+    }
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2, // Minimum number of digits after the decimal
+      maximumFractionDigits: 2, // Maximum number of digits after the decimal
+    }).format(durationNumber);
+  };
+
+
+
+  const adjustDurationByBicyclingSpeed = (duration: string | number | undefined, speedSelector: any): number => {
+    const adjustmentFactor = getSpeedAdjustmentFactor(speedSelector);
+    return (Number(duration) || 0) * adjustmentFactor; // Assuming 'duration' is numeric
+  };
+
+
+
+  const adjustLegDurationsForSpeed = (newSpeedSelector: any) => {
+    const adjustedLegs = routeLegs.map(leg => {
+      const adjustedDuration = adjustDurationByBicyclingSpeed(leg.duration?.toString() ?? '0', newSpeedSelector); // Convert duration to string and provide default value of '0'
+      return { ...leg, duration: adjustedDuration.toString() }; // Convert adjustedDuration to string
+    });
+
+    setRouteLegs(adjustedLegs);
+  };
+
 
   // pass in stop.id to the handleBikeBusStopClick function
   const handleUpdateClick = async (stopId: string) => {
@@ -802,6 +844,9 @@ const EditRoute: React.FC = () => {
     }
     // test to see if updatedPath is an empty array or filled in
     console.log("Updated path coordinates:", updatedPath);
+
+    adjustLegDurationsForSpeed(bicyclingSpeedSelector);
+
 
     // if it's filled in, then we want to use the updatedPath instead of the pathCoordinates
     // we also want to use the updatedPath for the pathCoordinates in the Firestore document
@@ -870,6 +915,21 @@ const EditRoute: React.FC = () => {
 
       // Update the route in Firestore
       await updateDoc(routeRef, updatedRouteData);
+
+      for (let leg of routeLegs) {
+        if (!leg.id) {
+          console.error("Leg ID is missing.");
+          continue; // Skip this iteration if id is missing
+        }
+        const legRef = doc(db, `routes/${selectedRoute.id}/legs`, leg.id);
+        await updateDoc(legRef, {
+          startPoint: leg.startPoint,
+          endPoint: leg.endPoint,
+          distance: leg.distance,
+          duration: leg.duration,
+        });
+
+      }
 
       alert("Route successfully updated.");
     } catch (error) {
@@ -949,7 +1009,7 @@ const EditRoute: React.FC = () => {
         // Update current zoom level state with the new zoom level
         setCurrentZoomLevel(mapRef.current?.getZoom() ?? 13);
       });
-  
+
       return () => {
         google.maps.event.removeListener(listener);
       };
@@ -1007,6 +1067,7 @@ const EditRoute: React.FC = () => {
                     if (selectedRoute) {
                       setSelectedRoute({ ...selectedRoute, bicyclingSpeedSelector: newSpeedSelector });
                       setBicyclingSpeed(newSpeedSelector);
+                      adjustLegDurationsForSpeed(newSpeedSelector);
                     }
                   }
                   }>
@@ -1146,9 +1207,9 @@ const EditRoute: React.FC = () => {
                     {routeLegsEnabled && routeLegs.map((leg, index) => {
                       const midLat = (getNumber(leg.startPoint.lat) + getNumber(leg.endPoint.lat)) / 2;
                       const midLng = (getNumber(leg.startPoint.lng) + getNumber(leg.endPoint.lng)) / 2;
-  
+
                       const { latOffset, lngOffset } = getCurrentOffset(currentZoomLevel);
-  
+
                       const offsetMidLat = midLat + latOffset;
                       const offsetMidLng = midLng + lngOffset;
 
@@ -1170,7 +1231,7 @@ const EditRoute: React.FC = () => {
                             }}>
                               <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
                               <div>Distance: {leg.distance} miles</div>
-                              <div>Duration: {leg.duration} minutes</div>
+                              <div>Duration: {formatDuration(leg.duration)} minutes</div>
                             </div>
                           </OverlayView>
 
