@@ -853,8 +853,8 @@ const Event: React.FC = () => {
   const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
 
   // Base offset at zoom level 13 (you can adjust this according to your preferences)
-  const BASE_LAT_OFFSET = 0.0040; // 0.0010 is approximately 111 meters
-  const BASE_LNG_OFFSET = 0.0040;
+  const BASE_LAT_OFFSET = 0.0090; // 0.009
+  const BASE_LNG_OFFSET = 0.0090;
   const BASE_ZOOM_LEVEL = 13;
 
   // Function to get current offset based on zoom level
@@ -1218,6 +1218,7 @@ const Event: React.FC = () => {
                           whiteSpace: "nowrap",
                           display: "inline-block",
                           minWidth: "100px",
+                          opacity: 0.8
 
                         }}>
                           <div style={{ textAlign: "center" }}>Leg {index + 1}</div>

@@ -263,8 +263,8 @@ const ViewRoute: React.FC = () => {
   const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
 
   // Base offset at zoom level 13 (you can adjust this according to your preferences)
-  const BASE_LAT_OFFSET = 0.0015; // 0.0010 is approximately 111 meters
-  const BASE_LNG_OFFSET = 0.0015;
+  const BASE_LAT_OFFSET = 0.0090; 
+  const BASE_LNG_OFFSET = 0.0090;
   const BASE_ZOOM_LEVEL = 13;
 
   // Function to get current offset based on zoom level
@@ -451,6 +451,7 @@ const ViewRoute: React.FC = () => {
                             whiteSpace: "nowrap", // Keep text on a single line
                             display: "inline-block", // Adjust width based on content
                             minWidth: "100px", // Set a minimum width if necessary
+                            opacity: 0.8
 
                           }}>
                             <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
