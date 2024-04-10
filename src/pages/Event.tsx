@@ -48,6 +48,13 @@ interface Coordinate {
   lng: number;
 }
 
+interface RouteLeg {
+  startPoint: Coordinate | google.maps.LatLng;
+  endPoint: Coordinate | google.maps.LatLng;
+  distance?: string;
+  duration?: string;
+}
+
 
 interface BikeBusStop {
   BikeBusGroup: DocumentReference;
@@ -81,6 +88,7 @@ interface Route {
   isBikeBus: boolean;
   BikeBusName: string;
   BikeBusStops: BikeBusStop[];
+  legs: RouteLeg[];
   BikeBusGroup: DocumentReference;
   id: string;
   accountType: string;
@@ -169,6 +177,7 @@ const Event: React.FC = () => {
   const [eventEndTime, setEventEndTime] = useState<string>('');
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState<string>('');
+  const [legs, setLegs] = useState<RouteLeg[]>([]);
 
 
 
@@ -195,6 +204,26 @@ const Event: React.FC = () => {
     });
     setBikeBusStops(BikeBusStops);
   };
+
+  const fetchLegs = async (legs: RouteLeg[]) => {
+    if (!RouteId) {
+      console.error("RouteId is not set. Cannot fetch Legs.");
+      return;
+    }
+    console.log(`Fetching Legs with RouteId: ${RouteId}`);
+    const legsSnapshot = await getDocs(collection(db, `routes/${RouteId}/legs`));
+    const legsData: RouteLeg[] = legsSnapshot.docs.map(doc => {
+      const data = doc.data() as RouteLeg;
+      return {
+        ...data,
+        startPoint: new google.maps.LatLng(data.startPoint.lat as number, data.startPoint.lng as number),
+        endPoint: new google.maps.LatLng(data.endPoint.lat as number, data.endPoint.lng as number),
+      };
+    });
+    setLegs(legsData);
+  }; 
+
+  
 
 
   useEffect(() => {
@@ -330,6 +359,9 @@ const Event: React.FC = () => {
 
       fetchBikeBusStops();
       console.log('bikebussstops', bikeBusStops);
+
+      fetchLegs(route.legs);
+      
 
       setMapCenter({
         lat: (route.startPoint.lat + route.endPoint.lat) / 2,
@@ -1116,7 +1148,6 @@ const Event: React.FC = () => {
                     }
                   })
                 )}
-
               </div>
               <div>
               </div>

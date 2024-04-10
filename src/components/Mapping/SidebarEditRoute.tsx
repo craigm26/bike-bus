@@ -7,13 +7,17 @@ type SidebarProps = {
     bicyclingLayerEnabled: boolean;
     setBicyclingLayerEnabled: (value: boolean) => void;
     handleBicyclingLayerToggle: (enabled: boolean) => void;
+    setRouteLegsEnabled: (value: boolean) => void;
+    routeLegsEnabled: boolean;
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
     mapRef,
     bicyclingLayerEnabled,
     setBicyclingLayerEnabled,
-    handleBicyclingLayerToggle
+    handleBicyclingLayerToggle,
+    setRouteLegsEnabled,
+    routeLegsEnabled,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -55,6 +59,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         setBicyclingLayerEnabled(enabled);
                                         handleBicyclingLayerToggle(enabled);
                                     }}
+                                />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Route Legs</IonLabel>
+                                <IonToggle
+                                    checked={routeLegsEnabled}
+                                    onIonChange={e => setRouteLegsEnabled(e.detail.checked)}
                                 />
                             </IonCol>
                         </IonRow>

@@ -23,11 +23,11 @@ import {
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs, updateDoc, } from 'firebase/firestore';
+import { DocumentReference, addDoc, collection, deleteDoc, doc, getDoc, getDocs, updateDoc, } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import SidebarEditRoute from "../components/Mapping/SidebarEditRoute";
-import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow, OverlayView } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
 
@@ -81,10 +81,11 @@ interface Route {
   isBikeBus: boolean;
   BikeBusName: string;
   BikeBusStops: BikeBusStop[];
+  legs: RouteLeg[];
   BikeBusGroup: DocumentReference;
   id: string;
   accountType: string;
-  bicylingSpeed: string;
+  bicyclingSpeed: string;
   bicyclingSpeedSelector: string;
   routeId: string;
   name: string;
@@ -93,12 +94,9 @@ interface Route {
   arrivalTime: string;
 }
 
-
-
 interface RouteLeg {
-  startPoint: Coordinate;
-  endPoint: Coordinate;
-  waypoints: Coordinate[]; // Intermediate BikeBus stops
+  startPoint: Coordinate | google.maps.LatLng;
+  endPoint: Coordinate | google.maps.LatLng;
   distance?: string;
   duration?: string;
 }
@@ -146,13 +144,15 @@ const EditRoute: React.FC = () => {
   // Assuming you're trying to store a Google Maps Polyline instance
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
+  const [leg, setLeg] = useState<RouteLeg | null>(null);
   const [bikeBusStopName, setBikeBusStopName] = useState<string>('');
   const [waypoints, SetWaypoints] = useState<DirectionsWaypoint[]>([]);
   const [updatedPath, setUpdatedPath] = useState<{ lat: number; lng: number; }[]>([]);
   const [route, setRoute] = useState<{ pathCoordinates: { lat: number; lng: number; }[]; distance: string; duration: string } | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState<boolean>(false);
   const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
-
+  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
+  const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
 
 
   const containerMapStyle = {
@@ -202,6 +202,12 @@ const EditRoute: React.FC = () => {
     }));
     SetWaypoints(waypoints);
 
+    // since we're setting BikeBusStops, let's also fetch the existing legs of the route
+    const legsRef = collection(db, 'routes', id, 'legs');
+    const legsSnapshot = await getDocs(legsRef);
+    const legs = legsSnapshot.docs.map(doc => doc.data() as RouteLeg);
+    setRouteLegs(legs);
+
   };
 
   // when the map is loading, set startGeo to the route's startPoint
@@ -215,7 +221,7 @@ const EditRoute: React.FC = () => {
       setRouteEndFormattedAddress(selectedRoute.endPointAddress);
       setRouteStartName(selectedRoute.startPointName);
       setRouteEndName(selectedRoute.endPointName);
-      setBicyclingSpeed(selectedRoute.bicylingSpeed);
+      setBicyclingSpeed(selectedRoute.bicyclingSpeed);
       setBicyclingSpeedSelector(selectedRoute.bicyclingSpeedSelector);
       setTravelModeSelector(selectedRoute.travelMode);
       setPathCoordinates(selectedRoute.pathCoordinates.map(coord => ({
@@ -472,7 +478,6 @@ const EditRoute: React.FC = () => {
         const leg: RouteLeg = {
           startPoint: currentStart,
           endPoint: currentEnd,
-          waypoints: [], // Add waypoints if needed
         };
         // Calculate distance and duration for the leg
         const { pathCoordinates, distance, duration } = await calculateRoute(currentStart, currentEnd, [], travelMode, bicyclingSpeed);
@@ -559,42 +564,42 @@ const EditRoute: React.FC = () => {
 
   // build a function that takes in the updatedPath and calculates the distance and duration
   const calculateDistanceAndDurationOnUpdatedPath = (origin: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, destination: string | google.maps.LatLng | google.maps.LatLngLiteral | google.maps.Place, travelMode: string, speedSelector: string, waypoints: google.maps.DirectionsWaypoint[] = []): Promise<DistanceDurationResult> => {
-      
-      return new Promise<DistanceDurationResult>((resolve, reject) => {
-        // how do we pass in the updatedPath and/or waypoints to the calculateDistanceAndDuration function?
-  
-        const service = new google.maps.DistanceMatrixService();
-        service.getDistanceMatrix({
-          origins: [origin],
-          destinations: [destination],
-          travelMode: google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode],
-        }, (response, status) => {
-          if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
-            const distance = response.rows[0].elements[0].distance.value; // meters
-            let duration = response.rows[0].elements[0].duration.value; // seconds
-  
-            // Adjust duration based on the selected speed
-            const speedFactor = getSpeedAdjustmentFactor(speedSelector);
-            duration *= speedFactor;
-  
-            const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
-            const durationInMinutes = Math.round((duration / 60) * 100) / 100;
-  
-            const arrivalTime = new Date();
-            arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
-            const arrivalTimeString = arrivalTime.toLocaleTimeString();
-  
-            resolve({
-              distance: distanceInMiles.toString(),
-              duration: durationInMinutes.toString(),
-              arrivalTime: arrivalTimeString,
-            });
-          } else {
-            reject("Error calculating distance and duration: " + status);
-          }
-        });
+
+    return new Promise<DistanceDurationResult>((resolve, reject) => {
+      // how do we pass in the updatedPath and/or waypoints to the calculateDistanceAndDuration function?
+
+      const service = new google.maps.DistanceMatrixService();
+      service.getDistanceMatrix({
+        origins: [origin],
+        destinations: [destination],
+        travelMode: google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode],
+      }, (response, status) => {
+        if (status === "OK" && response?.rows[0]?.elements[0]?.status === "OK") {
+          const distance = response.rows[0].elements[0].distance.value; // meters
+          let duration = response.rows[0].elements[0].duration.value; // seconds
+
+          // Adjust duration based on the selected speed
+          const speedFactor = getSpeedAdjustmentFactor(speedSelector);
+          duration *= speedFactor;
+
+          const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
+          const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+
+          const arrivalTime = new Date();
+          arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
+          const arrivalTimeString = arrivalTime.toLocaleTimeString();
+
+          resolve({
+            distance: distanceInMiles.toString(),
+            duration: durationInMinutes.toString(),
+            arrivalTime: arrivalTimeString,
+          });
+        } else {
+          reject("Error calculating distance and duration: " + status);
+        }
       });
-    }
+    });
+  }
 
 
   const getSpeedAdjustmentFactor = (speedSelector: any) => {
@@ -606,6 +611,102 @@ const EditRoute: React.FC = () => {
       default: return 1; // Default to no adjustment
     }
   };
+
+
+  const getDirectionsAndSimplifyRoute = async () => {
+    await fetchBikeBusStops();
+
+    if (!selectedRoute) {
+      console.error("No route selected.");
+      return;
+    }
+
+    try {
+      const travelMode = selectedRoute.travelMode;
+      console.log(waypoints);
+
+      if (!selectedRoute || !selectedRoute.endPoint) {
+        console.error("End point is not defined.");
+        return;
+      }
+
+      // Now that we've confirmed selectedRoute and selectedRoute.endPoint exist, use them
+      const endPointToSave = {
+        lat: selectedRoute.endPoint.lat, // Accessing lat of endPoint from selectedRoute
+        lng: selectedRoute.endPoint.lng  // Accessing lng of endPoint from selectedRoute
+      };
+
+      const calculateRouteLegs = async (startPoint: { lat: number; lng: number; }, endPoint: Coordinate, waypoints: string | any[], travelMode: string) => {
+        let legs = [];
+
+        // Starting point for the first leg is the route's starting point
+        let currentStart = startPoint;
+
+        // Iterate over each waypoint to calculate the leg to it from the current start
+        for (let i = 0; i < waypoints.length; i++) {
+          const legEndPoint = waypoints[i].location;
+          const legResult = await calculateRoute(currentStart, legEndPoint, [], google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode], 0);
+          legs.push({
+            startPoint: currentStart,
+            endPoint: legEndPoint,
+            distance: legResult.distance, // Assuming calculateRoute returns an object with distance and duration
+            duration: legResult.duration,
+          });
+          // Update currentStart to the end of the last leg
+          currentStart = legEndPoint;
+        }
+
+        // Calculate the final leg from the last waypoint to the route's end point
+        const finalLegResult = await calculateRoute(currentStart, endPoint, [], google.maps.TravelMode[travelMode as keyof typeof google.maps.TravelMode], 0);
+        legs.push({
+          startPoint: currentStart,
+          endPoint: endPoint,
+          distance: finalLegResult.distance,
+          duration: finalLegResult.duration,
+        });
+
+        return legs;
+      };
+
+      // Now call calculateRouteLegs with the correct arguments
+      const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedRoute.travelMode);
+
+      console.log("Calculated Legs:", legs);
+
+
+      const saveRouteLegsToFirebase = async (routeId: string, legs: RouteLeg[]) => {
+        const legsRef = collection(db, `routes/${routeId}/legs`);
+        const saveRouteLeg = async (leg: RouteLeg) => {
+          const startPointLat = typeof leg.startPoint.lat === 'function' ? leg.startPoint.lat() : leg.startPoint.lat;
+          const startPointLng = typeof leg.startPoint.lng === 'function' ? leg.startPoint.lng() : leg.startPoint.lng;
+          const endPointLat = typeof leg.endPoint.lat === 'function' ? leg.endPoint.lat() : leg.endPoint.lat;
+          const endPointLng = typeof leg.endPoint.lng === 'function' ? leg.endPoint.lng() : leg.endPoint.lng;
+
+          const legToSave = {
+            ...leg,
+            startPoint: { lat: startPointLat, lng: startPointLng },
+            endPoint: { lat: endPointLat, lng: endPointLng },
+          };
+
+          // Assuming 'legsRef' is a Firestore collection reference where you're saving legs
+          await addDoc(legsRef, legToSave);
+        };
+      };
+
+
+
+      saveRouteLegsToFirebase(selectedRoute.id, legs);
+
+
+      setDirectionsFetched(true);
+    } catch (error) {
+      console.error("Failed to get directions and simplify route:", error);
+      alert("Error getting directions and simplifying route.");
+    }
+  };
+
+  const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
+
 
   useEffect(() => {
 
@@ -702,7 +803,7 @@ const EditRoute: React.FC = () => {
 
     // if it's filled in, then we want to use the updatedPath instead of the pathCoordinates
     // we also want to use the updatedPath for the pathCoordinates in the Firestore document
-    if (updatedPath.length > 0) {
+    if (updatedPath.length > 0 && bikeBusStops.length < 1) {
       setPathCoordinates(updatedPath);
       // also, we need to recalculate the distance and duration using the updatedPath on calculateDistanceAndDurationOnUpdatedPath
       const origin = selectedRoute.startPoint;
@@ -716,7 +817,28 @@ const EditRoute: React.FC = () => {
       const { distance, duration } = await calculateDistanceAndDurationOnUpdatedPath(origin, destination, travelMode, speedSelector, waypoints);
       setDistance(distance);
       setDuration(duration);
-      
+
+    }
+
+    // let's do the same above action but with bikeBusStops
+    if (bikeBusStops.length > 0) {
+      // we need to set the waypoints to the bikeBusStops
+      const waypoints = bikeBusStops.map(stop => ({
+        location: new google.maps.LatLng(stop.location.lat, stop.location.lng),
+        stopover: true,
+      }));
+      // we need to set the updatedPath to the pathCoordinates of the route
+      const updatedPath = pathCoordinates;
+      // we need to set the pathCoordinates to the updatedPath
+      setPathCoordinates(updatedPath);
+      // we need to recalculate the distance and duration using the updatedPath on calculateDistanceAndDurationOnUpdatedPath
+      const origin = selectedRoute.startPoint;
+      const destination = selectedRoute.endPoint;
+      const travelMode = selectedRoute.travelMode;
+      const speedSelector = selectedRoute.bicyclingSpeedSelector;
+      const { distance, duration } = await calculateDistanceAndDurationOnUpdatedPath(origin, destination, travelMode, speedSelector, waypoints);
+      setDistance(distance);
+      setDuration(duration);
     }
 
     try {
@@ -758,78 +880,7 @@ const EditRoute: React.FC = () => {
   };
 
 
-  const getDirectionsAndSimplifyRoute = async () => {
 
-    await fetchBikeBusStops();
-
-    if (!selectedRoute) {
-      console.error("No route selected.");
-      return;
-    }
-
-    try {
-      const startPoint = selectedRoute.startPoint;
-      const endPoint = selectedRoute.endPoint;
-      const travelMode = selectedRoute.travelMode;
-      console.log(waypoints);
-
-      const routeResult = await calculateRoute(
-        startPoint,
-        endPoint,
-        waypoints,
-        travelMode as google.maps.TravelMode,
-        getSpeedAdjustmentFactor(bicyclingSpeedSelector)
-      );
-
-      if (routeResult) {
-        const simplifiedPath = ramerDouglasPeucker(routeResult.pathCoordinates, 0.001);
-
-        const path = new google.maps.Polyline().getPath();
-
-        path.clear();
-        simplifiedPath.forEach((coordinate) => {
-          path.push(new google.maps.LatLng(coordinate.lat, coordinate.lng));
-        });
-
-        setDirectionsFetched(true);
-        // prepare data for update to Firestore
-        const formattedPathCoordinates = simplifiedPath.map(coord => ({
-          latitude: coord.lat,
-          longitude: coord.lng,
-          lat: coord.lat,
-          lng: coord.lng,
-        }));
-
-        setSelectedRoute(prevRoute => {
-          if (!prevRoute) return prevRoute;
-
-          const simplifiedPath = formattedPathCoordinates.map(coord => ({
-            latitude: coord.lat,
-            longitude: coord.lng,
-            // Include lat and lng if they're actually used/needed elsewhere
-            lat: coord.lat,
-            lng: coord.lng,
-          }));
-
-          return {
-            ...prevRoute,
-            pathCoordinates: simplifiedPath,
-            distance: routeResult.distance,
-            duration: routeResult.duration,
-            startPoint: prevRoute.startPoint || { lat: 0, lng: 0 }, // Add a default startPoint if it's undefined
-          };
-        });
-      }
-
-      setDirectionsFetched(true);
-    }
-
-
-    catch (error) {
-      console.error("Failed to get directions and simplify route:", error);
-      alert("Error getting directions and simplifying route.");
-    }
-  };
 
   const polylinePath = selectedRoute?.pathCoordinates
     .filter(coord => coord.lat !== undefined && coord.lng !== undefined) // Filter out coordinates with undefined lat or lng
@@ -882,7 +933,7 @@ const EditRoute: React.FC = () => {
     <IonPage className="ion-flex-offset-app">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Editing {selectedRoute?.routeName}</IonTitle>
+          <IonText>Editing {selectedRoute?.routeName}</IonText>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -1060,6 +1111,61 @@ const EditRoute: React.FC = () => {
                         }
                       />
                     ))}
+                    {routeLegsEnabled && routeLegs.map((leg, index) => {
+                      // Calculate the midpoint for the label position
+                      const midLat = (getNumber(leg.startPoint.lat) + getNumber(leg.endPoint.lat)) / 2;
+                      const midLng = (getNumber(leg.startPoint.lng) + getNumber(leg.endPoint.lng)) / 2;
+
+                      // Calculate the angle of the line
+                      const angleDeg = Math.atan2(
+                        getNumber(leg.endPoint.lng) - getNumber(leg.startPoint.lng),
+                        getNumber(leg.endPoint.lat) - getNumber(leg.startPoint.lat)
+                      ) * 180 / Math.PI;
+
+                      // Adjust rotation for the overlay
+                      const rotationStyle = {
+                        transform: `rotate(${angleDeg}deg)`,
+                        transformOrigin: 'center',
+                      };
+
+                      return (
+                        <React.Fragment key={index}>
+                          <Polyline
+                            path={[
+                              { lat: leg.startPoint.lat as number, lng: leg.startPoint.lng as number },
+                              { lat: leg.endPoint.lat as number, lng: leg.endPoint.lng as number },
+                            ]}
+                            options={{
+                              zIndex: 0,
+                              strokeColor: "#000000",
+                              strokeOpacity: 0,
+                              strokeWeight: 0,
+                              geodesic: true,
+                            }}
+                          />
+                          <OverlayView
+                            position={{ lat: midLat, lng: midLng }}
+                            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                          >
+                            <div style={{
+                              background: "white",
+                              border: "1px solid #ccc",
+                              padding: "4px 8px", // Adjust padding as necessary
+                              borderRadius: "3px",
+                              whiteSpace: "nowrap", // Keep text on a single line
+                              display: "inline-block", // Adjust width based on content
+                              minWidth: "100px", // Set a minimum width if necessary
+                              ...rotationStyle
+                            }}>
+                              <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
+                              <div>Distance: {leg.distance} miles</div>
+                              <div>Duration: {leg.duration} minutes</div>
+                            </div>
+                          </OverlayView>
+
+                        </React.Fragment>
+                      )
+                    })}
                     <IonModal isOpen={showInfoStopModal} onDidDismiss={() => setshowInfoStopModal(false)}>
                       <IonHeader>
                         <IonToolbar>
@@ -1122,13 +1228,14 @@ const EditRoute: React.FC = () => {
                       label={"End"}
                     />
                     <SidebarEditRoute
-              mapRef={mapRef}
-              bicyclingLayerEnabled={bicyclingLayerEnabled}
-              setBicyclingLayerEnabled={setBicyclingLayerEnabled}
-              handleBicyclingLayerToggle={handleBicyclingLayerToggle}
-            />
+                      mapRef={mapRef}
+                      bicyclingLayerEnabled={bicyclingLayerEnabled}
+                      setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+                      handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+                      routeLegsEnabled={routeLegsEnabled}
+                      setRouteLegsEnabled={setRouteLegsEnabled}
+                    />
                   </GoogleMap>
-
                 )}
               </IonCol>
             </IonRow>

@@ -9,18 +9,18 @@ import {
   IonHeader,
   IonTitle,
   IonToolbar,
+  IonText,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
 import { db } from '../firebaseConfig';
 import { HeaderContext } from "../components/HeaderContext";
 import { DocumentReference, collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
-import useAuth from "../useAuth";
 import { useParams, useHistory } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
-import { is } from 'date-fns/locale';
+import SidebarEditRoute from '../components/Mapping/SidebarEditRoute';
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -38,8 +38,12 @@ interface BikeBusGroup {
   routeId: string;
 }
 
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
 
-
+// a BikeBusStop is an array of BikeBusStops that exist as a subcollection of the route
 interface BikeBusStop {
   BikeBusGroup: DocumentReference;
   BikeBusRouteId: string;
@@ -52,47 +56,43 @@ interface BikeBusStop {
   placeName: string;
 }
 interface Route {
-  newStop: Coordinate | null;
-  BikeBusGroup: DocumentReference;
-  BikeBusStops: DocumentReference[];
-  id: string;
-  endPointAddress: string;
+  startPoint: { lat: number; lng: number };
+  endPoint: { lat: number, lng: number };
+  pathCoordinates: {
+    lat: number;
+    lng: number;
+  }[];
+  startPointName: string;
   endPointName: string;
   startPointAddress: string;
-  startPointName: string;
-  BikeBusGroupId: string;
+  endPointAddress: string;
+  routeName: string;
+  routeType: string;
+  routeCreator: DocumentReference;
+  routeLeader: DocumentReference;
+  description: string;
+  travelMode: string;
+  isBikeBus: boolean;
   BikeBusName: string;
+  BikeBusStops: BikeBusStop[];
+  legs: RouteLeg[];
+  BikeBusGroup: DocumentReference;
+  id: string;
   accountType: string;
   bicyclingSpeed: string;
   bicyclingSpeedSelector: string;
-  description: string;
+  routeId: string;
+  name: string;
   distance: string;
   duration: string;
-  endPoint: {
-    lat: number;
-    lng: number;
-  };
-  isBikeBus: boolean;
-  pathCoordinates: Array<{
-    lat: number;
-    lng: number;
-  }>;
-  routeCreator: string;
-  routeLeader: string;
-  routeName: string;
-  routeType: string;
-  startPoint: {
-    lat: number;
-    lng: number;
-    startPointAddress: string;
-    startPointName: string;
-  };
-  travelMode: string;
+  arrivalTime: string;
 }
 
-interface Coordinate {
-  lat: number;
-  lng: number;
+interface RouteLeg {
+  startPoint: Coordinate | google.maps.LatLng;
+  endPoint: Coordinate | google.maps.LatLng;
+  distance?: string;
+  duration?: string;
 }
 
 const ViewRoute: React.FC = () => {
@@ -114,13 +114,12 @@ const ViewRoute: React.FC = () => {
     lat: startGeo.lat,
     lng: startGeo.lng,
   });
-  const [selectedMarker, setSelectedMarker] = useState<Coordinate | null>(null);
-  const [selectedBikeBusStop, setSelectedBikeBusStop] = useState<Coordinate | null>(null);
-  const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [BikeBusGroup, setBikeBusGroup] = useState<DocumentReference | null>(null);
   const [isUserLeader, setIsUserLeader] = useState(false);
   const [bikeBusStops, setBikeBusStops] = useState<BikeBusStop[]>([]);
-
+  const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
+  const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
+  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
 
 
 
@@ -225,6 +224,12 @@ const ViewRoute: React.FC = () => {
 
         fetchBikeBusStops();
 
+        // since we're setting BikeBusStops, let's also fetch the existing legs of the route
+        const legsRef = collection(db, 'routes', id, 'legs');
+        const legsSnapshot = await getDocs(legsRef);
+        const legs = legsSnapshot.docs.map(doc => doc.data() as RouteLeg);
+        setRouteLegs(legs);
+
       }
 
     }
@@ -244,6 +249,19 @@ const ViewRoute: React.FC = () => {
     }
   };
 
+  const handleBicyclingLayerToggle = (enabled: boolean) => {
+    if (bicyclingLayerRef.current && mapRef.current) {
+      if (enabled) {
+        bicyclingLayerRef.current.setMap(mapRef.current); // Show the layer
+      } else {
+        bicyclingLayerRef.current.setMap(null); // Hide the layer
+      }
+    }
+  };
+
+  const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
+
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -252,7 +270,7 @@ const ViewRoute: React.FC = () => {
     <IonPage className="ion-flex-offset-app">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Viewing {selectedRoute?.routeName}</IonTitle>
+          <IonText>Viewing {selectedRoute?.routeName}</IonText>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -327,13 +345,14 @@ const ViewRoute: React.FC = () => {
                     zoomControlOptions: {
                       position: window.google.maps.ControlPosition.LEFT_CENTER
                     },
-                    mapTypeControl: false,
-                    mapTypeControlOptions: {
-                      position: window.google.maps.ControlPosition.LEFT_CENTER, // Position of map type control
-                      mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',],
+                    streetViewControl: true,
+                    streetViewControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER
                     },
-                    streetViewControl: false,
                     fullscreenControl: true,
+                    fullscreenControlOptions: {
+                      position: window.google.maps.ControlPosition.LEFT_CENTER
+                    },
                     disableDoubleClickZoom: true,
                     disableDefaultUI: true,
                     mapId: 'b75f9f8b8cf9c287',
@@ -367,33 +386,88 @@ const ViewRoute: React.FC = () => {
                     }}
                   />
                   {bikeBusStops.map((BikeBusStop, index) => (
-                      <Marker
-                        zIndex={2}
-                        key={index}
-                        label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
-                        position={BikeBusStop.location}
-                        title={BikeBusStop.BikeBusStopName}
-                      />
-                    ))}
-                  {startGeo.lat !== 0 && startGeo.lng !== 0 && (
                     <Marker
-                      zIndex={1}
-                      position={{ lat: startGeo.lat, lng: startGeo.lng }}
-                      title="Start"
-                      label={"Start"}
-                      onClick={() => setSelectedMarker(startGeo)}
+                      key={index}
+                      label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
+                      position={BikeBusStop.location}
+                      title={BikeBusStop.BikeBusStopName}
                     />
-                  )}
-                  {endGeo.lat !== 0 && endGeo.lng !== 0 && (
-                    <Marker
-                      zIndex={10}
-                      position={{ lat: endGeo.lat, lng: endGeo.lng }}
-                      title="End"
-                      label={"End"}
-                      onClick={() => setSelectedMarker(endGeo)}
-                    />
-                  )}
+                  ))}
+                  {routeLegsEnabled && routeLegs.map((leg, index) => {
+                    // Calculate the midpoint for the label position
+                    const midLat = (getNumber(leg.startPoint.lat) + getNumber(leg.endPoint.lat)) / 2;
+                    const midLng = (getNumber(leg.startPoint.lng) + getNumber(leg.endPoint.lng)) / 2;
 
+                    // Calculate the angle of the line
+                    const angleDeg = Math.atan2(
+                      getNumber(leg.endPoint.lng) - getNumber(leg.startPoint.lng),
+                      getNumber(leg.endPoint.lat) - getNumber(leg.startPoint.lat)
+                    ) * 180 / Math.PI;
+
+                    // Adjust rotation for the overlay
+                    const rotationStyle = {
+                      transform: `rotate(${angleDeg}deg)`,
+                      transformOrigin: 'center',
+                    };
+
+                    return (
+                      <React.Fragment key={index}>
+                        <Polyline
+                          path={[
+                            { lat: leg.startPoint.lat as number, lng: leg.startPoint.lng as number },
+                            { lat: leg.endPoint.lat as number, lng: leg.endPoint.lng as number },
+                          ]}
+                          options={{
+                            zIndex: 0,
+                            strokeColor: "#000000",
+                            strokeOpacity: 0,
+                            strokeWeight: 0,
+                            geodesic: true,
+                          }}
+                        />
+                        <OverlayView
+                          position={{ lat: midLat, lng: midLng }}
+                          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                        >
+                          <div style={{
+                            background: "white",
+                            border: "1px solid #ccc",
+                            padding: "4px 8px", // Adjust padding as necessary
+                            borderRadius: "3px",
+                            whiteSpace: "nowrap", // Keep text on a single line
+                            display: "inline-block", // Adjust width based on content
+                            minWidth: "100px", // Set a minimum width if necessary
+                            ...rotationStyle
+                          }}>
+                            <div style={{ textAlign: "center" }}>Leg {index + 1}</div>
+                            <div>Distance: {leg.distance} miles</div>
+                            <div>Duration: {leg.duration} minutes</div>
+                          </div>
+                        </OverlayView>
+
+                      </React.Fragment>
+                    )
+                  })}
+                  <Marker
+                    zIndex={1}
+                    position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
+                    title="Start"
+                    label={"Start"}
+                  />
+                  <Marker
+                    zIndex={10}
+                    position={{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }}
+                    title="End"
+                    label={"End"}
+                  />
+                  <SidebarEditRoute
+                    mapRef={mapRef}
+                    bicyclingLayerEnabled={bicyclingLayerEnabled}
+                    setBicyclingLayerEnabled={setBicyclingLayerEnabled}
+                    handleBicyclingLayerToggle={handleBicyclingLayerToggle}
+                    routeLegsEnabled={routeLegsEnabled}
+                    setRouteLegsEnabled={setRouteLegsEnabled}
+                  />
                 </GoogleMap>
               )}
             </IonCol>
