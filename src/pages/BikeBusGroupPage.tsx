@@ -13,23 +13,24 @@ import './BikeBusGroupPage.css';
 import { star, navigateOutline } from 'ionicons/icons';
 import moment from 'moment-timezone';
 import StatisticsCard from '../components/StatisticsCard';
-import DetailedStatistics from '../components/DetailedStatistics';
 
 interface BikeBusStatistics {
+  pastTotalRSVPCount: number;
+  futureTotalRSVPCount: number;
+  pastAverageRSVPCount: number;
+  futureAverageRSVPCount: number;
   totalHeadCount: number;
-  totalRSVPCount: number;
   averageHeadCount: number;
-  averageRSVPCount: number;
-  // Add more as needed
 }
 
 interface EventDetails {
+  pastEventsCount: number;
+  futureEventsCount: number;
   numberOfEvents: number;
   totalDuration: number;
   averageDuration: number;
   totalDistance: number;
   averageDistance: number;
-  // ...any other details you need
 }
 
 
@@ -125,9 +126,11 @@ const BikeBusGroupPage: React.FC = () => {
   const [timezone, setTimezone] = useState<string>('');
   const [statistics, setStatistics] = useState<BikeBusStatistics>({
     totalHeadCount: 0,
-    totalRSVPCount: 0,
     averageHeadCount: 0,
-    averageRSVPCount: 0,
+    pastTotalRSVPCount: 0,
+    futureTotalRSVPCount: 0,
+    pastAverageRSVPCount: 0,
+    futureAverageRSVPCount: 0,
   });
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
@@ -136,6 +139,8 @@ const BikeBusGroupPage: React.FC = () => {
     averageDuration: 0,
     totalDistance: 0,
     averageDistance: 0,
+    pastEventsCount: 0,
+    futureEventsCount: 0,
   });
 
 
@@ -342,60 +347,6 @@ const BikeBusGroupPage: React.FC = () => {
     }
   }, [eventsData]);
 
-  // Helper function to convert event duration to a consistent unit (minutes)
-  const parseDuration = (duration: string) => {
-    return parseFloat(duration) || 0;
-  };
-
-  // Helper function to parse event distance
-  const parseDistance = (distance: string) => {
-    return parseFloat(distance) || 0;
-  };
-
-
-  useEffect(() => {
-    let totalHeadCount = 0;
-    let totalRSVPCount = 0;
-    let totalDistance = 0;
-    let totalDuration = 0;
-  
-    eventsData.forEach(event => {
-      totalHeadCount += event.HeadCountEvent || 0;
-      // Summing the length of each role array for RSVP count
-      totalRSVPCount += (event.leader?.length || 0) + 
-                        (event.captains?.length || 0) +
-                        (event.sheepdogs?.length || 0) +
-                        (event.sprinters?.length || 0) +
-                        (event.caboose?.length || 0) +
-                        (event.kids?.length || 0) +
-                        (event.members?.length || 0);
-      totalDistance += parseDistance(event.distance);
-      totalDuration += parseDuration(event.duration);
-    });
-  
-    const numberOfEvents = eventsData.length;
-    const averageHeadCount = totalHeadCount / numberOfEvents;
-    const averageRSVPCount = totalRSVPCount / numberOfEvents;
-    const averageDistance = totalDistance / numberOfEvents;
-    const averageDuration = totalDuration / numberOfEvents;
-  
-    setStatistics({
-      totalHeadCount,
-      totalRSVPCount,
-      averageHeadCount: isNaN(averageHeadCount) ? 0 : averageHeadCount,
-      averageRSVPCount: isNaN(averageRSVPCount) ? 0 : averageRSVPCount,
-    });
-  
-    setEventDetails({
-      numberOfEvents,
-      totalDuration,
-      averageDuration: isNaN(averageDuration) ? 0 : averageDuration,
-      totalDistance,
-      averageDistance: isNaN(averageDistance) ? 0 : averageDistance,
-    });
-  }, [eventsData]);
-  
-
 
   const joinBikeBus = async () => {
     if (!user?.uid) {
@@ -454,227 +405,215 @@ const BikeBusGroupPage: React.FC = () => {
             </IonRow>
           </IonGrid>
         </IonCardHeader>
-        <IonCardContent>
-          <div>
-            <IonGrid>
-              <IonRow>
-                <IonCol size="12">
-                  {!isUserMember ? (
-                    <IonButton shape="round" size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
-                  ) : (
-                    <IonButton shape="round" size="small" onClick={leaveBikeBus}>Leave BikeBus</IonButton>
-                  )}
-                  {isUserMember && (
-                    <IonButton shape="round" size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
-                      Bulletin Board
-                    </IonButton>
-                  )}
-                  {isUserLeader && (
-                    <IonButton shape="round" size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
-                  )
-                  }
-                  {isUserLeader && (
-                    <IonButton shape="round" size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
-                  )
-                  }
-                  <IonButton shape="round" size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
-                </IonCol>
-                <IonModal isOpen={showInviteModal}>
+        <div>
+          <IonGrid>
+            <IonRow>
+              <IonCol size="12">
+                {!isUserMember ? (
+                  <IonButton shape="round" size="small" onClick={joinBikeBus}>Join BikeBus</IonButton>
+                ) : (
+                  <IonButton shape="round" size="small" onClick={leaveBikeBus}>Leave BikeBus</IonButton>
+                )}
+                {isUserMember && (
+                  <IonButton shape="round" size="small" routerLink={`/BulletinBoards/${selectedBBOROrgValue}`}>
+                    Bulletin Board
+                  </IonButton>
+                )}
+                {isUserLeader && (
+                  <IonButton shape="round" size="small" routerLink={`/EditBikeBus/${groupId}`}>Edit BikeBus</IonButton>
+                )
+                }
+                {isUserLeader && (
+                  <IonButton shape="round" size="small" routerLink={`/ManageRoutes/${groupId}`}>Manage Routes</IonButton>
+                )
+                }
+                <IonButton shape="round" size="small" onClick={() => setShowInviteModal(true)}>Invite Users</IonButton>
+              </IonCol>
+              <IonModal isOpen={showInviteModal}>
+                <IonHeader>
+                  <IonToolbar>
+                    <IonTitle>Invite a User</IonTitle>
+                  </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                  <IonList>
+                    <IonItem>
+                      <IonLabel>
+                        BikeBus Name:
+                        <IonRouterLink href={`https://bikebus.app/bikebusgrouppage/${groupId}`}>
+                          {groupData?.BikeBusName}
+                        </IonRouterLink>
+                      </IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Routes</IonLabel>
+                      {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
+                        <IonRouterLink key={index}>
+                          <Link to={`/ViewRoute/${route?.id}`}>
+                            <IonLabel>{route?.routeName}</IonLabel>
+                          </Link>
+                        </IonRouterLink>
+                      ))}
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Email</IonLabel>
+                    </IonItem>
+                    <IonItem>
+                      <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
+                    </IonItem>
+                  </IonList>
+                  <IonButton shape="round" expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
+                  <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
+                  <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
+                  <IonButton shape="round" onClick={copyUrl}>Copy URL</IonButton>
+                </IonContent>
+              </IonModal>
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Leader</IonLabel>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <IonAvatar>
+                    <Avatar uid={groupData?.BikeBusLeader?.id} size="small" />
+                  </IonAvatar>
+                  <IonLabel>{leaderData?.username}</IonLabel>
+                </div>
+              </IonCol>
+              <IonCol size="6">
+                <IonLabel>Members</IonLabel>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <IonButton shape="round" onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
+                    {membersData.map((user, index) => (
+                      <div style={{ marginRight: '4px' }} key={index}>
+                        <Avatar uid={user.id} size="small" />
+                      </div>
+                    ))}
+                    {membersData.length > 5 && (
+                      <IonLabel>{membersData.length}</IonLabel>
+                    )}
+                  </IonButton>
+                </div>
+                <IonModal isOpen={showMembersModal}>
                   <IonHeader>
                     <IonToolbar>
-                      <IonTitle>Invite a User</IonTitle>
+                      <IonTitle>Members</IonTitle>
                     </IonToolbar>
                   </IonHeader>
                   <IonContent>
                     <IonList>
-                      <IonItem>
-                        <IonLabel>
-                          BikeBus Name:
-                          <IonRouterLink href={`https://bikebus.app/bikebusgrouppage/${groupId}`}>
-                            {groupData?.BikeBusName}
-                          </IonRouterLink>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem>
-                        <IonLabel>Routes</IonLabel>
-                        {Array.isArray(routesData) && routesData.filter(route => route?.id).map((route, index) => (
-                          <IonRouterLink key={index}>
-                            <Link to={`/ViewRoute/${route?.id}`}>
-                              <IonLabel>{route?.routeName}</IonLabel>
-                            </Link>
-                          </IonRouterLink>
-                        ))}
-                      </IonItem>
-                      <IonItem>
-                        <IonLabel>Email</IonLabel>
-                      </IonItem>
-                      <IonItem>
-                        <IonInput value={inviteEmail} placeholder="Enter Email" onIonChange={e => setInviteEmail(e.detail.value!)} clearInput></IonInput>
-                      </IonItem>
+                      {membersData.map((user, index) => (
+                        <IonItem key={index}>
+                          <Avatar uid={user.id} />
+                          <IonLabel> {user?.username}</IonLabel>
+                        </IonItem>
+                      ))}
                     </IonList>
-                    <IonButton shape="round" expand="full" onClick={inviteUserByEmail}>Send Invite</IonButton>
-                    <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowInviteModal(false)}>Cancel</IonButton>
-                    <IonLabel>Or hit the "Copy URL" button to paste to social media or messaging apps</IonLabel>
-                    <IonButton shape="round" onClick={copyUrl}>Copy URL</IonButton>
+                    <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
                   </IonContent>
                 </IonModal>
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>Leader</IonLabel>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <IonAvatar>
-                      <Avatar uid={groupData?.BikeBusLeader?.id} size="small" />
-                    </IonAvatar>
-                    <IonLabel>{leaderData?.username}</IonLabel>
-                  </div>
-                </IonCol>
-                <IonCol size="6">
-                  <IonLabel>Members</IonLabel>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <IonButton shape="round" onClick={() => setShowMembersModal(true)} fill="clear" style={{}}>
-                      {membersData.map((user, index) => (
-                        <div style={{ marginRight: '4px' }} key={index}>
-                          <Avatar uid={user.id} size="small" />
-                        </div>
-                      ))}
-                      {membersData.length > 5 && (
-                        <IonLabel>{membersData.length}</IonLabel>
-                      )}
-                    </IonButton>
-                  </div>
-                  <IonModal isOpen={showMembersModal}>
-                    <IonHeader>
-                      <IonToolbar>
-                        <IonTitle>Members</IonTitle>
-                      </IonToolbar>
-                    </IonHeader>
-                    <IonContent>
-                      <IonList>
-                        {membersData.map((user, index) => (
-                          <IonItem key={index}>
-                            <Avatar uid={user.id} />
-                            <IonLabel> {user?.username}</IonLabel>
-                          </IonItem>
-                        ))}
-                      </IonList>
-                      <IonButton shape="round" expand="full" fill="clear" onClick={() => setShowMembersModal(false)}>Cancel</IonButton>
-                    </IonContent>
-                  </IonModal>
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>Description:</IonLabel>
-                </IonCol>
-                <IonCol size="6">
-                  <IonText> {groupData?.BikeBusDescription}</IonText>
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>Primary Route:</IonLabel>
-                </IonCol>
-                <IonCol size="6">
-                  {primaryRoute ? (
-                    <>
-                      <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton style={{ maxWidth: '200px' }} className="ion-text-wrap" shape="round" size="small">View {primaryRoute.routeName}</IonButton></Link>
-                    </>
-                  ) : (
-                    <IonText>No primary route set</IonText>
-                  )}
-                </IonCol>
-                <IonCol size="6">
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>Additional Information:</IonLabel>
-                </IonCol>
-                <IonCol size="6">
-                  <IonLabel> {groupData?.AdditionalInformation}</IonLabel>
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>Type:</IonLabel>
-                </IonCol>
-                <IonCol size="6">
-                  <IonLabel> {groupData?.BikeBusType}</IonLabel>
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                {nextEvent ?
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Description:</IonLabel>
+              </IonCol>
+              <IonCol size="6">
+                <IonText> {groupData?.BikeBusDescription}</IonText>
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Primary Route:</IonLabel>
+              </IonCol>
+              <IonCol size="6">
+                {primaryRoute ? (
                   <>
-                    <IonCol size="6">
-                      <IonLabel>Next Event:</IonLabel>
-                    </IonCol>
-                    <IonCol size="6">
-                      <Link to={`/Event/${nextEventId}`}>
-                        <IonButton shape="round" size="small" style={{ maxWidth: '200px' }} className="ion-text-wrap">{nextEventTime} {timezone}</IonButton>
-                      </Link>
-                    </IonCol>
+                    <Link to={`/ViewRoute/${primaryRoute.id}`}><IonButton style={{ maxWidth: '200px' }} className="ion-text-wrap" shape="round" size="small">View {primaryRoute.routeName}</IonButton></Link>
                   </>
-                  :
-                  <>
-                    <IonCol size="6">
-                      <IonLabel>Next event has not been scheduled yet!</IonLabel>
-                    </IonCol>
-                    <IonCol size="6">
-                      <Link to={`/addschedule/${groupId}`}>
-                        <IonButton shape="round" size="small">Add Event</IonButton>
-                      </Link>
-                    </IonCol>
-                  </>
-                }
-              </IonRow>
-              <IonRow>
-                <IonCol size="6">
-                  <IonLabel>View Schedule for BikeBus: </IonLabel>
-                </IonCol>
-                <IonCol size="6">
-                  <Link to={`/ViewSchedule/${groupId}`}>
-                    <IonButton shape="round" size="small">Schedule</IonButton>
-                  </Link>
-                </IonCol>
-              </IonRow>
-              <IonRow>
-                <IonCol size="12">
-                  <QRCode size={50} value={window.location.href} />
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-          </div>
-        </IonCardContent>
-        <IonCardContent>
-          <IonButton shape="round" size="small" onClick={() => setShowFullPage(true)}>
-            View Statistics
-          </IonButton>
+                ) : (
+                  <IonText>No primary route set</IonText>
+                )}
+              </IonCol>
+              <IonCol size="6">
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Additional Information:</IonLabel>
+              </IonCol>
+              <IonCol size="6">
+                <IonLabel> {groupData?.AdditionalInformation}</IonLabel>
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Type:</IonLabel>
+              </IonCol>
+              <IonCol size="6">
+                <IonLabel> {groupData?.BikeBusType}</IonLabel>
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              {nextEvent ?
+                <>
+                  <IonCol size="6">
+                    <IonLabel>Next Event:</IonLabel>
+                  </IonCol>
+                  <IonCol size="6">
+                    <Link to={`/Event/${nextEventId}`}>
+                      <IonButton shape="round" size="small" style={{ maxWidth: '200px' }} className="ion-text-wrap">{nextEventTime} {timezone}</IonButton>
+                    </Link>
+                  </IonCol>
+                </>
+                :
+                <>
+                  <IonCol size="6">
+                    <IonLabel>Next event has not been scheduled yet!</IonLabel>
+                  </IonCol>
+                  <IonCol size="6">
+                    <Link to={`/addschedule/${groupId}`}>
+                      <IonButton shape="round" size="small">Add Event</IonButton>
+                    </Link>
+                  </IonCol>
+                </>
+              }
+            </IonRow>
+            <IonRow>
+              <IonCol size="6">
+                <IonLabel>Events for BikeBus: </IonLabel>
+              </IonCol>
+              <IonCol size="6">
+                <Link to={`/ViewSchedule/${groupId}`}>
+                  <IonButton shape="round" size="small">View Schedule</IonButton>
+                </Link>
+                <IonButton size="small" shape="round" routerLink={`/addschedule/${groupId}`}>Add Events</IonButton>
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="12">
+                <QRCode size={50} value={window.location.href} />
+              </IonCol>
+            </IonRow>
+          </IonGrid>
           <StatisticsCard statistics={statistics} />
-        </IonCardContent>
-        <IonModal isOpen={showFullPage} onDidDismiss={() => setShowFullPage(false)}>
-          <IonContent>
-            <DetailedStatistics statistics={statistics} eventDetails={eventDetails} />
-          </IonContent>
-        </IonModal>
-        <IonCardHeader>
           <IonCardSubtitle>Routes</IonCardSubtitle>
-        </IonCardHeader>
-        <IonCardContent>
-          <IonList>
-            {routesData.map((route, index) => (
-              <IonItem key={index} button onClick={() => viewRouteDetails(route.id)}>
-                <IonIcon icon={navigateOutline} slot="start" />
-                <IonLabel>
-                  {route.routeName}
-                  {primaryRoute && primaryRoute.id === route.id && (
-                    <IonIcon icon={star} style={{ marginLeft: '8px', color: 'gold' }} />
-                  )}
-                </IonLabel>
-              </IonItem>
-            ))}
-          </IonList>
-        </IonCardContent>
+          <IonCardContent>
+            <IonList>
+              {routesData.map((route, index) => (
+                <IonItem key={index} button onClick={() => viewRouteDetails(route.id)}>
+                  <IonIcon icon={navigateOutline} slot="start" />
+                  <IonLabel>
+                    {route.routeName}
+                    {primaryRoute && primaryRoute.id === route.id && (
+                      <IonIcon icon={star} style={{ marginLeft: '8px', color: 'gold' }} />
+                    )}
+                  </IonLabel>
+                </IonItem>
+              ))}
+            </IonList>
+          </IonCardContent>
+        </div>
+
       </IonContent >
     </IonPage >
   );

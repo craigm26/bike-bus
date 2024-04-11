@@ -35,7 +35,7 @@ import QRCode from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
 // import sidebarevent from '../components/Mapping/SidebarEvent';
 import SidebarEvent from '../components/Mapping/SidebarEvent';
-import { bicycle, pauseCircle, playCircle, stopCircle } from 'ionicons/icons';
+import { bicycle, pauseCircle, playCircle, playCircleOutline, stopCircle, stopCircleOutline } from 'ionicons/icons';
 import { set } from 'date-fns';
 
 
@@ -186,7 +186,7 @@ const Event: React.FC = () => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState<string>('');
   const [bicyclingLayerEnabled, setBicyclingLayerEnabled] = useState(false);
-  const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
+  const [routeLegsEnabled, setRouteLegsEnabled] = useState(false);
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
   const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
@@ -1045,7 +1045,6 @@ const Event: React.FC = () => {
                       {!isEventEnded && (
                         <IonButton size="small" onClick={() => setShowRSVPListModal(true)}>See who's RSVP'd</IonButton>
                       )}
-                      <IonButton size="small" onClick={handleExportGPX}>Export GPX</IonButton>
                       <IonModal isOpen={showRSVPListModal}>
                         <IonHeader>
                           <IonToolbar>
@@ -1147,13 +1146,14 @@ const Event: React.FC = () => {
                       {isEventLeader && isEventActive && (
                         <IonButton size="small" routerLink={`/Map/${id}`}>Go to Event</IonButton>
                       )}
+                      <IonButton size="small" onClick={handleExportGPX}>Export GPX</IonButton>
+                      <IonButton size="small" onClick={triggerPrint}>Print Flyer</IonButton>
                       <div ref={printRef}>
                         <div ref={componentRef} className="print-hidden" style={hiddenStyle}>
                           <svg>
                           </svg>
                         </div>
                       </div>
-                      <IonButton size="small" onClick={triggerPrint}>Print Flyer</IonButton>
                     </IonCol>
                   </IonRow>
                 </IonGrid>
@@ -1163,19 +1163,39 @@ const Event: React.FC = () => {
                   <Marker
                     position={selectedStartLocation}
                     icon={{
-                      url: "/assets/markers/MarkerA.svg",
-                      scaledSize: new google.maps.Size(20, 20),
+                      url: "/assets/markers/play-circle.svg",
+                      scaledSize: new google.maps.Size(30, 30),
+                      labelOrigin: new google.maps.Point(40, -15)  
+                    }}
+                    label={{
+                      text: route?.startPointName || 'Start',
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                      className: "custom-marker-label-event"
                     }}
                   />
                 )}
                 {isLoaded && pathCoordinates && pathCoordinates.length > 0 && (
-                  <Marker position={selectedEndLocation}
+                  <Marker
+                    position={selectedEndLocation}
                     icon={{
-                      url: "/assets/markers/MarkerB.svg",
-                      scaledSize: new google.maps.Size(20, 20),
+                      url: "/assets/markers/stop-circle.svg",
+                      scaledSize: new google.maps.Size(30, 30),
+                      labelOrigin: new google.maps.Point(40, -15)  
+                    }}
+                    label={{
+                      text: route?.endPointName || 'End',
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                      className: "custom-marker-label-event"
                     }}
                   />
                 )}
+
                 {isLoaded && pathCoordinates && pathCoordinates.length > 0 && bikeBusStops && (
                   bikeBusStops.map((bikeBusStop, index) => {
                     const position = {
@@ -1187,7 +1207,19 @@ const Event: React.FC = () => {
                         <Marker
                           key={index}
                           zIndex={10}
-                          label={bikeBusStop?.BikeBusStopName || 'BikeBus Stop'}
+                          icon={{
+                            url: "/assets/markers/pause-circle.svg",
+                            scaledSize: new google.maps.Size(30, 30),
+                            labelOrigin: new google.maps.Point(40, -15),
+                          }}
+                          label={{
+                            text: bikeBusStop?.BikeBusStopName || 'BikeBus Stop',
+                            color: "white",
+                            fontSize: "14px",
+                            fontWeight: "bold",
+                            fontFamily: "Arial, sans-serif",
+                            className: "custom-marker-label-event"
+                          }}
                           position={position}
                           title={bikeBusStop?.BikeBusStopName}
                         />
@@ -1275,7 +1307,7 @@ const Event: React.FC = () => {
                       }
                       return (
                         <React.Fragment key={index}>
-                          <div style={{ width: '2px', height: '30px', backgroundColor: '#ffd800', margin: '5px auto' }} />
+                          <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <IonIcon icon={bicycle} style={{ marginRight: '5px' }} />
                             <IonLabel>Leg {index + 1}: </IonLabel>
@@ -1285,7 +1317,7 @@ const Event: React.FC = () => {
                           </div>
                           {!isLastLeg && stopsForThisLeg.map((stop, stopIndex) => (
                             <React.Fragment key={stopIndex}>
-                              <div style={{ width: '2px', height: '30px', backgroundColor: '#ffd800', margin: '5px auto' }} />
+                              <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <IonIcon icon={pauseCircle} style={{ marginRight: '5px' }} />
                                 <IonLabel>{formattedStopTimeAMPM}</IonLabel>
@@ -1299,7 +1331,7 @@ const Event: React.FC = () => {
                       );
                     })
                     }
-                    <div style={{ width: '2px', height: '30px', backgroundColor: '#ffd800', margin: '5px auto' }} />
+                    <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <IonIcon icon={stopCircle} style={{ marginRight: '5px' }} />
                       <IonLabel>{endTime}</IonLabel>

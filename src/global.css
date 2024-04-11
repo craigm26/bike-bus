@@ -528,7 +528,7 @@
 /* Specific Styles for Each Element */
 .bikebus-event-name {
   font-family: 'indie-flower', sans-serif;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: bold;
   color: #000;
   /* Dark text color */
@@ -537,23 +537,23 @@
 }
 
 .bikebus-event-route {
-  font-size: 18px;
+  font-size: 16px;
   color: #000;
   word-wrap: break-word;
 }
 
 .bikebus-event-time {
-  font-size: 18px;
+  font-size: 16px;
   color: #000;
 }
 
 .bikebus-event-startAddress {
-  font-size: 18px;
+  font-size: 16px;
   color: #000;
 }
 
 .bikebus-event-endAddress {
-  font-size: 18px;
+  font-size: 16px;
   color: #000;
 }
 
@@ -567,6 +567,21 @@
   left: 0;
   right: 0;
   width: 100%;
+}
+
+.custom-marker-label-event {
+  background-color: #ffd800;
+  color: #000;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 5px;
+  border-radius: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  display: inline-block;
+  word-wrap: break-word;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
 }
 
 @media print {

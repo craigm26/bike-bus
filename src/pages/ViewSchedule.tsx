@@ -431,6 +431,12 @@ const ViewSchedule: React.FC = () => {
 
                         </IonCol>
                     </IonRow>
+                    {id !== "OZrruuBJptp9wkAAVUt7" && (
+                        <>
+                            <IonButton size="small" shape="round" routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
+                            <IonButton size="small" shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
+                        </>
+                    )}
                     <IonCard>
                         <div style={{ height: 500 }}>
                             <Calendar
@@ -449,12 +455,6 @@ const ViewSchedule: React.FC = () => {
                             />
                         </div>
                     </IonCard>
-                    {id !== "OZrruuBJptp9wkAAVUt7" && (
-                        <>
-                            <IonButton size="small" shape="round" routerLink={`/addschedule/${id}`}>Add Schedule</IonButton>
-                            <IonButton size="small" shape="round" routerLink={`/bikebusgrouppage/${id}`}>Back to BikeBusGroup</IonButton>
-                        </>
-                    )}
                     <IonModal isOpen={showEventModal} onDidDismiss={() => setShowEventModal(false)}>
                         <IonContent>
                             <IonTitle>{selectedEvent?.BikeBusName}</IonTitle>
