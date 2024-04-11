@@ -424,9 +424,21 @@ const ViewRoute: React.FC = () => {
                   {bikeBusStops.map((BikeBusStop, index) => (
                     <Marker
                       key={index}
-                      label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
                       position={BikeBusStop.location}
-                      title={BikeBusStop.BikeBusStopName}
+                      icon={{
+                        url: "/assets/markers/pause-circle.svg",
+                        scaledSize: new google.maps.Size(30, 30),
+                        labelOrigin: new google.maps.Point(40, -15),
+                      }}
+                      label={{
+                        text: BikeBusStop?.BikeBusStopName || 'BikeBus Stop',
+                        color: "white",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        fontFamily: "Arial, sans-serif",
+                        className: "custom-marker-label-event"
+                      }}
+                      title={BikeBusStop?.BikeBusStopName}
                     />
                   ))}
                   {routeLegsEnabled && routeLegs.map((leg, index) => {
@@ -532,13 +544,37 @@ const ViewRoute: React.FC = () => {
                     zIndex={1}
                     position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
                     title="Start"
-                    label={"Start"}
+                    icon={{
+                      url: "/assets/markers/play-circle.svg",
+                      scaledSize: new google.maps.Size(30, 30),
+                      labelOrigin: new google.maps.Point(40, -15)  
+                    }}
+                    label={{
+                      text: selectedRoute?.startPointName || 'Start',
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                      className: "custom-marker-label-event"
+                    }}
                   />
                   <Marker
                     zIndex={10}
                     position={{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }}
                     title="End"
-                    label={"End"}
+                    icon={{
+                      url: "/assets/markers/stop-circle.svg",
+                      scaledSize: new google.maps.Size(30, 30),
+                      labelOrigin: new google.maps.Point(40, -15)  
+                    }}
+                    label={{
+                      text: selectedRoute?.endPointName || 'End',
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                      className: "custom-marker-label-event"
+                    }}
                   />
                   <SidebarEditRoute
                     mapRef={mapRef}

@@ -1223,9 +1223,21 @@ const EditRoute: React.FC = () => {
                     {bikeBusStops.map((BikeBusStop, index) => (
                       <Marker
                         key={index}
-                        label={BikeBusStop.BikeBusStopName || 'BikeBus Stop'}
                         position={BikeBusStop.location}
-                        title={BikeBusStop.BikeBusStopName}
+                        icon={{
+                          url: "/assets/markers/pause-circle.svg",
+                          scaledSize: new google.maps.Size(30, 30),
+                          labelOrigin: new google.maps.Point(40, -15),
+                        }}
+                        label={{
+                          text: BikeBusStop?.BikeBusStopName || 'BikeBus Stop',
+                          color: "white",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          fontFamily: "Arial, sans-serif",
+                          className: "custom-marker-label-event"
+                        }}
+                        title={BikeBusStop?.BikeBusStopName}
                         onClick={() =>
                           handleBikeBusStopClick(BikeBusStop)
                         }

@@ -1,10 +1,10 @@
 // StatisticsCard.tsx
 import React, { useEffect, useState } from 'react';
-import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonChip, IonLabel, IonText, IonTextarea } from '@ionic/react';
+import { IonChip, IonTextarea } from '@ionic/react';
 import DetailedStatistics from '../components/DetailedStatistics';
 import { IonContent, IonModal } from '@ionic/react';
 import { getDoc, doc, collection, getDocs, query, where, Timestamp, DocumentData, DocumentReference } from 'firebase/firestore';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import moment from 'moment';
 import { db } from '../firebaseConfig';
 import useAuth from '../useAuth';
