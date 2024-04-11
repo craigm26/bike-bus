@@ -10,6 +10,7 @@ import {
   IonTitle,
   IonToolbar,
   IonText,
+  IonIcon,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useAvatar } from '../components/useAvatar';
@@ -21,6 +22,7 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react
 import React from 'react';
 import { AuthContext } from '../AuthContext';
 import SidebarEditRoute from '../components/Mapping/SidebarEditRoute';
+import { playCircle, bicycle, pauseCircle, handRightOutline } from 'ionicons/icons';
 
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
@@ -54,6 +56,7 @@ interface BikeBusStop {
   photos: string;
   formattedAddress: string;
   placeName: string;
+  order: number;
 }
 interface Route {
   startPoint: { lat: number; lng: number };
@@ -121,6 +124,7 @@ const ViewRoute: React.FC = () => {
   const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
+  const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
 
 
 
@@ -263,7 +267,7 @@ const ViewRoute: React.FC = () => {
   const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
 
   // Base offset at zoom level 13 (you can adjust this according to your preferences)
-  const BASE_LAT_OFFSET = 0.0090; 
+  const BASE_LAT_OFFSET = 0.0090;
   const BASE_LNG_OFFSET = 0.0090;
   const BASE_ZOOM_LEVEL = 13;
 
@@ -285,7 +289,7 @@ const ViewRoute: React.FC = () => {
         // Update current zoom level state with the new zoom level
         setCurrentZoomLevel(mapRef.current?.getZoom() ?? 13);
       });
-  
+
       return () => {
         google.maps.event.removeListener(listener);
       };
@@ -463,6 +467,67 @@ const ViewRoute: React.FC = () => {
                       </React.Fragment>
                     )
                   })}
+                  {timingSidebarEnabled && selectedRoute && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '20px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: 'white',
+                        padding: '10px',
+                        zIndex: 100,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IonIcon icon={playCircle} style={{ marginRight: '5px' }} />
+                          <IonLabel>{selectedRoute.startPointName}</IonLabel>
+                        </div>
+                        {routeLegs.map((leg, index) => {
+                          const isLastLeg = index === routeLegs.length - 1;
+                          const stopsForThisLeg = bikeBusStops
+                            .sort((a, b) => a.order - b.order);
+
+                          return (
+                            <React.Fragment key={index}>
+                              <div style={{
+                                width: '2px',
+                                height: '20px',
+                                backgroundColor: '#ffd800',
+                                margin: '10px auto',
+                              }} />
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <IonIcon icon={bicycle} style={{ marginRight: '5px' }} />
+                                <IonLabel>Leg {index + 1}: {leg.duration} minutes</IonLabel>
+                              </div>
+                              {!isLastLeg && stopsForThisLeg.map((stop, stopIndex) => (
+                                <React.Fragment key={stopIndex}>
+                                  <div style={{
+                                    width: '2px',
+                                    height: '20px',
+                                    backgroundColor: '#ffd800',
+                                    margin: '10px auto',
+                                  }} />
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <IonIcon icon={pauseCircle} style={{ marginRight: '5px' }} />
+                                    <IonLabel>{stop.BikeBusStopName}</IonLabel>
+                                  </div>
+                                </React.Fragment>
+                              ))}
+                            </React.Fragment>
+                          );
+                        })}
+                        <div style={{
+                          width: '2px',
+                          height: '20px',
+                          backgroundColor: '#ffd800',
+                          margin: '10px auto',
+                        }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IonIcon icon={handRightOutline} style={{ marginRight: '5px' }} />
+                          <IonLabel>{selectedRoute.endPointName}</IonLabel>
+                        </div>
+                      </div>
+                    )}
                   <Marker
                     zIndex={1}
                     position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
@@ -482,6 +547,8 @@ const ViewRoute: React.FC = () => {
                     handleBicyclingLayerToggle={handleBicyclingLayerToggle}
                     routeLegsEnabled={routeLegsEnabled}
                     setRouteLegsEnabled={setRouteLegsEnabled}
+                    timingSidebarEnabled={timingSidebarEnabled}
+                    setTimingSidebarEnabled={setTimingSidebarEnabled}
                   />
                 </GoogleMap>
               )}

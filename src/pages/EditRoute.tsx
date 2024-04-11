@@ -20,6 +20,7 @@ import {
   IonModal,
   IonButtons,
   IonList,
+  IonIcon,
 } from '@ionic/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
@@ -27,9 +28,10 @@ import { DocumentReference, addDoc, collection, deleteDoc, doc, getDoc, getDocs,
 import { useParams } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
 import SidebarEditRoute from "../components/Mapping/SidebarEditRoute";
-import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, InfoWindow, OverlayView } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, OverlayView } from '@react-google-maps/api';
 import React from 'react';
 import { AuthContext } from '../AuthContext';
+import { bicycle, playCircle, handRightOutline, pauseCircle } from 'ionicons/icons';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -60,6 +62,7 @@ interface BikeBusStop {
   photos: string;
   formattedAddress: string;
   placeName: string;
+  order: number;
 }
 interface Route {
   startPoint: { lat: number; lng: number };
@@ -156,6 +159,8 @@ const EditRoute: React.FC = () => {
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [routeLegsEnabled, setRouteLegsEnabled] = useState(true);
   const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
+  const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
+  const [bikeBusStopOrder, setBikeBusStopOrder] = useState<number>(0);
 
 
 
@@ -196,8 +201,9 @@ const EditRoute: React.FC = () => {
         },
       };
     });
+    // Assuming there is a way to determine the correct order of the stops, for example, by a 'sequence' field
 
-    setBikeBusStops(BikeBusStops);
+    setBikeBusStops(BikeBusStops.sort((a, b) => a.order - b.order));
 
     // since we're setting BikeBusStops, let's also set the waypoints
     const waypoints = BikeBusStops.map(stop => ({
@@ -550,6 +556,7 @@ const EditRoute: React.FC = () => {
 
           const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
           const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+          setDuration(formatDurationToFixed(durationInMinutes.toString()));
 
           const arrivalTime = new Date();
           arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
@@ -590,6 +597,7 @@ const EditRoute: React.FC = () => {
 
           const distanceInMiles = Math.round((distance * 0.000621371) * 100) / 100;
           const durationInMinutes = Math.round((duration / 60) * 100) / 100;
+          setDuration(formatDurationToFixed(durationInMinutes.toString()));
 
           const arrivalTime = new Date();
           arrivalTime.setSeconds(arrivalTime.getSeconds() + duration);
@@ -681,7 +689,10 @@ const EditRoute: React.FC = () => {
 
       const adjustDurationByBicyclingSpeed = (durationInSeconds: number, bicyclingSpeedSelector: string): number => {
         const speedFactor = getSpeedAdjustmentFactor(bicyclingSpeedSelector);
-        return durationInSeconds * speedFactor;
+        const adjustedDuration = durationInSeconds * speedFactor;
+        // update the duration in the RouteLeg object while also rounding to 2 decimal places
+        setDuration(formatDurationToFixed(adjustedDuration.toString()));
+        return adjustedDuration;
       };
 
       // since we have the leg durations, we need to adjust the duration based on the bicyclingSpeedSelector
@@ -740,7 +751,8 @@ const EditRoute: React.FC = () => {
           const { distance, duration } = await calculateDistanceAndDuration(origin, destination, travelMode, speedSelector, waypoints);
           // Update state or UI with calculated distance and duration
           setDistance(distance);
-          setDuration(duration);
+          // Example of setting duration state with formatting
+          setDuration(formatDurationToFixed(duration));
           setBicyclingSpeed(bicyclingSpeed);
           return { distance, duration };
         } catch (
@@ -786,24 +798,24 @@ const EditRoute: React.FC = () => {
   };
 
 
-  // pass in stop.id to the handleBikeBusStopClick function
-  const handleUpdateClick = async (stopId: string) => {
-    console.log({ db, routeId: id, stopId, bikeBusStopName });
+  const handleUpdateClick = async (stopId: string, updatedName: string, updatedOrder: number) => {
+    console.log({ db, routeId: id, stopId, updatedName, updatedOrder });
 
     try {
       // Update the BikeBusStop in Firestore
       await updateDoc(doc(db, 'routes', id, 'BikeBusStops', stopId), {
-        BikeBusStopName: bikeBusStopName,
+        BikeBusStopName: updatedName,
+        order: updatedOrder,
       });
       alert("BikeBusStop updated successfully.");
-      // refresh map
+      // Refresh map
       fetchBikeBusStops();
     } catch (error) {
       console.error("Error updating BikeBusStop:", error);
       alert("Error updating BikeBusStop.");
     }
-
   };
+
 
   const handleDeleteClick = async (stopId: string) => {
     console.log({ db, routeId: id, stopId });
@@ -836,6 +848,14 @@ const EditRoute: React.FC = () => {
   };
 
 
+  const formatDurationToFixed = (duration: string) => {
+    // Convert to number if it's a string
+    const numDuration = typeof duration === 'string' ? parseFloat(duration) : duration;
+    // Return as a string formatted to two decimal places
+    return numDuration.toFixed(2);
+  };
+
+
   const handleRouteSave = async () => {
 
     if (!selectedRoute) {
@@ -863,7 +883,8 @@ const EditRoute: React.FC = () => {
       }));
       const { distance, duration } = await calculateDistanceAndDurationOnUpdatedPath(origin, destination, travelMode, speedSelector, waypoints);
       setDistance(distance);
-      setDuration(duration);
+      // Example of setting duration state with formatting
+      setDuration(formatDurationToFixed(duration));
 
     }
 
@@ -885,7 +906,8 @@ const EditRoute: React.FC = () => {
       const speedSelector = selectedRoute.bicyclingSpeedSelector;
       const { distance, duration } = await calculateDistanceAndDurationOnUpdatedPath(origin, destination, travelMode, speedSelector, waypoints);
       setDistance(distance);
-      setDuration(duration);
+      setDuration(formatDurationToFixed(duration));
+
     }
 
     try {
@@ -907,7 +929,7 @@ const EditRoute: React.FC = () => {
         pathCoordinates: pathCoordinates,
         bicyclingSpeed: bicyclingSpeedSelector,
         bicyclingSpeedSelector: selectedRoute.bicyclingSpeedSelector,
-        duration: duration,
+        duration: formatDurationToFixed(selectedRoute.duration),
         distance: distance,
       };
 
@@ -921,6 +943,11 @@ const EditRoute: React.FC = () => {
           console.error("Leg ID is missing.");
           continue; // Skip this iteration if id is missing
         }
+        // before we update the leg, we need to convert the string duration to a number that has 2 decimal places
+        const durationNumber = Number(leg.duration);
+        const durationString = durationNumber.toFixed(2);
+        leg.duration = durationString;
+
         const legRef = doc(db, `routes/${selectedRoute.id}/legs`, leg.id);
         await updateDoc(legRef, {
           startPoint: leg.startPoint,
@@ -1238,6 +1265,67 @@ const EditRoute: React.FC = () => {
                         </React.Fragment>
                       )
                     })}
+                    {timingSidebarEnabled && selectedRoute && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '20px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: 'white',
+                        padding: '10px',
+                        zIndex: 100,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IonIcon icon={playCircle} style={{ marginRight: '5px' }} />
+                          <IonLabel>{selectedRoute.startPointName}</IonLabel>
+                        </div>
+                        {routeLegs.map((leg, index) => {
+                          const isLastLeg = index === routeLegs.length - 1;
+                          const stopsForThisLeg = bikeBusStops
+                            .sort((a, b) => a.order - b.order);
+
+                          return (
+                            <React.Fragment key={index}>
+                              <div style={{
+                                width: '2px',
+                                height: '20px',
+                                backgroundColor: '#ffd800',
+                                margin: '10px auto',
+                              }} />
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <IonIcon icon={bicycle} style={{ marginRight: '5px' }} />
+                                <IonLabel>Leg {index + 1}: {leg.duration} minutes</IonLabel>
+                              </div>
+                              {!isLastLeg && stopsForThisLeg.map((stop, stopIndex) => (
+                                <React.Fragment key={stopIndex}>
+                                  <div style={{
+                                    width: '2px',
+                                    height: '20px',
+                                    backgroundColor: '#ffd800',
+                                    margin: '10px auto',
+                                  }} />
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <IonIcon icon={pauseCircle} style={{ marginRight: '5px' }} />
+                                    <IonLabel>{stop.BikeBusStopName}</IonLabel>
+                                  </div>
+                                </React.Fragment>
+                              ))}
+                            </React.Fragment>
+                          );
+                        })}
+                        <div style={{
+                          width: '2px',
+                          height: '20px',
+                          backgroundColor: '#ffd800',
+                          margin: '10px auto',
+                        }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IonIcon icon={handRightOutline} style={{ marginRight: '5px' }} />
+                          <IonLabel>{selectedRoute.endPointName}</IonLabel>
+                        </div>
+                      </div>
+                    )}
                     <IonModal isOpen={showInfoStopModal} onDidDismiss={() => setshowInfoStopModal(false)}>
                       <IonHeader>
                         <IonToolbar>
@@ -1263,30 +1351,37 @@ const EditRoute: React.FC = () => {
                           </IonRow>
                           <IonRow>
                             <IonList>
-                              {bikeBusStops.map((stop, index) => {
-                                return (
-                                  <IonItem key={stop.id}>
-                                    <IonLabel>BikeBusStop Name:</IonLabel>
-                                    <IonInput
-                                      value={stop.BikeBusStopName}
-                                      onIonChange={(e) => setBikeBusStopName(e.detail.value!)}
-                                    />
-                                    <IonButton color="light" onClick={() => handleUpdateClick(stop.id)}>
-                                      Update Name
-                                    </IonButton>
-                                    <IonButton color="danger" onClick={() => handleDeleteClick(stop.id)}>
-                                      Delete
-                                    </IonButton>
-                                  </IonItem>
-                                )
-                              }
-                              )}
-                            </IonList>
+                              {/* Display the list of BikeBusStops based on the order field/value */}
+                              {bikeBusStops.map((stop) => (
+                                <IonItem key={stop.id}>
+                                  <IonLabel position="stacked">Order:</IonLabel>
+                                  <IonInput
+                                    type="number"
+                                    value={stop.order}
+                                    placeholder="Enter Order"
+                                    onIonChange={(e) => setBikeBusStopOrder(Number(e.detail.value!))}
+                                  />
+                                  <IonLabel position="stacked">BikeBusStop Name:</IonLabel>
+                                  <IonInput
+                                    value={stop.BikeBusStopName}
+                                    placeholder="Enter Stop Name"
+                                    onIonChange={(e) => setBikeBusStopName(e.detail.value!)}
+                                  />
+                                  <IonButton color="light" onClick={() => handleUpdateClick(stop.id, bikeBusStopName, bikeBusStopOrder)}>
+                                    Update Stop
+                                  </IonButton>
 
+                                  <IonButton color="danger" onClick={() => handleDeleteClick(stop.id)}>
+                                    Delete
+                                  </IonButton>
+                                </IonItem>
+                              ))}
+                            </IonList>
                           </IonRow>
                         </IonGrid>
                       </IonContent>
                     </IonModal>
+
                     <Marker
                       zIndex={1}
                       position={{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }}
@@ -1306,6 +1401,8 @@ const EditRoute: React.FC = () => {
                       handleBicyclingLayerToggle={handleBicyclingLayerToggle}
                       routeLegsEnabled={routeLegsEnabled}
                       setRouteLegsEnabled={setRouteLegsEnabled}
+                      timingSidebarEnabled={timingSidebarEnabled}
+                      setTimingSidebarEnabled={setTimingSidebarEnabled}
                     />
                   </GoogleMap>
                 )}

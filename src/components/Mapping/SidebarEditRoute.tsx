@@ -1,5 +1,5 @@
-import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonGrid, IonRow, IonCol, IonText, IonPage } from '@ionic/react';
-import { arrowForward, arrowBack, locateOutline, pulseOutline, addOutline, removeOutline } from 'ionicons/icons';
+import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol } from '@ionic/react';
+import { arrowForward, arrowBack } from 'ionicons/icons';
 import { useState } from 'react';
 
 type SidebarProps = {
@@ -9,6 +9,8 @@ type SidebarProps = {
     handleBicyclingLayerToggle: (enabled: boolean) => void;
     setRouteLegsEnabled: (value: boolean) => void;
     routeLegsEnabled: boolean;
+    timingSidebarEnabled: boolean;
+    setTimingSidebarEnabled: (value: boolean) => void;
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -18,6 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     handleBicyclingLayerToggle,
     setRouteLegsEnabled,
     routeLegsEnabled,
+    timingSidebarEnabled,
+    setTimingSidebarEnabled,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -68,6 +72,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <IonToggle
                                     checked={routeLegsEnabled}
                                     onIonChange={e => setRouteLegsEnabled(e.detail.checked)}
+                                />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Timing Sidebar</IonLabel>
+                                <IonToggle
+                                    checked={timingSidebarEnabled}
+                                    onIonChange={e => setTimingSidebarEnabled(e.detail.checked)}
                                 />
                             </IonCol>
                         </IonRow>
