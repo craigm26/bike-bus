@@ -3,7 +3,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 import axios from "axios";
-const cors = require("cors")({ origin: true });
+const cors = require("cors");
 import { format } from "date-fns";
 
 // import the sendgrid api key from the .env.local or production file
@@ -35,7 +35,7 @@ exports.sendInviteEmail = functions.firestore
       const bikebusgroupSnap = await bikebusgroupRef.get();
       const bikebusgroup = bikebusgroupSnap.data();
 
-      console.log("bikebusgroup", bikebusgroup);      
+      console.log("bikebusgroup", bikebusgroup);
 
       if (bikebusgroup) {
         const invites = newValue.BikeBusInvites;
@@ -71,6 +71,153 @@ exports.sendInviteEmail = functions.firestore
     }
   });
 
+const geocodeAddress = async (address: string | number | boolean) => {
+  const apiKey = functions.config().google.geocoding_api_key;
+  
+
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+
+  try {
+    const response = await axios.get(url);
+    const results = response.data.results;
+    if (results.length > 0) {
+      const components = results[0].address_components;
+      const addressDetails = {
+        street: components.find((c: { types: string | string[]; }) => c.types.includes("route"))?.long_name || "",
+        city: components.find((c: { types: string | string[]; }) => c.types.includes("locality"))?.long_name || "",
+        state: components.find((c: { types: string | string[]; }) => c.types.includes("administrative_area_level_1"))?.short_name || "",
+        zip: components.find((c: { types: string | string[]; }) => c.types.includes("postal_code"))?.long_name || "",
+        country: components.find((c: { types: string | string[]; }) => c.types.includes("country"))?.long_name || ""
+      };
+      return addressDetails;
+    }
+    return {};
+  } catch (error) {
+    console.error("Error geocoding address:", error);
+    return {};
+  }
+};
+
+
+const getAddressCache = async (address: string | number | boolean) => {
+  if (!address || typeof address !== "string" || address.trim() === "") {
+    console.log("Invalid or empty address:", address);
+    return null; // Return null or handle the case appropriately
+  }
+
+  const cacheRef = admin.firestore().collection("addressCache").doc(encodeURIComponent(address));
+  try {
+    const doc = await cacheRef.get();
+    return doc.exists ? doc.data() : null;
+  } catch (error) {
+    console.error("Error accessing address cache:", error);
+    return null;
+  }
+};
+
+
+const cacheAddress = async (address: string | number | boolean, details: admin.firestore.WithFieldValue<admin.firestore.DocumentData>) => {
+  const cacheRef = admin.firestore().collection("addressCache").doc(encodeURIComponent(address));
+  await cacheRef.set(details);
+};
+
+
+exports.updateRouteAddressDetails = functions.firestore
+  .document("routes/{routeId}")
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const previousData = change.before.data();
+
+    if (newData.endPointAddress !== previousData.endPointAddress) {
+      let addressDetails = await getAddressCache(newData.endPointAddress);
+    
+      if (!addressDetails) {
+        addressDetails = await geocodeAddress(newData.endPointAddress);
+        if (addressDetails && Object.keys(addressDetails).length > 0) {
+          await cacheAddress(newData.endPointAddress, addressDetails);
+        }
+      }
+
+      console.log("Attempting to update route document with address details:", addressDetails);
+
+      if (addressDetails && Object.values(addressDetails).every(value => value !== undefined)) {
+        try {
+          await change.after.ref.update(addressDetails);
+          console.log("Route document updated successfully");
+        } catch (error) {
+          console.error("Failed to update route document:", error);
+        }
+      } else {
+        console.log("Address details are invalid or incomplete:", addressDetails);
+      }
+    } else {
+      console.log("No changes in endPointAddress, update not necessary");
+    }
+  });
+
+
+const corsHandler = cors({ origin: true });
+
+exports.forceUpdateAllRouteAddresses = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    if (request.method !== "POST") {
+      response.status(405).send("Method Not Allowed");
+    } else {
+      try {
+        await updateAddresses(request, response);
+      } catch (error) {
+        console.error("Error updating routes:", error);
+        response.status(500).send("Internal Server Error");
+      }
+    }
+  });
+});
+
+async function updateAddresses(request: functions.https.Request, response: functions.Response<any>) {
+  const routesRef = admin.firestore().collection("routes");
+  const snapshot = await routesRef.where("endPointAddress", "!=", null).get();
+
+  if (snapshot.empty) {
+    response.send("No routes to update.");
+    return;
+  }
+
+  let count = 0;
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+
+    if (!data.endPointAddress) {
+      console.error("Missing endPointAddress for document:", doc.id);
+      continue; // Skip to the next iteration
+    }
+    
+    let addressDetails = await getAddressCache(data.endPointAddress);
+    if (!addressDetails) {
+      addressDetails = await geocodeAddress(data.endPointAddress);
+      if (addressDetails) {
+        await cacheAddress(data.endPointAddress, addressDetails);
+      }
+    }
+
+    if (addressDetails) {
+      // Prepare the update data to include an array of address details
+      const updateData = {
+        endPointDetails: admin.firestore.FieldValue.arrayUnion(addressDetails),
+      };
+      try {
+        await doc.ref.update(updateData);
+        console.log(`Document ${doc.id} updated with address details.`);
+        count++;
+      } catch (error) {
+        console.error(`Failed to update document ${doc.id}:`, error);
+      }
+    }
+  }
+
+  response.send(`Update process completed for ${count} routes.`);
+}
+
+
 
 const fetchAndStoreNewsArticles = async (query: string) => {
   const Parser = require("rss-parser");
@@ -102,7 +249,7 @@ exports.scheduledFetchNewsArticles = functions.pubsub.schedule("every 24 hours")
   console.log("Scheduled fetch and store of news articles complete.");
 });
 
-const getWebpageMetadata = async (url: string): Promise<{title: string, description: string, image: string}> => {
+const getWebpageMetadata = async (url: string): Promise<{ title: string, description: string, image: string }> => {
   try {
     const { data: html } = await axios.get(url);
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);
@@ -157,7 +304,7 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every wednesday 10:00").t
 
     // Send email to each subscriber
     subscribers.forEach(async (subscriber) => {
-      const emailContent = articles.map(article => 
+      const emailContent = articles.map(article =>
         `<li><a href="${article.link}">${article.title}</a> - Posted on ${format(article.timestamp.toDate(), "PPP")}</li>`
       ).join("");
 
@@ -183,7 +330,7 @@ exports.sendWeeklySummary = functions.pubsub.schedule("every wednesday 10:00").t
             <p>To unsubscribe from this newsletter, please <a href="https://bikebus.app/news">click here</a> and then select "Unsubscribe" after logging in.</p>
         `,
       };
-    
+
       try {
         await sgMail.send(msg);
       } catch (error) {

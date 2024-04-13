@@ -1,8 +1,8 @@
-import { IonPage, IonContent, IonCardHeader, IonTitle, IonCard, IonCardContent, IonCardTitle, IonItem, IonItemDivider, IonItemGroup, IonLabel, IonList, IonAccordionGroup, IonAccordion, IonHeader, IonToolbar } from "@ionic/react";
+import { IonPage, IonContent, IonTitle, IonItem, IonLabel, IonList, IonAccordionGroup, IonAccordion, IonHeader, IonToolbar } from "@ionic/react";
 import React, { useCallback, useEffect, useState } from "react";
 import useAuth from "../useAuth";
 import { db } from '../firebaseConfig';
-import { collection, doc, getDoc, getDocs, updateDoc, query, where, DocumentReference } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, DocumentReference } from 'firebase/firestore';
 import { useHistory } from "react-router-dom";
 
 interface BikeBus extends Route {

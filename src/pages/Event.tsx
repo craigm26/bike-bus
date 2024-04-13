@@ -121,7 +121,11 @@ interface FetchedUserData {
   uid?: string;
 }
 
-
+interface Forecast {
+  temperature: number;
+  weather: string;
+  time: Date;
+}
 
 
 
@@ -314,7 +318,9 @@ const Event: React.FC = () => {
       const docSnapshot = await getDoc(docRef);
       if (docSnapshot.exists()) {
         const eventData = docSnapshot.data();
-        setEventData(eventData);
+        const formattedStartTime = eventData.startTime instanceof Timestamp ? formatTimestamp(eventData.startTime) : eventData.startTime;
+        const newEventData = { ...eventData, startTime: formattedStartTime };
+        setEventData(newEventData);
         return eventData; // Return eventData for further use
       }
       return null;
@@ -627,6 +633,19 @@ const Event: React.FC = () => {
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
 
+  // Helper function to convert Timestamp to readable string
+  const formatTimestamp = (timestamp: Timestamp) => {
+    // Setting options for toLocaleTimeString to get the time in "hh:mm AM/PM" format
+    const options: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true // Use 12-hour format
+    };
+
+    return timestamp ? new Date(timestamp.toDate()).toLocaleTimeString('en-US', options) : 'Loading...';
+  };
+
+
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
   const endTime = eventData?.endTime instanceof Timestamp
     ? new Date(eventData?.endTime.toDate()).toLocaleTimeString(undefined, timeOptions)
@@ -796,8 +815,6 @@ const Event: React.FC = () => {
     }, 500); // Increase the delay to 500ms
   };
 
-
-
   const hiddenStyle: React.CSSProperties = isPrinting ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' };
 
   function convertToGPX(pathCoordinates: any[]) {
@@ -854,6 +871,52 @@ const Event: React.FC = () => {
       }
     }
   };
+
+  const fetchWeatherForecast = async (endPoint: Coordinate | undefined, startTime: Date): Promise<Forecast[] | null> => {
+    // Calculate time for the next 3 hourly forecasts starting from startTime
+    const date = new Date(startTime);
+    date.setMinutes(0, 0, 0); // Normalize to the nearest hour
+
+    // we need to deconstruct the endPoint object to get the latitude and longitude
+    const { lat, lng: lon } = endPoint ?? { lat: 0, lng: 0 };
+  
+    // NWS API endpoint construction
+    const url = `https://api.weather.gov/points/${lat},${lon}`;
+    
+    try {
+      // First fetch to get the forecast URL
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'BikeBusApp/1.0 (craigm26@gmail.com)' } // Replace with your app info and contact
+      });
+      const data = await response.json();
+      const forecastUrl = data.properties.forecastHourly;
+  
+      // Second fetch to get the hourly forecast data
+      const forecastResponse = await fetch(forecastUrl, {
+        headers: { 'User-Agent': 'BikeBusApp/1.0 (craigm26@gmail.com)' } // Same header
+      });
+      const forecastData = await forecastResponse.json();
+  
+      // Filter forecasts for the next three hours
+      const forecasts = forecastData.properties.periods.filter((period: { startTime: string | number | Date; }) => {
+        const forecastDate = new Date(period.startTime);
+        return forecastDate >= date && forecastDate <= new Date(date.getTime() + 3 * 3600000);
+      });
+  
+      return forecasts;
+    } catch (error) {
+      console.error("Failed to fetch weather data:", error);
+      return null;
+    }
+  };
+  
+  // Example usage
+  /*
+  fetchWeatherForecast(route?.endPoint, new Date()).then(forecasts => {
+    console.log("Forecasts for the next three hours:", forecasts);
+  });
+  */
+  
 
 
   const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
@@ -918,8 +981,19 @@ const Event: React.FC = () => {
               center={mapCenter}
               zoom={currentZoomLevel}
               options={{
+                zoomControl: true,
+                zoomControlOptions: {
+                  position: window.google.maps.ControlPosition.LEFT_CENTER
+                },
+                streetViewControl: true,
+                streetViewControlOptions: {
+                  position: window.google.maps.ControlPosition.LEFT_CENTER
+                },
+                fullscreenControl: true,
+                fullscreenControlOptions: {
+                  position: window.google.maps.ControlPosition.LEFT_CENTER
+                },
                 disableDefaultUI: true,
-                zoomControl: false,
                 mapTypeControl: false,
                 disableDoubleClickZoom: true,
                 maxZoom: 18,
@@ -1165,7 +1239,7 @@ const Event: React.FC = () => {
                     icon={{
                       url: "/assets/markers/play-circle.svg",
                       scaledSize: new google.maps.Size(30, 30),
-                      labelOrigin: new google.maps.Point(40, -15)  
+                      labelOrigin: new google.maps.Point(40, -15)
                     }}
                     label={{
                       text: route?.startPointName || 'Start',
@@ -1183,7 +1257,7 @@ const Event: React.FC = () => {
                     icon={{
                       url: "/assets/markers/stop-circle.svg",
                       scaledSize: new google.maps.Size(30, 30),
-                      labelOrigin: new google.maps.Point(40, -15)  
+                      labelOrigin: new google.maps.Point(40, -15)
                     }}
                     label={{
                       text: route?.endPointName || 'End',

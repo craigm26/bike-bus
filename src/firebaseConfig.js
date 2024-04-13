@@ -25,6 +25,11 @@ const storage = getStorage(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
+function saveData(docPath, data) {
+  const sanitizedData = JSON.parse(JSON.stringify(data)); // This removes undefined fields
+  db.doc(docPath).set(sanitizedData);
+}
+
 // Add this line before initializing App Check
 if (process.env.NODE_ENV === 'development') {
   // eslint-disable-next-line no-restricted-globals
@@ -35,4 +40,4 @@ const appCheck = initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 
-export { auth, storage, db, appCheck, analytics, rtdb, app };
+export { auth, storage, db, appCheck, analytics, rtdb, app, saveData };
