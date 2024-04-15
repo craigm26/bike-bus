@@ -72,8 +72,7 @@ exports.sendInviteEmail = functions.firestore
   });
 
 const geocodeAddress = async (address: string | number | boolean) => {
-  const apiKey = functions.config().google.geocoding_api_key;
-  
+  const apiKey = ""
 
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
 
@@ -120,6 +119,37 @@ const cacheAddress = async (address: string | number | boolean, details: admin.f
   const cacheRef = admin.firestore().collection("addressCache").doc(encodeURIComponent(address));
   await cacheRef.set(details);
 };
+
+exports.initializeRouteAddressDetails = functions.firestore
+  .document("routes/{routeId}")
+  .onCreate(async (snapshot, context) => {
+    const newData = snapshot.data();
+
+    if (newData && newData.endPointAddress) {
+      let addressDetails = await getAddressCache(newData.endPointAddress);
+      
+      if (!addressDetails) {
+        addressDetails = await geocodeAddress(newData.endPointAddress);
+        if (addressDetails && Object.keys(addressDetails).length > 0) {
+          await cacheAddress(newData.endPointAddress, addressDetails);
+        }
+      }
+
+      if (addressDetails && Object.values(addressDetails).every(value => value !== undefined)) {
+        try {
+          await snapshot.ref.update({
+            endPointDetails: admin.firestore.FieldValue.arrayUnion(addressDetails),
+          });
+          console.log(`New route document initialized with address details for routeId: ${context.params.routeId}`);
+        } catch (error) {
+          console.error(`Failed to initialize new route document with address details for routeId: ${context.params.routeId}`, error);
+        }
+      } else {
+        console.log("Address details are invalid or incomplete:", addressDetails);
+      }
+    }
+  });
+
 
 
 exports.updateRouteAddressDetails = functions.firestore

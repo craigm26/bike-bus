@@ -185,8 +185,6 @@ const ViewOrganization: React.FC = () => {
                 <IonGrid>
                     <IonRow>
                         <IonButton shape="round" routerLink={`/EditOrganization/${id}`}>Edit Organization</IonButton>
-                        <IonButton>Send Invite</IonButton>
-                        <IonButton shape="round" routerLink={`/OrganizationMap/${id}`}>Map</IonButton>
                         <IonButton shape="round" routerLink={`/ViewSchedule`}>Events</IonButton>
                         <IonButton shape="round" routerLink={`/BulletinBoards/${id}`}>Bulletin Board</IonButton>
                         {/*if user is an admin or manager

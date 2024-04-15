@@ -11,6 +11,8 @@ type SidebarProps = {
     routeLegsEnabled: boolean;
     timingSidebarEnabled: boolean;
     setTimingSidebarEnabled: (value: boolean) => void;
+    weatherForecastEnabled: boolean;
+    setWeatherForecastEnabled: (value: boolean) => void;
 };
 
 const SidebarEvent: React.FC<SidebarProps> = ({
@@ -22,6 +24,8 @@ const SidebarEvent: React.FC<SidebarProps> = ({
     routeLegsEnabled,
     timingSidebarEnabled,
     setTimingSidebarEnabled,
+    weatherForecastEnabled,
+    setWeatherForecastEnabled,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -81,6 +85,15 @@ const SidebarEvent: React.FC<SidebarProps> = ({
                                 <IonToggle
                                     checked={timingSidebarEnabled}
                                     onIonChange={e => setTimingSidebarEnabled(e.detail.checked)}
+                                />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Weather Forecast</IonLabel>
+                                <IonToggle
+                                    checked={weatherForecastEnabled}
+                                    onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
                                 />
                             </IonCol>
                         </IonRow>

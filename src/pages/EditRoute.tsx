@@ -32,6 +32,8 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline, StandaloneSearchBox, Overl
 import React from 'react';
 import { AuthContext } from '../AuthContext';
 import { bicycle, playCircle, handRightOutline, pauseCircle } from 'ionicons/icons';
+import { set } from 'date-fns';
+import { ca } from 'date-fns/locale';
 
 const libraries: any = ["places", "drawing", "geometry", "localContext", "visualization"];
 
@@ -161,6 +163,7 @@ const EditRoute: React.FC = () => {
   const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
   const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
   const [bikeBusStopOrder, setBikeBusStopOrder] = useState<number>(0);
+  const [calculatedRouteLegs, setCalculatedRouteLegs] = useState<RouteLeg[]>([]);
 
 
 
@@ -615,6 +618,34 @@ const EditRoute: React.FC = () => {
     });
   }
 
+  function latLngToObject(latLng: google.maps.LatLng): { lat: number; lng: number } {
+    return {
+        lat: latLng.lat(),
+        lng: latLng.lng()
+    };
+}
+
+
+  const saveRouteLegsToFirebase = async () => {
+    console.log("Saving route legs to Firebase...");
+    console.log("Route Legs:", calculatedRouteLegs);
+    console.log("Selected Route:", selectedRoute);
+    console.log("Selected Route ID:", selectedRoute?.id);
+    const legsRef = collection(db, `routes/${selectedRoute?.id}/legs`);
+    console.log("Legs Ref:", legsRef);
+    // Loop through each leg and save it to Firestore
+    calculatedRouteLegs.forEach(async leg => {
+      const legData = {
+        startPoint: latLngToObject(new google.maps.LatLng(getNumber(leg.startPoint.lat), getNumber(leg.startPoint.lng))),
+        endPoint: latLngToObject(new google.maps.LatLng(getNumber(leg.endPoint.lat), getNumber(leg.endPoint.lng))),
+        distance: leg.distance,
+        duration: leg.duration,
+      };
+      const docRef = await addDoc(legsRef, legData);
+      console.log("Leg saved with ID:", docRef.id);
+    });
+  }
+
 
   const getSpeedAdjustmentFactor = (speedSelector: any) => {
     switch (speedSelector) {
@@ -684,7 +715,6 @@ const EditRoute: React.FC = () => {
 
       // Now call calculateRouteLegs with the correct arguments
       const legs = await calculateRouteLegs(selectedRoute.startPoint, selectedRoute.endPoint, waypoints, selectedRoute.travelMode);
-
       console.log("Calculated Legs:", legs);
 
       const adjustDurationByBicyclingSpeed = (durationInSeconds: number, bicyclingSpeedSelector: string): number => {
@@ -699,30 +729,10 @@ const EditRoute: React.FC = () => {
       legs.forEach(leg => {
         leg.duration = adjustDurationByBicyclingSpeed(Number(leg.duration), selectedRoute.bicyclingSpeedSelector).toString();
       });
-
-      const saveRouteLegsToFirebase = async (routeId: string, legs: RouteLeg[]) => {
-        const legsRef = collection(db, `routes/${routeId}/legs`);
-        const saveRouteLeg = async (leg: RouteLeg) => {
-          const startPointLat = typeof leg.startPoint.lat === 'function' ? leg.startPoint.lat() : leg.startPoint.lat;
-          const startPointLng = typeof leg.startPoint.lng === 'function' ? leg.startPoint.lng() : leg.startPoint.lng;
-          const endPointLat = typeof leg.endPoint.lat === 'function' ? leg.endPoint.lat() : leg.endPoint.lat;
-          const endPointLng = typeof leg.endPoint.lng === 'function' ? leg.endPoint.lng() : leg.endPoint.lng;
-
-          const legToSave = {
-            ...leg,
-            startPoint: { lat: startPointLat, lng: startPointLng },
-            endPoint: { lat: endPointLat, lng: endPointLng },
-          };
-
-          // Assuming 'legsRef' is a Firestore collection reference where you're saving legs
-          await addDoc(legsRef, legToSave);
-        };
-      };
-
-
-
-      saveRouteLegsToFirebase(selectedRoute.id, legs);
-
+      console.log("Adjusted Legs:", legs);
+      // set these adjusted legs to the caclulatedRouteLegs state
+      setCalculatedRouteLegs(legs);
+      console.log("Route Legs:", calculatedRouteLegs);
 
       setDirectionsFetched(true);
     } catch (error) {
@@ -938,25 +948,11 @@ const EditRoute: React.FC = () => {
       // Update the route in Firestore
       await updateDoc(routeRef, updatedRouteData);
 
-      for (let leg of routeLegs) {
-        if (!leg.id) {
-          console.error("Leg ID is missing.");
-          continue; // Skip this iteration if id is missing
-        }
-        // before we update the leg, we need to convert the string duration to a number that has 2 decimal places
-        const durationNumber = Number(leg.duration);
-        const durationString = durationNumber.toFixed(2);
-        leg.duration = durationString;
+      console.log("Update route legs to firestore: ", routeLegs);
+      console.log("Update route legs to firestore: ", calculatedRouteLegs);
 
-        const legRef = doc(db, `routes/${selectedRoute.id}/legs`, leg.id);
-        await updateDoc(legRef, {
-          startPoint: leg.startPoint,
-          endPoint: leg.endPoint,
-          distance: leg.distance,
-          duration: leg.duration,
-        });
-
-      }
+      // Save the route legs to Firestore
+      await saveRouteLegsToFirebase();
 
       alert("Route successfully updated.");
     } catch (error) {
@@ -1368,6 +1364,7 @@ const EditRoute: React.FC = () => {
                                 <IonItem key={stop.id}>
                                   <IonLabel position="stacked">Order:</IonLabel>
                                   <IonInput
+                                    aria-label="Order"
                                     type="number"
                                     value={stop.order}
                                     placeholder="Enter Order"
@@ -1375,6 +1372,7 @@ const EditRoute: React.FC = () => {
                                   />
                                   <IonLabel position="stacked">BikeBusStop Name:</IonLabel>
                                   <IonInput
+                                    aria-label='BikeBusStop Name'
                                     value={stop.BikeBusStopName}
                                     placeholder="Enter Stop Name"
                                     onIonChange={(e) => setBikeBusStopName(e.detail.value!)}

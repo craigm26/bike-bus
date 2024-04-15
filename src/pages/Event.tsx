@@ -21,7 +21,8 @@ import {
   IonText,
   IonCardSubtitle,
   IonIcon,
-  IonItemDivider,
+  IonSegment,
+  IonSegmentButton,
 } from '@ionic/react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useAuth from '../useAuth';
@@ -35,8 +36,8 @@ import QRCode from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
 // import sidebarevent from '../components/Mapping/SidebarEvent';
 import SidebarEvent from '../components/Mapping/SidebarEvent';
-import { bicycle, pauseCircle, playCircle, playCircleOutline, stopCircle, stopCircleOutline } from 'ionicons/icons';
-import { set } from 'date-fns';
+import { bicycle, pauseCircle, playCircle, stopCircle } from 'ionicons/icons';
+import WeatherForecast from '../components/WeatherForecast';
 
 
 
@@ -194,8 +195,8 @@ const Event: React.FC = () => {
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
   const [currentZoomLevel, setCurrentZoomLevel] = useState(13);
   const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
-  const [formattedStopTimeAMPM, setFormattedStopTimeAMPM] = useState<string[]>([]);
-
+  const [weatherForecastEnabled, setWeatherForecastEnabled] = useState(true);
+  const [weatherForecastType, setWeatherForecastType] = useState<string>('hourly');
 
 
 
@@ -318,8 +319,7 @@ const Event: React.FC = () => {
       const docSnapshot = await getDoc(docRef);
       if (docSnapshot.exists()) {
         const eventData = docSnapshot.data();
-        const formattedStartTime = eventData.startTime instanceof Timestamp ? formatTimestamp(eventData.startTime) : eventData.startTime;
-        const newEventData = { ...eventData, startTime: formattedStartTime };
+        const newEventData = { ...eventData };
         setEventData(newEventData);
         return eventData; // Return eventData for further use
       }
@@ -360,6 +360,7 @@ const Event: React.FC = () => {
         });
       }
     });
+
   }, [id]);
 
 
@@ -589,8 +590,6 @@ const Event: React.FC = () => {
     setShowRSVPModal(false);
   };
 
-  // Function to handle un-RSVP (leaving an event)
-  // Function to handle un-RSVP (leaving an event and all roles)
   const handleUnRSVP = async () => {
     if (!user || !username) {
       console.error("User not found. Cannot un-RSVP.");
@@ -633,17 +632,25 @@ const Event: React.FC = () => {
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }; // Time only
 
-  // Helper function to convert Timestamp to readable string
-  const formatTimestamp = (timestamp: Timestamp) => {
-    // Setting options for toLocaleTimeString to get the time in "hh:mm AM/PM" format
-    const options: Intl.DateTimeFormatOptions = {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true // Use 12-hour format
-    };
+  function isTimestamp(timestamp: { toDate: any; }) {
+    return timestamp && typeof timestamp.toDate === 'function';
+  }
 
-    return timestamp ? new Date(timestamp.toDate()).toLocaleTimeString('en-US', options) : 'Loading...';
+  const formatTimestamp = (timestamp: Timestamp) => {
+    console.log('timestamp', timestamp);
+    if (isTimestamp(timestamp)) {
+      setStartDateTime(timestamp.toDate().toLocaleString('en-US', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }));
+    } else {
+      console.error('Provided data is not a Timestamp:', timestamp);
+      return ''; // or handle error appropriately
+    }
   };
+
+
+
 
 
   const startTime = eventData?.start ? new Date(eventData?.start.toDate()).toLocaleString(undefined, dateOptions) : 'Loading...';
@@ -775,7 +782,7 @@ const Event: React.FC = () => {
     await updateDoc(docRef, {
       startTimeStamp: startDateTimeTimestamp,
       start: startDateTimeTimestamp,
-      startTime: startDateTimeTimestamp,
+      startTime: startTime,
       endTime: eventEndTime,
       endTimestamp: eventEndTime
     });
@@ -854,13 +861,6 @@ const Event: React.FC = () => {
     URL.revokeObjectURL(href);
   };
 
-
-  useEffect(() => {
-    if (mapRef.current && mapLoaded) {
-      mapRef.current.setCenter(mapCenter);
-    }
-  }, [isLoaded, loadError]);
-
   const handleBicyclingLayerToggle = (enabled: boolean | ((prevState: boolean) => boolean)) => {
     setBicyclingLayerEnabled(enabled);
     if (bicyclingLayerRef.current) {
@@ -872,51 +872,15 @@ const Event: React.FC = () => {
     }
   };
 
-  const fetchWeatherForecast = async (endPoint: Coordinate | undefined, startTime: Date): Promise<Forecast[] | null> => {
-    // Calculate time for the next 3 hourly forecasts starting from startTime
-    const date = new Date(startTime);
-    date.setMinutes(0, 0, 0); // Normalize to the nearest hour
 
-    // we need to deconstruct the endPoint object to get the latitude and longitude
-    const { lat, lng: lon } = endPoint ?? { lat: 0, lng: 0 };
-  
-    // NWS API endpoint construction
-    const url = `https://api.weather.gov/points/${lat},${lon}`;
-    
-    try {
-      // First fetch to get the forecast URL
-      const response = await fetch(url, {
-        headers: { 'User-Agent': 'BikeBusApp/1.0 (craigm26@gmail.com)' } // Replace with your app info and contact
-      });
-      const data = await response.json();
-      const forecastUrl = data.properties.forecastHourly;
-  
-      // Second fetch to get the hourly forecast data
-      const forecastResponse = await fetch(forecastUrl, {
-        headers: { 'User-Agent': 'BikeBusApp/1.0 (craigm26@gmail.com)' } // Same header
-      });
-      const forecastData = await forecastResponse.json();
-  
-      // Filter forecasts for the next three hours
-      const forecasts = forecastData.properties.periods.filter((period: { startTime: string | number | Date; }) => {
-        const forecastDate = new Date(period.startTime);
-        return forecastDate >= date && forecastDate <= new Date(date.getTime() + 3 * 3600000);
-      });
-  
-      return forecasts;
-    } catch (error) {
-      console.error("Failed to fetch weather data:", error);
-      return null;
+  useEffect(() => {
+    if (mapRef.current && mapLoaded) {
+      mapRef.current.setCenter(mapCenter);
     }
-  };
-  
-  // Example usage
-  /*
-  fetchWeatherForecast(route?.endPoint, new Date()).then(forecasts => {
-    console.log("Forecasts for the next three hours:", forecasts);
-  });
-  */
-  
+  }, [isLoaded, loadError]);
+
+
+
 
 
   const getNumber = (value: number | (() => number)): number => typeof value === 'function' ? value() : value;
@@ -1358,7 +1322,7 @@ const Event: React.FC = () => {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <IonIcon icon={playCircle} style={{ marginRight: '5px' }} />
-                      <IonLabel>{eventData?.startTime}</IonLabel>
+                      <IonLabel>{startDateTime}</IonLabel>
                     </div>
                     <div>
                       <IonText>
@@ -1413,6 +1377,32 @@ const Event: React.FC = () => {
                     <div>
                       <IonLabel>{route.endPointName}</IonLabel>
                     </div>
+                  </div>
+                )}
+                {weatherForecastEnabled && route && (
+                  <div style={{
+                    position: 'absolute',
+                    left: '50%',                       // Center the div on the x-axis
+                    bottom: '80px',                    // Position the div 80px above the bottom
+                    transform: 'translateX(-50%)',     // Shift the div back by half its width for centering
+                    maxWidth: 'calc(100% - 20px)',     // Adjust the width to ensure it stays within the viewport
+                    backgroundColor: 'clear',
+                    padding: '10px',
+                    zIndex: 100,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    flexDirection: 'row',              // Changed to row to lay out the cards horizontally
+                    alignItems: 'center',
+                    justifyContent: 'center',          // Center the items horizontally
+                    overflowX: 'hidden',               // Hide horizontal scrollbar
+                    overflowY: 'hidden',               // Hide vertical scrollbar
+                  }}>
+                    <WeatherForecast
+                      startTimestamp={eventData.startTimeStamp}
+                      lat={route.endPoint.lat}
+                      lng={route.endPoint.lng}
+                      weatherForecastType={weatherForecastType as 'hourly'}
+                    />
                   </div>
                 )}
 
@@ -1546,6 +1536,8 @@ const Event: React.FC = () => {
                 setRouteLegsEnabled={setRouteLegsEnabled}
                 timingSidebarEnabled={timingSidebarEnabled}
                 setTimingSidebarEnabled={setTimingSidebarEnabled}
+                weatherForecastEnabled={weatherForecastEnabled}
+                setWeatherForecastEnabled={setWeatherForecastEnabled}
               />
             </GoogleMap>
           </IonRow>

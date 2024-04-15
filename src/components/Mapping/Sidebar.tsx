@@ -14,6 +14,8 @@ type SidebarProps = {
     bicyclingLayerEnabled: boolean;
     setBicyclingLayerEnabled: (value: boolean) => void;
     handleBicyclingLayerToggle: (enabled: boolean) => void;
+    weatherForecastEnabled: boolean;
+    setWeatherForecastEnabled: (value: boolean) => void;
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -27,7 +29,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     setOpenTripsEnabled,
     bicyclingLayerEnabled,
     setBicyclingLayerEnabled,
-    handleBicyclingLayerToggle
+    handleBicyclingLayerToggle,
+    weatherForecastEnabled,
+    setWeatherForecastEnabled,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -101,6 +105,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         setBicyclingLayerEnabled(enabled);
                                         handleBicyclingLayerToggle(enabled);
                                     }}
+                                />
+                            </IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol>
+                                <IonLabel>Weather Forecast</IonLabel>
+                                <IonToggle
+                                    checked={weatherForecastEnabled}
+                                    onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
                                 />
                             </IonCol>
                         </IonRow>
