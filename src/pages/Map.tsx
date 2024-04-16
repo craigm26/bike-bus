@@ -12,13 +12,15 @@ import {
   IonCardContent,
   IonSpinner,
   IonText,
+  IonFab,
+  IonFabButton,
 } from "@ionic/react";
 import { useEffect, useCallback, useState, useRef, useContext } from "react";
 import { get, getDatabase, off, onValue, ref, set } from "firebase/database";
 import { db, rtdb } from "../firebaseConfig";
 import { arrayUnion, getDoc, query, doc, getDocs, updateDoc, where, setDoc, DocumentReference, deleteDoc, Timestamp } from "firebase/firestore";
 import { useHistory, useParams } from "react-router-dom";
-import { bicycleOutline, busOutline, carOutline, closeOutline, locateOutline, walkOutline } from "ionicons/icons";
+import { bicycleOutline, busOutline, carOutline, closeOutline, cloudyOutline, locateOutline, walkOutline } from "ionicons/icons";
 import { useTranslation } from 'react-i18next';
 import { InfoBox } from "@react-google-maps/api";
 
@@ -252,7 +254,7 @@ const Map: React.FC = () => {
   const [bicyclingSpeedSelector, setBicyclingSpeedSelector] = useState('SLOW');
   const [bicyclingSpeed, setBicyclingSpeed] = useState(10);
   const [showSearchContainer, setShowSearchContainer] = useState(true);
-  const [weatherForecastEnabled, setWeatherForecastEnabled] = useState(true);
+  const [weatherForecastEnabled, setWeatherForecastEnabled] = useState(false);
   const [weatherForecastType, setWeatherForecastType] = useState<string>('hourly');
 
 
@@ -2608,43 +2610,25 @@ const Map: React.FC = () => {
                 transform: 'translate(50%, -50%)',      // Center vertically
                 maxWidth: 'calc(100% - 20px)',         // Adjust width to fit viewport
                 backgroundColor: 'clear',
-                padding: '10px',
+                padding: '5px',
                 zIndex: 100,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 overflow: 'hidden',
               }}>
-                <IonSegment color="primary" value={weatherForecastType as 'current' | 'hourly' | 'daily'} onIonChange={e => setWeatherForecastType(e.detail.value as 'current' | 'hourly' | 'daily')} style={{ width: '100%' }}>
-                  <IonSegmentButton color="primary" value="hourly" style={{ minWidth: 'unset' }}>
-                    <IonLabel>Hourly</IonLabel>
-                  </IonSegmentButton>
-                  <IonSegmentButton value="daily" style={{ minWidth: 'unset' }}>
-                    <IonLabel>Daily</IonLabel>
-                  </IonSegmentButton>
-                </IonSegment>
+                
                 <div style={{ marginTop: '10px', width: '100%' }}>
-                  {weatherForecastType === 'hourly' && (
                     <WeatherForecast
                       startTimestamp={firebaseTimestamp}
                       lat={userLocation.lat}
                       lng={userLocation.lng}
-                      weatherForecastType={weatherForecastType as 'current' | 'hourly' | 'daily'}
+                      weatherForecastType={'daily'}
                     />
-                  )}
-                  {weatherForecastType === 'daily' && (
-                    <WeatherForecast
-                      startTimestamp={firebaseTimestamp}
-                      lat={userLocation.lat}
-                      lng={userLocation.lng}
-                      weatherForecastType={weatherForecastType as 'current' | 'hourly' | 'daily'}
-                    />
-                  )}
+
                 </div>
               </div>
             )}
-
-
             {!isActiveBikeBusEvent && bikeBusEnabled && bikeBusRoutes.map((route: any) => {
               const keyPrefix = route.id || route.routeName;
               return (

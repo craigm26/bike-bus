@@ -680,12 +680,23 @@
 .sidebar-container {
   position: absolute;
   top: 0;
-  right: -300px;
-  padding-top: 62px;
+  right: -380px; /* Adjusted to match the sidebar width */
+  padding-top: 10px;
   transition: right 0.3s ease;
   z-index: 1000;
   border-radius: 0 0 0 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button {
+  position: absolute;
+  left: -60px; /* Adjusted to ensure the button is fully hidden */
+  top: 10px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  width: 50px; /* Make sure this width is accounted for in the left positioning */
+  height: 50px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-container.open {
@@ -696,7 +707,7 @@
 }
 
 .sidebar-content {
-  width: 300px;
+  width: 380px;
   height: 450px;
   background-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -711,15 +722,7 @@
   box-sizing: border-box;
 }
 
-.toggle-button {
-  position: absolute;
-  left: -40px;
-  top: 10px;
-  background-color: #ffffff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-}
+
 
 .sidebar-content .zoom-controls,
 .sidebar-content .map-type-controls {
@@ -737,10 +740,6 @@
   /* Full width of the container */
 }
 
-.sidebar-content IonRow {
-  margin: 10px 0;
-}
-
 .sidebar-content IonButton {
   margin: 5px 0;
 }
@@ -754,6 +753,36 @@
 .sidebar-content IonLabel {
   font-size: 14px;
 }
+
+.sidebar-content IonRow {
+  margin: 10px 0;
+  display: flex;
+  align-items: center; /* Center vertically */
+}
+
+.sidebar-content IonCol {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+}
+
+/* Specific style for the label column to align the text to the right */
+.sidebar-content .label-col {
+  justify-content: flex-end;
+  padding-right: 8px; /* Adds some space between the label and the checkbox */
+}
+
+/* Specific style for the column that holds checkboxes to align checkbox to the right */
+.sidebar-content .checkbox-col {
+  justify-content: flex-start;
+}
+
+/* Specific style for the column that holds icons to prevent stretching */
+.sidebar-content .icon-col {
+  justify-content: center;
+  flex: 0 0 auto; /* Do not grow or shrink */
+}
+
 
 .bikebus-event-title {
   font-size: 28px;

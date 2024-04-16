@@ -1383,13 +1383,12 @@ const Event: React.FC = () => {
                   <div style={{
                     position: 'absolute',
                     left: '50%',                       // Center the div on the x-axis
-                    bottom: '80px',                    // Position the div 80px above the bottom
+                    bottom: '5px',                    // Position the div 80px above the bottom
                     transform: 'translateX(-50%)',     // Shift the div back by half its width for centering
                     maxWidth: 'calc(100% - 20px)',     // Adjust the width to ensure it stays within the viewport
                     backgroundColor: 'clear',
-                    padding: '10px',
+                    padding: '5px',
                     zIndex: 100,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                     display: 'flex',
                     flexDirection: 'row',              // Changed to row to lay out the cards horizontally
                     alignItems: 'center',

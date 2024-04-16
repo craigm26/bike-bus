@@ -1,6 +1,8 @@
 import { IonContent, IonText, IonSpinner, IonImg, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle } from '@ionic/react';
 import { Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
+//import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+//import { faSun, faCloud, faCloudRain, faSnowflake, faBolt, faSmile } from '@fortawesome/free-solid-svg-icons';
 
 type WeatherForecastProps = {
     lat: number;
@@ -18,6 +20,18 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
     const [forecasts, setForecasts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    /*
+    const mapForecastToIcon = (forecast: string | string[]) => {
+        if (forecast.includes('Clear')) return faSun;
+        if (forecast.includes('Cloudy')) return faCloud;
+        if (forecast.includes('Rain') || forecast.includes('Showers')) return faCloudRain;
+        if (forecast.includes('Snow')) return faSnowflake;
+        if (forecast.includes('Thunderstorm')) return faBolt;
+        return faSmile; // Default icon
+    };
+    */
+    
 
     const fetchForecastUrls = async () => {
         const baseUrl = `https://api.weather.gov/points/${lat},${lng}`;
@@ -88,6 +102,9 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
 
                     const relevantForecasts = fetchedForecasts.filter((forecast: { startTime: string | number | Date; }) => {
                         const forecastTime = new Date(forecast.startTime).getTime();
+                        console.log('Forecast time:', forecastTime);
+                        console.log('startTimestamp:', startTimestamp);
+                        console.log('Start time:', startTimestamp.toDate().getTime());
                         const startTime = startTimestamp.toDate().getTime();
                         return forecastTime >= startTime && forecastTime < startTime + (weatherForecastType === 'daily' ? 54 * 3600 * 1000 : 1 * 3600 * 1000);
                     });
@@ -139,7 +156,7 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
                     <IonCardContent>
                         <IonText style={{ whiteSpace: 'normal' }}>{forecast.shortForecast}</IonText>
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
-                            <IonImg src={forecast.icon} style={{ width: '50px', height: '50px' }} alt="Weather icon" />
+                            {/*<i className={mapForecastToIcon(forecast.shortForecast)} style={{ fontSize: '24px' }}></i>*/}
                             <div style={{ marginLeft: '15px' }}>
                                 <IonText>{forecast.temperature}&deg;{forecast.temperatureUnit}</IonText>
                                 <IonText><br />Wind: {forecast.windSpeed} from {forecast.windDirection}</IonText>

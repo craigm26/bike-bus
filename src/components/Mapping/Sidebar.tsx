@@ -1,5 +1,5 @@
-import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol } from '@ionic/react';
-import { arrowForward, arrowBack } from 'ionicons/icons';
+import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol, IonCheckbox, IonSegment, IonSegmentButton, IonCardSubtitle, IonGrid, IonImg } from '@ionic/react';
+import { arrowForward, arrowBack, bicycleOutline, sunny } from 'ionicons/icons';
 import { useState } from 'react';
 
 type SidebarProps = {
@@ -39,20 +39,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         setIsOpen(!isOpen);
     };
 
-    const handleZoomIn = () => {
-        if (mapRef.current) {
-            const currentZoom = mapRef.current.getZoom() || 0;
-            mapRef.current.setZoom(currentZoom + 1);
-        }
-    };
-
-    const handleZoomOut = () => {
-        if (mapRef.current) {
-            const currentZoom = mapRef.current.getZoom() || 0;
-            mapRef.current.setZoom(currentZoom - 1);
-        }
-    };
-
     const handleSetMapType = (mapTypeId: google.maps.MapTypeId) => {
         if (mapRef.current) {
             mapRef.current.setMapTypeId(mapTypeId);
@@ -62,65 +48,104 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
         <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
             <IonButton onClick={toggleSidebar} className="toggle-button">
-                <IonIcon icon={isOpen ? arrowBack : arrowForward} />
+                <IonIcon size="large" icon={isOpen ? arrowBack : arrowForward} />
             </IonButton>
             <IonContent className="sidebar-content">
-                <div className="content-wrapper">
-                    <div>
-                        <IonLabel>Map Options</IonLabel>
-                    </div>
-                    <div>
-                        <div className="map-type-controls">
+                <IonGrid>
+                    <IonRow>
+                        <IonCardSubtitle>Map Options</IonCardSubtitle>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
                             <IonLabel>Map Type</IonLabel>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
-                        </div>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>BikeBus</IonLabel>
-                                <IonToggle checked={bikeBusEnabled} onIonChange={e => setBikeBusEnabled(e.detail.checked)} />
+                            <IonSegment onIonChange={e => handleSetMapType(e.detail.value as google.maps.MapTypeId)}>
+                                <IonSegmentButton value={google.maps.MapTypeId.ROADMAP}>Roadmap</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.SATELLITE}>Satellite</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.HYBRID}>Hybrid</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.TERRAIN}>Terrain</IonSegmentButton>
+                            </IonSegment>
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>
+                                BikeBus
+                            </IonLabel>
+                        </IonCol>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={bikeBusEnabled}
+                                onIonChange={e => setBikeBusEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonImg src="assets/images/SideContainer/BikeBus.png" />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Routes</IonLabel>
                             </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Routes</IonLabel>
-                                <IonToggle checked={userRoutesEnabled} onIonChange={e => setUserRoutesEnabled(e.detail.checked)} />
+                        <IonCol>
+                            <IonCheckbox
+                                checked={userRoutesEnabled}
+                                onIonChange={e => setUserRoutesEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonImg src="assets/images/SideContainer/Route.png" />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Active Open Trips</IonLabel>
+                        </IonCol>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={openTripsEnabled}
+                                onIonChange={e => setOpenTripsEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonImg src="assets/images/SideContainer/ActiveOpenTrip.png" />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Bicycling Layer</IonLabel>
                             </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Open Trips</IonLabel>
-                                <IonToggle checked={openTripsEnabled} onIonChange={e => setOpenTripsEnabled(e.detail.checked)} />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Bicycling Layer</IonLabel>
-                                <IonToggle
-                                    checked={bicyclingLayerEnabled}
-                                    onIonChange={(e) => {
-                                        const enabled = e.detail.checked;
-                                        setBicyclingLayerEnabled(enabled);
-                                        handleBicyclingLayerToggle(enabled);
-                                    }}
-                                />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Weather Forecast</IonLabel>
-                                <IonToggle
-                                    checked={weatherForecastEnabled}
-                                    onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
-                                />
-                            </IonCol>
-                        </IonRow>
-                    </div>
-                </div>
-            </IonContent>
-        </div>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={bicyclingLayerEnabled}
+                                onIonChange={(e) => {
+                                    const enabled = e.detail.checked;
+                                    setBicyclingLayerEnabled(enabled);
+                                    handleBicyclingLayerToggle(enabled);
+                                }}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonImg src="assets/images/SideContainer/BicyclingLayer.png" />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Weather Forecast</IonLabel>
+                        </IonCol>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={weatherForecastEnabled}
+                                onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonIcon icon={sunny}></IonIcon>
+                        </IonCol>
+                           
+                    </IonRow>
+                </IonGrid>
+            </IonContent >
+        </div >
     );
 };
 
