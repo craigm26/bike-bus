@@ -34,7 +34,6 @@ import { useParams, useHistory } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api';
 import QRCode from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
-// import sidebarevent from '../components/Mapping/SidebarEvent';
 import SidebarEvent from '../components/Mapping/SidebarEvent';
 import { bicycle, pauseCircle, playCircle, stopCircle } from 'ionicons/icons';
 import WeatherForecast from '../components/WeatherForecast';
@@ -197,6 +196,7 @@ const Event: React.FC = () => {
   const [timingSidebarEnabled, setTimingSidebarEnabled] = useState(true);
   const [weatherForecastEnabled, setWeatherForecastEnabled] = useState(true);
   const [weatherForecastType, setWeatherForecastType] = useState<string>('hourly');
+  const [startTimestamp, setStartTimestamp] = useState<Timestamp | null>(null);
 
 
 
@@ -354,6 +354,7 @@ const Event: React.FC = () => {
           fetchBikeBusStops();
           console.log('bikebussstops', bikeBusStops);
           console.log('routeLegs', routeLegs);
+          setStartTimestamp(eventData.startTimestamp);
           if (eventData?.BikeBusGroup) {
             fetchBikeBusGroup(eventData.BikeBusGroup);
           }
@@ -1307,7 +1308,8 @@ const Event: React.FC = () => {
                   )
                 })}
                 {timingSidebarEnabled && route && (
-                  <div style={{
+                  <IonGrid style={{
+                    width: '250px',
                     position: 'absolute',
                     right: '20px',
                     top: '50%',
@@ -1316,69 +1318,89 @@ const Event: React.FC = () => {
                     padding: '10px',
                     zIndex: 100,
                     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    borderRadius: '5px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <IonIcon icon={playCircle} style={{ marginRight: '5px' }} />
-                      <IonLabel>{startDateTime}</IonLabel>
-                    </div>
-                    <div>
-                      <IonText>
-                        {route.startPointName}
-                      </IonText>
-                    </div>
+                    {/* Start Time and Point */}
+                    <IonRow style={{ alignItems: 'center', justifyContent: 'center' }}>
+                      <IonCol size="4">
+                        <IonLabel style={{ fontWeight: 'bold' }}>{startDateTime}</IonLabel>
+                      </IonCol>
+                      <IonCol size="1">
+                        <IonIcon icon={playCircle} />
+                      </IonCol>
+                      <IonCol size="1">
+                        <div style={{ width: '8px', height: '40px', backgroundColor: '#ffd800' }} />
+                      </IonCol>
+                      <IonCol size="6">
+                        <IonText>{route.startPointName}</IonText>
+                      </IonCol>
+                    </IonRow>
+
+                    {/* Route Legs and Stops */}
                     {routeLegs.map((leg, index) => {
                       const isLastLeg = index === routeLegs.length - 1;
                       const stopsForThisLeg = bikeBusStops.sort((a, b) => a.order - b.order);
-
-                      // Calculate expected time at each stop based on duration
                       let currentTime = new Date(eventData?.startTimeStamp.toDate());
-                      let formattedStopTimeAMPM: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined; // Declare the variable using 'let'
-                      for (let i = 0; i <= index; i++) {
-                        const durationMinutes = Number(leg.duration) || 0;
-                        currentTime = new Date(currentTime.getTime() + durationMinutes * 60000);
-                        // format currentTime to be displayed in the sidebar as a simple hh:mm am/pm
-                        formattedStopTimeAMPM = currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
+                      let formattedStopTimeAMPM: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Iterable<React.ReactNode> | null | undefined;
+                      if (isLastLeg) {
+                        formattedStopTimeAMPM = currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                      } else {
+                        formattedStopTimeAMPM = currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
                       }
                       return (
                         <React.Fragment key={index}>
-                          <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <IonIcon icon={bicycle} style={{ marginRight: '5px' }} />
-                            <IonLabel>Leg {index + 1}: </IonLabel>
-                          </div>
-                          <div>
-                            <IonText>{leg.duration} minutes</IonText>
-                          </div>
+                          {/* Leg Description */}
+                          <IonRow style={{ alignItems: 'center' }}>
+                            <IonCol size="1">
+                            </IonCol>
+                            <IonCol size="4">
+                              <IonLabel>{leg.duration} mins</IonLabel>
+                            </IonCol>
+                            <IonCol size="1">
+                              <div style={{ width: '8px', height: '40px', backgroundColor: '#ffd800' }} />
+                            </IonCol>
+                            <IonCol size="6">
+                              <IonLabel>Leg {index + 1}</IonLabel>
+                            </IonCol>
+                          </IonRow>
+                          {/* Stops */}
                           {!isLastLeg && stopsForThisLeg.map((stop, stopIndex) => (
-                            <React.Fragment key={stopIndex}>
-                              <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <IonIcon icon={pauseCircle} style={{ marginRight: '5px' }} />
-                                <IonLabel>{formattedStopTimeAMPM}</IonLabel>
-                              </div>
-                              <div>
+                            <IonRow key={stopIndex} style={{ alignItems: 'center', justifyContent: 'center' }}>
+                              <IonCol size="4">
+                                <IonLabel style={{ fontWeight: 'bold' }}>{formattedStopTimeAMPM}</IonLabel>
+                              </IonCol>
+                              <IonCol size="1">
+                                <IonIcon icon={pauseCircle} />
+                              </IonCol>
+                              <IonCol size="1">
+                                <div style={{ width: '8px', height: '40px', backgroundColor: '#ffd800' }} />
+                              </IonCol>
+                              <IonCol size="6">
                                 <IonLabel>{stop.BikeBusStopName}</IonLabel>
-                              </div>
-                            </React.Fragment>
+                              </IonCol>
+                            </IonRow>
                           ))}
                         </React.Fragment>
                       );
-                    })
-                    }
-                    <div style={{ width: '2px', height: '20px', backgroundColor: '#ffd800', margin: '5px auto' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <IonIcon icon={stopCircle} style={{ marginRight: '5px' }} />
-                      <IonLabel>{endTime}</IonLabel>
-                    </div>
-                    <div>
-                      <IonLabel>{route.endPointName}</IonLabel>
-                    </div>
-                  </div>
+                    })}
+                    {/* End Time and Point */}
+                    <IonRow style={{ alignItems: 'center', justifyContent: 'center' }}>
+                      <IonCol size="4">
+                        <IonLabel style={{ fontWeight: 'bold' }}>{endTime}</IonLabel>
+                      </IonCol>
+                      <IonCol size="1">
+                        <IonIcon icon={stopCircle} />
+                      </IonCol>
+                      <IonCol size="1">
+                        <div style={{ width: '8px', height: '40px', backgroundColor: '#ffd800' }} />
+                      </IonCol>
+                      <IonCol size="6">
+                        <IonLabel>{route.endPointName}</IonLabel>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
                 )}
+
                 {weatherForecastEnabled && route && (
                   <div style={{
                     position: 'absolute',
@@ -1400,7 +1422,7 @@ const Event: React.FC = () => {
                       startTimestamp={eventData.startTimeStamp}
                       lat={route.endPoint.lat}
                       lng={route.endPoint.lng}
-                      weatherForecastType={weatherForecastType as 'hourly'}
+                      weatherForecastType={weatherForecastType as 'hourly' | 'daily' | 'current' }  
                     />
                   </div>
                 )}

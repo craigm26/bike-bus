@@ -138,10 +138,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
                             />
                         </IonCol>
-                        <IonCol>
-                            <IonIcon icon={sunny}></IonIcon>
-                        </IonCol>
-                           
                     </IonRow>
                 </IonGrid>
             </IonContent >

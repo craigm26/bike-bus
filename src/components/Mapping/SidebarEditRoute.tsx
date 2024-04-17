@@ -1,4 +1,4 @@
-import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol } from '@ionic/react';
+import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol, IonCardSubtitle, IonGrid, IonSegment, IonSegmentButton, IonCheckbox, IonImg } from '@ionic/react';
 import { arrowForward, arrowBack } from 'ionicons/icons';
 import { useState } from 'react';
 
@@ -38,56 +38,65 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
         <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
             <IonButton onClick={toggleSidebar} className="toggle-button">
-                <IonIcon icon={isOpen ? arrowBack : arrowForward} />
+                <IonIcon size="large" icon={isOpen ? arrowBack : arrowForward} />
             </IonButton>
             <IonContent className="sidebar-content">
-                <div className="content-wrapper">
-                    <div>
-                        <IonLabel>Map Options</IonLabel>
-                    </div>
-                    <div>
-                        <div className="map-type-controls">
+                <IonGrid>
+                    <IonRow>
+                        <IonCardSubtitle>Map Options</IonCardSubtitle>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
                             <IonLabel>Map Type</IonLabel>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.ROADMAP)}>Roadmap</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.SATELLITE)}>Satellite</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.HYBRID)}>Hybrid</IonButton>
-                            <IonButton size="small" onClick={() => handleSetMapType(google.maps.MapTypeId.TERRAIN)}>Terrain</IonButton>
-                        </div>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Bicycling Layer</IonLabel>
-                                <IonToggle
-                                    checked={bicyclingLayerEnabled}
-                                    onIonChange={(e) => {
-                                        const enabled = e.detail.checked;
-                                        setBicyclingLayerEnabled(enabled);
-                                        handleBicyclingLayerToggle(enabled);
-                                    }}
-                                />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Route Legs</IonLabel>
-                                <IonToggle
-                                    checked={routeLegsEnabled}
-                                    onIonChange={e => setRouteLegsEnabled(e.detail.checked)}
-                                />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow>
-                            <IonCol>
-                                <IonLabel>Timing Sidebar</IonLabel>
-                                <IonToggle
-                                    checked={timingSidebarEnabled}
-                                    onIonChange={e => setTimingSidebarEnabled(e.detail.checked)}
-                                />
-                            </IonCol>
-                        </IonRow>
-                    </div>
-                </div>
-            </IonContent>
-        </div>
+                            <IonSegment onIonChange={e => handleSetMapType(e.detail.value as google.maps.MapTypeId)}>
+                                <IonSegmentButton value={google.maps.MapTypeId.ROADMAP}>Roadmap</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.SATELLITE}>Satellite</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.HYBRID}>Hybrid</IonSegmentButton>
+                                <IonSegmentButton value={google.maps.MapTypeId.TERRAIN}>Terrain</IonSegmentButton>
+                            </IonSegment>
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Bicycling Layer</IonLabel>
+                        </IonCol>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={bicyclingLayerEnabled}
+                                onIonChange={(e) => {
+                                    const enabled = e.detail.checked;
+                                    setBicyclingLayerEnabled(enabled);
+                                    handleBicyclingLayerToggle(enabled);
+                                }}
+                            />
+                        </IonCol>
+                        <IonCol>
+                            <IonImg src="assets/images/SideContainer/BicyclingLayer.png" />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Route Legs</IonLabel>
+                        </IonCol>
+                        <IonCol>
+                            <IonCheckbox
+                                checked={routeLegsEnabled}
+                                onIonChange={e => setRouteLegsEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                    </IonRow>
+                    <IonRow>
+                        <IonCol>
+                            <IonLabel>Timing Sidebar</IonLabel>
+                            <IonCheckbox
+                                checked={timingSidebarEnabled}
+                                onIonChange={e => setTimingSidebarEnabled(e.detail.checked)}
+                            />
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+            </IonContent >
+        </div >
     );
 };
 
