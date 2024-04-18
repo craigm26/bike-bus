@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonSegment, IonSegmentButton, IonSpinner, IonText } from '@ionic/react';
+import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonItem, IonModal, IonSegment, IonSegmentButton, IonSpinner, IonText } from '@ionic/react';
 import { Timestamp } from 'firebase/firestore';
 
 const API_KEY = process.env.REACT_APP_OPENWEATHERMAP_API_KEY;
@@ -17,7 +17,13 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({ lat, lng, startTimest
     const [error, setError] = useState<string | null>(null);
     const [forecastType, setForecastType] = useState<'current' | 'hourly' | 'daily'>(weatherForecastType);
     const [useImperial, setUseImperial] = useState(false);
-    const startTime = startTimestamp.toDate().getTime();
+    const [showModal, setShowModal] = useState(false);
+    const [detailedForecast, setDetailedForecast] = useState<any>(null);
+
+    const handleForecastSelect = (forecast: any) => {
+        setDetailedForecast(forecast);
+        setShowModal(true);
+    };
 
     const toggleUnits = () => {
         setUseImperial(!useImperial);
@@ -46,48 +52,75 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({ lat, lng, startTimest
     };
 
     const fetchForecastData = async () => {
+        if (!startTimestamp) {
+            console.error('startTimestamp is undefined.');
+            setLoading(false);
+            setError('startTimestamp is undefined.');
+            return;
+        }
+    
         setLoading(true);
         setError(null);
     
-        const excludeData = ['current', 'minutely', 'hourly', 'daily', 'alerts'].filter(x => x !== forecastType).join(',');
-    
-        const baseUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lng}&exclude=${excludeData}&appid=${API_KEY}&units=metric`;
-        console.log('baseUrl:', baseUrl);
-    
+        // No need to call toDate().getTime(), toMillis() will give you the timestamp in milliseconds.
+        const startTime = startTimestamp.toMillis();
+        console.log('Fetching forecast data:', lat, lng, forecastType, startTime);
+        const endpointMap = {
+            'current': 'weather',
+            'hourly': 'forecast',
+            'daily': 'forecast/daily'
+        };
+        const baseUrl = `https://api.openweathermap.org/data/2.5/${endpointMap[forecastType]}?lat=${lat}&lon=${lng}&appid=${API_KEY}`;
+
+        const eventStartHour = startTimestamp.toDate().getHours();
+        const eventStartMinutes = startTimestamp.toDate().getMinutes();
+
         try {
             const response = await fetch(baseUrl);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             const data = await response.json();
-    
-            // Filter data if necessary based on startTime for hourly and daily forecasts
-            let relevantForecasts = [];
+            let relevantForecasts = data.list || [data]; // Handle different data structure for different endpoints
+
             if (forecastType === 'hourly') {
-                relevantForecasts = data.hourly.filter((forecast: { dt: number; }) => {
-                    const forecastTime = new Date(forecast.dt * 1000).getTime();
-                    return forecastTime >= startTime && forecastTime <= startTime + 3 * 3600 * 1000; // 3 hours range
+                relevantForecasts = relevantForecasts.filter((forecast: any) => {
+                    const forecastDate = new Date(forecast.dt * 1000);
+                    console.log(`Forecast time: ${forecastDate.toLocaleTimeString()}, for date: ${forecastDate.toLocaleDateString()}`);
+                    return forecastDate.getHours() >= eventStartHour;
                 });
-            } else if (forecastType === 'daily') {
-                relevantForecasts = data.daily.filter((forecast: { dt: number; }) => {
-                    const forecastTime = new Date(forecast.dt * 1000).getTime();
-                    return forecastTime >= startTime && forecastTime <= startTime + 24 * 3600 * 1000; // 24 hours range
+
+                relevantForecasts = relevantForecasts.length > 0 ? [relevantForecasts[0]] : [];
+
+            } 
+
+            if (forecastType === 'daily') {
+                relevantForecasts = relevantForecasts.filter((forecast: any) => {
+                    const forecastDate = new Date(forecast.dt * 1000);
+                    console.log(`Forecast time: ${forecastDate.toLocaleTimeString()}, for date: ${forecastDate.toLocaleDateString()}`);
+                    return forecastDate.getHours() >= eventStartHour;
                 });
-            } else {
-                relevantForecasts = [data.current];
             }
-    
+
+
             setForecasts(relevantForecasts);
+            console.log('Forecast data:', relevantForecasts);
         } catch (error) {
             console.error('Error fetching forecast data:', error);
         } finally {
             setLoading(false);
         }
     };
-    
 
     useEffect(() => {
-        fetchForecastData();
+        // Check if startTimestamp is defined before calling fetchForecastData
+        if (startTimestamp) {
+            fetchForecastData();
+        } else {
+            console.error('startTimestamp is undefined. Cannot fetch forecast data.');
+            setLoading(false);
+            setError('startTimestamp is undefined.');
+        }
     }, [lat, lng, forecastType, startTimestamp]);
 
     if (loading) {
@@ -99,47 +132,99 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({ lat, lng, startTimest
     }
 
     return (
-        <div style={{ padding: '10px', maxWidth: '800px', margin: 'auto' }}>
-            <IonCard>
-            <IonSegment value={forecastType} onIonChange={(e) => setForecastType(e.detail.value as 'current' | 'hourly' | 'daily')}>
-                <IonSegmentButton value="current">Current</IonSegmentButton>
-                <IonSegmentButton value="hourly">Hourly</IonSegmentButton>
-                <IonSegmentButton value="daily">Daily</IonSegmentButton>
-            </IonSegment>
-            {forecasts.map((forecast, index) => (
-                <IonCardContent key={index} style={{ marginBottom: '20px', padding: '10px' }}>
-                    <IonCardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <IonCardSubtitle>{forecast.dt_txt || new Date(forecast.dt * 1000).toLocaleString()}</IonCardSubtitle>
-                        <img src={`https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`} alt="weather icon" style={{ width: '50px' }} />
-                        <IonCardSubtitle>{forecast.weather[0].main}</IonCardSubtitle>
-                    </IonCardHeader>
-                    <IonCardContent style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ flex: 1 }}>
-                            <IonText>
-                                <strong>Temp:</strong> {convertTemperature(forecast.main.temp)} <br />
-                                <strong>Feels like:</strong> {convertTemperature(forecast.main.feels_like)}
-                            </IonText>
-                            <IonText>
-                                <strong>Humidity:</strong> {forecast.main.humidity}% <br />
-                                <strong>Pressure:</strong> {forecast.main.pressure} hPa
-                            </IonText>
-                            <IonText>
-                            <strong>Wind:</strong> {convertSpeed(forecast.wind.speed)} from {convertWindDirection(forecast.wind.deg)}
-                            </IonText>
-                            {forecast.rain && (
+        <div style={{ padding: '5px', maxWidth: '800px', margin: 'auto' }}>
+            <IonCard style={{ marginBottom: '10px' }}>
+                {forecasts.map((forecast, index) => (
+                    <IonCardContent key={index} style={{ marginBottom: '20px', padding: '10px' }}>
+                        <IonCardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <IonCardSubtitle>
+                                {new Intl.DateTimeFormat('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                }).format(new Date(forecast.dt * 1000))}
+                            </IonCardSubtitle>
+                            <img src={`https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`} alt="weather icon" style={{ width: '50px' }} />
+                            <IonCardSubtitle>{forecast.weather[0].main}</IonCardSubtitle>
+                        </IonCardHeader>
+                        <IonCardContent style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <div style={{ flex: 1 }}>
                                 <IonText>
-                                    <strong>Rain:</strong> {forecast.rain['3h']} mm in last 3 hours
+                                    <strong>Temp:</strong> {convertTemperature(forecast.main.temp)} <br />
                                 </IonText>
-                            )}
-                            <IonText>
-                                <strong>Visibility:</strong> {convertVisibility(forecast.visibility)}
-                            </IonText>
-                            <IonButton fill="outline" shape="round" size="small" onClick={toggleUnits}>Toggle Units</IonButton>
-                        </div>
+                                <IonText>
+                                    <strong>Wind:</strong> {convertSpeed(forecast.wind.speed)} from {convertWindDirection(forecast.wind.deg)}
+                                </IonText>
+                                {forecast.rain && (
+                                    <IonText>
+                                        <strong>Rain:</strong> {forecast.rain['3h']} mm in last 3 hours
+                                    </IonText>
+                                )}
+                                <IonItem>
+                                    <IonButton fill="outline" shape="round" size="small" onClick={toggleUnits}>Toggle Units</IonButton>
+                                    <IonButton fill="outline" shape="round" size="small" onClick={() => handleForecastSelect(forecast)}>Details</IonButton>
+                                </IonItem>
+                            </div>
+                        </IonCardContent>
                     </IonCardContent>
-                </IonCardContent>
-            ))}
+
+                ))}
             </IonCard>
+            <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+                <IonSegment value={forecastType} onIonChange={(e) => setForecastType(e.detail.value as 'current' | 'hourly')}>
+                    <IonSegmentButton value="current">Current</IonSegmentButton>
+                    <IonSegmentButton value="hourly">3-hour</IonSegmentButton>
+                </IonSegment>
+                {forecasts.map((forecast, index) => (
+                    <IonCardContent key={index} style={{ marginBottom: '20px', padding: '10px' }}>
+                        <IonCardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <IonCardSubtitle>
+                                {new Intl.DateTimeFormat('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                }).format(new Date(forecast.dt * 1000))}
+                            </IonCardSubtitle>
+                            <img src={`https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`} alt="weather icon" style={{ width: '50px' }} />
+                            <IonCardSubtitle>{forecast.weather[0].main}</IonCardSubtitle>
+                        </IonCardHeader>
+                        <IonCardContent style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ flex: 1 }}>
+                                <IonText>
+                                    <strong>Temp:</strong> {convertTemperature(forecast.main.temp)} <br />
+                                    <strong>Feels like:</strong> {convertTemperature(forecast.main.feels_like)}
+                                </IonText>
+                                <IonText>
+                                    <strong>Humidity:</strong> {forecast.main.humidity}% <br />
+                                    <strong>Pressure:</strong> {forecast.main.pressure} hPa
+                                </IonText>
+                                <IonText>
+                                    <strong>Wind:</strong> {convertSpeed(forecast.wind.speed)} from {convertWindDirection(forecast.wind.deg)}
+                                </IonText>
+                                {forecast.rain && (
+                                    <IonText>
+                                        <strong>Rain:</strong> {forecast.rain['3h']} mm in last 3 hours
+                                    </IonText>
+                                )}
+                                <IonText>
+                                    <strong>Visibility:</strong> {convertVisibility(forecast.visibility)}
+                                </IonText>
+                                <IonText>
+                                    <strong>Cloudiness:</strong> {forecast.clouds.all}% <br />
+                                </IonText>
+                                <IonButton fill="outline" shape="round" size="small" onClick={toggleUnits}>Toggle Units</IonButton>
+                            </div>
+                        </IonCardContent>
+                    </IonCardContent>
+                ))}
+                <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
+            </IonModal>
         </div>
     );
 }

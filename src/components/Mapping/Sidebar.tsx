@@ -1,5 +1,5 @@
-import { IonButton, IonIcon, IonContent, IonLabel, IonToggle, IonRow, IonCol, IonCheckbox, IonSegment, IonSegmentButton, IonCardSubtitle, IonGrid, IonImg } from '@ionic/react';
-import { arrowForward, arrowBack, bicycleOutline, sunny } from 'ionicons/icons';
+import { IonButton, IonIcon, IonContent, IonLabel, IonRow, IonCol, IonCheckbox, IonSegment, IonSegmentButton, IonCardSubtitle, IonGrid, IonImg } from '@ionic/react';
+import { arrowForward, arrowBack } from 'ionicons/icons';
 import { useState } from 'react';
 
 type SidebarProps = {
@@ -14,8 +14,6 @@ type SidebarProps = {
     bicyclingLayerEnabled: boolean;
     setBicyclingLayerEnabled: (value: boolean) => void;
     handleBicyclingLayerToggle: (enabled: boolean) => void;
-    weatherForecastEnabled: boolean;
-    setWeatherForecastEnabled: (value: boolean) => void;
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -30,8 +28,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     bicyclingLayerEnabled,
     setBicyclingLayerEnabled,
     handleBicyclingLayerToggle,
-    weatherForecastEnabled,
-    setWeatherForecastEnabled,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -126,17 +122,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </IonCol>
                         <IonCol>
                             <IonImg src="assets/images/SideContainer/BicyclingLayer.png" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol>
-                            <IonLabel>Weather Forecast</IonLabel>
-                        </IonCol>
-                        <IonCol>
-                            <IonCheckbox
-                                checked={weatherForecastEnabled}
-                                onIonChange={e => setWeatherForecastEnabled(e.detail.checked)}
-                            />
                         </IonCol>
                     </IonRow>
                 </IonGrid>

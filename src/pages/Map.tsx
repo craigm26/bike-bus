@@ -2602,35 +2602,6 @@ const Map: React.FC = () => {
                 </IonRow>
               </IonGrid>
             )}
-            {weatherForecastEnabled && (
-              <div style={{
-                position: 'absolute',
-                left: '50%',                       // Center the div on the x-axis
-                bottom: '5px',                    // Position the div 80px above the bottom
-                transform: 'translateX(-50%)',     // Shift the div back by half its width for centering
-                maxWidth: 'calc(100% - 20px)',     // Adjust the width to ensure it stays within the viewport
-                backgroundColor: 'clear',
-                padding: '5px',
-                zIndex: 100,
-                display: 'flex',
-                flexDirection: 'row',              // Changed to row to lay out the cards horizontally
-                alignItems: 'center',
-                justifyContent: 'center',          // Center the items horizontally
-                overflowX: 'hidden',               // Hide horizontal scrollbar
-                overflowY: 'hidden',
-              }}>
-
-                <div style={{ marginTop: '10px', width: '100%' }}>
-                  <WeatherForecast
-                    startTimestamp={firebaseTimestamp}
-                    lat={userLocation.lat}
-                    lng={userLocation.lng}
-                    weatherForecastType={weatherForecastType as 'current' | 'hourly' | 'daily'}
-                  />
-
-                </div>
-              </div>
-            )}
             {!isActiveBikeBusEvent && bikeBusEnabled && bikeBusRoutes.map((route: any) => {
               const keyPrefix = route.id || route.routeName;
               return (
@@ -3090,8 +3061,7 @@ const Map: React.FC = () => {
               bicyclingLayerEnabled={bicyclingLayerEnabled}
               setBicyclingLayerEnabled={setBicyclingLayerEnabled}
               handleBicyclingLayerToggle={handleBicyclingLayerToggle}
-              weatherForecastEnabled={weatherForecastEnabled}
-              setWeatherForecastEnabled={setWeatherForecastEnabled} />
+              />
           </GoogleMap>
         </IonRow>
       </IonContent >

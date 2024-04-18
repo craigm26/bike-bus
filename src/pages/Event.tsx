@@ -37,6 +37,8 @@ import { useReactToPrint } from 'react-to-print';
 import SidebarEvent from '../components/Mapping/SidebarEvent';
 import { bicycle, pauseCircle, playCircle, stopCircle } from 'ionicons/icons';
 import WeatherForecast from '../components/WeatherForecast';
+import { set } from 'date-fns';
+import { format } from 'path';
 
 
 
@@ -197,6 +199,7 @@ const Event: React.FC = () => {
   const [weatherForecastEnabled, setWeatherForecastEnabled] = useState(true);
   const [weatherForecastType, setWeatherForecastType] = useState<string>('hourly');
   const [startTimestamp, setStartTimestamp] = useState<Timestamp | null>(null);
+  const [startDateTimeLabel, setStartDateTimeLabel] = useState<string>('');
 
 
 
@@ -355,6 +358,8 @@ const Event: React.FC = () => {
           console.log('bikebussstops', bikeBusStops);
           console.log('routeLegs', routeLegs);
           setStartTimestamp(eventData.startTimestamp);
+          formatTimestamp(eventData.startTimestamp);
+          convertStartTimeStampLabel(eventData.startTimestamp);
           if (eventData?.BikeBusGroup) {
             fetchBikeBusGroup(eventData.BikeBusGroup);
           }
@@ -638,17 +643,18 @@ const Event: React.FC = () => {
   }
 
   const formatTimestamp = (timestamp: Timestamp) => {
-    console.log('timestamp', timestamp);
     if (isTimestamp(timestamp)) {
       setStartDateTime(timestamp.toDate().toLocaleString('en-US', {
         year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+        hour: 'numeric', minute: '2-digit', hour12: true
       }));
+      console.log('startDateTime', startDateTime);
     } else {
       console.error('Provided data is not a Timestamp:', timestamp);
       return ''; // or handle error appropriately
     }
   };
+
 
 
 
@@ -841,6 +847,18 @@ const Event: React.FC = () => {
   </gpx>`;
 
     return gpxContent;
+  }
+
+  const convertStartTimeStampLabel = (timestamp: Timestamp) => {
+    if (isTimestamp(timestamp)) {
+      setStartDateTimeLabel(timestamp.toDate().toLocaleString('en-US', {
+        hour: 'numeric', minute: '2-digit', hour12: true
+      }));
+      console.log('startDateTime', startDateTime);
+    } else {
+      console.error('Provided data is not a Timestamp:', timestamp);
+      return ''; // or handle error appropriately
+    }
   }
 
 
@@ -1323,7 +1341,7 @@ const Event: React.FC = () => {
                     {/* Start Time and Point */}
                     <IonRow style={{ alignItems: 'center', justifyContent: 'center' }}>
                       <IonCol size="4">
-                        <IonLabel style={{ fontWeight: 'bold' }}>{startDateTime}</IonLabel>
+                        <IonLabel style={{ fontWeight: 'bold' }}>{startDateTimeLabel}</IonLabel>
                       </IonCol>
                       <IonCol size="1">
                         <IonIcon icon={playCircle} />
@@ -1418,12 +1436,17 @@ const Event: React.FC = () => {
                     overflowX: 'hidden',               // Hide horizontal scrollbar
                     overflowY: 'hidden',               // Hide vertical scrollbar
                   }}>
-                    <WeatherForecast
-                      startTimestamp={eventData.startTimeStamp}
-                      lat={route.endPoint.lat}
-                      lng={route.endPoint.lng}
-                      weatherForecastType={weatherForecastType as 'hourly' | 'daily' | 'current' }  
-                    />
+                    {startTimestamp ? (
+                      <WeatherForecast
+                        startTimestamp={startTimestamp}
+                        lat={route.endPoint.lat}
+                        lng={route.endPoint.lng}
+                        weatherForecastType={weatherForecastType as 'current' | 'hourly' | 'daily'}
+                      />
+                    ) : (
+                      <div>Start timestamp is not set.</div>
+                    )}
+
                   </div>
                 )}
 

@@ -221,9 +221,7 @@ const ViewOrganization: React.FC = () => {
                                 <div>
                                     {BikeBusGroups.map((BikeBusGroup) => (
                                         <div key={BikeBusGroup.id}>
-                                            <IonRouterLink className="BikeBusName" routerLink={`/BikeBusGroupPage/${BikeBusGroup.id}`}>
-                                                {BikeBusGroup.BikeBusName}
-                                            </IonRouterLink>
+                                            <IonButton routerLink={`/BikeBusGroupPage/${BikeBusGroup.id}`} shape="round" size="small">{BikeBusGroup.BikeBusName}</IonButton>
                                         </div>
                                     ))}
                                 </div>
