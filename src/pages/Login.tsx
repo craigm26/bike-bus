@@ -59,6 +59,7 @@ const Login: React.FC = () => {
       if (userCredential?.user) {
         await processUser(userCredential.user);
       }
+      history.push('/Map');
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage("Error logging in: " + error.message);
