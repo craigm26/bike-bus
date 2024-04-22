@@ -19,17 +19,13 @@ import PasswordReset from '../components/PasswordReset';
 import { HeaderContext } from '../components/HeaderContext';
 import { getRedirectResult, User } from '@firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
+import { AuthContext } from '../AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const {
-    signInWithEmailAndPassword,
-    //signInWithApple,
-    signInWithGoogle,
-    signInAnonymously,
-    checkAndUpdateAccountModes,
-  } = useAuth();
+  const { signInWithEmailAndPassword, signInWithGoogle, checkAndUpdateAccountModes, signInAnonymously } = useContext(AuthContext);
+
   const history = useHistory();
   const headerContext = useContext(HeaderContext);
   const [errorMessage, setErrorMessage] = useState('');
