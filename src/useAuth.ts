@@ -73,7 +73,7 @@ const useAuth = () => {
       firstName: '',
       lastName: '',
       accountType: 'Member',
-      enabledAccountModes: [],
+      enabledAccountModes: ['Member'],
       enabledOrgModes: []
     };
   
@@ -88,7 +88,7 @@ const useAuth = () => {
         const userRef = doc(db, 'users', firebaseUser.uid);
         await setDoc(userRef, defaultUserData, { merge: true });
         console.log('User data created:', defaultUserData);
-        
+
         return defaultUserData;
       }
   
