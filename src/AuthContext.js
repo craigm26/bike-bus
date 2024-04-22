@@ -2,7 +2,7 @@ import { createContext, useState, useEffect, useMemo } from 'react';
 import { auth } from './firebaseConfig';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { createUserWithEmailAndPassword, indexedDBLocalPersistence, setPersistence } from 'firebase/auth';
 import i18n from './i18n';
@@ -176,10 +176,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkAndUpdateAccountModes = async () => {
+    try {
+      const userRef = doc(collection(db, 'users'), user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData && userData.accountType) {
+            // Only update if enabledAccountModes does not exist or is empty
+            if (!userData.enabledAccountModes || userData.enabledAccountModes.length === 0) {
+              const enabledAccountModes = enabledAccountModes(userData.accountType);
+              await updateDoc(userRef, { enabledAccountModes });
+            }
+          }
+        }
+      } catch (error) {
+      console.error('Error checking and updating account modes:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       groups,
+      checkAndUpdateAccountModes,
       loadingAuthState,
       signInWithEmailAndPassword,
       signInWithGoogle,

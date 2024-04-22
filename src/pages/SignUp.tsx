@@ -33,16 +33,21 @@ const Signup: React.FC = () => {
 
 
     const handleSignup = async (email: string, password: string) => {
-        if (isSubmitting) return; // Prevent multiple submissions
+        if (isSubmitting) return;  // Early return if already submitting
         setIsSubmitting(true);
         setErrorMessage('');
+        await checkEmail(email);  // Check if the email is already taken
+        if (isEmailTaken) {
+            setErrorMessage('Email already in use. Please login or reset your password.');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const userCredential = await signUpWithEmailAndPassword(email, password);
             if (userCredential?.user) {
+                await processUser(userCredential.user);
                 history.push('/Account');
-            } else {
-                console.error('Error signing up:', userCredential);
-                setErrorMessage('Error signing up. Please try again.');
             }
         } catch (error) {
             console.error('Error signing up:', error);
@@ -51,8 +56,11 @@ const Signup: React.FC = () => {
             } else {
                 setErrorMessage('An error occurred during sign up. Please try again.');
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
+
 
     const handleGoogleSubmit = async () => {
         try {
@@ -61,22 +69,15 @@ const Signup: React.FC = () => {
                 await processUser(userCredential.user);
             }
         } catch (error) {
-
-        } finally {
-
+            setErrorMessage('Error signing in with Google. Please try again.');
+            console.error('Error during Google login:', error);
         }
     };
 
     const processUser = async (user: User | undefined) => {
-        if (user) {
-            await checkAndUpdateAccountModes(user.uid);
-            const username = user.displayName;
-            if (username) {
-                history.push('/Account');
-            } else {
-                history.push('/SetUsername');
-            }
-        }
+        if (!user) return;
+        await checkAndUpdateAccountModes(user.uid);
+        history.push(user.displayName ? '/Account' : '/SetUsername');
     };
 
     return (
@@ -119,7 +120,7 @@ const Signup: React.FC = () => {
                             />
                         </IonItem>
 
-                        <IonButton shape="round" type="submit" expand="block" onClick={() => handleSignup(email, password)} disabled={isEmailTaken || isSubmitting}>
+                        <IonButton shape="round" type="submit" expand="block" disabled={isEmailTaken || isSubmitting}>
                             <IonIcon slot="start" icon={personAdd} />
                             Sign Up with Email
                         </IonButton>

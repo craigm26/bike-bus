@@ -1,0 +1,62 @@
+[debug] [2024-04-22T21:31:50.687Z] ----------------------------------------------------------------------
+[debug] [2024-04-22T21:31:50.689Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2024-04-22T21:31:50.689Z] CLI Version:   13.0.1
+[debug] [2024-04-22T21:31:50.689Z] Platform:      win32
+[debug] [2024-04-22T21:31:50.689Z] Node Version:  v18.19.0
+[debug] [2024-04-22T21:31:50.690Z] Time:          Mon Apr 22 2024 14:31:50 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-22T21:31:50.691Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-22T21:31:50.694Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-22T21:31:50.779Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-04-22T21:31:50.779Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2024-04-22T21:31:50.779Z] [iam] checking project bikebus-71dd5 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2024-04-22T21:31:50.780Z] > refreshing access token with scopes: []
+[debug] [2024-04-22T21:31:50.781Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-04-22T21:31:50.781Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-04-22T21:31:50.880Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------124699354089193518793051","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-22T21:31:50.880Z] [iam] error while checking permissions, command may fail: FirebaseError: Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2024-04-22T21:31:50.881Z] > refreshing access token with scopes: []
+[debug] [2024-04-22T21:31:50.881Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-04-22T21:31:50.881Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-04-22T21:31:50.936Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-22T21:31:50.937Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-22T21:31:50.964Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------104370627410904879322516","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-22T21:31:50.964Z] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] 
+[error] Error: Assertion failed: resolving hosting target of a site with no site name or target name. This should have caused an error earlier
+[debug] [2024-04-22T21:32:08.476Z] ----------------------------------------------------------------------
+[debug] [2024-04-22T21:32:08.477Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2024-04-22T21:32:08.478Z] CLI Version:   13.0.1
+[debug] [2024-04-22T21:32:08.478Z] Platform:      win32
+[debug] [2024-04-22T21:32:08.478Z] Node Version:  v18.19.0
+[debug] [2024-04-22T21:32:08.479Z] Time:          Mon Apr 22 2024 14:32:08 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-22T21:32:08.479Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-22T21:32:08.481Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-22T21:32:08.561Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-04-22T21:32:08.561Z] > authorizing via signed-in user (craigm26@gmail.com)
+[debug] [2024-04-22T21:32:08.561Z] [iam] checking project bikebus-71dd5 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2024-04-22T21:32:08.562Z] > refreshing access token with scopes: []
+[debug] [2024-04-22T21:32:08.563Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-04-22T21:32:08.563Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-04-22T21:32:08.649Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------764083890755323655735962","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-22T21:32:08.649Z] [iam] error while checking permissions, command may fail: FirebaseError: Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2024-04-22T21:32:08.650Z] > refreshing access token with scopes: []
+[debug] [2024-04-22T21:32:08.650Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-04-22T21:32:08.650Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-04-22T21:32:08.682Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-22T21:32:08.683Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-22T21:32:08.734Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------421449798473811187863908","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-22T21:32:08.735Z] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] 
+[error] Error: Assertion failed: resolving hosting target of a site with no site name or target name. This should have caused an error earlier

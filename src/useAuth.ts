@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
 import { db, auth as firebaseAuth } from './firebaseConfig';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -23,10 +23,6 @@ import {
 import { getDoc, doc, updateDoc, collection, setDoc, getDocFromServer } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-
-
-//export interface UserData {
-//  uid: string;
 
 export type UserData = {
   uid: string;
@@ -77,7 +73,7 @@ const useAuth = () => {
       firstName: '',
       lastName: '',
       accountType: 'Member',
-      enabledAccountModes: [],
+      enabledAccountModes: ['Member'],
       enabledOrgModes: []
     };
   
@@ -88,6 +84,11 @@ const useAuth = () => {
   
       if (!userData) {
         console.log('No additional user data found');
+        // create user data in the database
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        await setDoc(userRef, defaultUserData, { merge: true });
+        console.log('User data created:', defaultUserData);
+
         return defaultUserData;
       }
   
