@@ -40,8 +40,7 @@ jobs:
       - name: Authenticate Firebase CLI and deploy
         run: |
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5 }}" > ./firebase-adminsdk.json
-          firebase deploy --only hosting --project ${{ env.PROJECT_ID }}
+          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./firebase-adminsdk.json
-          PROJECT_ID: bikebus-71dd5
       
