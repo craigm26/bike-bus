@@ -19,7 +19,8 @@ jobs:
 
       - name: Install dependencies and build
         run: |
-          npm ci
+          npm cache clean --force
+          npm install --no-package-lock
           npm run build
         env:
           REACT_APP_FIREBASE_API_KEY: ${{ secrets.REACT_APP_FIREBASE_API_KEY }}
@@ -39,7 +40,7 @@ jobs:
 
       - name: Authenticate Firebase CLI and deploy
         run: |
-          echo "$GOOGLE_APPLICATION_CREDENTIALS" | firebase login:ci --non-interactive
-          firebase deploy --only hosting --token "$GOOGLE_APPLICATION_CREDENTIALS"
+          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+      
