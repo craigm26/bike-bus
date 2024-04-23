@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
-import { getAuth } from '@firebase/auth';
-import { getStorage } from '@firebase/storage';
-import { getFirestore } from '@firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
+import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
@@ -17,6 +17,7 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_APP_MEASUREMENT_ID
 };
 
+console.log(firebaseConfig);
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
@@ -39,5 +40,10 @@ const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true
 });
+
+console.log(firebaseConfig);
+// initilize firebase
+console.log(app);
+
 
 export { auth, storage, db, appCheck, analytics, rtdb, app, saveData };
