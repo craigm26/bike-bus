@@ -15,13 +15,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version: '18.19.0'
 
-      - name: Install dependencies and build
-        run: |
-          npm cache clean --force
-          npm install --no-package-lock
-          npm run build
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
         env:
           REACT_APP_FIREBASE_API_KEY: ${{ secrets.REACT_APP_FIREBASE_API_KEY }}
           REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
@@ -33,14 +33,13 @@ jobs:
           REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }}
           REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
           REACT_APP_RECAPTCHA_SITE_KEY: ${{ secrets.REACT_APP_RECAPTCHA_SITE_KEY }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5 }}
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Authenticate Firebase CLI and deploy
         run: |
-          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > ./firebase-adminsdk.json
+          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --token "$(firebase auth:export --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }})"
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
-      
+          GOOGLE_APPLICATION_CREDENTIALS: ./firebase-adminsdk.json
