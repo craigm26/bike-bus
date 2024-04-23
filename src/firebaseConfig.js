@@ -17,7 +17,6 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_APP_MEASUREMENT_ID
 };
 
-console.log(firebaseConfig);
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
@@ -40,10 +39,6 @@ const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true
 });
-
-console.log(firebaseConfig);
-// initilize firebase
-console.log(app);
 
 
 export { auth, storage, db, appCheck, analytics, rtdb, app, saveData };
