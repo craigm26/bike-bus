@@ -20,6 +20,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Print environment variables
+        run: |
+          echo "REACT_APP_FIREBASE_PROJECT_ID: $REACT_APP_FIREBASE_PROJECT_ID"
+          echo "REACT_APP_FIREBASE_AUTH_DOMAIN: $REACT_APP_FIREBASE_AUTH_DOMAIN"
+          echo "secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5 }}"
+          echo "secrets.GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}"
+
       - name: Build
         run: npm run build
         env:
