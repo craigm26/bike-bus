@@ -1,33 +1,33 @@
-[debug] [2024-04-23T02:50:14.101Z] ----------------------------------------------------------------------
-[debug] [2024-04-23T02:50:14.103Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js login --debug
-[debug] [2024-04-23T02:50:14.103Z] CLI Version:   13.0.1
-[debug] [2024-04-23T02:50:14.103Z] Platform:      win32
-[debug] [2024-04-23T02:50:14.103Z] Node Version:  v18.19.0
-[debug] [2024-04-23T02:50:14.104Z] Time:          Mon Apr 22 2024 19:50:14 GMT-0700 (Pacific Daylight Time)
-[debug] [2024-04-23T02:50:14.104Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:52:16.386Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:52:16.387Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T03:52:16.388Z] CLI Version:   13.0.1
+[debug] [2024-04-23T03:52:16.388Z] Platform:      win32
+[debug] [2024-04-23T03:52:16.388Z] Node Version:  v18.19.0
+[debug] [2024-04-23T03:52:16.389Z] Time:          Mon Apr 22 2024 20:52:16 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T03:52:16.389Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2024-04-23T02:50:14.107Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-23T03:52:16.391Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
 [info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
  
-[debug] [2024-04-23T02:50:14.314Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:52:16.578Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
 [warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
-[debug] [2024-04-23T02:50:14.316Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T03:52:16.579Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
 [info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
 [info] 
 [info] Visit this URL on this device to log in:
-[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=597143380&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=895385694&redirect_uri=http%3A%2F%2Flocalhost%3A9005
 [info] 
 [info] Waiting for authentication...
-[debug] [2024-04-23T02:55:36.990Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
-[debug] [2024-04-23T02:55:36.991Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
-[debug] [2024-04-23T02:55:37.078Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------811173947844362145328466","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
-[debug] [2024-04-23T02:55:37.079Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+[debug] [2024-04-23T03:52:32.268Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T03:52:32.269Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T03:52:32.348Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------531284728287809623127296","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:52:32.351Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
     at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\nvm\v18.16.0\node_modules\firebase-tools\lib\apiv2.js:246:31)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-[debug] [2024-04-23T02:55:37.083Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
-[debug] [2024-04-23T02:55:37.083Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"70d4e4e0-fd0e-48b3-90f6-6a508dc437aa"}
-[debug] [2024-04-23T02:55:37.145Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"70d4e4e0-fd0e-48b3-90f6-6a508dc437aa\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
-[debug] [2024-04-23T02:55:37.308Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:52:32.356Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T03:52:32.356Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"b88f15df-9008-4060-8a70-a21085980397"}
+[debug] [2024-04-23T03:52:32.429Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"b88f15df-9008-4060-8a70-a21085980397\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:52:32.537Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
     at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\nvm\v18.16.0\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
     at ClientRequest.emit (node:events:517:28)
     at ClientRequest.emit (node:domain:489:12)
@@ -39,37 +39,37 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
 [error] 
 [error] Error: Failed to make request to https://auth.firebase.tools/attest
-[debug] [2024-04-23T03:03:41.552Z] ----------------------------------------------------------------------
-[debug] [2024-04-23T03:03:41.554Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js login --debug
-[debug] [2024-04-23T03:03:41.554Z] CLI Version:   13.0.1
-[debug] [2024-04-23T03:03:41.554Z] Platform:      win32
-[debug] [2024-04-23T03:03:41.555Z] Node Version:  v18.19.0
-[debug] [2024-04-23T03:03:41.555Z] Time:          Mon Apr 22 2024 20:03:41 GMT-0700 (Pacific Daylight Time)
-[debug] [2024-04-23T03:03:41.556Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:54:08.140Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:54:08.141Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T03:54:08.142Z] CLI Version:   13.7.3
+[debug] [2024-04-23T03:54:08.142Z] Platform:      win32
+[debug] [2024-04-23T03:54:08.142Z] Node Version:  v18.19.0
+[debug] [2024-04-23T03:54:08.143Z] Time:          Mon Apr 22 2024 20:54:08 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T03:54:08.143Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2024-04-23T03:03:41.558Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-23T03:54:08.146Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
 [info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
  
-[debug] [2024-04-23T03:03:41.792Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:54:08.332Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
 [warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
-[debug] [2024-04-23T03:03:41.795Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T03:54:08.334Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
 [info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
 [info] 
 [info] Visit this URL on this device to log in:
-[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=81729928&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=49140446&redirect_uri=http%3A%2F%2Flocalhost%3A9005
 [info] 
 [info] Waiting for authentication...
-[debug] [2024-04-23T03:04:05.887Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
-[debug] [2024-04-23T03:04:05.887Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
-[debug] [2024-04-23T03:04:05.979Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------732452636792564751774700","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
-[debug] [2024-04-23T03:04:05.979Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
-    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\nvm\v18.16.0\node_modules\firebase-tools\lib\apiv2.js:246:31)
+[debug] [2024-04-23T03:54:46.941Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T03:54:46.942Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T03:54:47.016Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------465998162621309574497020","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:54:47.017Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-[debug] [2024-04-23T03:04:05.983Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
-[debug] [2024-04-23T03:04:05.984Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"ce64e6c6-b943-4330-ae3a-5ebcccf9e1fa"}
-[debug] [2024-04-23T03:04:06.052Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"ce64e6c6-b943-4330-ae3a-5ebcccf9e1fa\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
-[debug] [2024-04-23T03:04:06.163Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
-    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\nvm\v18.16.0\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+[debug] [2024-04-23T03:54:47.022Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T03:54:47.023Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"69fcc212-c3fc-4506-87bf-3829a63d29c3"}
+[debug] [2024-04-23T03:54:47.087Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"69fcc212-c3fc-4506-87bf-3829a63d29c3\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:54:47.205Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
     at ClientRequest.emit (node:events:517:28)
     at ClientRequest.emit (node:domain:489:12)
     at TLSSocket.socketErrorListener (node:_http_client:501:9)
@@ -80,31 +80,349 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
 [error] 
 [error] Error: Failed to make request to https://auth.firebase.tools/attest
-[debug] [2024-04-23T03:04:24.239Z] ----------------------------------------------------------------------
-[debug] [2024-04-23T03:04:24.241Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js login --debug
-[debug] [2024-04-23T03:04:24.241Z] CLI Version:   13.0.1
-[debug] [2024-04-23T03:04:24.241Z] Platform:      win32
-[debug] [2024-04-23T03:04:24.241Z] Node Version:  v18.19.0
-[debug] [2024-04-23T03:04:24.242Z] Time:          Mon Apr 22 2024 20:04:24 GMT-0700 (Pacific Daylight Time)
-[debug] [2024-04-23T03:04:24.242Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:54:57.740Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:54:57.742Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T03:54:57.743Z] CLI Version:   13.7.3
+[debug] [2024-04-23T03:54:57.743Z] Platform:      win32
+[debug] [2024-04-23T03:54:57.743Z] Node Version:  v18.19.0
+[debug] [2024-04-23T03:54:57.744Z] Time:          Mon Apr 22 2024 20:54:57 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T03:54:57.744Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2024-04-23T03:04:24.244Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-23T03:54:57.747Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
 [info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
  
-[debug] [2024-04-23T03:04:24.439Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:54:57.957Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
 [warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
-[debug] [2024-04-23T03:04:24.440Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
-[debug] [2024-04-23T03:05:43.067Z] ----------------------------------------------------------------------
-[debug] [2024-04-23T03:05:43.068Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js login --debug
-[debug] [2024-04-23T03:05:43.069Z] CLI Version:   13.0.1
-[debug] [2024-04-23T03:05:43.069Z] Platform:      win32
-[debug] [2024-04-23T03:05:43.069Z] Node Version:  v18.19.0
-[debug] [2024-04-23T03:05:43.070Z] Time:          Mon Apr 22 2024 20:05:43 GMT-0700 (Pacific Daylight Time)
-[debug] [2024-04-23T03:05:43.070Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:54:57.960Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T03:58:06.842Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T03:58:06.843Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T03:58:06.844Z] CLI Version:   13.7.3
+[debug] [2024-04-23T03:58:06.844Z] Platform:      win32
+[debug] [2024-04-23T03:58:06.844Z] Node Version:  v18.19.0
+[debug] [2024-04-23T03:58:06.845Z] Time:          Mon Apr 22 2024 20:58:06 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T03:58:06.845Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2024-04-23T03:05:43.072Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2024-04-23T03:58:06.847Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
 [info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
  
-[debug] [2024-04-23T03:05:43.255Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:58:07.049Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
 [warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
-[debug] [2024-04-23T03:05:43.256Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T03:58:07.051Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=666746574&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T03:58:25.575Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T03:58:25.577Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T03:58:25.665Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------493795510026616376603856","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:58:25.666Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T03:58:25.670Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T03:58:25.671Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"707678b0-12bd-402e-a2f4-38e327806f2f"}
+[debug] [2024-04-23T03:58:25.739Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"707678b0-12bd-402e-a2f4-38e327806f2f\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T03:58:25.874Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T04:07:02.304Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T04:07:02.305Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T04:07:02.306Z] CLI Version:   13.7.3
+[debug] [2024-04-23T04:07:02.306Z] Platform:      win32
+[debug] [2024-04-23T04:07:02.306Z] Node Version:  v18.19.0
+[debug] [2024-04-23T04:07:02.307Z] Time:          Mon Apr 22 2024 21:07:02 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T04:07:02.307Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T04:07:02.309Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
+ 
+[debug] [2024-04-23T04:07:02.538Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T04:07:02.540Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=165845790&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T04:07:15.337Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T04:07:15.338Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T04:07:15.422Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------282920854069326468554032","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:07:15.423Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T04:07:15.427Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T04:07:15.428Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"90ca3757-080a-4678-bfba-5c30190149e0"}
+[debug] [2024-04-23T04:07:15.492Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"90ca3757-080a-4678-bfba-5c30190149e0\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:07:15.640Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T04:12:18.695Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T04:12:18.697Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T04:12:18.697Z] CLI Version:   13.7.3
+[debug] [2024-04-23T04:12:18.697Z] Platform:      win32
+[debug] [2024-04-23T04:12:18.697Z] Node Version:  v18.19.0
+[debug] [2024-04-23T04:12:18.698Z] Time:          Mon Apr 22 2024 21:12:18 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T04:12:18.699Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T04:12:18.701Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
+ 
+[debug] [2024-04-23T04:12:18.911Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T04:12:18.913Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=657213195&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T04:12:42.592Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T04:12:42.593Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T04:12:42.700Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------083468922432641589195386","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:12:42.701Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T04:12:42.706Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T04:12:42.707Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"89fcd77e-de9c-4df9-ad04-a7c4eecd9f3c"}
+[debug] [2024-04-23T04:12:42.769Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"89fcd77e-de9c-4df9-ad04-a7c4eecd9f3c\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:12:42.938Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T04:12:49.174Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T04:12:49.176Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login:ci --debug
+[debug] [2024-04-23T04:12:49.176Z] CLI Version:   13.7.3
+[debug] [2024-04-23T04:12:49.176Z] Platform:      win32
+[debug] [2024-04-23T04:12:49.177Z] Node Version:  v18.19.0
+[debug] [2024-04-23T04:12:49.177Z] Time:          Mon Apr 22 2024 21:12:49 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T04:12:49.178Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T04:12:49.180Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[warn] !  Authenticating with a `login:ci` token is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=440756752&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T04:12:49.384Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T04:12:49.385Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T04:13:02.411Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T04:13:02.413Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T04:13:02.487Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------080275163829860236757780","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:13:02.488Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T04:13:02.492Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T04:13:02.493Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"13a9037d-8191-42c5-a306-ba99f0f7fd84"}
+[debug] [2024-04-23T04:13:02.549Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"13a9037d-8191-42c5-a306-ba99f0f7fd84\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T04:13:02.654Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T04:13:42.422Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T04:13:42.424Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login --debug
+[debug] [2024-04-23T04:13:42.424Z] CLI Version:   13.7.3
+[debug] [2024-04-23T04:13:42.424Z] Platform:      win32
+[debug] [2024-04-23T04:13:42.425Z] Node Version:  v18.19.0
+[debug] [2024-04-23T04:13:42.425Z] Time:          Mon Apr 22 2024 21:13:42 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T04:13:42.426Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T04:13:42.428Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
+ 
+[debug] [2024-04-23T04:13:42.605Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T04:13:42.606Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T06:07:16.135Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T06:07:16.136Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login:ci --debug
+[debug] [2024-04-23T06:07:16.136Z] CLI Version:   13.7.3
+[debug] [2024-04-23T06:07:16.137Z] Platform:      win32
+[debug] [2024-04-23T06:07:16.137Z] Node Version:  v18.19.0
+[debug] [2024-04-23T06:07:16.138Z] Time:          Mon Apr 22 2024 23:07:16 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T06:07:16.138Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T06:07:16.141Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[warn] !  Authenticating with a `login:ci` token is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=141823432&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T06:07:16.353Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T06:07:16.354Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T06:07:24.380Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T06:07:24.381Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T06:07:24.470Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------960655745034280354991585","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T06:07:24.471Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T06:07:24.478Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T06:07:24.479Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"55ea29dd-a805-447b-9296-bef416afe4d6"}
+[debug] [2024-04-23T06:07:24.751Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"55ea29dd-a805-447b-9296-bef416afe4d6\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T06:07:24.906Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T14:44:14.562Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T14:44:14.563Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login:ci --debug
+[debug] [2024-04-23T14:44:14.564Z] CLI Version:   13.7.3
+[debug] [2024-04-23T14:44:14.564Z] Platform:      win32
+[debug] [2024-04-23T14:44:14.564Z] Node Version:  v18.19.0
+[debug] [2024-04-23T14:44:14.565Z] Time:          Tue Apr 23 2024 07:44:14 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T14:44:14.565Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T14:44:14.568Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[warn] !  Authenticating with a `login:ci` token is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=57289297&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T14:44:14.780Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T14:44:14.781Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T14:44:22.975Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T14:44:22.976Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T14:44:23.074Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------896046762478815171093639","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:44:23.075Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T14:44:23.079Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T14:44:23.079Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"4ef0b1ea-475d-4e75-98f3-874dc1622c93"}
+[debug] [2024-04-23T14:44:23.367Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"4ef0b1ea-475d-4e75-98f3-874dc1622c93\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:44:23.499Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T14:45:31.477Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T14:45:31.479Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login:ci --debug
+[debug] [2024-04-23T14:45:31.479Z] CLI Version:   13.7.3
+[debug] [2024-04-23T14:45:31.479Z] Platform:      win32
+[debug] [2024-04-23T14:45:31.480Z] Node Version:  v18.19.0
+[debug] [2024-04-23T14:45:31.480Z] Time:          Tue Apr 23 2024 07:45:31 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T14:45:31.481Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T14:45:31.483Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[warn] !  Authenticating with a `login:ci` token is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=625917340&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T14:45:31.684Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T14:45:31.685Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T14:46:21.772Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T14:46:21.773Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T14:46:21.844Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------122927844966417379702794","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:46:21.845Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T14:46:21.850Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T14:46:21.851Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"b5fdb405-0918-470c-8f60-975dab8ea2e5"}
+[debug] [2024-04-23T14:46:21.915Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"b5fdb405-0918-470c-8f60-975dab8ea2e5\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:46:22.010Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
+[debug] [2024-04-23T14:48:50.877Z] ----------------------------------------------------------------------
+[debug] [2024-04-23T14:48:50.879Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login:ci --debug
+[debug] [2024-04-23T14:48:50.879Z] CLI Version:   13.7.3
+[debug] [2024-04-23T14:48:50.879Z] Platform:      win32
+[debug] [2024-04-23T14:48:50.879Z] Node Version:  v18.19.0
+[debug] [2024-04-23T14:48:50.880Z] Time:          Tue Apr 23 2024 07:48:50 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-04-23T14:48:50.880Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-23T14:48:50.883Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[warn] !  Authenticating with a `login:ci` token is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=932341506&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2024-04-23T14:48:51.080Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: unable to verify the first certificate
+[warn] !  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2024-04-23T14:48:51.081Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2024-04-23T14:49:02.028Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2024-04-23T14:49:02.028Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2024-04-23T14:49:02.112Z] *** [apiv2] error from fetch(https://accounts.google.com/o/oauth2/token, {"headers":{},"method":"POST","body":{"_overheadLength":543,"_valueLength":208,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------488976490569911097755069","_events":{},"_eventsCount":1}}): FetchError: request to https://accounts.google.com/o/oauth2/token failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:49:02.113Z] Token Fetch Error: FirebaseError: Failed to make request to https://accounts.google.com/o/oauth2/token
+    at RetryOperation._fn (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:253:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[debug] [2024-04-23T14:49:02.116Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2024-04-23T14:49:02.117Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"eec679d2-c164-4932-8759-f83f9a2b1541"}
+[debug] [2024-04-23T14:49:02.181Z] *** [apiv2] error from fetch(https://auth.firebase.tools/attest, {"headers":{},"method":"POST","body":"{\"session_id\":\"eec679d2-c164-4932-8759-f83f9a2b1541\"}"}): FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+[debug] [2024-04-23T14:49:02.286Z] FetchError: request to https://auth.firebase.tools/attest failed, reason: unable to verify the first certificate
+    at ClientRequest.<anonymous> (C:\Users\CraigM\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\node-fetch\lib\index.js:1501:11)
+    at ClientRequest.emit (node:events:517:28)
+    at ClientRequest.emit (node:domain:489:12)
+    at TLSSocket.socketErrorListener (node:_http_client:501:9)
+    at TLSSocket.emit (node:events:517:28)
+    at TLSSocket.emit (node:domain:489:12)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: Failed to make request to https://auth.firebase.tools/attest
