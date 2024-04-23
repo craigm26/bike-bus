@@ -40,6 +40,7 @@ jobs:
       - name: Authenticate Firebase CLI and deploy
         run: |
           echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > ./firebase-adminsdk.json
-          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --token "$(firebase auth:export --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }})"
+          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --token "${{ secrets.FIREBASE_TOKEN }}"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./firebase-adminsdk.json
+      
