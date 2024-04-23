@@ -26,6 +26,7 @@
     "predeploy" : [
       "npm run build"
     ],
+    "site": "bikebus-71dd5",
     "public": "build",
     "ignore": [
       "firebase.json",
