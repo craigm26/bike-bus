@@ -34,13 +34,10 @@ jobs:
           REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
           REACT_APP_RECAPTCHA_SITE_KEY: ${{ secrets.REACT_APP_RECAPTCHA_SITE_KEY }}
 
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Authenticate Firebase CLI and deploy
-        run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5 }}" > ./firebase-adminsdk.json
-          firebase deploy --only hosting --project ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./firebase-adminsdk.json
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIKEBUS_71DD5 }}'
+          channelId: live
+          projectId: bikebus-71dd5
       
