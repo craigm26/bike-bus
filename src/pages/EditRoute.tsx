@@ -413,7 +413,7 @@ const EditRoute: React.FC = () => {
 
     const batchSize = 10;
     const batches = [];
-    const epsilon = 0.00005; // Define epsilon for Douglas-Peucker algorithm. Distance in degrees. 0.00005 is about 5.5 meters.
+    const epsilon = 0.00020; // 0.00020 is about 10 meters
     const routeRequests = [];
 
     for (let i = 0; i < waypoints.length; i += batchSize) {
