@@ -388,32 +388,29 @@ const Event: React.FC = () => {
       setSelectedStartLocation(route.startPoint);
       setSelectedEndLocation(route.endPoint);
 
-      // let's set the zoom level based on the distance between the start and end points
-      const distance = Math.sqrt(Math.pow(route.startPoint.lat - route.endPoint.lat, 2) + Math.pow(route.startPoint.lng - route.endPoint.lng, 2));
-      if (distance < 0.01) {
-        setCurrentZoomLevel(16);
-      }
-      else if (distance < 0.02) {
-        setCurrentZoomLevel(16);
-      }
-      else if (distance < 0.03) {
-        setCurrentZoomLevel(15);
-      }
-      else if (distance < 0.04) {
-        setCurrentZoomLevel(14);
-      }
-      else if (distance < 0.05) {
-        setCurrentZoomLevel(13);
-      }
-      else if (distance < 0.06) {
-        setCurrentZoomLevel(12);
-      }
-      else if (distance < 0.07) {
-        setCurrentZoomLevel(11);
-      }
-      else if (distance > 0.07) {
-        setCurrentZoomLevel(1);
-      }
+
+      // Haversine formula to calculate distance between two points on the earth
+      const toRadians = (degree: number) => degree * Math.PI / 180;
+      const earthRadiusKm = 6371;
+
+      const dLat = toRadians(route.endPoint.lat - route.startPoint.lat);
+      const dLng = toRadians(route.endPoint.lng - route.startPoint.lng);
+
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(route.startPoint.lat)) * Math.cos(toRadians(route.endPoint.lat)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distanceKm = earthRadiusKm * c;
+
+      // Set zoom level based on distance
+      let zoomLevel = 12; // Default zoom level for medium distances
+      if (distanceKm < 5) zoomLevel = 15; // Very close
+      else if (distanceKm < 10) zoomLevel = 13; // Close
+      else if (distanceKm < 20) zoomLevel = 11; // Moderate
+      else if (distanceKm < 40) zoomLevel = 9;  // Far
+      else if (distanceKm > 40) zoomLevel = 7;  // Very far
+
+      setCurrentZoomLevel(zoomLevel);
     }
 
   }
