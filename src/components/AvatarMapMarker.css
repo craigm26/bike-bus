@@ -1,5 +1,0 @@
-.default-avatar-map-marker {
-    width: var(--width);
-    height: var(--height); 
-    object-fit: cover; /* This makes the image cover the div without distorting its aspect ratio */
-}
