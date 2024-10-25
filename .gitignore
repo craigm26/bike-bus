@@ -38,3 +38,29 @@ yarn-error.log*
 resources/ios/**/*
 resources/android/**/*
 .env
+
+# Flutter/Dart related
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache
+.pub/
+.idea/
+.vscode/
+*.iml
+
+# Exclude secret files within flutter_bikebus
+flutter_bikebus/assets/.env.*
+flutter_bikebus/config.yaml
+flutter_bikebus/config.json
+flutter_bikebus/*.key
+flutter_bikebus/*.pem
+flutter_bikebus/*.crt
+flutter_bikebus/secrets.*
+flutter_bikebus/keys/
+flutter_bikebus/credentials/
+flutter_bikebus/android/app/google-services.json
+flutter_bikebus/lib/firebase_options.dart
+emulatorbackup/*
+firebasebackup/*
