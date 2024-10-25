@@ -1,19 +1,33 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bikebus/app.dart';
+import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
+import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
+import 'package:flutter_bikebus/features/auth/models/user_model.dart';
+import 'package:flutter_bikebus/features/auth/repositories/auth_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:flutter_bikebus/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Initialize AuthRepository and AuthBloc
+    final authRepository = AuthRepository();
+    final authBloc = AuthBloc(authRepository: authRepository)
+      ..add(AuthChanged(authRepository.currentUser as UserModel?));
+
+    // Build the widget tree with MultiBlocProvider
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+        ],
+        child: App(),
+      ),
+    );
+
+    // Allow the widget tree to build
+    await tester.pumpAndSettle();
+
+    // Your test code continues here...
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
