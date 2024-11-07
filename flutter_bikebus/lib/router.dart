@@ -190,7 +190,6 @@ class _AppShellState extends State<AppShell> {
 
   static const List<String> _routePaths = [
     '/posts',
-    '/search',
     '/map',
     '/directory',
     '/events',
@@ -241,6 +240,13 @@ class _AppShellState extends State<AppShell> {
         centerTitle: true,
         title: const TitleText('BikeBus'),
         actions: [
+          // Add a search icon to the app bar and navigate to the search screen while having a animated transition
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              context.go('/search');
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.feedback),
             onPressed: () {
@@ -315,22 +321,16 @@ class _AppShellState extends State<AppShell> {
                 context.go('/account');
               },
             ),
+            // add icons later for private messages, notifications, and settings
             ListTile(
-              leading: const Icon(Icons.group),
-              title: const Text('Groups'),
+              leading: const Icon(Icons.privacy_tip),
+              title: const Text('Privacy Policy'),
               onTap: () {
-                context.go('/directory');
-                Navigator.pop(context);
+                Navigator.of(context).pop();
+                context.go('/privacypolicy');
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.event),
-              title: const Text('Events'),
-              onTap: () {
-                context.go('/events');
-                Navigator.pop(context);
-              },
-            ),
+            
           ],
         ),
       ),
@@ -343,11 +343,7 @@ class _AppShellState extends State<AppShell> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.sticky_note_2),
-            label: 'Posts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
+            label: 'Boards',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.map),

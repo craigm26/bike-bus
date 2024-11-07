@@ -64,13 +64,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18),
             ),
-            
+            /*
             const SizedBox(height: 20),
             YoutubePlayer(
               controller: _controller,
               showVideoProgressIndicator: false,
               progressIndicatorColor: Colors.redAccent,
-            ),
+            ),*/
             
             const SizedBox(height: 20),
             if (isLoggedIn && username != null) ...[
