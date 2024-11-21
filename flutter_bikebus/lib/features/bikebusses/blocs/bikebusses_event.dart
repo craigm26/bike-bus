@@ -1,22 +1,48 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:logger/logger.dart';
+// lib/features/bikebusses/blocs/bikebusses_event.dart
 
-final Logger _logger = Logger();
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
 
-var logger = Logger(
-  printer: PrettyPrinter(),
-);
+abstract class BikeBusGroupEvent extends Equatable {
+  const BikeBusGroupEvent();
 
-var loggerNoStack = Logger(
-  printer: PrettyPrinter(methodCount: 0),
-);
-
-// the purpose of the event page for the bikebusses bloc is to manage the events that will be used to manage the state of the BikeBusses directory
-abstract class BikebussesEvent {
-  const BikebussesEvent();
+  @override
+  List<Object?> get props => [];
 }
 
-// we need to load the bikebusses
-class LoadBikebusses extends BikebussesEvent {
-  const LoadBikebusses();
+class LoadBikeBusGroups extends BikeBusGroupEvent {
+  const LoadBikeBusGroups();
+
+  @override
+  List<Object?> get props => [];
 }
+
+class SetCurrentBikeBusGroup extends BikeBusGroupEvent {
+  final String bikeBusGroupId;
+  final String selectedType;
+
+  const SetCurrentBikeBusGroup(BikeBusGroup bikeBusGroup, {required this.bikeBusGroupId, required this.selectedType});
+
+  @override
+  List<Object?> get props => [bikeBusGroupId];
+}
+
+class LoadUserBikeBusGroups extends BikeBusGroupEvent {
+  final String? userId;
+
+  const LoadUserBikeBusGroups({this.userId,});
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+class FilterByType extends BikeBusGroupEvent {
+  final String type;
+
+  const FilterByType(this.type);
+
+  @override
+  List<Object?> get props => [type];
+}
+
+

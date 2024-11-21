@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
+import 'package:flutter_bikebus/features/organizations/models/organizations_model.dart';
 
 class AccountModel {
   final String uid;
@@ -13,7 +15,10 @@ class AccountModel {
   final List<String>? enabledOrgModes;
   final List<Map<String, dynamic>>? savedDestinations;
   final List<DocumentReference>? trips;
-  final List<DocumentReference>? organizations;
+  final List<BikeBusGroup> bikeBusGroups;
+  final List<Organization> organizations;
+
+  // add a new field for indicating what bikebusgroup or organization the user has set as their default loading group
   // Add other fields as necessary
 
   AccountModel({
@@ -28,7 +33,8 @@ class AccountModel {
     this.enabledOrgModes,
     this.savedDestinations,
     this.trips,
-    this.organizations,
+    this.organizations = const [],
+    this.bikeBusGroups = const [],
     // Initialize other fields
   });
 
@@ -41,7 +47,7 @@ class AccountModel {
     );
   }
 
-  factory AccountModel.fromFirestore(DocumentSnapshot doc) {
+  static Future<AccountModel> fromFirestore(DocumentSnapshot doc) async {
     final data = doc.data() as Map<String, dynamic>;
     return AccountModel(
       uid: doc.id,
@@ -61,12 +67,15 @@ class AccountModel {
       trips: (data['trips'] as List<dynamic>?)
           ?.map((e) => e as DocumentReference)
           .toList(),
-      organizations: (data['organizations'] as List<dynamic>?)
-          ?.whereType<DocumentReference>()
-          .toList(),
+      organizations: await Future.wait((data['organizations'] as List<dynamic>? ?? [])
+          .map((e) async => Organization.fromFirestore(await (e as DocumentReference).get()))
+          .toList()),
       // Map other fields
+      // load the default loading group from the user document
     );
   }
+
+  get displayName => null;
 
   Map<String, dynamic> toFirestore() {
     return {
@@ -80,8 +89,10 @@ class AccountModel {
       'enabledOrgModes': enabledOrgModes,
       'savedDestinations': savedDestinations,
       'trips': trips?.map((e) => e.path).toList(),
-      'organizations': organizations?.map((e) => e.path).toList(),
+      'organizations': organizations.map((e) => e.path).toList(),
       // Map other fields
     };
   }
+
+  copyWith({required BikeBusGroup defaultLoadingGroup}) {}
 }

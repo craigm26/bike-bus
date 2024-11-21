@@ -1,24 +1,34 @@
 // lib/router.dart
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bikebus/features/account/blocs/account_bloc.dart';
-import 'package:flutter_bikebus/features/account/blocs/account_event.dart';
+import 'package:flutter_bikebus/features/account/screens/account_edit_screen.dart';
 import 'package:flutter_bikebus/features/account/screens/account_screen.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_state.dart';
 import 'package:flutter_bikebus/features/auth/screens/login_screen.dart';
 import 'package:flutter_bikebus/features/auth/screens/splash_screen.dart';
 import 'package:flutter_bikebus/features/auth/screens/signup_screen.dart';
-import 'package:flutter_bikebus/features/bikebusses/screens/directory_bikebusses.dart';
+import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_bloc.dart';
+import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
+import 'package:flutter_bikebus/features/directory/blocs/directory_bloc.dart';
+import 'package:flutter_bikebus/features/organizations/blocs/organizations_bloc.dart';
+import 'package:flutter_bikebus/features/organizations/models/organizations_model.dart';
+import 'package:flutter_bikebus/features/bulletinboards/screens/bulletinboards_screen.dart';
+import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_bloc.dart';
+import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_event.dart';
+import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_state.dart';
+import 'package:flutter_bikebus/features/selectedgroup/screens/group_dropdown.dart';
 import 'package:flutter_bikebus/features/welcome/screens/welcome_screen.dart';
 import 'package:flutter_bikebus/features/search/screens/search_screen.dart';
+import 'package:flutter_bikebus/features/directory/screens/directory.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/map/screens/map_screen.dart';
 import '../features/privacy_policy/screens/privacy_policy_screen.dart';
-import '../features/bulletinboards/screens/posts_screen.dart';
 import '../features/events/screens/events_screen.dart';
 import '../features/feedback/screens/feedback_screen.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:logger/logger.dart';
 // import google fonts
 import 'package:google_fonts/google_fonts.dart';
@@ -84,7 +94,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
 class BikeBusRouter {
   static GoRouter createRouter(AuthBloc authBloc) {
     return GoRouter(
-      initialLocation: '/welcome',
+      initialLocation: '/splash',
       refreshListenable: GoRouterRefreshStream(authBloc.stream),
       redirect: (BuildContext context, GoRouterState state) {
         final authState = authBloc.state;
@@ -92,23 +102,50 @@ class BikeBusRouter {
         final bool loggedIn = authState is AuthAuthenticated;
         final bool loggingIn = state.matchedLocation == '/login' ||
             state.matchedLocation == '/signup' ||
-            state.matchedLocation == '/splash';
+            state.matchedLocation == '/splash' ||
+            state.matchedLocation == '/welcome';
 
         // Add logs to debug routing behavior
         logger.d(
             "Logged in status: $loggedIn, Current route: ${state.matchedLocation}");
 
         if (!loggedIn && !loggingIn) return '/splash';
-        if (loggedIn && loggingIn) return '/posts';
+        if (loggedIn && loggingIn) return '/welcome';
 
         return null;
       },
       routes: [
         ShellRoute(
           builder: (context, state, child) {
-            return AppShell(location: state.matchedLocation, child: child);
+            return AppShell(child: child);
           },
           routes: [
+            // Global routes
+            GoRoute(
+              path: '/global/boards',
+              builder: (context, state) => BoardsScreen(),
+            ),
+            // BikeBusGroup routes
+            GoRoute(
+              path: '/bikebusgroup/:id/boards',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final bikeBusGroup =
+                    context.read<BikeBusGroupBloc>().getGroupById(id);
+                return BoardsScreen(bikeBusGroup: bikeBusGroup);
+              },
+            ),
+            // Organization routes
+            GoRoute(
+              path: '/organization/:id/boards',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final organization = context
+                    .read<OrganizationGroupBloc>()
+                    .getOrganizationById(id);
+                return BoardsScreen(organization: organization);
+              },
+            ),
             GoRoute(
               path: '/',
               builder: (context, state) => const WelcomeScreen(),
@@ -127,17 +164,12 @@ class BikeBusRouter {
             ),
             GoRoute(
               path: '/directory',
-              builder: (context, state) => const BikeBusGroupDirectory(),
-            ),
-            GoRoute(
-              path: '/directory/:bikeBusName',
-              builder: (context, state) => BikeBusGroupDirectory(
-                bikeBusName: state.pathParameters['bikeBusName'] ?? '',
+              builder: (context, state) => BlocProvider(
+                create: (context) => DirectoryBloc(
+                  firestore: FirebaseFirestore.instance,
+                ),
+                child: const DirectoryScreen(),
               ),
-            ),
-            GoRoute(
-              path: '/posts',
-              builder: (context, state) => const PostsScreen(),
             ),
             GoRoute(
               path: '/events',
@@ -147,6 +179,12 @@ class BikeBusRouter {
               path: '/account',
               builder: (context, state) => const AccountScreen(),
             ),
+            // /account/edit
+            GoRoute(
+                path: '/account/edit',
+                builder: (context, state) {
+                  return const AccountEditScreen();
+                }),
             GoRoute(
               path: '/privacypolicy',
               builder: (context, state) => const PrivacyPolicyScreen(),
@@ -167,6 +205,12 @@ class BikeBusRouter {
               path: '/search',
               builder: (context, state) => const SearchScreen(),
             ),
+            // notifications
+            GoRoute(
+              path: '/notifications',
+              builder: (context, state) =>
+                  const NotificationListener(child: Text('Notifications')),
+            ),
           ],
         ),
       ],
@@ -176,10 +220,8 @@ class BikeBusRouter {
 
 class AppShell extends StatefulWidget {
   final Widget child;
-  final String location;
 
-  const AppShell({Key? key, required this.child, required this.location})
-      : super(key: key);
+  const AppShell({super.key, required this.child});
 
   @override
   _AppShellState createState() => _AppShellState();
@@ -188,177 +230,188 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
 
-  static const List<String> _routePaths = [
-    '/posts',
-    '/map',
-    '/directory',
-    '/events',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Ensure the initial state is set to global
+    context.read<SelectedGroupBloc>().add(SelectGlobalGroup());
+  }
 
   void _onItemTapped(int index) {
-    if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
-      context.go(_routePaths[index]);
-    }
-  }
+    final selectedGroupState = context.read<SelectedGroupBloc>().state;
+    final groupType = selectedGroupState.groupType;
+    final selectedGroup = selectedGroupState.selectedGroup;
 
-  @override
-  void didUpdateWidget(covariant AppShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.location != oldWidget.location) {
-      _updateSelectedIndex(widget.location);
-    }
-  }
-
-  void _updateSelectedIndex(String location) {
-    int index = _routePaths.indexWhere((path) => location == path);
-    if (index == -1) {
-      index = 0; // Default to posts if not found
-    }
     setState(() {
       _selectedIndex = index;
     });
+
+    if (groupType == GroupType.global) {
+      _navigateGlobal(index);
+    } else if (groupType == GroupType.bikeBusGroup) {
+      _navigateBikeBusGroup(index, selectedGroup as BikeBusGroup);
+    } else if (groupType == GroupType.organization) {
+      // Check for the special 'BikeBus' organization
+      if (selectedGroup?.id == 'OZrruuBJptp9wkAAVUt7') {
+        _navigateGlobal(index); // Treat as global
+      } else {
+        _navigateOrganization(index, selectedGroup as Organization);
+      }
+    }
+  }
+
+  void _navigateGlobal(int index) {
+    switch (index) {
+      case 0:
+        context.go('/global/boards');
+        break;
+      case 1:
+        context.go('/directory');
+        break;
+      case 2:
+        context.go('/map');
+        break;
+      case 3:
+        context.go('/events');
+        break;
+      case 4:
+        context.go('/notifications');
+        break;
+
+      // Handle other indices
+    }
+  }
+
+  void _navigateBikeBusGroup(int index, BikeBusGroup group) {
+    switch (index) {
+      case 0:
+        context.go('/bikebusgroup/${group.id}/boards');
+        break;
+      case 1:
+        context.go('/bikebusgroup/${group.id}/map');
+        break;
+
+      // Handle other indices
+    }
+  }
+
+  void _navigateOrganization(int index, Organization org) {
+    switch (index) {
+      case 0:
+        context.go('/organization/${org.id}/boards');
+        break;
+      case 1:
+        context.go('/organization/${org.id}/events');
+        break;
+      // Handle other indices
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: customSwatch,
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: const Icon(Icons.account_circle),
+    return BlocBuilder<SelectedGroupBloc, SelectedGroupState>(
+      builder: (context, state) {
+        final groupType = state.groupType;
+        final selectedGroup = state.selectedGroup;
+
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: customSwatch,
+            leading: IconButton(
+              icon: Icon(Icons.account_circle),
               onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
-        ),
-        centerTitle: true,
-        title: const TitleText('BikeBus'),
-        actions: [
-          // Add a search icon to the app bar and navigate to the search screen while having a animated transition
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              context.go('/search');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.feedback),
-            onPressed: () {
-              context.go('/feedback');
-            },
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: customSwatch,
-              ),
-              child: BlocBuilder<AccountBloc, AccountState>(
-                builder: (context, state) {
-                  if (state is AccountLoaded) {
-                    final account = state.accountData;
-                    return InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.go('/account');
-                      },
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 36,
-                            backgroundImage: account.profilePictureUrl != null
-                                ? NetworkImage(account.profilePictureUrl!)
-                                : null,
-                            child: account.profilePictureUrl == null
-                                ? const Icon(Icons.person, size: 36)
-                                : null,
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Welcome ${account.firstName}' ?? 'Anonymous'),
-                          const SizedBox(height: 8),
-                          Text('@${account.username}' ?? ''),
-                        ],
-                      ),
-                    );
-                  } else if (state is AccountLoading) {
-                    return Center(child: CircularProgressIndicator());
-                  } else {
-                    return InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.go('/login');
-                      },
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            child: const Icon(Icons.person, size: 50),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text('Guest'),
-                        ],
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_circle),
-              title: const Text('Account'),
-              onTap: () {
-                Navigator.of(context).pop();
                 context.go('/account');
               },
             ),
-            // add icons later for private messages, notifications, and settings
-            ListTile(
-              leading: const Icon(Icons.privacy_tip),
-              title: const Text('Privacy Policy'),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/privacypolicy');
-              },
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: GroupDropdown(),
+                ),
+              ],
             ),
-            
-          ],
-        ),
-      ),
-      body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        unselectedItemColor: Colors.grey,
-        selectedItemColor: Colors.black,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
+            actions: [
+              IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () {
+                  context.go('/search');
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.feedback),
+                onPressed: () {
+                  context.go('/feedback');
+                },
+              ),
+            ],
+          ),
+          body: widget.child,
+          bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: customSwatch,
+            selectedItemColor: Colors.black,
+            unselectedItemColor: Colors.grey[600],
+            currentIndex: _selectedIndex,
+            items: _getNavigationBarItems(groupType),
+            onTap: _onItemTapped,
+          ),
+        );
+      },
+    );
+  }
+
+  List<BottomNavigationBarItem> _getNavigationBarItems(GroupType groupType) {
+    switch (groupType) {
+      case GroupType.global:
+        return [
           BottomNavigationBarItem(
             icon: Icon(Icons.sticky_note_2),
-            label: 'Boards',
+            label: 'Board',
+          ),
+          // use the global directory
+          BottomNavigationBarItem(
+            icon: Icon(Icons.maps_home_work),
+            label: 'Directory',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.map),
             label: 'Map',
           ),
+          // events
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_rounded),
-            label: 'Directory',
+            icon: Icon(Icons.event),
+            label: 'Events',
+          ),
+          // notifications
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
+          ),
+        ];
+      case GroupType.bikeBusGroup:
+        return [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.schedule),
+            label: 'Events',
+          ),
+          // ...add more items as needed...
+        ];
+      case GroupType.organization:
+        return [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: 'Organization',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.event),
             label: 'Events',
           ),
-        ],
-      ),
-    );
+          // ...add more items as needed...
+        ];
+    }
   }
 }

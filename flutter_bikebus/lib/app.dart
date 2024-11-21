@@ -4,10 +4,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_state.dart';
+import 'package:flutter_bikebus/features/organizations/blocs/organizations_bloc.dart';
+// Remove duplicate import:
+// import 'package:flutter_bikebus/features/organizations/blocs/organizations_bloc.dart';
+import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_bloc.dart';
+import 'package:flutter_bikebus/router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'router.dart';
+
 // logger
 import 'package:logger/logger.dart';
 
@@ -20,6 +25,7 @@ var logger = Logger(
 var loggerNoStack = Logger(
   printer: PrettyPrinter(methodCount: 0),
 );
+
 // Custom ChangeNotifier to listen to AuthBloc's state changes
 class GoRouterRefreshBloc extends ChangeNotifier {
   late final StreamSubscription<AuthState> _subscription;
@@ -45,6 +51,12 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
     final router = BikeBusRouter.createRouter(authBloc);
+    final selectedGroupBloc = context.read<SelectedGroupBloc>();
+
+    // listen to the selected group state changes
+    selectedGroupBloc.stream.listen((state) {
+      _logger.i('Selected Group State: $state');
+    });
 
     final ThemeData baseTheme = ThemeData(
       colorScheme: ColorScheme.fromSwatch(
@@ -65,6 +77,7 @@ class App extends StatelessWidget {
           baseTheme.textTheme,
         ),
       ),
+      // Ensure that the router configuration handles the '/boards/organization/:id' and '/boards/bikebus/:id' routes
     );
   }
 }
@@ -86,101 +99,38 @@ class AuthNotifier extends ChangeNotifier {
   }
 }
 
-class AppShell extends StatefulWidget {
-  final Widget child;
-  final String location;
+// lets make another notifier but for the bikebus bloc
+class BikeBusNotifier extends ChangeNotifier {
+  final BikeBusGroupBloc bikeBusBloc;
+  late final StreamSubscription _subscription;
 
-  const AppShell({super.key, required this.child, required this.location});
-
-  @override
-  AppShellState createState() => AppShellState();
-}
-
-class AppShellState extends State<AppShell> {
-  int _selectedIndex = 0;
-
-  static const List<String> _routePaths = [
-    '/',
-    '/map',
-    '/directory',
-    '/posts',
-    '/events',
-  ];
-
-  void _onItemTapped(int index) {
-    if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
-      context.go(_routePaths[index]);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant AppShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.location != oldWidget.location) {
-      _updateSelectedIndex(widget.location);
-    }
-  }
-
-  void _updateSelectedIndex(String location) {
-    int index = _routePaths.indexWhere((path) => location == path);
-    if (index == -1) {
-      index = 0; // Default to home if not found
-    }
-    setState(() {
-      _selectedIndex = index;
+  BikeBusNotifier(this.bikeBusBloc) {
+    _subscription = bikeBusBloc.stream.listen((_) {
+      notifyListeners();
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // use customSwatch for background color
-        backgroundColor: customSwatch,
-        leading: IconButton(
-          icon: const Icon(Icons.account_circle),
-          onPressed: () {
-            context.go('/account');
-          },
-        ),
-        // auth button
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.feedback),
-            onPressed: () {
-              context.go('/feedback');
-            },
-          ),
-        ],
-      ),
-      body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        unselectedItemColor: Colors.grey,
-        selectedItemColor: Colors.black,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sticky_note_2),
-            label: 'Posts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_rounded),
-            label: 'Directory',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event),
-            label: 'Events',
-          ),
-        ],
-      ),
-    );
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+// make a notifier for the organization bloc
+class OrganizationNotifier extends ChangeNotifier {
+  final OrganizationGroupBloc organizationBloc;
+  late final StreamSubscription _subscription;
+
+  OrganizationNotifier(this.organizationBloc) {
+    _subscription = organizationBloc.stream.listen((_) {
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

@@ -64,3 +64,5 @@ flutter_bikebus/android/app/google-services.json
 flutter_bikebus/lib/firebase_options.dart
 emulatorbackup/*
 firebasebackup/*
+firebase_options.dart
+

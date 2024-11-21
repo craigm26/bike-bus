@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
-import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_state.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
@@ -18,10 +17,8 @@ class SplashScreen extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          
           context.go('/login');
         } else if (state is AuthAuthenticated) {
-          // Navigate to the home screen using GoRouter
           context.go('/welcome');
         } else if (state is AuthError) {
           // Handle authentication errors if necessary

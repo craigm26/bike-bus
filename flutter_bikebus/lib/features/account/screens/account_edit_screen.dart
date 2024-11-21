@@ -1,32 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bikebus/features/account/blocs/account_state.dart';
+import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_bloc.dart';
+import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_state.dart';
+import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
+import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_event.dart'; // Add this line to import the event
 import 'package:flutter_bloc/flutter_bloc.dart';
 // router
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bikebus/features/account/blocs/account_bloc.dart';
+import 'package:flutter_bikebus/features/account/blocs/account_event.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
+import 'package:flutter_bikebus/features/account/blocs/account_event.dart'; // Add this line to import the AccountUpdate event
 import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Add this to handle password reset
 import 'package:flutter_bikebus/widgets/platform_specific_button.dart';
-// import selected group state
-import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_bloc.dart';
-import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_event.dart';
-import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_state.dart';
+import 'package:google_fonts/google_fonts.dart';
 // logger
 import 'package:logger/logger.dart';
 
 final Logger _logger = Logger();
 
-class AccountScreen extends StatelessWidget {
-  const AccountScreen({super.key});
+class AccountEditScreen extends StatelessWidget {
+  const AccountEditScreen({super.key});
 
   // This function triggers the password reset email
   Future<void> _resetPassword(BuildContext context, String email) async {
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      _logger.i('Password reset email sent to $email');
+      const snackBar = SnackBar(
+        content: Text('Password reset email sent'),
+      );
     } catch (e) {
-      _logger.e('Error sending password reset email: $e');
+      _logger;
     }
   }
 
@@ -65,28 +70,15 @@ class AccountScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text('Email: ${account.email}',
                       style: const TextStyle(fontSize: 18)),
-                  const SizedBox(height: 8),
-                  // use the selected group bloc to get the current state of the selected group and display it
-                  BlocBuilder<SelectedGroupBloc, SelectedGroupState>(
-                    builder: (context, state) {
-                      if (state is SelectedGroupState) {
-                        return Text(
-                          'Selected Group: ${state.selectedGroup?.name}',
-                          style: const TextStyle(fontSize: 18),
-                        );
-                      } else {
-                        return const Text('Selected Group: N/A',
-                            style: TextStyle(fontSize: 18));
-                      }
-                    },
-                  ),
+                  const SizedBox(height: 8),// Button to Edit Account (save to Firestore users/uid document)
                   PlatformSpecificButton(
-                    text: 'Edit Account',
+                    text: 'Save Account',
                     onPressed: () {
-                      context.go('/account/edit');
+                      // save new details to Firestore
                     },
                   ),
-                  const SizedBox(height: 8),
+
+
                   // Button to trigger password reset
                   PlatformSpecificButton(
                     text: 'Reset E-mail Password',
@@ -101,6 +93,14 @@ class AccountScreen extends StatelessWidget {
                     onPressed: () {
                       context.read<AuthBloc>().add(AuthSignOut());
                       context.go('/welcome');
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // cancel button and go back to account screen
+                  PlatformSpecificButton(
+                    text: 'Cancel',
+                    onPressed: () {
+                      context.go('/account');
                     },
                   ),
                 ],

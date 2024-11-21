@@ -1,55 +1,94 @@
-import 'package:equatable/equatable.dart';
 
-// Base class for all account-related events
-abstract class AccountEvent extends Equatable {
-  const AccountEvent();
+
+
+import 'package:equatable/equatable.dart';
+//import data model
+import 'package:flutter_bikebus/features/account/models/account_model.dart';
+
+// Base class for all account-related states
+abstract class AccountState extends Equatable {
+  const AccountState();
 
   @override
   List<Object?> get props => [];
 }
 
-// Event for loading account data
-class LoadAccountData extends AccountEvent {}
+// State when account data is not loaded
+class AccountUninitialized extends AccountState {}
 
-// Event for updating account data
-class UpdateAccountData extends AccountEvent {
-  final String? displayName;
-  final String? firstName;
-  final String? lastName;
-  final String? profilePictureUrl;
-  final List<String>? bikebusgroups;
-  final List<String>? enabledAccountModes;
-  final List<String>? enabledOrgModes;
-  final List<String>? savedDestinations;
-  final List<String>? trips;
+// State when userBikeBusGroups are loaded
+class userBikeBusGroupsLoaded extends AccountState {
+  final List<dynamic> userBikeBusGroups;
 
-  UpdateAccountData({
-    this.displayName,
-    this.firstName,
-    this.lastName,
-    this.profilePictureUrl,
-    this.bikebusgroups,
-    this.enabledAccountModes,
-    this.enabledOrgModes,
-    this.savedDestinations,
-    this.trips,
-  });
+  const userBikeBusGroupsLoaded(this.userBikeBusGroups);
 
   @override
-  List<Object?> get props => [
-        displayName,
-        firstName,
-        lastName,
-        profilePictureUrl,
-        bikebusgroups,
-        enabledAccountModes,
-        enabledOrgModes,
-        savedDestinations,
-        trips,
-      ];
+  List<Object?> get props => [userBikeBusGroups];
 }
 
-// Event for signing out
-class SignOut extends AccountEvent {
-  const SignOut();
+class UserBikeBusGroups extends AccountState {
+  // for a given logged in user, the userBikeBusGroups should be loaded
+  @override
+  final List<dynamic> bikebusgroups;
+
+  const UserBikeBusGroups(this.bikebusgroups);
+
+  @override
+  List<Object?> get props => [bikebusgroups];
+
+}
+
+// State when userOrganizations are loaded
+class userOrganizationsLoaded extends AccountState {
+  final List<dynamic> userOrganizations;
+
+  const userOrganizationsLoaded(this.userOrganizations);
+
+  @override
+  List<Object?> get props => [userOrganizations];
+}
+
+class UserOrganizations extends AccountState {
+  // for a given logged in user, the userOrganizations should be loaded
+  @override
+  final List<dynamic> organizations;
+
+  const UserOrganizations(this.organizations);
+
+  @override
+  List<Object?> get props => [organizations];
+
+}
+
+// State when account data is loading
+class AccountLoading extends AccountState {}
+
+// State when account data is loaded
+class AccountLoaded extends AccountState {
+  final AccountModel accountData;
+
+  const AccountLoaded(this.accountData);
+
+  @override
+  List<Object?> get props => [accountData];
+
+  get account => accountData;
+}
+
+// State when there is an error loading account data
+class AccountError extends AccountState {
+  AccountError(String s);
+}
+
+// State when account is unauthenticated
+class AccountUnauthenticated extends AccountState {}
+
+// State when auth state changes
+class AccountAuthStateChanged extends AccountState {
+  final bool isAuthenticated;
+
+  const AccountAuthStateChanged(this.isAuthenticated);
+
+  @override
+  List<Object?> get props => [isAuthenticated];
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bikebus/app.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_state.dart';
@@ -77,7 +76,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               PlatformSpecificButton(
                 text: 'Continue as $username',
                 onPressed: () {
-                  context.push('/posts');
+                  // navigate to the defaultBikeBusGroup boards screen
+                  context.push('/organization/OZrruuBJptp9wkAAVUt7/boards');
                 },
               ),
               const SizedBox(height: 10),
