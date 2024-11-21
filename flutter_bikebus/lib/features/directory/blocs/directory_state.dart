@@ -1,34 +1,39 @@
-import 'package:equatable/equatable.dart';
-import '../models/directory_model.dart';
+// lib/blocs/directory/directory_state.dart
 
-abstract class DirectoryBlocState extends Equatable {
-  const DirectoryBlocState();
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bikebus/features/directory/models/directory_item.dart';
+import 'package:flutter_bikebus/features/directory/models/directory_enums.dart';
+
+abstract class DirectoryState extends Equatable {
+  const DirectoryState();
 
   @override
   List<Object?> get props => [];
 }
 
-class DirectoryBlocInitial extends DirectoryBlocState {
-  const DirectoryBlocInitial();
-}
+class DirectoryLoading extends DirectoryState {}
 
-class DirectoryBlocLoading extends DirectoryBlocState {
-  const DirectoryBlocLoading();
-}
+class DirectoryLoaded extends DirectoryState {
+  final List<DirectoryItem> items;
+  final DirectoryViewType viewType;
+  final String? filterText;
+  final SortOption? sortOption;
 
-class DirectoryBlocLoaded extends DirectoryBlocState {
-  final List<DirectoryModel> directories;
-
-  const DirectoryBlocLoaded(this.directories);
+  const DirectoryLoaded({
+    required this.items,
+    required this.viewType,
+    this.filterText,
+    this.sortOption,
+  });
 
   @override
-  List<Object?> get props => [directories];
+  List<Object?> get props => [items, viewType, filterText, sortOption];
 }
 
-class DirectoryBlocError extends DirectoryBlocState {
+class DirectoryError extends DirectoryState {
   final String message;
 
-  const DirectoryBlocError(this.message);
+  const DirectoryError(this.message);
 
   @override
   List<Object?> get props => [message];

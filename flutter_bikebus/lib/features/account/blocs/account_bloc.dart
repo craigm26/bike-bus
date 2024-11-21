@@ -67,6 +67,16 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
         emit(AccountError('Failed to update account data.'));
       }
     });
+
+        on<SignOut>((event, emit) async {
+      emit(AccountLoading());
+      try {
+        await accountRepository.signOut();
+        emit(AccountUninitialized());
+      } catch (e) {
+        emit(AccountError('Failed to sign out'));
+      }
+    });
     
     // Cleanup
     @override

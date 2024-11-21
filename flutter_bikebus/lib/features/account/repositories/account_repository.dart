@@ -65,6 +65,11 @@ class AccountRepository {
     }
   }
 
+  // .signOut() method is called on the FirebaseAuth instance to sign out the user
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   Future<void> _cleanUpInvalidReferences(
     DocumentReference userDocRef,
     DocumentSnapshot userSnapshot,

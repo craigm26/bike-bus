@@ -22,6 +22,14 @@ class OrganizationRepository {
         .toList();
   }
 
+  // getAllOrganizations method that fetches all organizations from Firestore
+  Future<List<Organization>> getAllOrganizations() async {
+    final querySnapshot = await firestore.collection('organizations').get();
+    return querySnapshot.docs
+        .map((doc) => Organization.fromFirestore(doc))
+        .toList();
+  }
+
   // build a getBikeBusOrganization method that fetches the BikeBus organization from Firestore
   Future<Organization> getBikeBusOrganization() async {
     final docSnapshot = await firestore.collection('organizations').doc('OZrruuBJptp9wkAAVUt7').get();

@@ -43,12 +43,14 @@ class _GroupDropdownLoaderState extends State<GroupDropdownLoader> {
 }
 
 class GroupDropdown extends StatelessWidget {
+  const GroupDropdown({super.key});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AccountBloc, AccountState>(
       builder: (context, state) {
         if (state is AccountLoading) {
-          return Text ('BikeBus', style: GoogleFonts.indieFlower(fontSize: 24));
+          return CircularProgressIndicator();
         } else if (state is AccountLoaded) {
           final bikeBusGroups = state.accountData.bikeBusGroups;
           final organizations = state.accountData.organizations;
@@ -100,6 +102,10 @@ class GroupDropdown extends StatelessWidget {
             ),
           ];
 
+          final selectedGroup = context.read<SelectedGroupBloc>().state.selectedGroup;
+          final selectedItem = items.any((item) => item.value == selectedGroup) ? selectedGroup : null;
+
+
           return Container(
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
@@ -107,6 +113,7 @@ class GroupDropdown extends StatelessWidget {
             ),
             padding: EdgeInsets.symmetric(horizontal: 12.0),
             child: DropdownButton<GroupBase>(
+              value: selectedItem,
               alignment: Alignment.center,
               underline: Container(),
               isExpanded: false,
@@ -117,13 +124,12 @@ class GroupDropdown extends StatelessWidget {
                   context.go('/organization/OZrruuBJptp9wkAAVUt7/boards');
                 } else if (newValue is Organization) {
                   context.read<SelectedGroupBloc>().add(SelectOrganization(newValue));
-                  context.go('/organization/${newValue.id}/boards');
+                  context.go('/organization/${newValue.id}/home');
                 } else if (newValue is BikeBusGroup) {
                   context.read<SelectedGroupBloc>().add(SelectBikeBusGroup(newValue));
-                  context.go('/bikebusgroup/${newValue.id}/boards');
+                  context.go('/bikebusgroup/${newValue.id}/home');
                 }
               },
-              value: context.read<SelectedGroupBloc>().state.selectedGroup,
               hint: Text(
                 'BikeBus',
                 style: GoogleFonts.indieFlower(fontSize: 24),
@@ -132,7 +138,7 @@ class GroupDropdown extends StatelessWidget {
             ),
           );
         } else {
-          return Text('Error loading groups');
+          return Text('BikeBus', style: GoogleFonts.indieFlower(fontSize: 24));
         }
       },
     );

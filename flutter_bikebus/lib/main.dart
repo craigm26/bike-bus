@@ -7,17 +7,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bikebus/features/account/blocs/account_event.dart';
-import 'package:flutter_bikebus/features/account/blocs/account_state.dart';
-import 'package:flutter_bikebus/features/auth/models/user_model.dart';
 import 'package:flutter_bikebus/features/auth/repositories/auth_repository.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
 import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_bloc.dart';
 import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_event.dart';
-import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_state.dart';
-import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
+import 'package:flutter_bikebus/features/directory/blocs/directory_bloc.dart';
 import 'package:flutter_bikebus/features/organizations/blocs/organizations_event.dart';
-import 'package:flutter_bikebus/features/organizations/blocs/organizations_state.dart';
 import 'package:flutter_bikebus/features/organizations/models/organizations_model.dart';
 import 'package:flutter_bikebus/features/organizations/repositories/organizations_repository.dart';
 import 'package:flutter_bikebus/features/organizations/blocs/organizations_bloc.dart';
@@ -28,6 +24,7 @@ import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_bloc
 import 'package:flutter_bikebus/features/selectedgroup/blocs/selected_group_state.dart';
 import 'package:flutter_bikebus/features/services/firebase_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+//import 'package:bluesky/bluesky.dart';
 import 'app.dart';
 
 // logger
@@ -89,6 +86,19 @@ void main() async {
           accountRepository: AccountRepository(firestore: firestore),
           authBloc: context.read<AuthBloc>(),
         )..add(LoadAccountData()),
+      ),
+      BlocProvider<DirectoryBloc>(
+        create: (context) => DirectoryBloc(
+          bikeBusGroupRepository: BikeBusRepository(
+            firestore: firestore,
+            accountBloc: context.read<AccountBloc>(),
+          ),
+          organizationRepository: OrganizationRepository(
+            firestore: firestore,
+            accountBloc: context.read<AccountBloc>(),
+          ),
+          firestore: firestore,
+        ),
       ),
       BlocProvider<OrganizationGroupBloc>(
         create: (context) => OrganizationGroupBloc(

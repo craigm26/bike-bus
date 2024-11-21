@@ -23,6 +23,14 @@ class BikeBusRepository {
         .toList();
   }
 
+  // Get all bike bus groups with getAllBikeBusGroups method
+  Future<List<BikeBusGroup>> getAllBikeBusGroups() async {
+    final querySnapshot = await firestore.collection('bikebusgroups').get();
+    return querySnapshot.docs
+        .map((doc) => BikeBusGroup.fromFirestore(doc))
+        .toList();
+  }
+
   Future<List<BikeBusGroup>> getUserBikeBusGroups() async {
     if (accountBloc.state is AccountLoaded) {
       final user = (accountBloc.state as AccountLoaded).accountData;

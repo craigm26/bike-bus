@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bikebus/features/account/screens/account_edit_screen.dart';
 import 'package:flutter_bikebus/features/account/screens/account_screen.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_bloc.dart';
+import 'package:flutter_bikebus/features/auth/blocs/auth_event.dart';
 import 'package:flutter_bikebus/features/auth/blocs/auth_state.dart';
 import 'package:flutter_bikebus/features/auth/screens/login_screen.dart';
 import 'package:flutter_bikebus/features/auth/screens/splash_screen.dart';
 import 'package:flutter_bikebus/features/auth/screens/signup_screen.dart';
 import 'package:flutter_bikebus/features/bikebusses/blocs/bikebusses_bloc.dart';
 import 'package:flutter_bikebus/features/bikebusses/models/bikebusses_model.dart';
+import 'package:flutter_bikebus/features/bikebusses/repositories/bikebusses_repository.dart';
+// import the bikebusses screen to use in the router
+import 'package:flutter_bikebus/features/bikebusses/screens/bikebus_screen.dart';
 import 'package:flutter_bikebus/features/directory/blocs/directory_bloc.dart';
 import 'package:flutter_bikebus/features/organizations/blocs/organizations_bloc.dart';
 import 'package:flutter_bikebus/features/organizations/models/organizations_model.dart';
@@ -135,6 +139,47 @@ class BikeBusRouter {
                 return BoardsScreen(bikeBusGroup: bikeBusGroup);
               },
             ),
+            // BikeBusGroup home
+            GoRoute(
+              path: '/bikebusgroup/:id/home',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final bikeBusGroup =
+                    context.read<BikeBusGroupBloc>().getGroupById(id);
+                return BikeBusScreen(bikeBusGroupId: id);
+              },
+            ),
+            // BikeBusGroup map
+            GoRoute(
+              path: '/bikebusgroup/:id/map',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final bikeBusGroup =
+                    context.read<BikeBusGroupBloc>().getGroupById(id);
+                return Text('BikeBusGroup map: ${bikeBusGroup?.name ?? ''}');
+              },
+            ),
+            // BikeBusGroup events
+            GoRoute(
+              path: '/bikebusgroup/:id/events',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final bikeBusGroup =
+                    context.read<BikeBusGroupBloc>().getGroupById(id);
+                return Text('BikeBusGroup events: ${bikeBusGroup?.name ?? ''}');
+              },
+            ),
+            // BikeBusGroup notifications
+            GoRoute(
+              path: '/bikebusgroup/:id/notifications',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final bikeBusGroup =
+                    context.read<BikeBusGroupBloc>().getGroupById(id);
+                return Text(
+                    'BikeBusGroup notifications: ${bikeBusGroup?.name ?? ''}');
+              },
+            ),
             // Organization routes
             GoRoute(
               path: '/organization/:id/boards',
@@ -144,6 +189,54 @@ class BikeBusRouter {
                     .read<OrganizationGroupBloc>()
                     .getOrganizationById(id);
                 return BoardsScreen(organization: organization);
+              },
+            ),
+            // Organization home
+            GoRoute(
+              path: '/organization/:id/home',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final organization = context
+                    .read<OrganizationGroupBloc>()
+                    .getOrganizationById(id);
+                return Text(
+                    'Organization home: ${organization?.nameOfOrg ?? ''}');
+              },
+            ),
+            // organization map
+            GoRoute(
+              path: '/organization/:id/map',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final organization = context
+                    .read<OrganizationGroupBloc>()
+                    .getOrganizationById(id);
+                return Text(
+                    'Organization map: ${organization?.nameOfOrg ?? ''}');
+              },
+            ),
+            // organization events
+            GoRoute(
+              path: '/organization/:id/events',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final organization = context
+                    .read<OrganizationGroupBloc>()
+                    .getOrganizationById(id);
+                return Text(
+                    'Organization events: ${organization?.nameOfOrg ?? ''}');
+              },
+            ),
+            // organization notifications
+            GoRoute(
+              path: '/organization/:id/notifications',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final organization = context
+                    .read<OrganizationGroupBloc>()
+                    .getOrganizationById(id);
+                return Text(
+                    'Organization notifications: ${organization?.nameOfOrg ?? ''}');
               },
             ),
             GoRoute(
@@ -164,12 +257,8 @@ class BikeBusRouter {
             ),
             GoRoute(
               path: '/directory',
-              builder: (context, state) => BlocProvider(
-                create: (context) => DirectoryBloc(
-                  firestore: FirebaseFirestore.instance,
-                ),
-                child: const DirectoryScreen(),
-              ),
+              // use the directory bloc to load the directory screen
+              builder: (context, state) => const DirectoryScreen(),
             ),
             GoRoute(
               path: '/events',
@@ -285,10 +374,19 @@ class _AppShellState extends State<AppShell> {
   void _navigateBikeBusGroup(int index, BikeBusGroup group) {
     switch (index) {
       case 0:
-        context.go('/bikebusgroup/${group.id}/boards');
+        context.go('/bikebusgroup/${group.id}/home');
         break;
       case 1:
+        context.go('/bikebusgroup/${group.id}/boards');
+        break;
+      case 2:
         context.go('/bikebusgroup/${group.id}/map');
+        break;
+      case 3:
+        context.go('/bikebusgroup/${group.id}/events');
+        break;
+      case 4:
+        context.go('/bikebusgroup/${group.id}/notifications');
         break;
 
       // Handle other indices
@@ -298,10 +396,19 @@ class _AppShellState extends State<AppShell> {
   void _navigateOrganization(int index, Organization org) {
     switch (index) {
       case 0:
-        context.go('/organization/${org.id}/boards');
+        context.go('/organization/${org.id}/home');
         break;
       case 1:
+        context.go('/organization/${org.id}/boards');
+        break;
+      case 2:
+        context.go('/organization/${org.id}/map');
+        break;
+      case 3:
         context.go('/organization/${org.id}/events');
+        break;
+      case 4:
+        context.go('/organization/${org.id}/notifications');
         break;
       // Handle other indices
     }
@@ -317,10 +424,14 @@ class _AppShellState extends State<AppShell> {
         return Scaffold(
           appBar: AppBar(
             backgroundColor: customSwatch,
-            leading: IconButton(
-              icon: Icon(Icons.account_circle),
-              onPressed: () {
-                context.go('/account');
+            leading: Builder(
+              builder: (context) {
+                return IconButton(
+                  icon: Icon(Icons.account_circle),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                );
               },
             ),
             title: Row(
@@ -345,6 +456,53 @@ class _AppShellState extends State<AppShell> {
                 },
               ),
             ],
+          ),
+          drawer: Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: customSwatch,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: AssetImage(
+                            'assets/placeholder.png'), // use a placeholder image
+                        child: Text('User'),
+                      ),
+                    ],
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Account'),
+                  onTap: () {
+                    // close the drawer
+                    Navigator.pop(context);
+                    context.go('/account');
+                  },
+                ),
+                ListTile(
+                  title: const Text('Privacy Policy'),
+                  onTap: () {
+                    // close the drawer
+                    Navigator.pop(context);
+                    context.go('/privacypolicy');
+                  },
+                ),
+                ListTile(
+                  title: const Text('Logout'),
+                  onTap: () {
+                    context.read<AuthBloc>().add(SignOutRequested());
+                    Navigator.pop(context);
+                    context.go('/welcome');
+                  },
+                ),
+              ],
+            ),
           ),
           body: widget.child,
           bottomNavigationBar: BottomNavigationBar(
@@ -391,12 +549,26 @@ class _AppShellState extends State<AppShell> {
       case GroupType.bikeBusGroup:
         return [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.group),
+            label: 'BikeBus',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
+            icon: Icon(Icons.sticky_note_2),
+            label: 'Board',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
+          ),
+          // events
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event),
             label: 'Events',
+          ),
+          // notifications
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           // ...add more items as needed...
         ];
@@ -407,8 +579,22 @@ class _AppShellState extends State<AppShell> {
             label: 'Organization',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.sticky_note_2),
+            label: 'Board',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event),
+            label: 'Map',
+          ),
+          // events
+          BottomNavigationBarItem(
             icon: Icon(Icons.event),
             label: 'Events',
+          ),
+          // notifications
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           // ...add more items as needed...
         ];
