@@ -1,4 +1,5 @@
 # DevFlutter is a re-write
+# archiving this repository and starting a new one 
 
 ### this is where we are re-writing from Ionic to Flutter
 
